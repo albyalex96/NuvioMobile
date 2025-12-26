@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   FlatList,
   SectionList,
@@ -58,6 +57,7 @@ import StreamCard from '../components/StreamCard';
 import AnimatedImage from '../components/AnimatedImage';
 import AnimatedText from '../components/AnimatedText';
 import AnimatedView from '../components/AnimatedView';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 // Lazy-safe community blur import for Android
 let AndroidBlurView: any = null;
@@ -1850,19 +1850,23 @@ export const StreamsScreen = () => {
           <View
             style={[styles.backButtonContainer, isTablet && styles.backButtonContainerTablet]}
           >
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.backButton,
                 Platform.OS === 'android' ? { paddingTop: 45 } : null
               ]}
               onPress={handleBack}
               activeOpacity={0.7}
+              enableTVFocus={Platform.isTV}
+              preset="listRow"
+              focusBorderRadius={999}
+              hasTVPreferredFocus={Platform.isTV}
             >
               <MaterialIcons name="arrow-back" size={24} color={colors.white} />
               <Text style={styles.backButtonText}>
                 {metadata?.videos && metadata.videos.length > 1 && selectedEpisode ? 'Back to Episodes' : 'Back to Info'}
               </Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
         )}
 
@@ -2105,12 +2109,16 @@ export const StreamsScreen = () => {
                   <Text style={styles.noStreamsSubText}>
                     Please add streaming sources in settings
                   </Text>
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     style={styles.addSourcesButton}
                     onPress={() => navigation.navigate('Addons')}
+                    enableTVFocus={Platform.isTV}
+                    preset="button"
+                    focusBorderRadius={16}
+                    hasTVPreferredFocus={Platform.isTV}
                   >
                     <Text style={styles.addSourcesButtonText}>Add Sources</Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 </View>
               ) : streamsEmpty ? (
                 showInitialLoading ? (

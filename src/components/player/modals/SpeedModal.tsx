@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, StyleSheet } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions, StyleSheet, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
@@ -9,6 +9,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 interface SpeedModalProps {
   showSpeedModal: boolean;
@@ -31,7 +32,15 @@ const MorphingButton = ({ label, isSelected, onPress, isSmall = false }: any) =>
   });
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={{ flex: isSmall ? 0 : 1 }}>
+    <FocusableTouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={{ flex: isSmall ? 0 : 1 }}
+      enableTVFocus={Platform.isTV}
+      preset="pill"
+      focusBorderRadius={10}
+      hasTVPreferredFocus={Platform.isTV && isSelected}
+    >
       <Animated.View style={[{ paddingVertical: isSmall ? 6 : 8, paddingHorizontal: isSmall ? 14 : 0, alignItems: 'center', justifyContent: 'center' }, animatedStyle]}>
         <Text style={{
           color: isSelected && !isSmall ? 'black' : 'white',
@@ -41,7 +50,7 @@ const MorphingButton = ({ label, isSelected, onPress, isSmall = false }: any) =>
           {label}
         </Text>
       </Animated.View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 };
 
@@ -62,14 +71,14 @@ const SpeedModal: React.FC<SpeedModalProps> = ({
   if (!showSpeedModal) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} zIndex={9999}>
-      <TouchableOpacity
+    <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>
+      <Pressable
         style={StyleSheet.absoluteFill}
-        activeOpacity={1}
         onPress={() => setShowSpeedModal(false)}
+        focusable={false}
       >
         <Animated.View entering={FadeIn} exiting={FadeOut} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }} />
-      </TouchableOpacity>
+      </Pressable>
 
       <View pointerEvents="box-none" style={{ ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', paddingBottom: 20 }}>
         <Animated.View
@@ -104,9 +113,13 @@ const SpeedModal: React.FC<SpeedModalProps> = ({
 
           {/* On Hold Section */}
           <View>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               onPress={() => setHoldToSpeedEnabled(!holdToSpeedEnabled)}
               style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: holdToSpeedEnabled ? 15 : 0 }}
+              enableTVFocus={Platform.isTV}
+              preset="listRow"
+              focusBorderRadius={12}
+              hasTVPreferredFocus={Platform.isTV}
             >
               <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>On Hold</Text>
               <View style={{
@@ -116,7 +129,7 @@ const SpeedModal: React.FC<SpeedModalProps> = ({
               }}>
                 <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: holdToSpeedEnabled ? 'black' : 'white' }} />
               </View>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
 
             {holdToSpeedEnabled && (
               <Animated.View entering={FadeIn} style={{ flexDirection: 'row', gap: 8 }}>

@@ -6,7 +6,6 @@ import {
   StatusBar,
   ActivityIndicator,
   Dimensions,
-  TouchableOpacity,
   InteractionManager,
   BackHandler,
   Platform,
@@ -64,6 +63,7 @@ import { useWatchProgress } from '../hooks/useWatchProgress';
 import { TraktService, TraktPlaybackItem } from '../services/traktService';
 import { tmdbService } from '../services/tmdbService';
 import { catalogService } from '../services/catalogService';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { height } = Dimensions.get('window');
 
@@ -865,21 +865,28 @@ const MetadataScreen: React.FC = () => {
               {metadataError}
             </Text>
           )}
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.retryButton, { backgroundColor: currentTheme.colors.primary }]}
             onPress={loadMetadata}
             focusable={Platform.isTV}
+            enableTVFocus={Platform.isTV}
+            preset="button"
+            focusBorderRadius={14}
+            hasTVPreferredFocus={Platform.isTV}
           >
             <MaterialIcons name="refresh" size={20} color={currentTheme.colors.white} style={{ marginRight: 8 }} />
             <Text style={styles.retryButtonText}>Try Again</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </FocusableTouchableOpacity>
+          <FocusableTouchableOpacity
             style={[styles.backButton, { borderColor: currentTheme.colors.primary }]}
             onPress={handleBack}
             focusable={Platform.isTV}
+            enableTVFocus={Platform.isTV}
+            preset="button"
+            focusBorderRadius={14}
           >
             <Text style={[styles.backButtonText, { color: currentTheme.colors.primary }]}>Go Back</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -1240,7 +1247,7 @@ const MetadataScreen: React.FC = () => {
                 {/* Backdrop Gallery section - shown after movie details for movies when TMDB ID is available and enrichment is enabled */}
                 {shouldLoadSecondaryData && Object.keys(groupedEpisodes).length === 0 && metadata?.tmdbId && settings.enrichMetadataWithTMDB && (
                   <View style={styles.backdropGalleryContainer}>
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       style={styles.backdropGalleryButton}
                       onPress={() => navigation.navigate('BackdropGallery' as any, {
                         tmdbId: metadata.tmdbId,
@@ -1248,10 +1255,13 @@ const MetadataScreen: React.FC = () => {
                         title: metadata.name || 'Gallery'
                       })}
                       focusable={Platform.isTV}
+                      enableTVFocus={Platform.isTV}
+                      preset="listRow"
+                      focusBorderRadius={16}
                     >
                       <Text style={[styles.backdropGalleryText, { color: currentTheme.colors.highEmphasis }]}>Backdrop Gallery</Text>
                       <MaterialIcons name="chevron-right" size={24} color={currentTheme.colors.highEmphasis} />
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   </View>
                 )}
 
@@ -1381,7 +1391,7 @@ const MetadataScreen: React.FC = () => {
                 {/* Backdrop Gallery section - shown after show details for TV shows when TMDB ID is available and enrichment is enabled */}
                 {shouldLoadSecondaryData && Object.keys(groupedEpisodes).length > 0 && metadata?.tmdbId && settings.enrichMetadataWithTMDB && (
                   <View style={styles.backdropGalleryContainer}>
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       style={styles.backdropGalleryButton}
                       onPress={() => navigation.navigate('BackdropGallery' as any, {
                         tmdbId: metadata.tmdbId,
@@ -1389,10 +1399,13 @@ const MetadataScreen: React.FC = () => {
                         title: metadata.name || 'Gallery'
                       })}
                       focusable={Platform.isTV}
+                      enableTVFocus={Platform.isTV}
+                      preset="listRow"
+                      focusBorderRadius={16}
                     >
                       <Text style={[styles.backdropGalleryText, { color: currentTheme.colors.highEmphasis }]}>Backdrop Gallery</Text>
                       <MaterialIcons name="chevron-right" size={24} color={currentTheme.colors.highEmphasis} />
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   </View>
                 )}
 

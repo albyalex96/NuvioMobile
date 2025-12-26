@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform, Dimensions, Animated, Easing, Keyboard } from 'react-native';
+import { View, TextInput, Text, StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform, Dimensions, Animated, Easing, Keyboard } from 'react-native';
 import { mmkvStorage } from '../services/mmkvStorage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useToast } from '../contexts/ToastContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width, height } = Dimensions.get('window');
 
@@ -277,9 +278,9 @@ const AuthScreen: React.FC = () => {
           ]}
         >
           {navigation.canGoBack() && (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, Platform.OS === 'android' ? { top: Math.max(insets.top + 6, 18) } : null]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <FocusableTouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, Platform.OS === 'android' ? { top: Math.max(insets.top + 6, 18) } : null]} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <MaterialIcons name="arrow-back" size={22} color={currentTheme.colors.white} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           )}
           <Animated.Text style={[styles.heading, { color: currentTheme.colors.white, opacity: titleOpacity, transform: [{ translateY: titleTranslateY }] }]}>
             {mode === 'signin' ? 'Welcome back' : 'Create your account'}
@@ -299,7 +300,7 @@ const AuthScreen: React.FC = () => {
             },
           ]}
         >
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.warningCard, { backgroundColor: 'rgba(255, 193, 7, 0.1)', borderColor: 'rgba(255, 193, 7, 0.3)' }]}
             onPress={toggleWarningDetails}
             activeOpacity={0.8}
@@ -316,7 +317,7 @@ const AuthScreen: React.FC = () => {
                 Read more {showWarningDetails ? '▼' : '▶'}
               </Text>
             </View>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
           
           {/* Expanded Details */}
           {showWarningDetails && (
@@ -392,7 +393,7 @@ const AuthScreen: React.FC = () => {
                     },
                   ]}
                 />
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[
                     styles.switchButton,
                   ]}
@@ -402,8 +403,8 @@ const AuthScreen: React.FC = () => {
                   <Text style={[styles.switchText, { color: mode === 'signin' ? '#fff' : currentTheme.colors.textMuted }]}>
                     Sign In
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </FocusableTouchableOpacity>
+                <FocusableTouchableOpacity
                   style={[
                     styles.switchButton,
                     signupDisabled && styles.disabledButton,
@@ -420,7 +421,7 @@ const AuthScreen: React.FC = () => {
                   ]}>
                     Sign Up {signupDisabled && '(Disabled)'}
                   </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               </View>
 
               {/* Email Input */}
@@ -477,13 +478,13 @@ const AuthScreen: React.FC = () => {
                     returnKeyType="done"
                     onSubmitEditing={handleSubmit}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(p => !p)} style={styles.eyeButton}>
+                  <FocusableTouchableOpacity onPress={() => setShowPassword(p => !p)} style={styles.eyeButton}>
                     <MaterialIcons 
                       name={showPassword ? 'visibility-off' : 'visibility'} 
                       size={16} 
                       color={currentTheme.colors.textMuted} 
                     />
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                   {Platform.OS !== 'android' && isPasswordValid && (
                     <MaterialIcons name="check-circle" size={16} color="#2EA043" style={{ marginRight: 12 }} />
                   )}
@@ -515,13 +516,13 @@ const AuthScreen: React.FC = () => {
                       returnKeyType="done"
                       onSubmitEditing={handleSubmit}
                     />
-                    <TouchableOpacity onPress={() => setShowConfirm(p => !p)} style={styles.eyeButton}>
+                    <FocusableTouchableOpacity onPress={() => setShowConfirm(p => !p)} style={styles.eyeButton}>
                       <MaterialIcons 
                         name={showConfirm ? 'visibility-off' : 'visibility'} 
                         size={16} 
                         color={currentTheme.colors.textMuted} 
                       />
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                     {Platform.OS !== 'android' && passwordsMatch && isConfirmValid && (
                       <MaterialIcons name="check-circle" size={16} color="#2EA043" style={{ marginRight: 12 }} />
                     )}
@@ -539,7 +540,7 @@ const AuthScreen: React.FC = () => {
 
               {/* Submit Button */}
               <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[
                     styles.ctaButton, 
                     { 
@@ -579,12 +580,12 @@ const AuthScreen: React.FC = () => {
                       {mode === 'signin' ? 'Sign In' : 'Create Account'}
                     </Animated.Text>
                   )}
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               </Animated.View>
 
               {/* Switch Mode */}
               {!signupDisabled && (
-                <TouchableOpacity 
+                <FocusableTouchableOpacity 
                   onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')} 
                   activeOpacity={0.7}
                   style={{ marginTop: 16 }}
@@ -595,7 +596,7 @@ const AuthScreen: React.FC = () => {
                       {mode === 'signin' ? 'Sign up' : 'Sign in'}
                     </Text>
                   </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               )}
               
               {/* Signup disabled message */}
@@ -608,7 +609,7 @@ const AuthScreen: React.FC = () => {
               )}
 
               {/* Skip sign in - more prominent when coming from onboarding */}
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 onPress={handleSkipAuth}
                 activeOpacity={0.85}
                 style={[
@@ -629,7 +630,7 @@ const AuthScreen: React.FC = () => {
                 }}>
                   Continue without an account
                 </Text>
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             </Animated.View>
 
           </Animated.View>

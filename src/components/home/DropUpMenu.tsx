@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Modal,
   Pressable,
-  TouchableOpacity,
   useColorScheme,
   Dimensions,
   Platform
@@ -28,6 +27,7 @@ import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import { StreamingContent } from '../../services/catalogService';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 interface DropUpMenuProps {
   visible: boolean;
@@ -184,7 +184,7 @@ export const DropUpMenu = ({ visible, onClose, item, onOptionSelect, isSaved: is
               </View>
               <View style={styles.menuOptions}>
                 {menuOptions.map((option, index) => (
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     key={option.action}
                     style={[
                       styles.menuOption,
@@ -195,6 +195,10 @@ export const DropUpMenu = ({ visible, onClose, item, onOptionSelect, isSaved: is
                       onOptionSelect(option.action);
                       onClose();
                     }}
+                    enableTVFocus={Platform.isTV}
+                    preset="listRow"
+                    focusBorderRadius={16}
+                    hasTVPreferredFocus={Platform.isTV && visible && index === 0}
                   >
                     <MaterialIcons
                       name={option.icon as "bookmark" | "check-circle" | "playlist-add" | "share" | "bookmark-border"}
@@ -207,7 +211,7 @@ export const DropUpMenu = ({ visible, onClose, item, onOptionSelect, isSaved: is
                     ]}>
                       {option.label}
                     </Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 ))}
               </View>
             </Animated.View>

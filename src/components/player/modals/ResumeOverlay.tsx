@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { styles } from '../utils/playerStyles';
 import { formatTime } from '../utils/playerUtils';
 import { logger } from '../../../utils/logger';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 interface ResumeOverlayProps {
   showResumeOverlay: boolean;
@@ -71,20 +72,27 @@ export const ResumeOverlay: React.FC<ResumeOverlayProps> = ({
         </View>
 
         <View style={styles.resumeButtons}>
-          <TouchableOpacity 
+          <FocusableTouchableOpacity
             style={styles.resumeButton} 
             onPress={handleStartFromBeginning}
+            enableTVFocus={Platform.isTV}
+            preset="button"
+            focusBorderRadius={12}
           >
             <Ionicons name="refresh" size={16} color="white" style={styles.buttonIcon} />
             <Text style={styles.resumeButtonText}>Start Over</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
+          </FocusableTouchableOpacity>
+          <FocusableTouchableOpacity
             style={[styles.resumeButton, styles.resumeFromButton]} 
             onPress={handleResume}
+            enableTVFocus={Platform.isTV}
+            preset="button"
+            focusBorderRadius={12}
+            hasTVPreferredFocus={Platform.isTV}
           >
             <Ionicons name="play" size={16} color="white" style={styles.buttonIcon} />
             <Text style={styles.resumeButtonText}>Resume</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
       </LinearGradient>
     </View>

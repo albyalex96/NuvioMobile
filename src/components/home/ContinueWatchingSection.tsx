@@ -27,6 +27,7 @@ import { stremioService } from '../../services/stremioService';
 import { streamCacheService } from '../../services/streamCacheService';
 import { useSettings } from '../../hooks/useSettings';
 import CustomAlert from '../../components/CustomAlert';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 // Define interface for continue watching items
 interface ContinueWatchingItem extends StreamingContent {
@@ -1081,7 +1082,7 @@ const ContinueWatchingSection = React.forwardRef<ContinueWatchingRef>((props, re
 
   // Memoized render function for continue watching items
   const renderContinueWatchingItem = useCallback(({ item }: { item: ContinueWatchingItem }) => (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[
         styles.wideContentItem,
         {
@@ -1096,6 +1097,11 @@ const ContinueWatchingSection = React.forwardRef<ContinueWatchingRef>((props, re
       onPress={() => handleContentPress(item)}
       onLongPress={() => handleLongPress(item)}
       delayLongPress={800}
+      enableTVFocus={Platform.isTV}
+      focusBorderRadius={14}
+      focusRingColor={currentTheme.colors.primary}
+      focusRingWidth={3}
+      focusScale={isTV ? 1.06 : 1.04}
     >
       {/* Poster Image */}
       <View style={[
@@ -1242,7 +1248,7 @@ const ContinueWatchingSection = React.forwardRef<ContinueWatchingRef>((props, re
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   ), [currentTheme.colors, handleContentPress, handleLongPress, deletingItemId, computedItemWidth, computedItemHeight, isTV, isLargeTablet, isTablet]);
 
   // Memoized key extractor

@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  TouchableOpacity,
   useColorScheme,
   Platform,
 } from 'react-native';
@@ -16,6 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../contexts/ThemeContext';
 import { Portal } from 'react-native-paper';
+import { FocusableTouchableOpacity } from './common/FocusableTouchableOpacity';
 
 interface CustomAlertProps {
   visible: boolean;
@@ -120,7 +120,7 @@ export const CustomAlert = ({
                 {actions.map((action, idx) => {
                   const isPrimary = idx === actions.length - 1;
                   return (
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       key={action.label}
                       style={[
                         styles.actionButton,
@@ -132,6 +132,10 @@ export const CustomAlert = ({
                       ]}
                       onPress={() => handleActionPress(action)}
                       activeOpacity={0.7}
+                      enableTVFocus={Platform.isTV}
+                      preset="button"
+                      focusBorderRadius={12}
+                      hasTVPreferredFocus={Platform.isTV && visible && isPrimary}
                     >
                       <Text style={[
                         styles.actionText,
@@ -141,7 +145,7 @@ export const CustomAlert = ({
                       ]}>
                         {action.label}
                       </Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   );
                 })}
               </View>

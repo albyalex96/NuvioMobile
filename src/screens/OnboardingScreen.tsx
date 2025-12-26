@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
   StatusBar,
   Platform,
 } from 'react-native';
@@ -25,6 +24,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { mmkvStorage } from '../services/mmkvStorage';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width, height } = Dimensions.get('window');
 
@@ -281,9 +281,9 @@ const OnboardingScreen = () => {
           entering={FadeIn.delay(300).duration(600)}
           style={styles.header}
         >
-          <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+          <FocusableTouchableOpacity onPress={handleSkip} style={styles.skipButton}>
             <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
 
           {/* Smooth Progress Bar */}
           <View style={styles.progressContainer}>
@@ -322,7 +322,7 @@ const OnboardingScreen = () => {
           </View>
 
           {/* Animated Button */}
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             onPress={handleNext}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
@@ -333,7 +333,7 @@ const OnboardingScreen = () => {
                 {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Continue'}
               </Text>
             </Animated.View>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </Animated.View>
       </View>
     </View>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, ScrollView, useWindowDimensions, StyleSheet, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { getTrackDisplayName, DEBUG_MODE } from '../utils/playerUtils';
 import { logger } from '../../../utils/logger';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 interface AudioTrackModalProps {
   showAudioModal: boolean;
@@ -38,17 +39,17 @@ export const AudioTrackModal: React.FC<AudioTrackModalProps> = ({
   return (
     <View style={StyleSheet.absoluteFill} zIndex={9999}>
       {/* Backdrop matching SubtitleModal */}
-      <TouchableOpacity
+      <Pressable
         style={StyleSheet.absoluteFill}
-        activeOpacity={1}
         onPress={handleClose}
+        focusable={false}
       >
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
         />
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Center Alignment Container */}
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
@@ -79,7 +80,7 @@ export const AudioTrackModal: React.FC<AudioTrackModalProps> = ({
                 const isSelected = selectedAudioTrack === track.id;
 
                 return (
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     key={track.id}
                     onPress={() => {
                       selectAudioTrack(track.id);
@@ -93,6 +94,10 @@ export const AudioTrackModal: React.FC<AudioTrackModalProps> = ({
                       justifyContent: 'space-between',
                       alignItems: 'center'
                     }}
+                    enableTVFocus={Platform.isTV}
+                    preset="listRow"
+                    focusBorderRadius={12}
+                    hasTVPreferredFocus={Platform.isTV && isSelected}
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={{
@@ -104,7 +109,7 @@ export const AudioTrackModal: React.FC<AudioTrackModalProps> = ({
                       </Text>
                     </View>
                     {isSelected && <MaterialIcons name="check" size={18} color="black" />}
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 );
               })}
 

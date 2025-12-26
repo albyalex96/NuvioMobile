@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   StatusBar,
   Platform,
@@ -17,6 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettings } from '../hooks/useSettings';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 // TTL options in milliseconds - organized in rows
 const TTL_OPTIONS = [
@@ -132,7 +132,7 @@ const ContinueWatchingSettingsScreen: React.FC = () => {
   const TTLPickerItem = ({ option }: { option: { label: string; value: number } }) => {
     const isSelected = settings.streamCacheTTL === option.value;
     return (
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={[
           styles.ttlOption,
           {
@@ -142,6 +142,10 @@ const ContinueWatchingSettingsScreen: React.FC = () => {
         ]}
         onPress={() => handleUpdateSetting('streamCacheTTL', option.value)}
         activeOpacity={0.7}
+        enableTVFocus={Platform.isTV}
+        preset="pill"
+        focusBorderRadius={8}
+        hasTVPreferredFocus={Platform.isTV && isSelected}
       >
         <Text style={[
           styles.ttlOptionText,
@@ -152,7 +156,7 @@ const ContinueWatchingSettingsScreen: React.FC = () => {
         {isSelected && (
           <MaterialIcons name="check" size={20} color={colors.white} />
         )}
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     );
   };
 
@@ -162,13 +166,17 @@ const ContinueWatchingSettingsScreen: React.FC = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <FocusableTouchableOpacity 
           style={styles.backButton}
           onPress={handleBack}
+          enableTVFocus={Platform.isTV}
+          preset="listRow"
+          focusBorderRadius={12}
+          hasTVPreferredFocus={Platform.isTV}
         >
           <MaterialIcons name="chevron-left" size={28} color={colors.white} />
           <Text style={styles.backText}>Settings</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
       </View>
       
       <Text style={styles.headerTitle}>

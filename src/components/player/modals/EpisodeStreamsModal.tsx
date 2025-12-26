@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
@@ -11,6 +11,7 @@ import { Episode } from '../../../types/metadata';
 import { Stream } from '../../../types/streams';
 import { stremioService } from '../../../services/stremioService';
 import { logger } from '../../../utils/logger';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 interface EpisodeStreamsModalProps {
   visible: boolean;
@@ -142,17 +143,17 @@ export const EpisodeStreamsModal: React.FC<EpisodeStreamsModalProps> = ({
   return (
     <View style={StyleSheet.absoluteFill} zIndex={10000}>
       {/* Backdrop */}
-      <TouchableOpacity
+      <Pressable
         style={StyleSheet.absoluteFill}
-        activeOpacity={1}
         onPress={onClose}
+        focusable={false}
       >
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
         />
-      </TouchableOpacity>
+      </Pressable>
 
       <Animated.View
         entering={SlideInRight.duration(300)}
@@ -218,7 +219,7 @@ export const EpisodeStreamsModal: React.FC<EpisodeStreamsModalProps> = ({
                   const quality = getQualityFromTitle(stream.title) || stream.quality;
 
                   return (
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       key={`${providerId}-${index}`}
                       style={{
                         padding: 8,
@@ -232,6 +233,10 @@ export const EpisodeStreamsModal: React.FC<EpisodeStreamsModalProps> = ({
                         onClose();
                       }}
                       activeOpacity={0.7}
+                      enableTVFocus={Platform.isTV}
+                      preset="listRow"
+                      focusBorderRadius={12}
+                      hasTVPreferredFocus={Platform.isTV && index === 0}
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flex: 1 }}>
@@ -248,7 +253,7 @@ export const EpisodeStreamsModal: React.FC<EpisodeStreamsModalProps> = ({
                           )}
                         </View>
                       </View>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   );
                 })}
               </View>

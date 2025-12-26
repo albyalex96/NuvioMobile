@@ -13,6 +13,7 @@ import { storageService } from '../../services/storageService';
 import { TraktService } from '../../services/traktService';
 import { useTraktContext } from '../../contexts/TraktContext';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 interface ContentItemProps {
   item: StreamingContent;
@@ -302,12 +303,18 @@ const ContentItem = ({ item, onPress, shouldLoadImage: shouldLoadImageProp, defe
   return (
     <>
       <Animated.View style={[styles.itemContainer, { width: finalWidth }]} entering={FadeIn.duration(300)}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={[styles.contentItem, { width: finalWidth, aspectRatio: finalAspectRatio, borderRadius }]}
           activeOpacity={0.7}
           onPress={handlePress}
           onLongPress={handleLongPress}
           delayLongPress={300}
+          // TV focus highlight: visible focus ring + scale, no dim-on-press
+          enableTVFocus={Platform.isTV}
+          focusBorderRadius={borderRadius}
+          focusRingColor={currentTheme.colors.primary}
+          focusRingWidth={3}
+          focusScale={getDeviceType(width) === 'tv' ? 1.08 : 1.06}
         >
           <View ref={itemRef} style={[styles.contentItemContainer, { borderRadius }]}>
             {/* Image with FastImage for aggressive caching */}
@@ -362,7 +369,7 @@ const ContentItem = ({ item, onPress, shouldLoadImage: shouldLoadImageProp, defe
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
         {settings.showPosterTitles && (
           <Text
             style={[

@@ -18,6 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { TMDBService } from '../../services/tmdbService';
 import { catalogService } from '../../services/catalogService';
 import CustomAlert from '../../components/CustomAlert';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 const { width } = Dimensions.get('window');
 
@@ -117,9 +118,15 @@ export const MoreLikeThisSection: React.FC<MoreLikeThisSectionProps> = ({
   };
 
   const renderItem = ({ item }: { item: StreamingContent }) => (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[styles.itemContainer, { width: posterWidth, marginRight: itemSpacing }]}
       onPress={() => handleItemPress(item)}
+      activeOpacity={0.9}
+      enableTVFocus={Platform.isTV}
+      focusBorderRadius={isTV ? 12 : isLargeTablet ? 10 : isTablet ? 10 : 8}
+      focusRingColor={currentTheme.colors.primary}
+      focusRingWidth={3}
+      focusScale={isTV ? 1.06 : 1.04}
     >
       <FastImage
         source={{ uri: item.poster }}
@@ -129,7 +136,7 @@ export const MoreLikeThisSection: React.FC<MoreLikeThisSectionProps> = ({
       <Text style={[styles.title, { color: currentTheme.colors.mediumEmphasis, fontSize: isTV ? 14 : isLargeTablet ? 13 : isTablet ? 13 : 13, lineHeight: isTV ? 20 : 18 }]} numberOfLines={2}>
         {item.name}
       </Text>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 
   if (loadingRecommendations) {

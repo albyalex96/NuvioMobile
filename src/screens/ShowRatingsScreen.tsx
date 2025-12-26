@@ -6,7 +6,6 @@ import {
   ScrollView,
   ActivityIndicator,
   SafeAreaView,
-  TouchableOpacity,
   Platform,
   StatusBar,
 } from 'react-native';
@@ -34,6 +33,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
 import Animated, { FadeIn, SlideInRight, withTiming, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { logger } from '../utils/logger';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 type RootStackParamList = {
   ShowRatings: { showId: number };
@@ -140,7 +140,7 @@ const RatingSourceToggle = memo(({ ratingSource, setRatingSource, theme }: {
       {['tmdb', 'imdb', 'tvmaze'].map((source) => {
         const isActive = ratingSource === source;
         return (
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             key={source}
             style={[
               styles.sourceButton,
@@ -148,6 +148,10 @@ const RatingSourceToggle = memo(({ ratingSource, setRatingSource, theme }: {
               isActive && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
             ]}
             onPress={() => setRatingSource(source as RatingSource)}
+            enableTVFocus={Platform.isTV}
+            preset="pill"
+            focusBorderRadius={8}
+            hasTVPreferredFocus={Platform.isTV && isActive}
           >
             <Text 
               style={{
@@ -158,7 +162,7 @@ const RatingSourceToggle = memo(({ ratingSource, setRatingSource, theme }: {
             >
               {source.toUpperCase()}
             </Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         );
       })}
     </View>

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
@@ -42,6 +41,7 @@ import { useCustomCatalogNames } from '../hooks/useCustomCatalogNames';
 import { mmkvStorage } from '../services/mmkvStorage';
 import { catalogService, DataSource, StreamingContent } from '../services/catalogService';
 import { tmdbService } from '../services/tmdbService';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 type CatalogScreenProps = {
   route: RouteProp<RootStackParamList, 'Catalog'>;
@@ -762,7 +762,7 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
     const aspectRatio = shape === 'landscape' ? 16 / 9 : (shape === 'square' ? 1 : 2 / 3);
 
     return (
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={[
           styles.item,
           {
@@ -772,6 +772,9 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
         ]}
         onPress={() => navigation.navigate('Metadata', { id: item.id, type: item.type, addonId })}
         activeOpacity={0.7}
+        enableTVFocus={Platform.isTV}
+        preset="poster"
+        focusBorderRadius={12}
       >
         <FastImage
           source={{ uri: optimizePosterUrl(item.poster) }}
@@ -837,7 +840,7 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
             {item.name}
           </Text>
         )}
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     );
   }, [navigation, styles, effectiveNumColumns, effectiveItemWidth, screenData, type, nowPlayingMovies, colors.white, colors.mediumGray, optimizePosterUrl, addonId, isDarkMode, showTitles]);
 
@@ -847,12 +850,16 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
       <Text style={styles.emptyText}>
         No content found
       </Text>
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={styles.button}
         onPress={handleRefresh}
+        enableTVFocus={Platform.isTV}
+        preset="button"
+        focusBorderRadius={14}
+        hasTVPreferredFocus={Platform.isTV}
       >
         <Text style={styles.buttonText}>Try Again</Text>
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     </View>
   );
 
@@ -862,12 +869,16 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
       <Text style={styles.errorText}>
         {error}
       </Text>
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={styles.button}
         onPress={() => loadItems(true)}
+        enableTVFocus={Platform.isTV}
+        preset="button"
+        focusBorderRadius={14}
+        hasTVPreferredFocus={Platform.isTV}
       >
         <Text style={styles.buttonText}>Retry</Text>
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     </View>
   );
 
@@ -885,13 +896,17 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
         <View style={styles.header}>
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            enableTVFocus={Platform.isTV}
+            preset="listRow"
+            focusBorderRadius={12}
+            hasTVPreferredFocus={Platform.isTV}
           >
             <MaterialIcons name="chevron-left" size={28} color={colors.white} />
             <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
         <Text style={styles.headerTitle}>{displayName || originalName || `${type.charAt(0).toUpperCase() + type.slice(1)}s`}</Text>
         {renderLoadingState()}
@@ -904,13 +919,17 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
         <View style={styles.header}>
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            enableTVFocus={Platform.isTV}
+            preset="listRow"
+            focusBorderRadius={12}
+            hasTVPreferredFocus={Platform.isTV}
           >
             <MaterialIcons name="chevron-left" size={28} color={colors.white} />
             <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
         <Text style={styles.headerTitle}>{displayName || `${type.charAt(0).toUpperCase() + type.slice(1)}s`}</Text>
         {renderErrorState()}
@@ -922,13 +941,17 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          enableTVFocus={Platform.isTV}
+          preset="listRow"
+          focusBorderRadius={12}
+          hasTVPreferredFocus={Platform.isTV}
         >
           <MaterialIcons name="chevron-left" size={28} color={colors.white} />
           <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
       </View>
       <Text style={styles.headerTitle}>{displayName || `${type.charAt(0).toUpperCase() + type.slice(1)}s`}</Text>
 
@@ -943,18 +966,21 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
             {catalogExtras.map(extra => (
               <React.Fragment key={extra.name}>
                 {/* All option - clears filter */}
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[
                     styles.filterChip,
                     (extra.name === 'genre' ? !activeGenreFilter : !selectedFilters[extra.name]) && styles.filterChipActive
                   ]}
                   onPress={() => handleFilterChange(extra.name, undefined)}
+                  enableTVFocus={Platform.isTV}
+                  preset="pill"
+                  focusBorderRadius={16}
                 >
                   <Text style={[
                     styles.filterChipText,
                     (extra.name === 'genre' ? !activeGenreFilter : !selectedFilters[extra.name]) && styles.filterChipTextActive
                   ]}>All</Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
 
                 {/* Filter options from catalog extra */}
                 {extra.options?.map(option => {
@@ -962,15 +988,19 @@ const CatalogScreen: React.FC<CatalogScreenProps> = ({ route, navigation }) => {
                     ? activeGenreFilter === option
                     : selectedFilters[extra.name] === option;
                   return (
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       key={option}
                       style={[styles.filterChip, isActive && styles.filterChipActive]}
                       onPress={() => handleFilterChange(extra.name, option)}
+                      enableTVFocus={Platform.isTV}
+                      preset="pill"
+                      focusBorderRadius={16}
+                      hasTVPreferredFocus={Platform.isTV && isActive}
                     >
                       <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
                         {option}
                       </Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   );
                 })}
               </React.Fragment>

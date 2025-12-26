@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform, useWindowDimensions, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, Platform, useWindowDimensions, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { WyzieSubtitle, SubtitleCue } from '../utils/playerTypes';
 import { getTrackDisplayName, formatLanguage } from '../utils/playerUtils';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 interface SubtitleModalsProps {
   showSubtitleModal: boolean;
@@ -65,13 +66,21 @@ const MorphingTab = ({ label, isSelected, onPress }: any) => {
   }));
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={{ flex: 1 }}>
+    <FocusableTouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={{ flex: 1 }}
+      enableTVFocus={Platform.isTV}
+      preset="pill"
+      focusBorderRadius={12}
+      hasTVPreferredFocus={Platform.isTV && isSelected}
+    >
       <Animated.View style={[{ paddingVertical: 8, alignItems: 'center', justifyContent: 'center' }, animatedStyle]}>
         <Text style={{ color: isSelected ? 'black' : 'white', fontWeight: isSelected ? '700' : '400', fontSize: 13 }}>
           {label}
         </Text>
       </Animated.View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 };
 
@@ -112,11 +121,11 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
   if (!showSubtitleModal) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} zIndex={9999}>
+    <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>
       {/* Backdrop */}
-      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={handleClose}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} focusable={false}>
         <Animated.View entering={FadeIn} exiting={FadeOut} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} />
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Centered Modal Container */}
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
@@ -149,21 +158,29 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
             <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
               {activeTab === 'built-in' && (
                 <View style={{ gap: 8 }}>
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     onPress={() => { selectTextTrack(-1); setSelectedOnlineSubtitleId(null); }}
                     style={{ padding: 10, borderRadius: 12, backgroundColor: selectedTextTrack === -1 ? 'white' : 'rgba(242, 184, 181)' }}
+                    enableTVFocus={Platform.isTV}
+                    preset="listRow"
+                    focusBorderRadius={12}
+                    hasTVPreferredFocus={Platform.isTV && selectedTextTrack === -1}
                   >
                     <Text style={{ color: selectedTextTrack === -1 ? 'black' : 'rgba(96, 20, 16)', fontWeight: '600' }}>None</Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                   {ksTextTracks.map((track) => (
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       key={track.id}
                       onPress={() => { selectTextTrack(track.id); setSelectedOnlineSubtitleId(null); }}
                       style={{ padding: 10, borderRadius: 12, backgroundColor: selectedTextTrack === track.id ? 'white' : 'rgba(255,255,255,0.05)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+                      enableTVFocus={Platform.isTV}
+                      preset="listRow"
+                      focusBorderRadius={12}
+                      hasTVPreferredFocus={Platform.isTV && selectedTextTrack === track.id}
                     >
                       <Text style={{ color: selectedTextTrack === track.id ? 'black' : 'white' }}>{getTrackDisplayName(track)}</Text>
                       {selectedTextTrack === track.id && <MaterialIcons name="check" size={18} color="black" />}
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   ))}
                 </View>
               )}
@@ -171,23 +188,34 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
               {activeTab === 'addon' && (
                 <View style={{ gap: 8 }}>
                   {availableSubtitles.length === 0 ? (
-                    <TouchableOpacity onPress={fetchAvailableSubtitles} style={{ padding: 40, alignItems: 'center', opacity: 0.5 }}>
+                    <FocusableTouchableOpacity
+                      onPress={fetchAvailableSubtitles}
+                      style={{ padding: 40, alignItems: 'center', opacity: 0.8 }}
+                      enableTVFocus={Platform.isTV}
+                      preset="card"
+                      focusBorderRadius={16}
+                      hasTVPreferredFocus={Platform.isTV}
+                    >
                       <MaterialIcons name="cloud-download" size={32} color="white" />
                       <Text style={{ color: 'white', marginTop: 10 }}>Search Online Subtitles</Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   ) : (
                     availableSubtitles.map((sub) => (
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         key={sub.id}
                         onPress={() => { setSelectedOnlineSubtitleId(sub.id); loadWyzieSubtitle(sub); }}
-                        style={{ padding: 5,paddingLeft: 8, paddingRight: 10, borderRadius: 12, backgroundColor: selectedOnlineSubtitleId === sub.id ? 'white' : 'rgba(255,255,255,0.05)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', textAlignVertical: 'center' }}
+                        style={{ padding: 5, paddingLeft: 8, paddingRight: 10, borderRadius: 12, backgroundColor: selectedOnlineSubtitleId === sub.id ? 'white' : 'rgba(255,255,255,0.05)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+                        enableTVFocus={Platform.isTV}
+                        preset="listRow"
+                        focusBorderRadius={12}
+                        hasTVPreferredFocus={Platform.isTV && selectedOnlineSubtitleId === sub.id}
                       >
                         <View>
                           <Text style={{ marginLeft: 5, color: selectedOnlineSubtitleId === sub.id ? 'black' : 'white', fontWeight: '600' }}>{sub.display}</Text>
                           <Text style={{ marginLeft: 5, color: selectedOnlineSubtitleId === sub.id ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)', fontSize: 11, paddingBottom: 3 }}>{formatLanguage(sub.language)}</Text>
                         </View>
                         {selectedOnlineSubtitleId === sub.id && <MaterialIcons name="check" size={18} color="black" />}
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     ))
                   )}
                 </View>
@@ -233,7 +261,7 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                       <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginLeft: 6, fontWeight: '600' }}>Quick Presets</Text>
                     </View>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         onPress={() => {
                           setSubtitleTextColor('#FFFFFF'); setSubtitleBgOpacity(0.7); setSubtitleTextShadow(true);
                           setSubtitleOutline(true); setSubtitleOutlineColor('#000000'); setSubtitleOutlineWidth(4);
@@ -241,33 +269,45 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                           setSubtitleLineHeightMultiplier(1.2);
                         }}
                         style={{ paddingHorizontal: chipPadH, paddingVertical: chipPadV, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={20}
                       >
                         <Text style={{ color: '#fff', fontWeight: '600', fontSize: isCompact ? 11 : 12 }}>Default</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </FocusableTouchableOpacity>
+                      <FocusableTouchableOpacity
                         onPress={() => {
                           setSubtitleTextColor('#FFD700'); setSubtitleOutline(true); setSubtitleOutlineColor('#000000'); setSubtitleOutlineWidth(4); setSubtitleBgOpacity(0.3); setSubtitleTextShadow(false);
                         }}
                         style={{ paddingHorizontal: chipPadH, paddingVertical: chipPadV, borderRadius: 20, backgroundColor: 'rgba(255,215,0,0.12)', borderWidth: 1, borderColor: 'rgba(255,215,0,0.35)' }}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={20}
                       >
                         <Text style={{ color: '#FFD700', fontWeight: '700', fontSize: isCompact ? 11 : 12 }}>Yellow</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </FocusableTouchableOpacity>
+                      <FocusableTouchableOpacity
                         onPress={() => {
                           setSubtitleTextColor('#FFFFFF'); setSubtitleOutline(true); setSubtitleOutlineColor('#000000'); setSubtitleOutlineWidth(3); setSubtitleBgOpacity(0.0); setSubtitleTextShadow(false); setSubtitleLetterSpacing(0.5);
                         }}
                         style={{ paddingHorizontal: chipPadH, paddingVertical: chipPadV, borderRadius: 20, backgroundColor: 'rgba(34,197,94,0.12)', borderWidth: 1, borderColor: 'rgba(34,197,94,0.35)' }}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={20}
                       >
                         <Text style={{ color: '#22C55E', fontWeight: '700', fontSize: isCompact ? 11 : 12 }}>High Contrast</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </FocusableTouchableOpacity>
+                      <FocusableTouchableOpacity
                         onPress={() => {
                           setSubtitleTextColor('#FFFFFF'); setSubtitleBgOpacity(0.6); setSubtitleTextShadow(true); setSubtitleOutline(true); setSubtitleAlign('center'); setSubtitleLineHeightMultiplier(1.3);
                         }}
                         style={{ paddingHorizontal: chipPadH, paddingVertical: chipPadV, borderRadius: 20, backgroundColor: 'rgba(59,130,246,0.12)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.35)' }}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={20}
                       >
                         <Text style={{ color: '#3B82F6', fontWeight: '700', fontSize: isCompact ? 11 : 12 }}>Large</Text>
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     </View>
                   </View>
 
@@ -283,15 +323,27 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                         <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 8 }}>Font Size</Text>
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <TouchableOpacity onPress={decreaseSubtitleSize} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={decreaseSubtitleSize}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="remove" size={18} color="#FFFFFF" />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                         <View style={{ minWidth: 42, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)' }}>
                           <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '700' }}>{subtitleSize}</Text>
                         </View>
-                        <TouchableOpacity onPress={increaseSubtitleSize} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={increaseSubtitleSize}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="add" size={18} color="#FFFFFF" />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -299,12 +351,15 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                         <MaterialIcons name="layers" size={16} color="rgba(255,255,255,0.7)" />
                         <Text style={{ color: '#fff', fontWeight: '600', marginLeft: 8 }}>Show Background</Text>
                       </View>
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         style={{ width: isCompact ? 48 : 54, height: isCompact ? 28 : 30, backgroundColor: subtitleBackground ? 'white' : 'rgba(255,255,255,0.25)', borderRadius: 15, justifyContent: 'center', alignItems: subtitleBackground ? 'flex-end' : 'flex-start', paddingHorizontal: 3 }}
                         onPress={toggleSubtitleBackground}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={15}
                       >
                         <View style={{ width: 24, height: 24, backgroundColor: subtitleBackground ? 'black' : 'white', borderRadius: 12 }} />
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     </View>
                   </View>
 
@@ -321,7 +376,14 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                       </View>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
                         {['#FFFFFF', '#FFD700', '#00E5FF', '#FF5C5C', '#00FF88', '#9b59b6', '#f97316'].map(c => (
-                          <TouchableOpacity key={c} onPress={() => setSubtitleTextColor(c)} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c, borderWidth: 2, borderColor: subtitleTextColor === c ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+                          <FocusableTouchableOpacity
+                            key={c}
+                            onPress={() => setSubtitleTextColor(c)}
+                            style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c, borderWidth: 2, borderColor: subtitleTextColor === c ? '#fff' : 'rgba(255,255,255,0.3)' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={11}
+                          />
                         ))}
                       </View>
                     </View>
@@ -329,95 +391,175 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                       <Text style={{ color: 'white', fontWeight: '600' }}>Align</Text>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                         {([ { key: 'left', icon: 'format-align-left' }, { key: 'center', icon: 'format-align-center' }, { key: 'right', icon: 'format-align-right' } ] as const).map(a => (
-                          <TouchableOpacity key={a.key} onPress={() => setSubtitleAlign(a.key)} style={{ paddingHorizontal: isCompact ? 8 : 10, paddingVertical: isCompact ? 4 : 6, borderRadius: 8, backgroundColor: subtitleAlign === a.key ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}>
+                          <FocusableTouchableOpacity
+                            key={a.key}
+                            onPress={() => setSubtitleAlign(a.key)}
+                            style={{ paddingHorizontal: isCompact ? 8 : 10, paddingVertical: isCompact ? 4 : 6, borderRadius: 8, backgroundColor: subtitleAlign === a.key ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="pill"
+                            focusBorderRadius={8}
+                          >
                             <MaterialIcons name={a.icon as any} size={18} color="#FFFFFF" />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                         ))}
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Text style={{ color: 'white', fontWeight: '600' }}>Bottom Offset</Text>
                       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                        <TouchableOpacity onPress={() => setSubtitleBottomOffset(Math.max(0, subtitleBottomOffset - 5))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={() => setSubtitleBottomOffset(Math.max(0, subtitleBottomOffset - 5))}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="keyboard-arrow-down" color="#fff" size={20} />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                         <View style={{ minWidth: 46, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)' }}>
                           <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>{subtitleBottomOffset}</Text>
                         </View>
-                        <TouchableOpacity onPress={() => setSubtitleBottomOffset(subtitleBottomOffset + 5)} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={() => setSubtitleBottomOffset(subtitleBottomOffset + 5)}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="keyboard-arrow-up" color="#fff" size={20} />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Text style={{ color: 'white', fontWeight: '600' }}>Background Opacity</Text>
                       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                        <TouchableOpacity onPress={() => setSubtitleBgOpacity(Math.max(0, +(subtitleBgOpacity - 0.1).toFixed(1)))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={() => setSubtitleBgOpacity(Math.max(0, +(subtitleBgOpacity - 0.1).toFixed(1)))}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="remove" color="#fff" size={18} />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                         <View style={{ minWidth: 48, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)' }}>
                           <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>{subtitleBgOpacity.toFixed(1)}</Text>
                         </View>
-                        <TouchableOpacity onPress={() => setSubtitleBgOpacity(Math.min(1, +(subtitleBgOpacity + 0.1).toFixed(1)))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={() => setSubtitleBgOpacity(Math.min(1, +(subtitleBgOpacity + 0.1).toFixed(1)))}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="add" color="#fff" size={18} />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Text style={{ color: 'white', fontWeight: '600' }}>Text Shadow</Text>
-                      <TouchableOpacity onPress={() => setSubtitleTextShadow(!subtitleTextShadow)} style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: subtitleTextShadow ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center' }}>
+                      <FocusableTouchableOpacity
+                        onPress={() => setSubtitleTextShadow(!subtitleTextShadow)}
+                        style={{ paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: subtitleTextShadow ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', alignItems: 'center' }}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={10}
+                      >
                         <Text style={{ color: '#fff', fontWeight: '700' }}>{subtitleTextShadow ? 'On' : 'Off'}</Text>
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Text style={{ color: 'white' }}>Outline Color</Text>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                         {['#000000', '#FFFFFF', '#00E5FF', '#FF5C5C'].map(c => (
-                          <TouchableOpacity key={c} onPress={() => setSubtitleOutlineColor(c)} style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c, borderWidth: 2, borderColor: subtitleOutlineColor === c ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+                          <FocusableTouchableOpacity
+                            key={c}
+                            onPress={() => setSubtitleOutlineColor(c)}
+                            style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: c, borderWidth: 2, borderColor: subtitleOutlineColor === c ? '#fff' : 'rgba(255,255,255,0.3)' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={11}
+                          />
                         ))}
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Text style={{ color: 'white' }}>Outline Width</Text>
                       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                        <TouchableOpacity onPress={() => setSubtitleOutlineWidth(Math.max(0, subtitleOutlineWidth - 1))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={() => setSubtitleOutlineWidth(Math.max(0, subtitleOutlineWidth - 1))}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="remove" color="#fff" size={18} />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                         <View style={{ minWidth: 42, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)' }}>
                           <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>{subtitleOutlineWidth}</Text>
                         </View>
-                        <TouchableOpacity onPress={() => setSubtitleOutlineWidth(subtitleOutlineWidth + 1)} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                        <FocusableTouchableOpacity
+                          onPress={() => setSubtitleOutlineWidth(subtitleOutlineWidth + 1)}
+                          style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                          enableTVFocus={Platform.isTV}
+                          preset="icon"
+                          focusBorderRadius={controlBtn.radius}
+                        >
                           <MaterialIcons name="add" color="#fff" size={18} />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                       </View>
                     </View>
                     <View style={{ flexDirection: isCompact ? 'column' : 'row', justifyContent: 'space-between', gap: 12 }}>
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: 'white', fontWeight: '600' }}>Letter Spacing</Text>
                         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-                          <TouchableOpacity onPress={() => setSubtitleLetterSpacing(Math.max(0, +(subtitleLetterSpacing - 0.5).toFixed(1)))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                          <FocusableTouchableOpacity
+                            onPress={() => setSubtitleLetterSpacing(Math.max(0, +(subtitleLetterSpacing - 0.5).toFixed(1)))}
+                            style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={controlBtn.radius}
+                          >
                             <MaterialIcons name="remove" color="#fff" size={18} />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                           <View style={{ minWidth: 48, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)' }}>
                             <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>{subtitleLetterSpacing.toFixed(1)}</Text>
                           </View>
-                          <TouchableOpacity onPress={() => setSubtitleLetterSpacing(+(subtitleLetterSpacing + 0.5).toFixed(1))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                          <FocusableTouchableOpacity
+                            onPress={() => setSubtitleLetterSpacing(+(subtitleLetterSpacing + 0.5).toFixed(1))}
+                            style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={controlBtn.radius}
+                          >
                             <MaterialIcons name="add" color="#fff" size={18} />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                         </View>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: 'white', fontWeight: '600' }}>Line Height</Text>
                         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-                          <TouchableOpacity onPress={() => setSubtitleLineHeightMultiplier(Math.max(1, +(subtitleLineHeightMultiplier - 0.1).toFixed(1)))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                          <FocusableTouchableOpacity
+                            onPress={() => setSubtitleLineHeightMultiplier(Math.max(1, +(subtitleLineHeightMultiplier - 0.1).toFixed(1)))}
+                            style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={controlBtn.radius}
+                          >
                             <MaterialIcons name="remove" color="#fff" size={18} />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                           <View style={{ minWidth: 48, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)' }}>
                             <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>{subtitleLineHeightMultiplier.toFixed(1)}</Text>
                           </View>
-                          <TouchableOpacity onPress={() => setSubtitleLineHeightMultiplier(+(subtitleLineHeightMultiplier + 0.1).toFixed(1))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                          <FocusableTouchableOpacity
+                            onPress={() => setSubtitleLineHeightMultiplier(+(subtitleLineHeightMultiplier + 0.1).toFixed(1))}
+                            style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={controlBtn.radius}
+                          >
                             <MaterialIcons name="add" color="#fff" size={18} />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                         </View>
                       </View>
                     </View>
@@ -425,21 +567,33 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Text style={{ color: 'white', fontWeight: '600' }}>Timing Offset (s)</Text>
                         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                          <TouchableOpacity onPress={() => setSubtitleOffsetSec(+(subtitleOffsetSec - 0.1).toFixed(1))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                          <FocusableTouchableOpacity
+                            onPress={() => setSubtitleOffsetSec(+(subtitleOffsetSec - 0.1).toFixed(1))}
+                            style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={controlBtn.radius}
+                          >
                             <MaterialIcons name="remove" color="#fff" size={18} />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                           <View style={{ minWidth: 60, paddingHorizontal: 6, paddingVertical: 4, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.12)' }}>
                             <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>{subtitleOffsetSec.toFixed(1)}</Text>
                           </View>
-                          <TouchableOpacity onPress={() => setSubtitleOffsetSec(+(subtitleOffsetSec + 0.1).toFixed(1))} style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                          <FocusableTouchableOpacity
+                            onPress={() => setSubtitleOffsetSec(+(subtitleOffsetSec + 0.1).toFixed(1))}
+                            style={{ width: controlBtn.size, height: controlBtn.size, borderRadius: controlBtn.radius, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' }}
+                            enableTVFocus={Platform.isTV}
+                            preset="icon"
+                            focusBorderRadius={controlBtn.radius}
+                          >
                             <MaterialIcons name="add" color="#fff" size={18} />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                         </View>
                       </View>
                       <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 6 }}>Nudge subtitles earlier (-) or later (+) to sync if needed.</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end', marginTop: 8 }}>
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         onPress={() => {
                           setSubtitleTextColor('#FFFFFF'); setSubtitleBgOpacity(0.7); setSubtitleTextShadow(true);
                           setSubtitleOutline(true); setSubtitleOutlineColor('#000000'); setSubtitleOutlineWidth(4);
@@ -447,9 +601,12 @@ export const SubtitleModals: React.FC<SubtitleModalsProps> = ({
                           setSubtitleLineHeightMultiplier(1.2); setSubtitleOffsetSec(0);
                         }}
                         style={{ paddingHorizontal: chipPadH, paddingVertical: chipPadV, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={8}
                       >
                         <Text style={{ color: '#fff', fontWeight: '600', fontSize: isCompact ? 12 : 14 }}>Reset to defaults</Text>
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     </View>
                   </View>
                 </View>

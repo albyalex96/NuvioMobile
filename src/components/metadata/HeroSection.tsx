@@ -56,6 +56,7 @@ import { TMDBService } from '../../services/tmdbService';
 import TrailerService from '../../services/trailerService';
 import TrailerPlayer from '../video/TrailerPlayer';
 import { HERO_HEIGHT, SCREEN_WIDTH as width, IS_TABLET as isTablet } from '../../constants/dimensions';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 const { height } = Dimensions.get('window');
 
@@ -344,7 +345,7 @@ const ActionButtons = memo(({
     <Animated.View style={[isTablet ? styles.tabletActionButtons : styles.actionButtons, animatedStyle]}>
       {/* Single Row Layout - Play, Save, and optionally Collection/Ratings */}
       <View style={styles.singleRowLayout}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={[
             playButtonStyle,
             isTablet && styles.tabletPlayButton,
@@ -354,6 +355,10 @@ const ActionButtons = memo(({
           activeOpacity={0.85}
           hasTVPreferredFocus={Platform.isTV}
           focusable={Platform.isTV}
+          enableTVFocus={Platform.isTV}
+          focusBorderRadius={isTablet ? 20 : 18}
+          focusRingWidth={3}
+          focusScale={1.04}
         >
           <MaterialIcons
             name={(() => {
@@ -366,9 +371,9 @@ const ActionButtons = memo(({
             color={isWatched && type === 'movie' ? "#fff" : "#000"}
           />
           <Text style={[playButtonTextStyle, isTablet && styles.tabletPlayButtonText]}>{finalPlayButtonText}</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={[
             styles.actionButton,
             styles.infoButton,
@@ -378,6 +383,10 @@ const ActionButtons = memo(({
           onPress={handleSaveAction}
           activeOpacity={0.85}
           focusable={Platform.isTV}
+          enableTVFocus={Platform.isTV}
+          focusBorderRadius={isTablet ? 20 : 18}
+          focusRingWidth={3}
+          focusScale={1.04}
         >
           {Platform.OS === 'ios' ? (
             GlassViewComp && liquidGlassAvailable ? (
@@ -399,15 +408,19 @@ const ActionButtons = memo(({
           <Text style={[styles.infoButtonText, isTablet && styles.tabletInfoButtonText]}>
             {inLibrary ? 'Saved' : 'Save'}
           </Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
         {/* Trakt Collection Button */}
         {hasTraktCollection && (
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.iconButton, isTablet && styles.tabletIconButton, styles.singleRowIconButton]}
             onPress={handleCollectionAction}
             activeOpacity={0.85}
             focusable={Platform.isTV}
+            enableTVFocus={Platform.isTV}
+            focusBorderRadius={999}
+            focusRingWidth={3}
+            focusScale={1.06}
           >
             {Platform.OS === 'ios' ? (
               GlassViewComp && liquidGlassAvailable ? (
@@ -426,16 +439,20 @@ const ActionButtons = memo(({
               size={isTablet ? 28 : 24}
               color={isInCollection ? "#3498DB" : currentTheme.colors.white}
             />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         )}
 
         {/* Ratings Button (for series) */}
         {hasRatings && (
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.iconButton, isTablet && styles.tabletIconButton, styles.singleRowIconButton]}
             onPress={handleRatingsPress}
             activeOpacity={0.85}
             focusable={Platform.isTV}
+            enableTVFocus={Platform.isTV}
+            focusBorderRadius={999}
+            focusRingWidth={3}
+            focusScale={1.06}
           >
             {Platform.OS === 'ios' ? (
               GlassViewComp && liquidGlassAvailable ? (
@@ -454,7 +471,7 @@ const ActionButtons = memo(({
               size={isTablet ? 28 : 24}
               color={currentTheme.colors.white}
             />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         )}
       </View>
     </Animated.View>
@@ -1757,7 +1774,7 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({
             right: width >= 768 ? 32 : 16,
             zIndex: 1000,
           }}>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               onPress={() => {
                 // Extract episode info if it's a series
                 let episodeData = null;
@@ -1782,6 +1799,10 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({
               }}
               activeOpacity={0.7}
               focusable={Platform.isTV}
+              enableTVFocus={Platform.isTV}
+              focusBorderRadius={20}
+              focusRingWidth={3}
+              focusScale={1.06}
               style={{
                 padding: 8,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1793,19 +1814,27 @@ const HeroSection: React.FC<HeroSectionProps> = memo(({
                 size={24}
                 color="white"
               />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </Animated.View>
         )}
 
         <Animated.View style={styles.backButtonContainer}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack} focusable={Platform.isTV}>
+          <FocusableTouchableOpacity
+            style={styles.backButton}
+            onPress={handleBack}
+            focusable={Platform.isTV}
+            enableTVFocus={Platform.isTV}
+            focusBorderRadius={999}
+            focusRingWidth={3}
+            focusScale={1.06}
+          >
             <MaterialIcons
               name="arrow-back"
               size={28}
               color="#fff"
               style={styles.backButtonIcon}
             />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </Animated.View>
 
         {/* Ultra-light Gradient with subtle dynamic background blend */}

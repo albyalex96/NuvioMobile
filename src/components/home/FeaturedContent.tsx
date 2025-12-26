@@ -30,6 +30,7 @@ import { SkeletonFeatured } from './SkeletonLoaders';
 import { hasValidLogoFormat, isTmdbUrl } from '../../utils/logoUtils';
 import { logger } from '../../utils/logger';
 import { useTheme } from '../../contexts/ThemeContext';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 interface FeaturedContentProps {
   featuredContent: StreamingContent | null;
@@ -495,7 +496,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
           )}
 
           <Animated.View style={[styles.tabletButtons as ViewStyle, buttonsAnimatedStyle]}>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[styles.tabletPlayButton as ViewStyle, { backgroundColor: currentTheme.colors.white }]}
               onPress={() => {
                 if (featuredContent) {
@@ -507,12 +508,17 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
               }}
               activeOpacity={0.8}
               hasTVPreferredFocus={Platform.isTV}
+              enableTVFocus={Platform.isTV}
+              focusBorderRadius={30}
+              focusRingColor={currentTheme.colors.primary}
+              focusRingWidth={3}
+              focusScale={1.04}
             >
               <MaterialIcons name="play-arrow" size={28} color={currentTheme.colors.black} />
               <Text style={[styles.tabletPlayButtonText as TextStyle, { color: currentTheme.colors.black }]}>
                 Play Now
               </Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
 
             <TouchableOpacity
               style={[styles.tabletSecondaryButton as ViewStyle, { backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.3)' }]}
@@ -631,7 +637,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
                     </Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     style={[styles.playButton as ViewStyle, { backgroundColor: currentTheme.colors.white }]}
                     onPress={() => {
                       if (featuredContent) {
@@ -643,12 +649,17 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
                     }}
                     activeOpacity={0.8}
                     hasTVPreferredFocus={Platform.isTV}
+                    enableTVFocus={Platform.isTV}
+                    focusBorderRadius={30}
+                    focusRingColor={currentTheme.colors.primary}
+                    focusRingWidth={3}
+                    focusScale={1.04}
                   >
                     <MaterialIcons name="play-arrow" size={24} color={currentTheme.colors.black} />
                     <Text style={[styles.playButtonText as TextStyle, { color: currentTheme.colors.black }]}>
                       Play
                     </Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.infoButton as ViewStyle}

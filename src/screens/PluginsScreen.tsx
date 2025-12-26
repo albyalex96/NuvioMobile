@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Switch,
   TextInput,
   ScrollView,
@@ -25,6 +24,7 @@ import { useSettings } from '../hooks/useSettings';
 import { localScraperService, pluginService, ScraperInfo, RepositoryInfo } from '../services/pluginService';
 import { logger } from '../utils/logger';
 import { useTheme } from '../contexts/ThemeContext';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -773,23 +773,23 @@ const CollapsibleSection: React.FC<{
   styles: any;
 }> = ({ title, children, isExpanded, onToggle, colors, styles }) => (
   <View style={styles.collapsibleSection}>
-    <TouchableOpacity style={styles.collapsibleHeader} onPress={onToggle}>
+    <FocusableTouchableOpacity style={styles.collapsibleHeader} onPress={onToggle}>
       <Text style={styles.collapsibleTitle}>{title}</Text>
       <Ionicons
         name={isExpanded ? "chevron-up" : "chevron-down"}
         size={20}
         color={colors.mediumGray}
       />
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
     {isExpanded && <View style={styles.collapsibleContent}>{children}</View>}
   </View>
 );
 
 // Helper component for info tooltips
 const InfoTooltip: React.FC<{ text: string; colors: any }> = ({ text, colors }) => (
-  <TouchableOpacity style={{ marginLeft: 8 }}>
+  <View style={{ marginLeft: 8 }}>
     <Ionicons name="information-circle-outline" size={16} color={colors.mediumGray} />
-  </TouchableOpacity>
+  </View>
 );
 
 // Helper component for status badges
@@ -1361,22 +1361,22 @@ const PluginsScreen: React.FC = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
           <Text style={styles.backText}>Settings</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
         <View style={styles.headerActions}>
           {/* Help Button */}
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={styles.headerButton}
             onPress={() => setShowHelpModal(true)}
           >
             <Ionicons name="help-circle-outline" size={20} color={colors.primary} />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
       </View>
 
@@ -1485,7 +1485,7 @@ const PluginsScreen: React.FC = () => {
                   </View>
                   <View style={styles.repositoryActions}>
                     {repo.id !== currentRepositoryId && (
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         style={[styles.repositoryActionButton, styles.repositoryActionButtonPrimary]}
                         onPress={() => handleSwitchRepository(repo.id)}
                         disabled={switchingRepository === repo.id}
@@ -1495,9 +1495,9 @@ const PluginsScreen: React.FC = () => {
                         ) : (
                           <Text style={styles.repositoryActionButtonText}>Switch</Text>
                         )}
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     )}
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       style={[styles.repositoryActionButton, styles.repositoryActionButtonSecondary]}
                       onPress={() => handleRefreshRepository()}
                       disabled={isRefreshing || switchingRepository !== null}
@@ -1507,14 +1507,14 @@ const PluginsScreen: React.FC = () => {
                       ) : (
                         <Text style={styles.repositoryActionButtonText}>Refresh</Text>
                       )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </FocusableTouchableOpacity>
+                    <FocusableTouchableOpacity
                       style={[styles.repositoryActionButton, styles.repositoryActionButtonDanger]}
                       onPress={() => handleRemoveRepository(repo.id)}
                       disabled={switchingRepository !== null}
                     >
                       <Text style={styles.repositoryActionButtonText}>Remove</Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   </View>
                 </View>
               ))}
@@ -1523,13 +1523,13 @@ const PluginsScreen: React.FC = () => {
 
 
           {/* Add Repository Button */}
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.button, styles.primaryButton, { marginTop: 16 }]}
             onPress={() => setShowAddRepositoryModal(true)}
             disabled={!settings.enableLocalScrapers || switchingRepository !== null}
           >
             <Text style={styles.buttonText}>Add New Repository</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </CollapsibleSection>
 
         {/* Available Plugins */}
@@ -1553,16 +1553,16 @@ const PluginsScreen: React.FC = () => {
                   placeholderTextColor={colors.mediumGray}
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <FocusableTouchableOpacity onPress={() => setSearchQuery('')}>
                     <Ionicons name="close-circle" size={20} color={colors.mediumGray} />
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 )}
               </View>
 
               {/* Filter Chips */}
               <View style={styles.filterContainer}>
                 {['all', 'movie', 'tv'].map((filter) => (
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     key={filter}
                     style={[
                       styles.filterChip,
@@ -1576,27 +1576,27 @@ const PluginsScreen: React.FC = () => {
                     ]}>
                       {filter === 'all' ? 'All' : filter === 'movie' ? 'Movies' : 'TV Shows'}
                     </Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 ))}
               </View>
 
               {/* Bulk Actions */}
               {filteredScrapers.length > 0 && (
                 <View style={styles.bulkActionsContainer}>
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     style={[styles.bulkActionButton, styles.bulkActionButtonEnabled]}
                     onPress={() => handleBulkToggle(true)}
                     disabled={isRefreshing}
                   >
                     <Text style={[styles.bulkActionButtonText, { color: '#34C759' }]}>Enable All</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
+                  </FocusableTouchableOpacity>
+                  <FocusableTouchableOpacity
                     style={[styles.bulkActionButton, styles.bulkActionButtonDisabled]}
                     onPress={() => handleBulkToggle(false)}
                     disabled={isRefreshing}
                   >
                     <Text style={[styles.bulkActionButtonText, { color: colors.mediumGray }]}>Disable All</Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 </View>
               )}
             </>
@@ -1620,12 +1620,12 @@ const PluginsScreen: React.FC = () => {
                 }
               </Text>
               {searchQuery && (
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[styles.button, styles.secondaryButton]}
                   onPress={() => setSearchQuery('')}
                 >
                   <Text style={styles.secondaryButtonText}>Clear Search</Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               )}
             </View>
           ) : (
@@ -1713,14 +1713,14 @@ const PluginsScreen: React.FC = () => {
                           numberOfLines={1}
                         />
                         {showboxSavedToken.length > 0 && (
-                          <TouchableOpacity onPress={() => setShowboxTokenVisible(v => !v)} accessibilityRole="button" accessibilityLabel={showboxTokenVisible ? 'Hide token' : 'Show token'} style={{ marginLeft: 10 }}>
+                          <FocusableTouchableOpacity onPress={() => setShowboxTokenVisible(v => !v)} accessibilityRole="button" accessibilityLabel={showboxTokenVisible ? 'Hide token' : 'Show token'} style={{ marginLeft: 10 }}>
                             <Ionicons name={showboxTokenVisible ? 'eye-off' : 'eye'} size={18} color={colors.primary} />
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                         )}
                       </View>
                       <View style={styles.buttonRow}>
                         {showboxUiToken !== showboxSavedToken && (
-                          <TouchableOpacity
+                          <FocusableTouchableOpacity
                             style={[styles.button, styles.primaryButton]}
                             onPress={async () => {
                               if (showboxScraperId) {
@@ -1731,9 +1731,9 @@ const PluginsScreen: React.FC = () => {
                             }}
                           >
                             <Text style={styles.buttonText}>Save</Text>
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                         )}
-                        <TouchableOpacity
+                        <FocusableTouchableOpacity
                           style={[styles.button, styles.secondaryButton]}
                           onPress={async () => {
                             setShowboxUiToken('');
@@ -1744,7 +1744,7 @@ const PluginsScreen: React.FC = () => {
                           }}
                         >
                           <Text style={styles.secondaryButtonText}>Clear</Text>
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                       </View>
                     </View>
                   )}
@@ -1849,7 +1849,7 @@ const PluginsScreen: React.FC = () => {
             {qualityOptions.map((quality) => {
               const isExcluded = (settings.excludedQualities || []).includes(quality);
               return (
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   key={quality}
                   style={[
                     styles.qualityChip,
@@ -1866,7 +1866,7 @@ const PluginsScreen: React.FC = () => {
                   ]}>
                     {isExcluded ? '✕ ' : ''}{quality}
                   </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               );
             })}
           </View>
@@ -1898,7 +1898,7 @@ const PluginsScreen: React.FC = () => {
             {languageOptions.map((language) => {
               const isExcluded = (settings.excludedLanguages || []).includes(language);
               return (
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   key={language}
                   style={[
                     styles.qualityChip,
@@ -1915,7 +1915,7 @@ const PluginsScreen: React.FC = () => {
                   ]}>
                     {isExcluded ? '✕ ' : ''}{language}
                   </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               );
             })}
           </View>
@@ -1964,12 +1964,12 @@ const PluginsScreen: React.FC = () => {
             <Text style={styles.modalText}>
               4. <Text style={{ fontWeight: '600' }}>Enable Scrapers</Text> - Turn on the scrapers you want to use for streaming
             </Text>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={styles.modalButton}
               onPress={() => setShowHelpModal(false)}
             >
               <Text style={styles.modalButtonText}>Got it!</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -2011,7 +2011,7 @@ const PluginsScreen: React.FC = () => {
 
               {/* Action Buttons */}
               <View style={styles.compactActions}>
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[styles.compactButton, styles.cancelButton]}
                   onPress={() => {
                     setShowAddRepositoryModal(false);
@@ -2019,9 +2019,9 @@ const PluginsScreen: React.FC = () => {
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
 
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[styles.compactButton, styles.addButton, (!newRepositoryUrl.trim() || isLoading) && styles.disabledButton]}
                   onPress={handleAddRepository}
                   disabled={!newRepositoryUrl.trim() || isLoading}
@@ -2031,7 +2031,7 @@ const PluginsScreen: React.FC = () => {
                   ) : (
                     <Text style={styles.addButtonText}>Add</Text>
                   )}
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               </View>
             </ScrollView>
           </View>

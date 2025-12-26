@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   FlatList,
   StatusBar,
   Platform,
@@ -17,6 +16,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useTraktContext } from '../contexts/TraktContext';
 import { mmkvStorage } from '../services/mmkvStorage';
 import CustomAlert from '../components/CustomAlert';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const ANDROID_STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 const PROFILE_STORAGE_KEY = 'user_profiles';
@@ -183,7 +183,7 @@ const ProfilesScreen: React.FC = () => {
 
   const renderItem = ({ item }: { item: Profile }) => (
     <View style={styles.profileItem}>
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={[
           styles.profileContent,
           item.isActive && {
@@ -211,14 +211,14 @@ const ProfilesScreen: React.FC = () => {
           )}
         </View>
         {!item.isActive && (
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={styles.deleteButton}
             onPress={() => handleDeleteProfile(item.id)}
           >
             <MaterialIcons name="delete" size={24} color={currentTheme.colors.error} />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         )}
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     </View>
   );
 
@@ -227,7 +227,7 @@ const ProfilesScreen: React.FC = () => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <View style={styles.header}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           onPress={handleBack}
           style={styles.backButton}
           activeOpacity={0.7}
@@ -237,7 +237,7 @@ const ProfilesScreen: React.FC = () => {
             size={24}
             color={currentTheme.colors.text}
           />
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
         <Text
           style={[
             styles.headerTitle,
@@ -260,7 +260,7 @@ const ProfilesScreen: React.FC = () => {
             </Text>
           }
           ListFooterComponent={
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.addButton,
                 { backgroundColor: currentTheme.colors.elevation2 }
@@ -271,7 +271,7 @@ const ProfilesScreen: React.FC = () => {
               <Text style={[styles.addButtonText, { color: currentTheme.colors.text }]}>
                 Add New Profile
               </Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           }
         />
       </View>
@@ -307,7 +307,7 @@ const ProfilesScreen: React.FC = () => {
             />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setNewProfileName('');
@@ -315,8 +315,8 @@ const ProfilesScreen: React.FC = () => {
                 }}
               >
                 <Text style={{ color: currentTheme.colors.textMuted }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </FocusableTouchableOpacity>
+              <FocusableTouchableOpacity
                 style={[
                   styles.modalButton,
                   styles.createButton,
@@ -325,7 +325,7 @@ const ProfilesScreen: React.FC = () => {
                 onPress={handleAddProfile}
               >
                 <Text style={{ color: '#fff' }}>Create</Text>
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             </View>
           </View>
         </View>

@@ -8,6 +8,7 @@ import Animated, {
   SlideOutRight,
 } from 'react-native-reanimated';
 import { Stream } from '../../../types/streams';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 interface SourcesModalProps {
   showSourcesModal: boolean;
@@ -168,7 +169,7 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({
                     const quality = getQualityFromTitle(stream.title) || stream.quality;
 
                     return (
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         key={`${providerId}-${index}`}
                         style={{
                           padding: 8,
@@ -181,6 +182,10 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({
                         onPress={() => handleStreamSelect(stream)}
                         activeOpacity={0.7}
                         disabled={isChangingSource === true}
+                        enableTVFocus={Platform.isTV}
+                        preset="listRow"
+                        focusBorderRadius={12}
+                        hasTVPreferredFocus={Platform.isTV && (isSelected || (providerId === sortedProviders[0]?.[0] && index === 0))}
                       >
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                           <View style={{ flex: 1 }}>
@@ -227,7 +232,7 @@ export const SourcesModal: React.FC<SourcesModalProps> = ({
                             )}
                           </View>
                         </View>
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     );
                   })}
                 </View>

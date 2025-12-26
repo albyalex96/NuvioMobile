@@ -45,6 +45,7 @@ import { useTraktContext } from '../../contexts/TraktContext';
 import { BlurView as ExpoBlurView } from 'expo-blur';
 import { useWatchProgress } from '../../hooks/useWatchProgress';
 import { streamCacheService } from '../../services/streamCacheService';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 interface AppleTVHeroProps {
   featuredContent: StreamingContent | null;
@@ -1177,7 +1178,7 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
             style={logoAnimatedStyle}
           >
             {currentItem.logo && !logoError[currentIndex] ? (
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => {
                   if (currentItem) {
@@ -1188,6 +1189,10 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
                   }
                 }}
                 focusable={Platform.isTV}
+                enableTVFocus={Platform.isTV}
+                focusBorderRadius={16}
+                focusRingWidth={3}
+                focusScale={1.03}
               >
                 <View
                   style={[
@@ -1211,9 +1216,9 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
                     }}
                   />
                 </View>
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             ) : (
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
                   if (currentItem) {
@@ -1224,13 +1229,17 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
                   }
                 }}
                 focusable={Platform.isTV}
+                enableTVFocus={Platform.isTV}
+                focusBorderRadius={16}
+                focusRingWidth={3}
+                focusScale={1.03}
               >
                 <View style={styles.titleContainer}>
                   <Text style={styles.title} numberOfLines={2}>
                     {currentItem.name}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             )}
           </Animated.View>
 
@@ -1253,12 +1262,16 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
           {/* Action Buttons - Play and Save buttons */}
           <View style={styles.buttonsContainer}>
             {/* Play Button */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[styles.playButton]}
               onPress={handlePlayAction}
               activeOpacity={0.85}
               hasTVPreferredFocus={Platform.isTV}
               focusable={Platform.isTV}
+              enableTVFocus={Platform.isTV}
+              focusBorderRadius={18}
+              focusRingWidth={3}
+              focusScale={1.04}
             >
               <MaterialIcons
                 name={playButtonText === 'Resume' ? "replay" : "play-arrow"}
@@ -1266,21 +1279,25 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
                 color="#000"
               />
               <Text style={styles.playButtonText}>{playButtonText}</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
 
             {/* Save Button */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={styles.saveButton}
               onPress={handleSaveAction}
               activeOpacity={0.85}
               focusable={Platform.isTV}
+              enableTVFocus={Platform.isTV}
+              focusBorderRadius={18}
+              focusRingWidth={3}
+              focusScale={1.04}
             >
               <MaterialIcons
                 name={inLibrary ? "bookmark" : "bookmark-outline"}
                 size={24}
                 color="white"
               />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
 
           {/* Pagination Dots */}

@@ -1,5 +1,6 @@
-import React, { memo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import React, { memo, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, Platform } from 'react-native';
+import { FocusableTouchableOpacity } from './common/FocusableTouchableOpacity';
 
 interface ProviderFilterProps {
   selectedProvider: string;
@@ -15,14 +16,24 @@ const ProviderFilter = memo(({
   theme
 }: ProviderFilterProps) => {
   const styles = React.useMemo(() => createStyles(theme.colors), [theme.colors]);
+  const listRef = useRef<FlatList<any> | null>(null);
   
   const renderItem = useCallback(({ item, index }: { item: { id: string; name: string }; index: number }) => (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[
         styles.filterChip,
         selectedProvider === item.id && styles.filterChipSelected
       ]}
       onPress={() => onSelect(item.id)}
+      enableTVFocus={Platform.isTV}
+      preset="pill"
+      focusBorderRadius={16}
+      onFocus={() => {
+        if (!Platform.isTV) return;
+        try {
+          listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+        } catch { }
+      }}
     >
       <Text style={[
         styles.filterChipText,
@@ -30,12 +41,13 @@ const ProviderFilter = memo(({
       ]}>
         {item.name}
       </Text>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   ), [selectedProvider, onSelect, styles]);
 
   return (
     <View>
       <FlatList
+        ref={listRef}
         data={providers}
         renderItem={renderItem}
         keyExtractor={item => item.id}

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   Platform,
   SafeAreaView,
@@ -21,6 +20,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { logger } from '../utils/logger';
 import CustomAlert from '../components/CustomAlert';
 import { useBackupOptions } from '../hooks/useBackupOptions';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 // Check if running on TV platform
 const isTV = Platform.isTV;
@@ -303,13 +303,13 @@ const BackupScreen: React.FC = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <MaterialIcons name="chevron-left" size={28} color={currentTheme.colors.white} />
           <Text style={[styles.backText, { color: currentTheme.colors.primary }]}>Settings</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
         <View style={styles.headerActions}>
           {/* Empty for now, but keeping structure consistent */}
@@ -345,7 +345,7 @@ const BackupScreen: React.FC = () => {
             </Text>
 
             {/* Core Data Group */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={styles.sectionHeader}
               onPress={() => toggleSection('coreData')}
               activeOpacity={0.7}
@@ -365,7 +365,7 @@ const BackupScreen: React.FC = () => {
               >
                 <MaterialIcons name="expand-more" size={24} color={currentTheme.colors.highEmphasis} />
               </Animated.View>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             <Animated.View
               style={{
                 maxHeight: coreDataAnim.interpolate({
@@ -393,7 +393,7 @@ const BackupScreen: React.FC = () => {
             </Animated.View>
 
             {/* Addons & Integrations Group */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={styles.sectionHeader}
               onPress={() => toggleSection('addonsIntegrations')}
               activeOpacity={0.7}
@@ -413,7 +413,7 @@ const BackupScreen: React.FC = () => {
               >
                 <MaterialIcons name="expand-more" size={24} color={currentTheme.colors.highEmphasis} />
               </Animated.View>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             <Animated.View
               style={{
                 maxHeight: addonsAnim.interpolate({
@@ -448,7 +448,7 @@ const BackupScreen: React.FC = () => {
             </Animated.View>
 
             {/* Settings & Preferences Group */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={styles.sectionHeader}
               onPress={() => toggleSection('settingsPreferences')}
               activeOpacity={0.7}
@@ -468,7 +468,7 @@ const BackupScreen: React.FC = () => {
               >
                 <MaterialIcons name="expand-more" size={24} color={currentTheme.colors.highEmphasis} />
               </Animated.View>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             <Animated.View
               style={{
                 maxHeight: settingsAnim.interpolate({
@@ -516,7 +516,7 @@ const BackupScreen: React.FC = () => {
               Backup & Restore
             </Text>
 
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.actionButton,
                 {
@@ -535,9 +535,9 @@ const BackupScreen: React.FC = () => {
                   <Text style={styles.actionButtonText}>Create Backup</Text>
                 </>
               )}
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
 
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.actionButton,
                 {
@@ -550,7 +550,7 @@ const BackupScreen: React.FC = () => {
             >
               <MaterialIcons name="restore" size={20} color="white" />
               <Text style={styles.actionButtonText}>Restore from Backup</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
 
           {/* Info Section */}

@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   useColorScheme,
   useWindowDimensions,
   SafeAreaView,
@@ -38,6 +37,7 @@ import TraktIcon from '../../assets/rating-icons/trakt.svg';
 import { traktService, TraktService, TraktImages } from '../services/traktService';
 import { TraktLoadingSpinner } from '../components/common/TraktLoadingSpinner';
 import { useSettings } from '../hooks/useSettings';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 interface LibraryItem extends StreamingContent {
   progress?: number;
@@ -121,10 +121,13 @@ const TraktItem = React.memo(({
   }, [navigation, item.imdbId, item.type]);
 
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[styles.itemContainer, { width }]}
       onPress={handlePress}
       activeOpacity={0.7}
+      enableTVFocus={Platform.isTV}
+      preset="poster"
+      focusBorderRadius={12}
     >
       <View>
         <View style={[styles.posterContainer, { shadowColor: currentTheme.colors.black }]}>
@@ -146,7 +149,7 @@ const TraktItem = React.memo(({
           </Text>
         )}
       </View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 });
 
@@ -386,7 +389,7 @@ const LibraryScreen = () => {
   }, [traktAuthenticated, watchedMovies, watchedShows, watchlistMovies, watchlistShows, collectionMovies, collectionShows, continueWatching, ratedContent]);
 
   const renderItem = ({ item }: { item: LibraryItem }) => (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[styles.itemContainer, { width: itemWidth }]}
       onPress={() => navigation.navigate('Metadata', { id: item.id, type: item.type })}
       onLongPress={() => {
@@ -394,6 +397,9 @@ const LibraryScreen = () => {
         setMenuVisible(true);
       }}
       activeOpacity={0.7}
+      enableTVFocus={Platform.isTV}
+      preset="poster"
+      focusBorderRadius={12}
     >
       <View>
         <View style={[styles.posterContainer, { shadowColor: currentTheme.colors.black }]}>
@@ -424,17 +430,20 @@ const LibraryScreen = () => {
           </Text>
         )}
       </View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 
   const renderTraktCollectionFolder = ({ folder }: { folder: TraktFolder }) => (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[styles.itemContainer, { width: itemWidth }]}
       onPress={() => {
         setSelectedTraktFolder(folder.id);
         loadAllCollections();
       }}
       activeOpacity={0.7}
+      enableTVFocus={Platform.isTV}
+      preset="card"
+      focusBorderRadius={12}
     >
       <View style={[styles.posterContainer, styles.folderContainer, { shadowColor: currentTheme.colors.black, backgroundColor: currentTheme.colors.elevation1 }]}>
         <View style={styles.folderGradient}>
@@ -452,11 +461,11 @@ const LibraryScreen = () => {
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 
   const renderTraktFolder = () => (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[styles.itemContainer, { width: itemWidth }]}
       onPress={() => {
         if (!traktAuthenticated) {
@@ -468,6 +477,9 @@ const LibraryScreen = () => {
         }
       }}
       activeOpacity={0.7}
+      enableTVFocus={Platform.isTV}
+      preset="card"
+      focusBorderRadius={12}
     >
       <View>
         <View style={[styles.posterContainer, styles.folderContainer, { shadowColor: currentTheme.colors.black, backgroundColor: currentTheme.colors.elevation1 }]}>
@@ -489,7 +501,7 @@ const LibraryScreen = () => {
           </Text>
         )}
       </View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 
   const renderTraktItem = useCallback(({ item }: { item: TraktDisplayItem }) => {
@@ -715,7 +727,7 @@ const LibraryScreen = () => {
             <Text style={[styles.emptySubtext, { color: currentTheme.colors.mediumGray }]}>
               Your Trakt collections will appear here once you start using Trakt
             </Text>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[styles.exploreButton, {
                 backgroundColor: currentTheme.colors.primary,
                 shadowColor: currentTheme.colors.black
@@ -724,9 +736,13 @@ const LibraryScreen = () => {
                 loadAllCollections();
               }}
               activeOpacity={0.7}
+              enableTVFocus={Platform.isTV}
+              preset="button"
+              focusBorderRadius={16}
+              hasTVPreferredFocus={Platform.isTV}
             >
               <Text style={[styles.exploreButtonText, { color: currentTheme.colors.white }]}>Load Collections</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
         );
       }
@@ -756,7 +772,7 @@ const LibraryScreen = () => {
           <Text style={[styles.emptySubtext, { color: currentTheme.colors.mediumGray }]}>
             This collection is empty
           </Text>
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.exploreButton, {
               backgroundColor: currentTheme.colors.primary,
               shadowColor: currentTheme.colors.black
@@ -765,9 +781,13 @@ const LibraryScreen = () => {
               loadAllCollections();
             }}
             activeOpacity={0.7}
+            enableTVFocus={Platform.isTV}
+            preset="button"
+            focusBorderRadius={16}
+            hasTVPreferredFocus={Platform.isTV}
           >
             <Text style={[styles.exploreButtonText, { color: currentTheme.colors.white }]}>Refresh</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
       );
     }
@@ -791,7 +811,7 @@ const LibraryScreen = () => {
     const isActive = filter === filterType;
 
     return (
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={[
           styles.filterButton,
           isActive && { backgroundColor: currentTheme.colors.primary },
@@ -811,6 +831,10 @@ const LibraryScreen = () => {
           setFilter(filterType);
         }}
         activeOpacity={0.7}
+        enableTVFocus={Platform.isTV}
+        preset="pill"
+        focusBorderRadius={18}
+        hasTVPreferredFocus={Platform.isTV && isActive}
       >
         {filterType === 'trakt' ? (
           <View style={[styles.filterIcon, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -833,7 +857,7 @@ const LibraryScreen = () => {
         >
           {label}
         </Text>
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     );
   };
 
@@ -858,16 +882,20 @@ const LibraryScreen = () => {
           <Text style={[styles.emptySubtext, { color: currentTheme.colors.mediumGray }]}>
             {emptySubtitle}
           </Text>
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.exploreButton, {
               backgroundColor: currentTheme.colors.primary,
               shadowColor: currentTheme.colors.black
             }]}
             onPress={() => navigation.navigate('Search')}
             activeOpacity={0.7}
+            enableTVFocus={Platform.isTV}
+            preset="button"
+            focusBorderRadius={16}
+            hasTVPreferredFocus={Platform.isTV}
           >
             <Text style={[styles.exploreButtonText, { color: currentTheme.colors.white }]}>Find something to watch</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
       );
     }

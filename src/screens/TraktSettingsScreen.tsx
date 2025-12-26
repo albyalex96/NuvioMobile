@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
   ScrollView,
@@ -24,6 +23,7 @@ import { useTraktIntegration } from '../hooks/useTraktIntegration';
 import { useTraktAutosyncSettings } from '../hooks/useTraktAutosyncSettings';
 import { colors } from '../styles';
 import CustomAlert from '../components/CustomAlert';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 // Check if running on TV platform
 const isTV = Platform.isTV;
@@ -246,7 +246,7 @@ const TraktSettingsScreen: React.FC = () => {
     ]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <View style={styles.header}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
@@ -258,7 +258,7 @@ const TraktSettingsScreen: React.FC = () => {
           <Text style={[styles.backText, { color: isDarkMode ? currentTheme.colors.highEmphasis : currentTheme.colors.textDark }]}>
             Settings
           </Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
         <View style={styles.headerActions}>
           {/* Empty for now, but ready for future actions */}
@@ -328,7 +328,7 @@ const TraktSettingsScreen: React.FC = () => {
                 </Text>
               </View>
 
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 style={[
                   styles.button,
                   styles.signOutButton,
@@ -337,7 +337,7 @@ const TraktSettingsScreen: React.FC = () => {
                 onPress={handleSignOut}
               >
                 <Text style={styles.buttonText}>Sign Out</Text>
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             </View>
           ) : (
             <View style={styles.signInContainer}>
@@ -358,7 +358,7 @@ const TraktSettingsScreen: React.FC = () => {
               ]}>
                 Sync your watch history, watchlist, and collection with Trakt.tv
               </Text>
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 style={[
                   styles.button,
                   { backgroundColor: isDarkMode ? currentTheme.colors.primary : currentTheme.colors.primary }
@@ -373,7 +373,7 @@ const TraktSettingsScreen: React.FC = () => {
                     Sign In with Trakt
                   </Text>
                 )}
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             </View>
           )}
         </View>
@@ -448,7 +448,7 @@ const TraktSettingsScreen: React.FC = () => {
                   </View>
                 </View>
               </View>
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 style={[
                   styles.button,
                   {
@@ -478,7 +478,7 @@ const TraktSettingsScreen: React.FC = () => {
                     Sync Now
                   </Text>
                 )}
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
 
               {/* Display Settings Section */}
               <Text style={[

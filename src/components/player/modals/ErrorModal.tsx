@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
     FadeIn,
@@ -7,6 +7,7 @@ import Animated, {
     ZoomIn,
     ZoomOut,
 } from 'react-native-reanimated';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 // Check if running on TV platform
 const isTV = Platform.isTV;
@@ -58,9 +59,9 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
 
     return (
         <View style={[StyleSheet.absoluteFill, { zIndex: 99999, justifyContent: 'center', alignItems: 'center' }]}>
-            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={handleClose}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} focusable={false}>
                 <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }} />
-            </TouchableOpacity>
+            </Pressable>
 
             <Animated.View
                 entering={FadeIn.duration(300)}
@@ -111,29 +112,35 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
                     {errorDetails || 'An unknown error occurred during playback.'}
                 </Text>
 
-                <TouchableOpacity
-                    onPress={handleCopy}
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 8,
-                        marginBottom: 24,
-                        opacity: 0.8
-                    }}
-                >
-                    <MaterialIcons
-                        name={copied ? "check" : "content-copy"}
-                        size={16}
-                        color="rgba(255,255,255,0.6)"
-                        style={{ marginRight: 6 }}
-                    />
-                    <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '500' }}>
-                        {copied ? 'Copied to clipboard' : 'Copy error details'}
-                    </Text>
-                </TouchableOpacity>
+                {!!ExpoClipboard && (
+                    <FocusableTouchableOpacity
+                        onPress={handleCopy}
+                        activeOpacity={0.9}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={12}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 8,
+                            marginBottom: 24,
+                            opacity: 0.9
+                        }}
+                    >
+                        <MaterialIcons
+                            name={copied ? "check" : "content-copy"}
+                            size={16}
+                            color="rgba(255,255,255,0.6)"
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '500' }}>
+                            {copied ? 'Copied to clipboard' : 'Copy error details'}
+                        </Text>
+                    </FocusableTouchableOpacity>
+                )}
 
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                     style={{
                         backgroundColor: 'white',
                         paddingVertical: 12,
@@ -144,6 +151,10 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
                     }}
                     onPress={handleClose}
                     activeOpacity={0.9}
+                    enableTVFocus={Platform.isTV}
+                    preset="button"
+                    focusBorderRadius={12}
+                    hasTVPreferredFocus={Platform.isTV}
                 >
                     <Text style={{
                         color: 'black',
@@ -152,7 +163,7 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
                     }}>
                         Dismiss
                     </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
             </Animated.View>
         </View>
     );

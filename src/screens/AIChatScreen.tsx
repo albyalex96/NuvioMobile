@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   StatusBar,
   KeyboardAvoidingView,
@@ -58,6 +57,7 @@ import Animated, {
   Extrapolate,
   runOnJS
 } from 'react-native-reanimated';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -302,7 +302,7 @@ const SuggestionChip: React.FC<SuggestionChipProps> = React.memo(({ text, onPres
   const { currentTheme } = useTheme();
   
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[styles.suggestionChip, { backgroundColor: currentTheme.colors.elevation1 }]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -310,7 +310,7 @@ const SuggestionChip: React.FC<SuggestionChipProps> = React.memo(({ text, onPres
       <Text style={[styles.suggestionText, { color: currentTheme.colors.primary }]}>
         {text}
       </Text>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 }, (prev, next) => prev.text === next.text && prev.onPress === next.onPress);
 
@@ -684,7 +684,7 @@ const AIChatScreen: React.FC = () => {
         headerAnimatedStyle
       ]}>
         <View style={styles.headerContent}>
-          <TouchableOpacity 
+          <FocusableTouchableOpacity 
             onPress={() => {
               if (Platform.OS === 'android') {
                 modalOpacity.value = withSpring(0, { damping: 18, stiffness: 160 }, (finished) => {
@@ -697,7 +697,7 @@ const AIChatScreen: React.FC = () => {
             style={styles.backButton}
           >
             <MaterialIcons name="arrow-back" size={24} color={currentTheme.colors.text} />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
           
           <View style={styles.headerInfo}>
             <Text style={[styles.headerTitle, { color: currentTheme.colors.highEmphasis }]}>
@@ -821,7 +821,7 @@ const AIChatScreen: React.FC = () => {
               blurOnSubmit={false}
             />
             
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.sendButton,
                 { 
@@ -837,7 +837,7 @@ const AIChatScreen: React.FC = () => {
                 size={20} 
                 color={inputText.trim() ? 'white' : currentTheme.colors.mediumEmphasis} 
               />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
         </Animated.View>
         </SafeAreaView>

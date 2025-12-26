@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   FlatList,
-  TouchableOpacity,
   ActivityIndicator,
   useColorScheme,
   SafeAreaView,
@@ -44,6 +43,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ScreenHeader from '../components/common/ScreenHeader';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width, height } = Dimensions.get('window');
 
@@ -78,7 +78,7 @@ const MAX_RECENT_SEARCHES = 10;
 
 const PLACEHOLDER_POSTER = 'https://placehold.co/300x450/222222/CCCCCC?text=No+Poster';
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+// NOTE: AnimatedTouchable was unused; keep focus wrapper for TV instead.
 
 const SkeletonLoader = () => {
   const pulseAnim = React.useRef(new RNAnimated.Value(0)).current;
@@ -570,24 +570,29 @@ const SearchScreen = () => {
           Recent Searches
         </Text>
         {recentSearches.map((search, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.recentSearchItem}
-            onPress={() => {
-              setQuery(search);
-              Keyboard.dismiss();
-            }}
-          >
+          <View key={index} style={styles.recentSearchItem}>
             <MaterialIcons
               name="history"
               size={20}
               color={currentTheme.colors.lightGray}
               style={styles.recentSearchIcon}
             />
-            <Text style={[styles.recentSearchText, { color: currentTheme.colors.white }]}>
-              {search}
-            </Text>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => {
+                setQuery(search);
+                Keyboard.dismiss();
+              }}
+              activeOpacity={0.7}
+              enableTVFocus={Platform.isTV}
+              preset="listRow"
+              focusBorderRadius={12}
+            >
+              <Text style={[styles.recentSearchText, { color: currentTheme.colors.white }]}>
+                {search}
+              </Text>
+            </FocusableTouchableOpacity>
+            <FocusableTouchableOpacity
               onPress={() => {
                 const newRecentSearches = [...recentSearches];
                 newRecentSearches.splice(index, 1);
@@ -596,10 +601,15 @@ const SearchScreen = () => {
               }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={styles.recentSearchDeleteButton}
+              activeOpacity={0.7}
+              enableTVFocus={Platform.isTV}
+              preset="icon"
+              focusBorderRadius={12}
+              hasTVPreferredFocus={Platform.isTV && index === 0}
             >
               <MaterialIcons name="close" size={16} color={currentTheme.colors.lightGray} />
-            </TouchableOpacity>
-          </TouchableOpacity>
+            </FocusableTouchableOpacity>
+          </View>
         ))}
       </View>
     );
@@ -651,7 +661,7 @@ const SearchScreen = () => {
     }, [item.id, item.type]);
 
     return (
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={[styles.horizontalItem, { width: itemWidth }]}
         onPress={() => {
           navigation.navigate('Metadata', { id: item.id, type: item.type });
@@ -663,6 +673,9 @@ const SearchScreen = () => {
         }}
         delayLongPress={300}
         activeOpacity={0.7}
+        enableTVFocus={Platform.isTV}
+        preset="poster"
+        focusBorderRadius={12}
       >
         <View style={[styles.horizontalItemPosterContainer, {
           width: itemWidth,
@@ -716,7 +729,7 @@ const SearchScreen = () => {
             {item.year}
           </Text>
         )}
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     );
   };
 
@@ -934,17 +947,21 @@ const SearchScreen = () => {
                 ref={inputRef}
               />
               {query.length > 0 && (
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   onPress={handleClearSearch}
                   style={styles.clearButton}
                   hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                  activeOpacity={0.7}
+                  enableTVFocus={Platform.isTV}
+                  preset="icon"
+                  focusBorderRadius={999}
                 >
                   <MaterialIcons
                     name="close"
                     size={20}
                     color={currentTheme.colors.lightGray}
                   />
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               )}
             </View>
           </View>

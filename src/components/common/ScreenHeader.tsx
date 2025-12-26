@@ -3,13 +3,13 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     StatusBar,
     Platform,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { FocusableTouchableOpacity } from './FocusableTouchableOpacity';
 
 const ANDROID_STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 
@@ -131,17 +131,20 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                     >
                         <View style={styles.headerContent}>
                             {showBackButton ? (
-                                <TouchableOpacity
+                                <FocusableTouchableOpacity
                                     style={styles.backButton}
                                     onPress={onBackPress}
                                     activeOpacity={0.7}
+                                    enableTVFocus={Platform.isTV}
+                                    preset="icon"
+                                    focusBorderRadius={999}
                                 >
                                     <IconComponent
                                         name={backIconName as any}
                                         size={24}
                                         color={currentTheme.colors.text}
                                     />
-                                </TouchableOpacity>
+                                </FocusableTouchableOpacity>
                             ) : null}
 
                             {titleComponent ? (
@@ -164,17 +167,20 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
                             {rightActionComponent ? (
                                 <View style={styles.rightActionContainer}>{rightActionComponent}</View>
                             ) : rightActionIcon && onRightActionPress ? (
-                                <TouchableOpacity
+                                <FocusableTouchableOpacity
                                     style={styles.rightActionButton}
                                     onPress={onRightActionPress}
                                     activeOpacity={0.7}
+                                    enableTVFocus={Platform.isTV}
+                                    preset="icon"
+                                    focusBorderRadius={999}
                                 >
                                     <IconComponent
                                         name={rightActionIcon as any}
                                         size={24}
                                         color={currentTheme.colors.text}
                                     />
-                                </TouchableOpacity>
+                                </FocusableTouchableOpacity>
                             ) : (
                                 <View style={styles.rightActionPlaceholder} />
                             )}

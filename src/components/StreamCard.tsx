@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   Platform,
   Clipboard,
@@ -16,6 +15,7 @@ import QualityBadge from './metadata/QualityBadge';
 import { useSettings } from '../hooks/useSettings';
 import { useDownloads } from '../contexts/DownloadsContext';
 import { useToast } from '../contexts/ToastContext';
+import { FocusableTouchableOpacity } from './common/FocusableTouchableOpacity';
 
 interface StreamCardProps {
   stream: Stream;
@@ -177,16 +177,22 @@ const StreamCard = memo(({
 
   const isDebrid = streamInfo.isDebrid;
   return (
-    <TouchableOpacity
-        style={[
-          styles.streamCard,
-          isLoading && styles.streamCardLoading,
-          isDebrid && styles.streamCardHighlighted
-        ]}
+    <View
+      style={[
+        styles.streamCard,
+        isLoading && styles.streamCardLoading,
+        isDebrid && styles.streamCardHighlighted,
+      ]}
+    >
+      <FocusableTouchableOpacity
+        style={{ flex: 1 }}
         onPress={onPress}
         onLongPress={handleLongPress}
         disabled={isLoading}
         activeOpacity={0.7}
+        enableTVFocus={Platform.isTV}
+        preset="listRow"
+        focusBorderRadius={12}
       >
         {/* Scraper Logo */}
         {showLogos && scraperLogo && (
@@ -250,21 +256,23 @@ const StreamCard = memo(({
           </View>
         </View>
         
-        
-        {settings?.enableDownloads !== false && (
-          <TouchableOpacity
-            style={[styles.streamAction, { marginLeft: 8, backgroundColor: theme.colors.elevation2 }]}
+      </FocusableTouchableOpacity>
+
+      {settings?.enableDownloads !== false && (
+        <View style={{ justifyContent: 'center', marginLeft: 8 }}>
+          <FocusableTouchableOpacity
+            style={[styles.streamAction, { backgroundColor: theme.colors.elevation2 }]}
             onPress={handleDownload}
             activeOpacity={0.7}
+            enableTVFocus={Platform.isTV}
+            preset="icon"
+            focusBorderRadius={15}
           >
-            <MaterialIcons
-              name="download"
-              size={20}
-              color={theme.colors.highEmphasis}
-            />
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
+            <MaterialIcons name="download" size={20} color={theme.colors.highEmphasis} />
+          </FocusableTouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 });
 

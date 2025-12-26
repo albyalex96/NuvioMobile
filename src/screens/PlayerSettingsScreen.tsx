@@ -6,7 +6,6 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
-  TouchableOpacity,
   StatusBar,
   Switch,
 } from 'react-native';
@@ -15,6 +14,7 @@ import { useSettings, AppSettings } from '../hooks/useSettings';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import CustomAlert from '../components/CustomAlert';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const ANDROID_STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 
@@ -38,7 +38,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
   const { currentTheme } = useTheme();
 
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
       style={[
@@ -87,7 +87,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
           />
         )}
       </View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 };
 
@@ -173,7 +173,7 @@ const PlayerSettingsScreen: React.FC = () => {
       />
 
       <View style={styles.header}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           onPress={handleBack}
           style={styles.backButton}
           activeOpacity={0.7}
@@ -186,7 +186,7 @@ const PlayerSettingsScreen: React.FC = () => {
           <Text style={[styles.backText, { color: currentTheme.colors.text }]}>
             Settings
           </Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
         <View style={styles.headerActions}>
           {/* Empty for now, but ready for future actions */}

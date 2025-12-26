@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, useWindowDimensions, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
@@ -12,6 +12,7 @@ import { EpisodeCard } from '../cards/EpisodeCard';
 import { storageService } from '../../../services/storageService';
 import { TraktService } from '../../../services/traktService';
 import { logger } from '../../../utils/logger';
+import { FocusableTouchableOpacity } from '../../common/FocusableTouchableOpacity';
 
 interface EpisodesModalProps {
   showEpisodesModal: boolean;
@@ -97,9 +98,9 @@ export const EpisodesModal: React.FC<EpisodesModalProps> = ({
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 9999 }]}>
-      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowEpisodesModal(false)}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowEpisodesModal(false)} focusable={false}>
         <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} />
-      </TouchableOpacity>
+      </Pressable>
 
       <Animated.View
         entering={SlideInRight.duration(300)}
@@ -127,7 +128,7 @@ export const EpisodesModal: React.FC<EpisodesModalProps> = ({
                 if (b === 0) return -1;
                 return a - b;
               }).map((season) => (
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   key={season}
                   onPress={() => setSelectedSeason(season)}
                   style={{
@@ -138,6 +139,10 @@ export const EpisodesModal: React.FC<EpisodesModalProps> = ({
                     borderWidth: 1,
                     borderColor: selectedSeason === season ? 'white' : 'rgba(255,255,255,0.1)',
                   }}
+                  enableTVFocus={Platform.isTV}
+                  preset="pill"
+                  focusBorderRadius={20}
+                  hasTVPreferredFocus={Platform.isTV && selectedSeason === season}
                 >
                   <Text style={{
                     color: selectedSeason === season ? 'black' : 'white',
@@ -145,7 +150,7 @@ export const EpisodesModal: React.FC<EpisodesModalProps> = ({
                   }}>
                     {season === 0 ? 'Specials' : `Season ${season}`}
                   </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               ))}
           </ScrollView>
         </View>

@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   Dimensions,
   ActivityIndicator,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { TMDBService } from '../services/tmdbService';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettings } from '../hooks/useSettings';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width } = Dimensions.get('window');
 const BACKDROP_WIDTH = width * 0.9;
@@ -116,12 +117,16 @@ const BackdropGalleryScreen: React.FC = () => {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
+        enableTVFocus={Platform.isTV}
+        preset="icon"
+        focusBorderRadius={999}
+        hasTVPreferredFocus={Platform.isTV}
       >
         <MaterialIcons name="arrow-back" size={24} color={currentTheme.colors.highEmphasis} />
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
       <View style={styles.titleContainer}>
         <Text style={[styles.title, { color: currentTheme.colors.highEmphasis }]} numberOfLines={1}>
           {title}

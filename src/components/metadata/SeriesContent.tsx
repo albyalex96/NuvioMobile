@@ -16,6 +16,7 @@ import { TraktService } from '../../services/traktService';
 import { watchedService } from '../../services/watchedService';
 import { logger } from '../../utils/logger';
 import { mmkvStorage } from '../../services/mmkvStorage';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 // Enhanced responsive breakpoints for Seasons Section
 const BREAKPOINTS = {
@@ -779,7 +780,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
           ]}>Seasons</Text>
 
           {/* Dropdown Toggle Button */}
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[
               styles.seasonViewToggle,
               {
@@ -796,6 +797,10 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
             ]}
             activeOpacity={0.7}
             focusable={Platform.isTV}
+            enableTVFocus={Platform.isTV}
+            focusBorderRadius={isTV ? 10 : isLargeTablet ? 8 : isTablet ? 6 : 6}
+            focusRingWidth={3}
+            focusScale={1.03}
           >
             <Text style={[
               styles.seasonViewToggleText,
@@ -808,7 +813,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
             ]}>
               {seasonViewMode === 'posters' ? 'Posters' : 'Text'}
             </Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
 
         <FlatList
@@ -846,7 +851,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                   key={season}
                   style={{ opacity: textViewVisible ? 1 : 0 }}
                 >
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     style={[
                       styles.seasonTextButton,
                       {
@@ -860,6 +865,10 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                     ]}
                     onPress={() => onSeasonChange(season)}
                     focusable={Platform.isTV}
+                    enableTVFocus={Platform.isTV}
+                    focusBorderRadius={isTV ? 16 : isLargeTablet ? 14 : isTablet ? 12 : 12}
+                    focusRingWidth={3}
+                    focusScale={1.03}
                   >
                     <Text style={[
                       styles.seasonTextButtonText,
@@ -873,7 +882,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                     ]} numberOfLines={1}>
                       {season === 0 ? 'Specials' : `Season ${season}`}
                     </Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 </View>
               );
             }
@@ -885,7 +894,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                 key={season}
                 style={{ opacity: posterViewVisible ? 1 : 0 }}
               >
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[
                     styles.seasonButton,
                     {
@@ -896,6 +905,10 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                   ]}
                   onPress={() => onSeasonChange(season)}
                   focusable={Platform.isTV}
+                  enableTVFocus={Platform.isTV}
+                  focusBorderRadius={isTV ? 16 : isLargeTablet ? 14 : isTablet ? 12 : 8}
+                  focusRingWidth={3}
+                  focusScale={1.03}
                 >
                   <View style={[
                     styles.seasonPosterContainer,
@@ -937,7 +950,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                   >
                     {season === 0 ? 'Specials' : `Season ${season}`}
                   </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               </View>
             );
           }}
@@ -1022,7 +1035,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
     const showProgress = progress && progressPercent < 85;
 
     return (
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         key={episode.id}
         style={[
           styles.episodeCardVertical,
@@ -1038,6 +1051,10 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
         delayLongPress={400}
         activeOpacity={0.7}
         focusable={Platform.isTV}
+        enableTVFocus={Platform.isTV}
+        focusBorderRadius={isTV ? 20 : isLargeTablet ? 18 : isTablet ? 16 : 16}
+        focusRingWidth={3}
+        focusScale={1.02}
       >
         <View style={[
           styles.episodeImageContainer,
@@ -1228,7 +1245,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
             {(episode.overview || (episode as any).description || (episode as any).plot || (episode as any).synopsis || 'No description available')}
           </Text>
         </View>
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     );
   };
 

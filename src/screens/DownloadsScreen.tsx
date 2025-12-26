@@ -5,7 +5,6 @@ import {
   StyleSheet,
   StatusBar,
   Dimensions,
-  TouchableOpacity,
   FlatList,
   RefreshControl,
   Alert,
@@ -35,6 +34,7 @@ import type { DownloadItem } from '../contexts/DownloadsContext';
 import { useToast } from '../contexts/ToastContext';
 import CustomAlert from '../components/CustomAlert';
 import ScreenHeader from '../components/common/ScreenHeader';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { height, width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -80,7 +80,7 @@ const EmptyDownloadsState: React.FC<{ navigation: NavigationProp<RootStackParamL
       <Text style={[styles.emptySubtitle, { color: currentTheme.colors.mediumEmphasis }]}>
         Downloaded content will appear here for offline viewing
       </Text>
-      <TouchableOpacity
+      <FocusableTouchableOpacity
         style={[styles.exploreButton, { backgroundColor: currentTheme.colors.primary }]}
         onPress={() => {
           navigation.navigate('Search');
@@ -89,7 +89,7 @@ const EmptyDownloadsState: React.FC<{ navigation: NavigationProp<RootStackParamL
         <Text style={[styles.exploreButtonText, { color: currentTheme.colors.background }]}>
           Explore Content
         </Text>
-      </TouchableOpacity>
+      </FocusableTouchableOpacity>
     </View>
   );
 };
@@ -204,7 +204,7 @@ const DownloadItemComponent: React.FC<{
   };
 
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[styles.downloadItem, { backgroundColor: currentTheme.colors.elevation2 }]}
       onPress={() => onPress(item)}
       onLongPress={handleLongPress}
@@ -314,7 +314,7 @@ const DownloadItemComponent: React.FC<{
       {/* Action buttons */}
       <View style={styles.actionContainer}>
         {getActionIcon() && (
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.actionButton, { backgroundColor: currentTheme.colors.elevation2 }]}
             onPress={handleActionPress}
             activeOpacity={0.7}
@@ -324,10 +324,10 @@ const DownloadItemComponent: React.FC<{
               size={20}
               color={currentTheme.colors.primary}
             />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         )}
 
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={[styles.actionButton, { backgroundColor: currentTheme.colors.elevation2 }]}
           onPress={() => onRequestRemove(item)}
           activeOpacity={0.7}
@@ -337,9 +337,9 @@ const DownloadItemComponent: React.FC<{
             size={20}
             color={currentTheme.colors.error}
           />
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 });
 
@@ -568,7 +568,7 @@ const DownloadsScreen: React.FC = () => {
   );
 
   const renderFilterButton = (filter: typeof selectedFilter, label: string, count: number) => (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       key={filter}
       style={[
         styles.filterButton,
@@ -612,7 +612,7 @@ const DownloadsScreen: React.FC = () => {
           </Text>
         </View>
       )}
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 
   return (
@@ -627,7 +627,7 @@ const DownloadsScreen: React.FC = () => {
       <ScreenHeader
         title="Downloads"
         rightActionComponent={
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={styles.helpButton}
             onPress={showDownloadHelp}
             activeOpacity={0.7}
@@ -637,7 +637,7 @@ const DownloadsScreen: React.FC = () => {
               size={24}
               color={currentTheme.colors.mediumEmphasis}
             />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         }
         isTablet={isTablet}
       >

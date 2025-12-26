@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Switch,
   ScrollView,
   SafeAreaView,
@@ -56,6 +55,7 @@ import TraktIcon from '../components/icons/TraktIcon';
 import TMDBIcon from '../components/icons/TMDBIcon';
 import MDBListIcon from '../components/icons/MDBListIcon';
 import { campaignService } from '../services/campaignService';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -144,7 +144,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
   const { currentTheme } = useTheme();
 
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       activeOpacity={0.6}
       onPress={onPress}
       style={[
@@ -153,6 +153,9 @@ const SettingItem: React.FC<SettingItemProps> = ({
         { borderBottomColor: currentTheme.colors.elevation2 },
         isTablet && styles.tabletSettingItem
       ]}
+      enableTVFocus={Platform.isTV}
+      preset="listRow"
+      focusBorderRadius={isTablet ? 18 : 16}
     >
       <View style={[
         styles.settingIconContainer,
@@ -201,7 +204,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
           {renderControl()}
         </View>
       )}
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 };
 
@@ -237,7 +240,7 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategorySelect, c
 
       <ScrollView style={styles.sidebarContent} showsVerticalScrollIndicator={false}>
         {categories.map((category) => (
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             key={category.id}
             style={[
               styles.sidebarItem,
@@ -248,6 +251,10 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategorySelect, c
             ]}
             onPress={() => onCategorySelect(category.id)}
             activeOpacity={0.6}
+            enableTVFocus={Platform.isTV}
+            preset="listRow"
+            focusBorderRadius={14}
+            hasTVPreferredFocus={Platform.isTV && selectedCategory === category.id}
           >
             <View style={[
               styles.sidebarItemIconContainer,
@@ -278,7 +285,7 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedCategory, onCategorySelect, c
             ]}>
               {category.title}
             </Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         ))}
       </ScrollView>
     </View>
@@ -959,7 +966,7 @@ const SettingsScreen: React.FC = () => {
                   )}
 
                   <View style={styles.discordContainer}>
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       style={[styles.discordButton, { backgroundColor: 'transparent', paddingVertical: 0, paddingHorizontal: 0, marginBottom: 8 }]}
                       onPress={() => {
                         const url = 'https://ko-fi.com/tapframe';
@@ -973,19 +980,25 @@ const SettingsScreen: React.FC = () => {
                         }
                       }}
                       activeOpacity={0.7}
+                      enableTVFocus={Platform.isTV}
+                      preset="button"
+                      focusBorderRadius={14}
                     >
                       <FastImage
                         source={require('../../assets/support_me_on_kofi_red.png')}
                         style={styles.kofiImage}
                         resizeMode={FastImage.resizeMode.contain}
                       />
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
 
                     <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         style={[styles.discordButton, { backgroundColor: currentTheme.colors.elevation1 }]}
                         onPress={() => Linking.openURL('https://discord.gg/6w8dr3TSDN')}
                         activeOpacity={0.7}
+                        enableTVFocus={Platform.isTV}
+                        preset="button"
+                        focusBorderRadius={14}
                       >
                         <View style={styles.discordButtonContent}>
                           <FastImage
@@ -997,12 +1010,15 @@ const SettingsScreen: React.FC = () => {
                             Discord
                           </Text>
                         </View>
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
 
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         style={[styles.discordButton, { backgroundColor: '#FF4500' + '15' }]}
                         onPress={() => Linking.openURL('https://www.reddit.com/r/Nuvio/')}
                         activeOpacity={0.7}
+                        enableTVFocus={Platform.isTV}
+                        preset="button"
+                        focusBorderRadius={14}
                       >
                         <View style={styles.discordButtonContent}>
                           <FastImage
@@ -1014,7 +1030,7 @@ const SettingsScreen: React.FC = () => {
                             Reddit
                           </Text>
                         </View>
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     </View>
                   </View>
 
@@ -1093,7 +1109,7 @@ const SettingsScreen: React.FC = () => {
 
             {/* Support & Community Buttons */}
             <View style={styles.discordContainer}>
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 style={[styles.discordButton, { backgroundColor: 'transparent', paddingVertical: 0, paddingHorizontal: 0, marginBottom: 8 }]}
                 onPress={() => {
                   const url = 'https://ko-fi.com/tapframe';
@@ -1107,19 +1123,25 @@ const SettingsScreen: React.FC = () => {
                   }
                 }}
                 activeOpacity={0.7}
+                enableTVFocus={Platform.isTV}
+                preset="button"
+                focusBorderRadius={14}
               >
                 <FastImage
                   source={require('../../assets/support_me_on_kofi_red.png')}
                   style={styles.kofiImage}
                   resizeMode={FastImage.resizeMode.contain}
                 />
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
 
               <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[styles.discordButton, { backgroundColor: currentTheme.colors.elevation1 }]}
                   onPress={() => Linking.openURL('https://discord.gg/6w8dr3TSDN')}
                   activeOpacity={0.7}
+                  enableTVFocus={Platform.isTV}
+                  preset="button"
+                  focusBorderRadius={14}
                 >
                   <View style={styles.discordButtonContent}>
                     <FastImage
@@ -1131,12 +1153,15 @@ const SettingsScreen: React.FC = () => {
                       Discord
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
 
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[styles.discordButton, { backgroundColor: '#FF4500' + '15' }]}
                   onPress={() => Linking.openURL('https://www.reddit.com/r/Nuvio/')}
                   activeOpacity={0.7}
+                  enableTVFocus={Platform.isTV}
+                  preset="button"
+                  focusBorderRadius={14}
                 >
                   <View style={styles.discordButtonContent}>
                     <FastImage
@@ -1148,7 +1173,7 @@ const SettingsScreen: React.FC = () => {
                       Reddit
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               </View>
             </View>
 

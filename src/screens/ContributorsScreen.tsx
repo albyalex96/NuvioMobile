@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   SafeAreaView,
   StatusBar,
@@ -24,6 +23,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchContributors, GitHubContributor } from '../services/githubReleaseService';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width, height } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -91,7 +91,7 @@ const ContributorCard: React.FC<ContributorCardProps> = ({ contributor, currentT
   }, [contributor.html_url]);
 
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[
         styles.contributorCard,
         { backgroundColor: currentTheme.colors.elevation1 },
@@ -130,7 +130,7 @@ const ContributorCard: React.FC<ContributorCardProps> = ({ contributor, currentT
         color={currentTheme.colors.mediumEmphasis}
         style={styles.externalIcon}
       />
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 };
 
@@ -164,7 +164,7 @@ const SpecialMentionCard: React.FC<SpecialMentionCardProps> = ({ mention, curren
   const defaultAvatar = `https://cdn.discordapp.com/embed/avatars/0.png`;
 
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[
         styles.contributorCard,
         { backgroundColor: currentTheme.colors.elevation1 },
@@ -230,7 +230,7 @@ const SpecialMentionCard: React.FC<SpecialMentionCardProps> = ({ mention, curren
         color={currentTheme.colors.mediumEmphasis}
         style={styles.externalIcon}
       />
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 };
 
@@ -422,13 +422,13 @@ const ContributorsScreen: React.FC = () => {
         <StatusBar barStyle={'light-content'} />
         <View style={[styles.headerContainer, { paddingTop: topSpacing }]}>
           <View style={styles.header}>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
               <Feather name="chevron-left" size={24} color={currentTheme.colors.primary} />
               <Text style={[styles.backText, { color: currentTheme.colors.primary }]}>Settings</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
           <Text style={[
             styles.headerTitle,
@@ -457,13 +457,13 @@ const ContributorsScreen: React.FC = () => {
 
       <View style={[styles.headerContainer, { paddingTop: topSpacing }]}>
         <View style={styles.header}>
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
             <Feather name="chevron-left" size={24} color={currentTheme.colors.primary} />
             <Text style={[styles.backText, { color: currentTheme.colors.primary }]}>Settings</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
         <Text style={[
           styles.headerTitle,
@@ -480,7 +480,7 @@ const ContributorsScreen: React.FC = () => {
         { backgroundColor: currentTheme.colors.elevation1 },
         isTablet && styles.tabletTabSwitcher
       ]}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={[
             styles.tab,
             activeTab === 'contributors' && { backgroundColor: currentTheme.colors.primary },
@@ -496,8 +496,8 @@ const ContributorsScreen: React.FC = () => {
           ]}>
             Contributors
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </FocusableTouchableOpacity>
+        <FocusableTouchableOpacity
           style={[
             styles.tab,
             activeTab === 'special' && { backgroundColor: currentTheme.colors.primary },
@@ -513,7 +513,7 @@ const ContributorsScreen: React.FC = () => {
           ]}>
             Special Mentions
           </Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
       </View>
 
       <View style={styles.content}>
@@ -530,14 +530,14 @@ const ContributorsScreen: React.FC = () => {
                   <Text style={[styles.errorSubtext, { color: currentTheme.colors.mediumEmphasis }]}>
                     GitHub API rate limit exceeded. Please try again later or pull to refresh.
                   </Text>
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     style={[styles.retryButton, { backgroundColor: currentTheme.colors.primary }]}
                     onPress={() => loadContributors()}
                   >
                     <Text style={[styles.retryText, { color: currentTheme.colors.white }]}>
                       Try Again
                     </Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 </View>
               ) : contributors.length === 0 ? (
                 <View style={styles.emptyContainer}>

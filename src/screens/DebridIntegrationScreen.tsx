@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TextInput,
-    TouchableOpacity,
     SafeAreaView,
     StatusBar,
     Platform,
@@ -27,6 +26,7 @@ import { logger } from '../utils/logger';
 import CustomAlert from '../components/CustomAlert';
 import { mmkvStorage } from '../services/mmkvStorage';
 import axios from 'axios';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const ANDROID_STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 const TORBOX_STORAGE_KEY = 'torbox_debrid_config';
@@ -1132,15 +1132,18 @@ const DebridIntegrationScreen = () => {
                         </View>
                     </View>
 
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                         style={[styles.actionButton, styles.dangerButton, loading && styles.disabledButton]}
                         onPress={handleDisconnect}
                         disabled={loading}
+                        enableTVFocus={Platform.isTV}
+                        preset="button"
+                        focusBorderRadius={14}
                     >
                         <Text style={styles.buttonText}>
                             {loading ? 'Disconnecting...' : 'Disconnect & Remove'}
                         </Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
 
                     {userData && (
                         <View style={styles.userDataCard}>
@@ -1213,12 +1216,15 @@ const DebridIntegrationScreen = () => {
                         <Text style={styles.sectionText}>
                             Customize your streaming experience. Sort by quality, filter file sizes, and manage other integration settings.
                         </Text>
-                        <TouchableOpacity
+                        <FocusableTouchableOpacity
                             style={styles.subscribeButton}
                             onPress={() => Linking.openURL('https://torbox.app/settings?section=integration-settings')}
+                            enableTVFocus={Platform.isTV}
+                            preset="button"
+                            focusBorderRadius={14}
                         >
                             <Text style={styles.subscribeButtonText}>Open Settings</Text>
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                     </View>
                 </>
             ) : (
@@ -1227,9 +1233,15 @@ const DebridIntegrationScreen = () => {
                         Unlock 4K high-quality streams and lightning-fast speeds by integrating Torbox. Enter your API Key below to instantly upgrade your streaming experience.
                     </Text>
 
-                    <TouchableOpacity onPress={() => Linking.openURL('https://guides.viren070.me/stremio/technical-details#debrid-services')} style={styles.guideLink}>
+                    <FocusableTouchableOpacity
+                        onPress={() => Linking.openURL('https://guides.viren070.me/stremio/technical-details#debrid-services')}
+                        style={styles.guideLink}
+                        enableTVFocus={Platform.isTV}
+                        preset="pill"
+                        focusBorderRadius={12}
+                    >
                         <Text style={styles.guideLinkText}>What is a Debrid Service?</Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
 
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Torbox API Key</Text>
@@ -1245,24 +1257,33 @@ const DebridIntegrationScreen = () => {
                         />
                     </View>
 
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                         style={[styles.connectButton, loading && styles.disabledButton]}
                         onPress={handleConnect}
                         disabled={loading}
+                        enableTVFocus={Platform.isTV}
+                        preset="button"
+                        focusBorderRadius={14}
                     >
                         <Text style={styles.connectButtonText}>
                             {loading ? 'Connecting...' : 'Connect & Install'}
                         </Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Unlock Premium Speeds</Text>
                         <Text style={styles.sectionText}>
                             Get a Torbox subscription to access cached high-quality streams with zero buffering.
                         </Text>
-                        <TouchableOpacity style={styles.subscribeButton} onPress={openSubscription}>
+                        <FocusableTouchableOpacity
+                            style={styles.subscribeButton}
+                            onPress={openSubscription}
+                            enableTVFocus={Platform.isTV}
+                            preset="button"
+                            focusBorderRadius={14}
+                        >
                             <Text style={styles.subscribeButtonText}>Get Subscription</Text>
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                     </View>
                 </>
             )}
@@ -1306,12 +1327,15 @@ const DebridIntegrationScreen = () => {
                     <Text style={styles.promoText}>
                         Get TorBox for lightning-fast 4K streaming with zero buffering. Premium cached torrents and instant downloads.
                     </Text>
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                         style={styles.promoButton}
                         onPress={() => Linking.openURL('https://torbox.app/subscription?referral=493192f2-6403-440f-b414-768f72222ec7')}
+                        enableTVFocus={Platform.isTV}
+                        preset="button"
+                        focusBorderRadius={14}
                     >
                         <Text style={styles.promoButtonText}>Get TorBox Subscription</Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                 </View>
             )}
 
@@ -1320,13 +1344,17 @@ const DebridIntegrationScreen = () => {
                 <Text style={styles.configSectionTitle}>Debrid Service *</Text>
                 <View style={styles.pickerContainer}>
                     {TORRENTIO_DEBRID_SERVICES.map((service: any) => (
-                        <TouchableOpacity
+                        <FocusableTouchableOpacity
                             key={service.id}
                             style={[
                                 styles.pickerItem,
                                 torrentioConfig.debridService === service.id && styles.pickerItemSelected
                             ]}
                             onPress={() => setTorrentioConfig(prev => ({ ...prev, debridService: service.id }))}
+                            enableTVFocus={Platform.isTV}
+                            preset="pill"
+                            focusBorderRadius={12}
+                            hasTVPreferredFocus={Platform.isTV && torrentioConfig.debridService === service.id}
                         >
                             <Text style={[
                                 styles.pickerItemText,
@@ -1334,7 +1362,7 @@ const DebridIntegrationScreen = () => {
                             ]}>
                                 {service.name}
                             </Text>
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                     ))}
                 </View>
             </View>
@@ -1355,9 +1383,12 @@ const DebridIntegrationScreen = () => {
             </View>
 
             {/* Sorting - Accordion */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
                 style={[styles.accordionHeader, expandedSections.sorting && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: 0 }]}
                 onPress={() => toggleSection('sorting')}
+                enableTVFocus={Platform.isTV}
+                preset="listRow"
+                focusBorderRadius={16}
             >
                 <View>
                     <Text style={styles.accordionHeaderText}>Sorting</Text>
@@ -1366,29 +1397,36 @@ const DebridIntegrationScreen = () => {
                     </Text>
                 </View>
                 <Feather name={expandedSections.sorting ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mediumEmphasis} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             {expandedSections.sorting && (
                 <View style={styles.accordionContent}>
                     <View style={styles.pickerContainer}>
                         {TORRENTIO_SORT_OPTIONS.map(option => (
-                            <TouchableOpacity
+                            <FocusableTouchableOpacity
                                 key={option.id}
                                 style={[styles.pickerItem, torrentioConfig.sort === option.id && styles.pickerItemSelected]}
                                 onPress={() => setTorrentioConfig(prev => ({ ...prev, sort: option.id }))}
+                                enableTVFocus={Platform.isTV}
+                                preset="pill"
+                                focusBorderRadius={12}
+                                hasTVPreferredFocus={Platform.isTV && torrentioConfig.sort === option.id}
                             >
                                 <Text style={[styles.pickerItemText, torrentioConfig.sort === option.id && styles.pickerItemTextSelected]}>
                                     {option.name}
                                 </Text>
-                            </TouchableOpacity>
+                            </FocusableTouchableOpacity>
                         ))}
                     </View>
                 </View>
             )}
 
             {/* Quality Filter - Accordion */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
                 style={[styles.accordionHeader, expandedSections.qualityFilter && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: 0 }]}
                 onPress={() => toggleSection('qualityFilter')}
+                enableTVFocus={Platform.isTV}
+                preset="listRow"
+                focusBorderRadius={16}
             >
                 <View>
                     <Text style={styles.accordionHeaderText}>Exclude Qualities</Text>
@@ -1397,29 +1435,36 @@ const DebridIntegrationScreen = () => {
                     </Text>
                 </View>
                 <Feather name={expandedSections.qualityFilter ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mediumEmphasis} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             {expandedSections.qualityFilter && (
                 <View style={styles.accordionContent}>
                     <View style={styles.chipContainer}>
                         {TORRENTIO_QUALITY_FILTERS.map(quality => (
-                            <TouchableOpacity
+                            <FocusableTouchableOpacity
                                 key={quality.id}
                                 style={[styles.chip, torrentioConfig.qualityFilter.includes(quality.id) && styles.chipSelected]}
                                 onPress={() => toggleQualityFilter(quality.id)}
+                                enableTVFocus={Platform.isTV}
+                                preset="pill"
+                                focusBorderRadius={999}
+                                hasTVPreferredFocus={Platform.isTV && torrentioConfig.qualityFilter.includes(quality.id)}
                             >
                                 <Text style={[styles.chipText, torrentioConfig.qualityFilter.includes(quality.id) && styles.chipTextSelected]}>
                                     {quality.name}
                                 </Text>
-                            </TouchableOpacity>
+                            </FocusableTouchableOpacity>
                         ))}
                     </View>
                 </View>
             )}
 
             {/* Priority Languages - Accordion */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
                 style={[styles.accordionHeader, expandedSections.languages && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: 0 }]}
                 onPress={() => toggleSection('languages')}
+                enableTVFocus={Platform.isTV}
+                preset="listRow"
+                focusBorderRadius={16}
             >
                 <View>
                     <Text style={styles.accordionHeaderText}>Priority Languages</Text>
@@ -1428,29 +1473,36 @@ const DebridIntegrationScreen = () => {
                     </Text>
                 </View>
                 <Feather name={expandedSections.languages ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mediumEmphasis} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             {expandedSections.languages && (
                 <View style={styles.accordionContent}>
                     <View style={styles.chipContainer}>
                         {TORRENTIO_LANGUAGES.map(lang => (
-                            <TouchableOpacity
+                            <FocusableTouchableOpacity
                                 key={lang.id}
                                 style={[styles.chip, torrentioConfig.priorityLanguages.includes(lang.id) && styles.chipSelected]}
                                 onPress={() => toggleLanguage(lang.id)}
+                                enableTVFocus={Platform.isTV}
+                                preset="pill"
+                                focusBorderRadius={999}
+                                hasTVPreferredFocus={Platform.isTV && torrentioConfig.priorityLanguages.includes(lang.id)}
                             >
                                 <Text style={[styles.chipText, torrentioConfig.priorityLanguages.includes(lang.id) && styles.chipTextSelected]}>
                                     {lang.name}
                                 </Text>
-                            </TouchableOpacity>
+                            </FocusableTouchableOpacity>
                         ))}
                     </View>
                 </View>
             )}
 
             {/* Max Results - Accordion */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
                 style={[styles.accordionHeader, expandedSections.maxResults && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: 0 }]}
                 onPress={() => toggleSection('maxResults')}
+                enableTVFocus={Platform.isTV}
+                preset="listRow"
+                focusBorderRadius={16}
             >
                 <View>
                     <Text style={styles.accordionHeaderText}>Max Results</Text>
@@ -1459,36 +1511,43 @@ const DebridIntegrationScreen = () => {
                     </Text>
                 </View>
                 <Feather name={expandedSections.maxResults ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mediumEmphasis} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             {expandedSections.maxResults && (
                 <View style={styles.accordionContent}>
                     <View style={styles.pickerContainer}>
                         {TORRENTIO_MAX_RESULTS.map(option => (
-                            <TouchableOpacity
+                            <FocusableTouchableOpacity
                                 key={option.id || 'all'}
                                 style={[styles.pickerItem, torrentioConfig.maxResults === option.id && styles.pickerItemSelected]}
                                 onPress={() => setTorrentioConfig(prev => ({ ...prev, maxResults: option.id }))}
+                                enableTVFocus={Platform.isTV}
+                                preset="pill"
+                                focusBorderRadius={12}
+                                hasTVPreferredFocus={Platform.isTV && torrentioConfig.maxResults === option.id}
                             >
                                 <Text style={[styles.pickerItemText, torrentioConfig.maxResults === option.id && styles.pickerItemTextSelected]}>
                                     {option.name}
                                 </Text>
-                            </TouchableOpacity>
+                            </FocusableTouchableOpacity>
                         ))}
                     </View>
                 </View>
             )}
 
             {/* Additional Options - Accordion */}
-            <TouchableOpacity
+            <FocusableTouchableOpacity
                 style={[styles.accordionHeader, expandedSections.options && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginBottom: 0 }]}
                 onPress={() => toggleSection('options')}
+                enableTVFocus={Platform.isTV}
+                preset="listRow"
+                focusBorderRadius={16}
             >
                 <View>
                     <Text style={styles.accordionHeaderText}>Additional Options</Text>
                     <Text style={styles.accordionSubtext}>Catalog & download settings</Text>
                 </View>
                 <Feather name={expandedSections.options ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mediumEmphasis} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             {expandedSections.options && (
                 <View style={styles.accordionContent}>
                     <View style={styles.switchRow}>
@@ -1526,33 +1585,42 @@ const DebridIntegrationScreen = () => {
             <View style={{ marginTop: 8 }}>
                 {torrentioConfig.isInstalled ? (
                     <>
-                        <TouchableOpacity
+                        <FocusableTouchableOpacity
                             style={[styles.connectButton, torrentioLoading && styles.disabledButton]}
                             onPress={handleInstallTorrentio}
                             disabled={torrentioLoading}
+                            enableTVFocus={Platform.isTV}
+                            preset="button"
+                            focusBorderRadius={14}
                         >
                             <Text style={styles.connectButtonText}>
                                 {torrentioLoading ? 'Updating...' : 'Update Configuration'}
                             </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </FocusableTouchableOpacity>
+                        <FocusableTouchableOpacity
                             style={[styles.actionButton, styles.dangerButton, torrentioLoading && styles.disabledButton]}
                             onPress={handleRemoveTorrentio}
                             disabled={torrentioLoading}
+                            enableTVFocus={Platform.isTV}
+                            preset="button"
+                            focusBorderRadius={14}
                         >
                             <Text style={styles.buttonText}>Remove Torrentio</Text>
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                     </>
                 ) : (
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                         style={[styles.connectButton, torrentioLoading && styles.disabledButton]}
                         onPress={handleInstallTorrentio}
                         disabled={torrentioLoading}
+                        enableTVFocus={Platform.isTV}
+                        preset="button"
+                        focusBorderRadius={14}
                     >
                         <Text style={styles.connectButtonText}>
                             {torrentioLoading ? 'Installing...' : 'Install Torrentio'}
                         </Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                 )}
             </View>
 
@@ -1578,33 +1646,45 @@ const DebridIntegrationScreen = () => {
             <StatusBar barStyle="light-content" backgroundColor={colors.darkBackground} />
 
             <View style={styles.header}>
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                     onPress={() => navigation.goBack()}
                     style={styles.backButton}
+                    enableTVFocus={Platform.isTV}
+                    preset="icon"
+                    focusBorderRadius={999}
+                    hasTVPreferredFocus={Platform.isTV}
                 >
                     <Feather name="arrow-left" size={24} color={colors.white} />
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
                 <Text style={styles.headerTitle}>Debrid Integration</Text>
             </View>
 
             {/* Tab Selector */}
             <View style={styles.tabContainer}>
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                     style={[styles.tab, activeTab === 'torbox' && styles.activeTab]}
                     onPress={() => setActiveTab('torbox')}
+                    enableTVFocus={Platform.isTV}
+                    preset="pill"
+                    focusBorderRadius={16}
+                    hasTVPreferredFocus={Platform.isTV && activeTab === 'torbox'}
                 >
                     <Text style={[styles.tabText, activeTab === 'torbox' && styles.activeTabText]}>
                         TorBox
                     </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </FocusableTouchableOpacity>
+                <FocusableTouchableOpacity
                     style={[styles.tab, activeTab === 'torrentio' && styles.activeTab]}
                     onPress={() => setActiveTab('torrentio')}
+                    enableTVFocus={Platform.isTV}
+                    preset="pill"
+                    focusBorderRadius={16}
+                    hasTVPreferredFocus={Platform.isTV && activeTab === 'torrentio'}
                 >
                     <Text style={[styles.tabText, activeTab === 'torrentio' && styles.activeTabText]}>
                         Torrentio
                     </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
             </View>
 
             <KeyboardAvoidingView

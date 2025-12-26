@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Switch,
   ScrollView,
   Platform,
@@ -24,6 +23,7 @@ import { useTheme, Theme, DEFAULT_THEMES } from '../contexts/ThemeContext';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useSettings } from '../hooks/useSettings';
 import CustomAlert from '../components/CustomAlert';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const { width } = Dimensions.get('window');
 
@@ -53,7 +53,7 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
   onDelete
 }) => {
   return (
-    <TouchableOpacity
+    <FocusableTouchableOpacity
       style={[
         styles.themeCard,
         isSelected && styles.selectedThemeCard,
@@ -85,24 +85,24 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
       {theme.isEditable && (
         <View style={styles.themeCardActions}>
           {onEdit && (
-            <TouchableOpacity 
+            <FocusableTouchableOpacity 
               style={[styles.themeCardAction, styles.buttonShadow]} 
               onPress={onEdit}
             >
               <MaterialIcons name="edit" size={16} color={theme.colors.primary} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           )}
           {onDelete && (
-            <TouchableOpacity 
+            <FocusableTouchableOpacity 
               style={[styles.themeCardAction, styles.buttonShadow]} 
               onPress={onDelete}
             >
               <MaterialIcons name="delete" size={16} color={theme.colors.error} />
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           )}
         </View>
       )}
-    </TouchableOpacity>
+    </FocusableTouchableOpacity>
   );
 };
 
@@ -120,7 +120,7 @@ const FilterTab: React.FC<FilterTabProps> = ({
   onPress,
   primaryColor 
 }) => (
-  <TouchableOpacity
+  <FocusableTouchableOpacity
     style={[
       styles.filterTab,
       isActive && { backgroundColor: primaryColor },
@@ -136,7 +136,7 @@ const FilterTab: React.FC<FilterTabProps> = ({
     >
       {category.name}
     </Text>
-  </TouchableOpacity>
+  </FocusableTouchableOpacity>
 );
 
 type ColorKey = 'primary' | 'secondary' | 'darkBackground';
@@ -242,12 +242,12 @@ const ThemeColorEditor: React.FC<ThemeColorEditorProps & {
   return (
     <View style={styles.editorContainer}>
       <View style={styles.editorHeader}>
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={styles.editorBackButton}
           onPress={onCancel}
         >
           <MaterialIcons name="arrow-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
         <TextInput
           style={styles.editorTitleInput}
           value={themeName}
@@ -255,12 +255,12 @@ const ThemeColorEditor: React.FC<ThemeColorEditorProps & {
           placeholder="Theme name"
           placeholderTextColor="rgba(255,255,255,0.5)"
         />
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           style={styles.editorSaveButton}
           onPress={handleSave}
         >
           <Text style={styles.saveButtonText}>Save</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
       </View>
       
       <View style={styles.editorBody}>
@@ -268,7 +268,7 @@ const ThemeColorEditor: React.FC<ThemeColorEditorProps & {
           <ThemePreview />
           
           <View style={styles.colorButtonsColumn}>
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.colorSelectorButton,
                 selectedColorKey === 'primary' && styles.selectedColorButton,
@@ -277,9 +277,9 @@ const ThemeColorEditor: React.FC<ThemeColorEditorProps & {
               onPress={() => setSelectedColorKey('primary')}
             >
               <Text style={styles.colorButtonText}>Primary</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.colorSelectorButton,
                 selectedColorKey === 'secondary' && styles.selectedColorButton,
@@ -288,9 +288,9 @@ const ThemeColorEditor: React.FC<ThemeColorEditorProps & {
               onPress={() => setSelectedColorKey('secondary')}
             >
               <Text style={styles.colorButtonText}>Secondary</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
             
-            <TouchableOpacity
+            <FocusableTouchableOpacity
               style={[
                 styles.colorSelectorButton,
                 selectedColorKey === 'darkBackground' && styles.selectedColorButton,
@@ -299,7 +299,7 @@ const ThemeColorEditor: React.FC<ThemeColorEditorProps & {
               onPress={() => setSelectedColorKey('darkBackground')}
             >
               <Text style={styles.colorButtonText}>Background</Text>
-            </TouchableOpacity>
+            </FocusableTouchableOpacity>
           </View>
         </View>
         
@@ -535,7 +535,7 @@ const ThemeScreen: React.FC = () => {
       <StatusBar barStyle="light-content" />
       
       <View style={[styles.header, { paddingTop: headerTopPadding }]}>
-        <TouchableOpacity 
+        <FocusableTouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -543,7 +543,7 @@ const ThemeScreen: React.FC = () => {
           <Text style={[styles.backText, { color: currentTheme.colors.text }]}>
             Settings
           </Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
         
         <View style={styles.headerActions}>
           {/* Empty for now, but ready for future actions */}
@@ -595,7 +595,7 @@ const ThemeScreen: React.FC = () => {
           ))}
         </View>
         
-        <TouchableOpacity 
+        <FocusableTouchableOpacity 
           style={[
             styles.createButton, 
             { backgroundColor: currentTheme.colors.primary },
@@ -605,7 +605,7 @@ const ThemeScreen: React.FC = () => {
         >
           <MaterialIcons name="add" size={20} color="#FFFFFF" />
           <Text style={styles.createButtonText}>Create Custom Theme</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
         <Text style={[styles.sectionTitle, { color: currentTheme.colors.textMuted, marginTop: 24 }]}>
           OPTIONS

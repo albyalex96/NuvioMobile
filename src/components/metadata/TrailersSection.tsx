@@ -20,6 +20,7 @@ import { logger } from '../../utils/logger';
 import TrailerService from '../../services/trailerService';
 import TrailerModal from './TrailerModal';
 import Animated, { useSharedValue, withTiming, withDelay, useAnimatedStyle } from 'react-native-reanimated';
+import { FocusableTouchableOpacity } from '../common/FocusableTouchableOpacity';
 
 // Enhanced responsive breakpoints for Trailers Section
 const BREAKPOINTS = {
@@ -517,7 +518,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
 
         {/* Category Selector - Right Aligned */}
         {trailerCategories.length > 0 && selectedCategory && (
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[
               styles.categorySelector,
               {
@@ -531,6 +532,10 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
             onPress={toggleDropdown}
             activeOpacity={0.8}
             focusable={Platform.isTV}
+            enableTVFocus={Platform.isTV}
+            focusBorderRadius={isTV ? 20 : isLargeTablet ? 18 : isTablet ? 16 : 16}
+            focusRingWidth={3}
+            focusScale={1.03}
           >
             <Text
               style={[
@@ -551,7 +556,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
               size={isTV ? 22 : isLargeTablet ? 20 : isTablet ? 18 : 18}
               color="rgba(255,255,255,0.7)"
             />
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         )}
       </View>
 
@@ -575,7 +580,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
             borderRadius: isTV ? 20 : isLargeTablet ? 18 : isTablet ? 16 : 16
           }]}>
             {trailerCategories.map(category => (
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 key={category}
                 style={[
                   styles.dropdownItem,
@@ -587,6 +592,10 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
                 onPress={() => handleCategorySelect(category)}
                 activeOpacity={0.7}
                 focusable={Platform.isTV}
+                enableTVFocus={Platform.isTV}
+                focusBorderRadius={isTV ? 18 : isLargeTablet ? 16 : isTablet ? 14 : 14}
+                focusRingWidth={3}
+                focusScale={1.02}
               >
                 <View style={styles.dropdownItemContent}>
                   <View style={[
@@ -626,7 +635,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
                     {trailers[category].length}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             ))}
           </View>
         </TouchableOpacity>
@@ -656,7 +665,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
                   { width: trailerCardWidth }
                 ]}
               >
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={[
                     styles.trailerCard,
                     {
@@ -667,6 +676,10 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
                   onPress={() => handleTrailerPress(trailer)}
                   activeOpacity={0.9}
                   focusable={Platform.isTV}
+                  enableTVFocus={Platform.isTV}
+                  focusBorderRadius={isTV ? 20 : isLargeTablet ? 18 : isTablet ? 16 : 16}
+                  focusRingWidth={3}
+                  focusScale={1.03}
                 >
                   {/* Thumbnail with Gradient Overlay */}
                   <View style={styles.thumbnailWrapper}>
@@ -688,7 +701,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
                       }
                     ]} />
                   </View>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
 
                 {/* Trailer Info Below Card */}
                 <View style={styles.trailerInfoBelow}>

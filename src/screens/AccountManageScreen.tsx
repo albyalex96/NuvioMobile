@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform, Animated, Easing, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, Platform, Animated, Easing, TextInput, ActivityIndicator } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import CustomAlert from '../components/CustomAlert';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const AccountManageScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -97,9 +98,9 @@ const AccountManageScreen: React.FC = () => {
           colors={[currentTheme.colors.darkBackground, '#111318']}
           style={StyleSheet.absoluteFill}
         />
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <FocusableTouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <MaterialIcons name="arrow-back" size={22} color={currentTheme.colors.white} />
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
         <Text style={[styles.headerTitle, { color: currentTheme.colors.white }]}>Account</Text>
         <View style={{ width: 22, height: 22 }} />
       </Animated.View>
@@ -185,7 +186,7 @@ const AccountManageScreen: React.FC = () => {
         </View>
 
         {/* Save and Sign out */}
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           activeOpacity={0.85}
           style={[styles.saveButton, { backgroundColor: currentTheme.colors.elevation2, borderColor: currentTheme.colors.elevation2 }]}
           onPress={handleSave}
@@ -199,9 +200,9 @@ const AccountManageScreen: React.FC = () => {
               <Text style={styles.saveText}>Save changes</Text>
             </>
           )}
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
 
-        <TouchableOpacity
+        <FocusableTouchableOpacity
           activeOpacity={0.85}
           style={[
             styles.signOutButton,
@@ -211,7 +212,7 @@ const AccountManageScreen: React.FC = () => {
         >
           <MaterialIcons name="logout" size={18} color="#fff" style={{ marginRight: 8 }} />
           <Text style={styles.signOutText}>Sign out</Text>
-        </TouchableOpacity>
+        </FocusableTouchableOpacity>
       </Animated.View>
       <CustomAlert
         visible={alertVisible}

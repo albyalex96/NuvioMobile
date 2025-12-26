@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   TextInput,
   SafeAreaView,
   StatusBar,
@@ -29,6 +28,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomAlert from '../components/CustomAlert';
 // (duplicate import removed)
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 const TMDB_API_KEY_STORAGE_KEY = 'tmdb_api_key';
 const USE_CUSTOM_TMDB_API_KEY = 'use_custom_tmdb_api_key';
@@ -516,13 +516,13 @@ const TMDBSettingsScreen = () => {
       <StatusBar barStyle="light-content" />
       <View style={[styles.headerContainer, { paddingTop: topSpacing }]}>
         <View style={styles.header}>
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
             <MaterialIcons name="chevron-left" size={28} color={currentTheme.colors.primary} />
             <Text style={[styles.backText, { color: currentTheme.colors.primary }]}>Settings</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
         <Text style={[styles.headerTitle, { color: currentTheme.colors.text }]}>
           TMDb Settings
@@ -592,12 +592,12 @@ const TMDBSettingsScreen = () => {
                         Current: {(settings.tmdbLanguagePreference || 'en').toUpperCase()}
                       </Text>
                     </View>
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       onPress={() => setLanguagePickerVisible(true)}
                       style={[styles.languageButton, { backgroundColor: currentTheme.colors.primary }]}
                     >
                       <Text style={[styles.languageButtonText, { color: currentTheme.colors.white }]}>Change</Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   </View>
 
                   {/* Logo Preview */}
@@ -617,7 +617,7 @@ const TMDBSettingsScreen = () => {
                     style={styles.showsScrollView}
                   >
                     {EXAMPLE_SHOWS.map((show) => (
-                      <TouchableOpacity
+                      <FocusableTouchableOpacity
                         key={show.imdbId}
                         style={[
                           styles.showItem,
@@ -636,7 +636,7 @@ const TMDBSettingsScreen = () => {
                         >
                           {show.name}
                         </Text>
-                      </TouchableOpacity>
+                      </FocusableTouchableOpacity>
                     ))}
                   </ScrollView>
 
@@ -725,29 +725,29 @@ const TMDBSettingsScreen = () => {
                     onFocus={() => setIsInputFocused(true)}
                     onBlur={() => setIsInputFocused(false)}
                   />
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     style={styles.pasteButton}
                     onPress={pasteFromClipboard}
                   >
                     <MaterialIcons name="content-paste" size={20} color={currentTheme.colors.primary} />
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
                 </View>
 
                 <View style={styles.buttonRow}>
-                  <TouchableOpacity
+                  <FocusableTouchableOpacity
                     style={[styles.button, { backgroundColor: currentTheme.colors.primary }]}
                     onPress={saveApiKey}
                   >
                     <Text style={[styles.buttonText, { color: currentTheme.colors.white }]}>Save</Text>
-                  </TouchableOpacity>
+                  </FocusableTouchableOpacity>
 
                   {isKeySet && (
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       style={[styles.button, styles.clearButton, { borderColor: currentTheme.colors.error }]}
                       onPress={clearApiKey}
                     >
                       <Text style={[styles.buttonText, { color: currentTheme.colors.error }]}>Clear</Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   )}
                 </View>
 
@@ -771,7 +771,7 @@ const TMDBSettingsScreen = () => {
                   </View>
                 )}
 
-                <TouchableOpacity
+                <FocusableTouchableOpacity
                   style={styles.helpLink}
                   onPress={openTMDBWebsite}
                 >
@@ -779,7 +779,7 @@ const TMDBSettingsScreen = () => {
                   <Text style={[styles.helpText, { color: currentTheme.colors.primary }]}>
                     How to get a TMDb API key?
                   </Text>
-                </TouchableOpacity>
+                </FocusableTouchableOpacity>
               </View>
             </>
           )}
@@ -805,7 +805,7 @@ const TMDBSettingsScreen = () => {
             </View>
           </View>
 
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.button, { backgroundColor: currentTheme.colors.error }]}
             onPress={handleClearCache}
           >
@@ -813,7 +813,7 @@ const TMDBSettingsScreen = () => {
               <MaterialIcons name="delete-outline" size={18} color={currentTheme.colors.white} />
               <Text style={[styles.buttonText, { color: currentTheme.colors.white, marginLeft: 8 }]}>Clear Cache</Text>
             </View>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
 
           <View style={[styles.infoContainer, { marginTop: 12 }]}>
             <MaterialIcons name="info-outline" size={18} color={currentTheme.colors.primary} />
@@ -856,9 +856,9 @@ const TMDBSettingsScreen = () => {
                         autoCorrect={false}
                       />
                       {languageSearch.length > 0 && (
-                        <TouchableOpacity onPress={() => setLanguageSearch('')} style={styles.searchClearButton}>
+                        <FocusableTouchableOpacity onPress={() => setLanguageSearch('')} style={styles.searchClearButton}>
                           <MaterialIcons name="close" size={20} color={currentTheme.colors.mediumEmphasis} />
-                        </TouchableOpacity>
+                        </FocusableTouchableOpacity>
                       )}
                     </View>
                   </View>
@@ -880,7 +880,7 @@ const TMDBSettingsScreen = () => {
                           { code: 'de', label: 'DE' },
                           { code: 'tr', label: 'TR' },
                         ].map(({ code, label }) => (
-                          <TouchableOpacity
+                          <FocusableTouchableOpacity
                             key={code}
                             onPress={() => { updateSetting('tmdbLanguagePreference', code); setLanguagePickerVisible(false); }}
                             style={[
@@ -899,7 +899,7 @@ const TMDBSettingsScreen = () => {
                             ]}>
                               {label}
                             </Text>
-                          </TouchableOpacity>
+                          </FocusableTouchableOpacity>
                         ))}
                       </ScrollView>
                     </View>
@@ -956,7 +956,7 @@ const TMDBSettingsScreen = () => {
                         return (
                           <>
                             {filteredLanguages.map(({ code, label, native }) => (
-                              <TouchableOpacity
+                              <FocusableTouchableOpacity
                                 key={code}
                                 onPress={() => { updateSetting('tmdbLanguagePreference', code); setLanguagePickerVisible(false); }}
                                 style={[
@@ -992,7 +992,7 @@ const TMDBSettingsScreen = () => {
                                     </View>
                                   )}
                                 </View>
-                              </TouchableOpacity>
+                              </FocusableTouchableOpacity>
                             ))}
                             {languageSearch.length > 0 && filteredLanguages.length === 0 && (
                               <View style={styles.noResultsContainer}>
@@ -1000,12 +1000,12 @@ const TMDBSettingsScreen = () => {
                                 <Text style={[styles.noResultsText, { color: currentTheme.colors.mediumEmphasis }]}>
                                   No languages found for "{languageSearch}"
                                 </Text>
-                                <TouchableOpacity
+                                <FocusableTouchableOpacity
                                   onPress={() => setLanguageSearch('')}
                                   style={[styles.clearSearchButton, { backgroundColor: currentTheme.colors.elevation1 }]}
                                 >
                                   <Text style={[styles.clearSearchButtonText, { color: currentTheme.colors.primary }]}>Clear search</Text>
-                                </TouchableOpacity>
+                                </FocusableTouchableOpacity>
                               </View>
                             )}
                           </>
@@ -1016,18 +1016,18 @@ const TMDBSettingsScreen = () => {
 
                   {/* Footer Actions */}
                   <View style={styles.modalFooter}>
-                    <TouchableOpacity
+                    <FocusableTouchableOpacity
                       onPress={() => setLanguagePickerVisible(false)}
                       style={styles.cancelButton}
                     >
                       <Text style={[styles.cancelButtonText, { color: currentTheme.colors.text }]}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </FocusableTouchableOpacity>
+                    <FocusableTouchableOpacity
                       onPress={() => setLanguagePickerVisible(false)}
                       style={[styles.doneButton, { backgroundColor: currentTheme.colors.primary }]}
                     >
                       <Text style={[styles.doneButtonText, { color: currentTheme.colors.white }]}>Done</Text>
-                    </TouchableOpacity>
+                    </FocusableTouchableOpacity>
                   </View>
                 </View>
               </TouchableWithoutFeedback>

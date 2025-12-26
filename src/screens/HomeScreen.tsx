@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
@@ -77,6 +76,7 @@ import { useToast } from '../contexts/ToastContext';
 import FirstTimeWelcome from '../components/FirstTimeWelcome';
 import { HeaderVisibility } from '../contexts/HeaderVisibility';
 import { useTrailer } from '../contexts/TrailerContext';
+import { FocusableTouchableOpacity } from '../components/common/FocusableTouchableOpacity';
 
 // Constants
 const CATALOG_SETTINGS_KEY = 'catalog_settings';
@@ -799,15 +799,18 @@ const HomeScreen = () => {
         return (
           <View>
             <View style={styles.loadMoreContainer}>
-              <TouchableOpacity
+              <FocusableTouchableOpacity
                 style={[styles.loadMoreButton, { backgroundColor: currentTheme.colors.primary }]}
                 onPress={handleLoadMoreCatalogs}
+                enableTVFocus={Platform.isTV}
+                preset="button"
+                focusBorderRadius={16}
               >
                 <MaterialIcons name="expand-more" size={20} color={currentTheme.colors.white} />
                 <Text style={[styles.loadMoreText, { color: currentTheme.colors.white }]}>
                   Load More Catalogs
                 </Text>
-              </TouchableOpacity>
+              </FocusableTouchableOpacity>
             </View>
           </View>
         );
@@ -829,13 +832,17 @@ const HomeScreen = () => {
           <Text style={{ color: currentTheme.colors.textDark, marginTop: 8, fontSize: 16, textAlign: 'center' }}>
             No content available
           </Text>
-          <TouchableOpacity
+          <FocusableTouchableOpacity
             style={[styles.addCatalogButton, { backgroundColor: currentTheme.colors.primary }]}
             onPress={() => navigation.navigate('Settings')}
+            enableTVFocus={Platform.isTV}
+            preset="button"
+            focusBorderRadius={16}
+            hasTVPreferredFocus={Platform.isTV}
           >
             <MaterialIcons name="add-circle" size={20} color={currentTheme.colors.white} />
             <Text style={[styles.addCatalogButtonText, { color: currentTheme.colors.white }]}>Add Catalogs</Text>
-          </TouchableOpacity>
+          </FocusableTouchableOpacity>
         </View>
       )}
     </>
