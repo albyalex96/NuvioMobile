@@ -8,8 +8,20 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    "development_tv": {
+      "extends": "development",
+      "env": {
+        "EXPO_TV": "1"
+      }
+    },
     "preview": {
       "distribution": "internal"
+    },
+    "preview_tv": {
+      "extends": "preview",
+      "env": {
+        "EXPO_TV": "1"
+      }
     },
     "production": {
       "autoIncrement": true,
@@ -20,10 +32,22 @@
         "image": "latest"
       }
     },
+    "production_tv": {
+      "extends": "production",
+      "env": {
+        "EXPO_TV": "1"
+      }
+    },
     "release": {
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
+      }
+    },
+    "release_tv": {
+      "extends": "release",
+      "env": {
+        "EXPO_TV": "1"
       }
     },
     "apk": {

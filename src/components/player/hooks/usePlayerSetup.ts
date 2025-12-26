@@ -1,10 +1,24 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { StatusBar, Dimensions, AppState, InteractionManager, Platform } from 'react-native';
-import * as Brightness from 'expo-brightness';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { logger } from '../../../utils/logger';
 import { useFocusEffect } from '@react-navigation/native';
+
+// Check if running on TV
+const isTV = Platform.isTV;
+
+// Conditionally import Brightness and ScreenOrientation (not available on TV)
+let Brightness: typeof import('expo-brightness') | null = null;
+let ScreenOrientation: typeof import('expo-screen-orientation') | null = null;
+
+if (!isTV) {
+    try {
+        Brightness = require('expo-brightness');
+        ScreenOrientation = require('expo-screen-orientation');
+    } catch (e) {
+        logger.warn('[usePlayerSetup] Brightness/ScreenOrientation not available:', e);
+    }
+}
 
 interface PlayerSetupConfig {
     setScreenDimensions: (dim: any) => void;
@@ -72,11 +86,15 @@ export const usePlayerSetup = (config: PlayerSetupConfig) => {
         // Initialize volume (normalized 0-1 for cross-platform)
         setVolume(1.0);
 
-        // Initialize Brightness
+        // Initialize Brightness (skip on TV)
         const initBrightness = () => {
+            if (!Brightness) {
+                setBrightness(1.0);
+                return;
+            }
             InteractionManager.runAfterInteractions(async () => {
                 try {
-                    const currentBrightness = await Brightness.getBrightnessAsync();
+                    const currentBrightness = await Brightness!.getBrightnessAsync();
                     setBrightness(currentBrightness);
                 } catch (error) {
                     logger.warn('[usePlayerSetup] Error getting initial brightness:', error);
@@ -95,9 +113,12 @@ export const usePlayerSetup = (config: PlayerSetupConfig) => {
     const orientationLocked = useRef(false);
 
     useEffect(() => {
+        // Skip orientation lock on TV (not needed)
+        if (!ScreenOrientation) return;
+
         if (isOpeningAnimationComplete && !orientationLocked.current) {
             const task = InteractionManager.runAfterInteractions(() => {
-                ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
+                ScreenOrientation!.lockAsync(ScreenOrientation!.OrientationLock.LANDSCAPE)
                     .then(() => {
                         orientationLocked.current = true;
                     })
@@ -109,8 +130,11 @@ export const usePlayerSetup = (config: PlayerSetupConfig) => {
 
     useEffect(() => {
         return () => {
+            // Skip on TV
+            if (!ScreenOrientation) return;
+
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT)
-                .then(() => ScreenOrientation.unlockAsync())
+                .then(() => ScreenOrientation!.unlockAsync())
                 .catch(() => { });
         };
     }, []);

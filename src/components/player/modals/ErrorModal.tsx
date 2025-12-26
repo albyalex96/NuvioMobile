@@ -1,6 +1,5 @@
 import React from 'react';
-import * as ExpoClipboard from 'expo-clipboard';
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, {
     FadeIn,
@@ -8,6 +7,19 @@ import Animated, {
     ZoomIn,
     ZoomOut,
 } from 'react-native-reanimated';
+
+// Check if running on TV platform
+const isTV = Platform.isTV;
+
+// Conditionally import expo-clipboard (not available on TV)
+let ExpoClipboard: typeof import('expo-clipboard') | null = null;
+if (!isTV) {
+    try {
+        ExpoClipboard = require('expo-clipboard');
+    } catch (e) {
+        // Silently fail - copy functionality won't be available
+    }
+}
 
 interface ErrorModalProps {
     showErrorModal: boolean;
@@ -34,6 +46,9 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({
     };
 
     const handleCopy = async () => {
+        // Skip on TV or if clipboard is not available
+        if (!ExpoClipboard) return;
+
         await ExpoClipboard.setStringAsync(errorDetails);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);

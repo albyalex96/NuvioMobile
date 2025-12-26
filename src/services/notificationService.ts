@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import { Platform, AppState, AppStateStatus } from 'react-native';
 import { mmkvStorage } from './mmkvStorage';
 import { parseISO, differenceInHours, isToday, addDays, isAfter, startOfToday } from 'date-fns';
@@ -9,12 +8,27 @@ import { tmdbService } from './tmdbService';
 import { logger } from '../utils/logger';
 import { memoryManager } from '../utils/memoryManager';
 
+// Check if running on TV platform (tvOS or Android TV)
+const isTV = Platform.isTV;
+
+// Conditionally import expo-notifications only on non-TV platforms
+// This prevents the native module error on TV
+let Notifications: typeof import('expo-notifications') | null = null;
+let SchedulableTriggerInputTypes: any = null;
+
+if (!isTV) {
+  try {
+    // Dynamic require to avoid loading on TV
+    Notifications = require('expo-notifications');
+    SchedulableTriggerInputTypes = Notifications?.SchedulableTriggerInputTypes;
+  } catch (e) {
+    logger.warn('[NotificationService] expo-notifications not available:', e);
+  }
+}
+
 // Define notification storage keys
 const NOTIFICATION_STORAGE_KEY = 'stremio-notifications';
 const NOTIFICATION_SETTINGS_KEY = 'stremio-notification-settings';
-
-// Import the correct type from Notifications
-const { SchedulableTriggerInputTypes } = Notifications;
 
 // Notification settings interface
 export interface NotificationSettings {
@@ -27,10 +41,10 @@ export interface NotificationSettings {
 
 // Default notification settings
 const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  enabled: true,
-  newEpisodeNotifications: true,
-  reminderNotifications: true,
-  upcomingShowsNotifications: true,
+  enabled: !isTV, // Disable by default on TV
+  newEpisodeNotifications: !isTV,
+  reminderNotifications: !isTV,
+  upcomingShowsNotifications: !isTV,
   timeBeforeAiring: 24, // 24 hours before airing
 };
 
@@ -60,6 +74,12 @@ class NotificationService {
   private lastDownloadNotificationTime: Map<string, number> = new Map();
 
   private constructor() {
+    // Skip notification initialization on TV platforms
+    if (isTV) {
+      logger.log('[NotificationService] Notifications disabled on TV platform');
+      return;
+    }
+
     // Initialize notifications
     this.configureNotifications();
     this.loadSettings();
@@ -77,6 +97,9 @@ class NotificationService {
   }
 
   private async configureNotifications() {
+    // Skip on TV platforms or if Notifications not available
+    if (isTV || !Notifications) return;
+
     // Configure notification behavior
     await Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -152,6 +175,9 @@ class NotificationService {
   }
 
   async scheduleEpisodeNotification(item: NotificationItem): Promise<string | null> {
+    // Skip on TV platforms
+    if (isTV) return null;
+
     if (!this.settings.enabled || !this.settings.newEpisodeNotifications) {
       return null;
     }
@@ -185,7 +211,7 @@ class NotificationService {
       }
 
       // Schedule the notification
-      const notificationId = await Notifications.scheduleNotificationAsync({
+      const notificationId = await Notifications!.scheduleNotificationAsync({
         content: {
           title: `New Episode: ${item.seriesName}`,
           body: `S${item.season}:E${item.episode} - ${item.episodeTitle} is airing soon!`,
@@ -196,7 +222,7 @@ class NotificationService {
         },
         trigger: {
           date: notificationTime,
-          type: SchedulableTriggerInputTypes.DATE,
+          type: SchedulableTriggerInputTypes?.DATE,
         },
       });
 

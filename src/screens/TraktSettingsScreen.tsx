@@ -13,7 +13,6 @@ import {
   Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { makeRedirectUri, useAuthRequest, ResponseType, Prompt, CodeChallengeMethod } from 'expo-auth-session';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FastImage from '@d11/react-native-fast-image';
 import { traktService, TraktUser } from '../services/traktService';
@@ -25,6 +24,28 @@ import { useTraktIntegration } from '../hooks/useTraktIntegration';
 import { useTraktAutosyncSettings } from '../hooks/useTraktAutosyncSettings';
 import { colors } from '../styles';
 import CustomAlert from '../components/CustomAlert';
+
+// Check if running on TV platform
+const isTV = Platform.isTV;
+
+// Conditionally import expo-auth-session (not available on TV)
+let makeRedirectUri: typeof import('expo-auth-session').makeRedirectUri | null = null;
+let useAuthRequest: typeof import('expo-auth-session').useAuthRequest | null = null;
+let ResponseType: typeof import('expo-auth-session').ResponseType | null = null;
+let CodeChallengeMethod: typeof import('expo-auth-session').CodeChallengeMethod | null = null;
+
+if (!isTV) {
+  try {
+    const authSession = require('expo-auth-session');
+    makeRedirectUri = authSession.makeRedirectUri;
+    useAuthRequest = authSession.useAuthRequest;
+    ResponseType = authSession.ResponseType;
+    CodeChallengeMethod = authSession.CodeChallengeMethod;
+  } catch (e) {
+    // Silently fail - auth won't be available on TV
+    logger.warn('[TraktSettingsScreen] expo-auth-session not available');
+  }
+}
 
 const ANDROID_STATUSBAR_HEIGHT = StatusBar.currentHeight || 0;
 
@@ -39,11 +60,11 @@ const discovery = {
   tokenEndpoint: 'https://api.trakt.tv/oauth/token',
 };
 
-// For use with deep linking
-const redirectUri = makeRedirectUri({
+// For use with deep linking (only on non-TV platforms)
+const redirectUri = makeRedirectUri?.({
   scheme: 'nuvio',
   path: 'auth/trakt',
-});
+}) || 'nuvio://auth/trakt';
 
 const TraktSettingsScreen: React.FC = () => {
   const { settings, updateSetting } = useSettings();
@@ -53,7 +74,7 @@ const TraktSettingsScreen: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userProfile, setUserProfile] = useState<TraktUser | null>(null);
   const { currentTheme } = useTheme();
-  
+
   const {
     settings: autosyncSettings,
     isSyncing,
@@ -101,7 +122,7 @@ const TraktSettingsScreen: React.FC = () => {
     try {
       const authenticated = await traktService.isAuthenticated();
       setIsAuthenticated(authenticated);
-      
+
       if (authenticated) {
         const profile = await traktService.getUserProfile();
         setUserProfile(profile);
@@ -119,18 +140,23 @@ const TraktSettingsScreen: React.FC = () => {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
-  // Setup expo-auth-session hook with PKCE
-  const [request, response, promptAsync] = useAuthRequest(
-    {
-      clientId: TRAKT_CLIENT_ID,
-      scopes: [],
-      redirectUri: redirectUri,
-      responseType: ResponseType.Code,
-      usePKCE: true,
-      codeChallengeMethod: CodeChallengeMethod.S256,
-    },
-    discovery
-  );
+  // Setup expo-auth-session hook with PKCE (only on non-TV platforms)
+  // On TV, we'll return null values and disable auth
+  const authResult = useAuthRequest && ResponseType && CodeChallengeMethod
+    ? useAuthRequest(
+      {
+        clientId: TRAKT_CLIENT_ID,
+        scopes: [],
+        redirectUri: redirectUri,
+        responseType: ResponseType.Code,
+        usePKCE: true,
+        codeChallengeMethod: CodeChallengeMethod.S256,
+      },
+      discovery
+    )
+    : [null, null, async () => ({ type: 'dismiss' as const })];
+
+  const [request, response, promptAsync] = authResult as any;
 
   const [isExchangingCode, setIsExchangingCode] = useState(false);
 
@@ -151,8 +177,8 @@ const TraktSettingsScreen: React.FC = () => {
                   'Successfully Connected',
                   'Your Trakt account has been connected successfully.',
                   [
-                    { 
-                      label: 'OK', 
+                    {
+                      label: 'OK',
                       onPress: () => navigation.goBack(),
                     }
                   ]
@@ -190,9 +216,9 @@ const TraktSettingsScreen: React.FC = () => {
       'Sign Out',
       'Are you sure you want to sign out of your Trakt account?',
       [
-        { label: 'Cancel', onPress: () => {} },
-        { 
-          label: 'Sign Out', 
+        { label: 'Cancel', onPress: () => { } },
+        {
+          label: 'Sign Out',
           onPress: async () => {
             setIsLoading(true);
             try {
@@ -224,26 +250,26 @@ const TraktSettingsScreen: React.FC = () => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <MaterialIcons 
-            name="arrow-back" 
-            size={24} 
-            color={isDarkMode ? currentTheme.colors.highEmphasis : currentTheme.colors.textDark} 
+          <MaterialIcons
+            name="arrow-back"
+            size={24}
+            color={isDarkMode ? currentTheme.colors.highEmphasis : currentTheme.colors.textDark}
           />
           <Text style={[styles.backText, { color: isDarkMode ? currentTheme.colors.highEmphasis : currentTheme.colors.textDark }]}>
             Settings
           </Text>
         </TouchableOpacity>
-        
+
         <View style={styles.headerActions}>
           {/* Empty for now, but ready for future actions */}
         </View>
       </View>
-      
+
       <Text style={[styles.headerTitle, { color: isDarkMode ? currentTheme.colors.highEmphasis : currentTheme.colors.textDark }]}>
         Trakt Settings
       </Text>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
@@ -259,8 +285,8 @@ const TraktSettingsScreen: React.FC = () => {
             <View style={styles.profileContainer}>
               <View style={styles.profileHeader}>
                 {userProfile.avatar ? (
-                  <FastImage 
-                    source={{ uri: userProfile.avatar }} 
+                  <FastImage
+                    source={{ uri: userProfile.avatar }}
                     style={styles.avatar}
                     resizeMode={FastImage.resizeMode.cover}
                   />
@@ -315,7 +341,7 @@ const TraktSettingsScreen: React.FC = () => {
             </View>
           ) : (
             <View style={styles.signInContainer}>
-              <TraktIcon 
+              <TraktIcon
                 width={120}
                 height={120}
                 style={styles.traktLogo}
@@ -497,7 +523,7 @@ const TraktSettingsScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
-      
+
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}

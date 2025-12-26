@@ -1,12 +1,27 @@
 import { useEffect, useRef } from 'react';
 import { StatusBar, Platform, Dimensions, AppState } from 'react-native';
-import RNImmersiveMode from 'react-native-immersive-mode';
-import * as NavigationBar from 'expo-navigation-bar';
-import * as Brightness from 'expo-brightness';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { logger } from '../../../../utils/logger';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+
+// Check if running on TV
+const isTV = Platform.isTV;
+
+// Conditionally import modules not available on Android TV
+let RNImmersiveMode: any = null;
+let NavigationBar: typeof import('expo-navigation-bar') | null = null;
+let Brightness: typeof import('expo-brightness') | null = null;
+
+if (!isTV) {
+    try {
+        RNImmersiveMode = require('react-native-immersive-mode').default;
+        NavigationBar = require('expo-navigation-bar');
+        Brightness = require('expo-brightness');
+    } catch (e) {
+        logger.warn('[usePlayerSetup] Some player modules not available:', e);
+    }
+}
 
 const DEBUG_MODE = false;
 
@@ -34,32 +49,40 @@ export const usePlayerSetup = (
     }, [paused]);
 
     const enableImmersiveMode = async () => {
-        if (Platform.OS === 'android') {
-            // Standard immersive mode
-            RNImmersiveMode.setBarTranslucent(true);
-            RNImmersiveMode.fullLayout(true);
+        if (Platform.OS === 'android' && !isTV) {
+            // Standard immersive mode (not available on TV)
+            if (RNImmersiveMode) {
+                RNImmersiveMode.setBarTranslucent(true);
+                RNImmersiveMode.fullLayout(true);
+            }
             StatusBar.setHidden(true, 'none');
 
             // Explicitly hide bottom navigation bar using Expo
-            try {
-                await NavigationBar.setVisibilityAsync("hidden");
-                await NavigationBar.setBehaviorAsync("overlay-swipe");
-            } catch (e) {
-                // Ignore errors on non-supported devices
+            if (NavigationBar) {
+                try {
+                    await NavigationBar.setVisibilityAsync("hidden");
+                    await NavigationBar.setBehaviorAsync("overlay-swipe");
+                } catch (e) {
+                    // Ignore errors on non-supported devices
+                }
             }
         }
     };
 
     const disableImmersiveMode = async () => {
-        if (Platform.OS === 'android') {
-            RNImmersiveMode.setBarTranslucent(false);
-            RNImmersiveMode.fullLayout(false);
+        if (Platform.OS === 'android' && !isTV) {
+            if (RNImmersiveMode) {
+                RNImmersiveMode.setBarTranslucent(false);
+                RNImmersiveMode.fullLayout(false);
+            }
             StatusBar.setHidden(false, 'fade');
 
-            try {
-                await NavigationBar.setVisibilityAsync("visible");
-            } catch (e) {
-                // Ignore
+            if (NavigationBar) {
+                try {
+                    await NavigationBar.setVisibilityAsync("visible");
+                } catch (e) {
+                    // Ignore
+                }
             }
         }
     };
@@ -84,10 +107,14 @@ export const usePlayerSetup = (
         // Initialize volume (default to 1.0)
         setVolume(1.0);
 
-        // Initialize Brightness
+        // Initialize Brightness (skip on TV)
         const initBrightness = async () => {
+            if (!Brightness) {
+                setBrightness(1.0);
+                return;
+            }
             try {
-                if (Platform.OS === 'android') {
+                if (Platform.OS === 'android' && !isTV) {
                     try {
                         const [sysBright, sysMode] = await Promise.all([
                             (Brightness as any).getSystemBrightnessAsync?.(),

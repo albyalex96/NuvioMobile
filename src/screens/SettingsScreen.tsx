@@ -29,8 +29,24 @@ import { useTraktContext } from '../contexts/TraktContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { catalogService } from '../services/catalogService';
 import { fetchTotalDownloads } from '../services/githubReleaseService';
-import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// Check if running on TV
+const isTV = Platform.isTV;
+
+// Lazy load WebBrowser to avoid native module errors on TV
+let _webBrowser: typeof import('expo-web-browser') | null = null;
+const getWebBrowser = () => {
+  if (_webBrowser !== null) return _webBrowser;
+  if (isTV) return null;
+  try {
+    _webBrowser = require('expo-web-browser');
+    return _webBrowser;
+  } catch (e) {
+    return null;
+  }
+};
+
 import * as Sentry from '@sentry/react-native';
 import { getDisplayedAppVersion } from '../utils/version';
 import CustomAlert from '../components/CustomAlert';
@@ -945,9 +961,17 @@ const SettingsScreen: React.FC = () => {
                   <View style={styles.discordContainer}>
                     <TouchableOpacity
                       style={[styles.discordButton, { backgroundColor: 'transparent', paddingVertical: 0, paddingHorizontal: 0, marginBottom: 8 }]}
-                      onPress={() => WebBrowser.openBrowserAsync('https://ko-fi.com/tapframe', {
-                        presentationStyle: Platform.OS === 'ios' ? WebBrowser.WebBrowserPresentationStyle.FORM_SHEET : WebBrowser.WebBrowserPresentationStyle.FORM_SHEET
-                      })}
+                      onPress={() => {
+                        const url = 'https://ko-fi.com/tapframe';
+                        const wb = getWebBrowser();
+                        if (wb) {
+                          wb.openBrowserAsync(url, {
+                            presentationStyle: Platform.OS === 'ios' ? wb.WebBrowserPresentationStyle.FORM_SHEET : wb.WebBrowserPresentationStyle.FORM_SHEET
+                          });
+                        } else {
+                          Linking.openURL(url);
+                        }
+                      }}
                       activeOpacity={0.7}
                     >
                       <FastImage
@@ -1071,9 +1095,17 @@ const SettingsScreen: React.FC = () => {
             <View style={styles.discordContainer}>
               <TouchableOpacity
                 style={[styles.discordButton, { backgroundColor: 'transparent', paddingVertical: 0, paddingHorizontal: 0, marginBottom: 8 }]}
-                onPress={() => WebBrowser.openBrowserAsync('https://ko-fi.com/tapframe', {
-                  presentationStyle: Platform.OS === 'ios' ? WebBrowser.WebBrowserPresentationStyle.FORM_SHEET : WebBrowser.WebBrowserPresentationStyle.FORM_SHEET
-                })}
+                onPress={() => {
+                  const url = 'https://ko-fi.com/tapframe';
+                  const wb = getWebBrowser();
+                  if (wb) {
+                    wb.openBrowserAsync(url, {
+                      presentationStyle: Platform.OS === 'ios' ? wb.WebBrowserPresentationStyle.FORM_SHEET : wb.WebBrowserPresentationStyle.FORM_SHEET
+                    });
+                  } else {
+                    Linking.openURL(url);
+                  }
+                }}
                 activeOpacity={0.7}
               >
                 <FastImage

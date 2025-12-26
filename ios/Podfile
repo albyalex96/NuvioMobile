@@ -16,12 +16,12 @@ ENV['RCT_NEW_ARCH_ENABLED'] ||= '0' if podfile_properties['newArchEnabled'] == '
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
 ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
-platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
+platform :tvos, podfile_properties['ios.deploymentTarget'] || '15.1'
 
 prepare_react_native_project!
 
 target 'Nuvio' do
-  use_expo_modules!(exclude: ['expo-libvlc-player'])
+  use_expo_modules!
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
@@ -49,12 +49,6 @@ target 'Nuvio' do
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
-  # KSPlayer dependencies
-  pod 'KSPlayer', :git => 'https://github.com/kingslay/KSPlayer.git', :branch => 'main'
-  pod 'DisplayCriteria', :git => 'https://github.com/kingslay/KSPlayer.git', :branch => 'main', :modular_headers => true
-  pod 'FFmpegKit', :git => 'https://github.com/kingslay/FFmpegKit.git', :branch => 'main', :modular_headers => true
-  pod 'Libass', :git => 'https://github.com/kingslay/FFmpegKit.git', :branch => 'main'
-
   post_install do |installer|
     react_native_post_install(
       installer,
@@ -62,5 +56,106 @@ target 'Nuvio' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+    
+    # Patch RCTThirdPartyComponentsProvider.mm to filter out nil component classes (tvOS compatibility)
+    # Some third-party libraries don't have Fabric components on tvOS, causing crashes
+    provider_file = "#{Pod::Config.instance.installation_root}/build/generated/ios/RCTThirdPartyComponentsProvider.mm"
+    if File.exist?(provider_file)
+      puts "Patching RCTThirdPartyComponentsProvider.mm for tvOS compatibility..."
+      content = File.read(provider_file)
+      
+      # Replace the dictionary literal with a mutable dictionary approach that filters nil values
+      patched_content = content.gsub(
+        /\+ \(NSDictionary<NSString \*, Class<RCTComponentViewProtocol>>\s*\*\)thirdPartyFabricComponents\s*\{.*?return thirdPartyComponents;\s*\}/m,
+        <<~OBJC
++ (NSDictionary<NSString *, Class<RCTComponentViewProtocol>> *)thirdPartyFabricComponents
+{
+  static NSDictionary<NSString *, Class<RCTComponentViewProtocol>> *thirdPartyComponents = nil;
+  static dispatch_once_t nativeComponentsToken;
+
+  dispatch_once(&nativeComponentsToken, ^{
+    NSMutableDictionary<NSString *, Class<RCTComponentViewProtocol>> *components = [NSMutableDictionary new];
+    
+    // Helper macro to safely add components (skips nil classes for tvOS compatibility)
+    #define ADD_COMPONENT(name, className) \\
+      do { \\
+        Class cls = NSClassFromString(className); \\
+        if (cls != nil) { \\
+          components[name] = cls; \\
+        } \\
+      } while(0)
+    
+    ADD_COMPONENT(@"FastImageView", @"FFFastImageViewComponentView");
+    ADD_COMPONENT(@"RNCSlider", @"RNCSliderComponentView");
+    ADD_COMPONENT(@"RNCPicker", @"RNCPickerComponentView");
+    ADD_COMPONENT(@"LottieAnimationView", @"LottieAnimationViewComponentView");
+    ADD_COMPONENT(@"RNCTabView", @"RCTTabViewComponentView");
+    ADD_COMPONENT(@"BottomAccessoryView", @"RCTBottomAccessoryComponentView");
+    ADD_COMPONENT(@"RNGestureHandlerButton", @"RNGestureHandlerButtonComponentView");
+    ADD_COMPONENT(@"RNCSafeAreaProvider", @"RNCSafeAreaProviderComponentView");
+    ADD_COMPONENT(@"RNCSafeAreaView", @"RNCSafeAreaViewComponentView");
+    ADD_COMPONENT(@"RNSVGCircle", @"RNSVGCircle");
+    ADD_COMPONENT(@"RNSVGClipPath", @"RNSVGClipPath");
+    ADD_COMPONENT(@"RNSVGDefs", @"RNSVGDefs");
+    ADD_COMPONENT(@"RNSVGEllipse", @"RNSVGEllipse");
+    ADD_COMPONENT(@"RNSVGFeBlend", @"RNSVGFeBlend");
+    ADD_COMPONENT(@"RNSVGFeColorMatrix", @"RNSVGFeColorMatrix");
+    ADD_COMPONENT(@"RNSVGFeComposite", @"RNSVGFeComposite");
+    ADD_COMPONENT(@"RNSVGFeFlood", @"RNSVGFeFlood");
+    ADD_COMPONENT(@"RNSVGFeGaussianBlur", @"RNSVGFeGaussianBlur");
+    ADD_COMPONENT(@"RNSVGFeMerge", @"RNSVGFeMerge");
+    ADD_COMPONENT(@"RNSVGFeOffset", @"RNSVGFeOffset");
+    ADD_COMPONENT(@"RNSVGFilter", @"RNSVGFilter");
+    ADD_COMPONENT(@"RNSVGForeignObject", @"RNSVGForeignObject");
+    ADD_COMPONENT(@"RNSVGGroup", @"RNSVGGroup");
+    ADD_COMPONENT(@"RNSVGImage", @"RNSVGImage");
+    ADD_COMPONENT(@"RNSVGLine", @"RNSVGLine");
+    ADD_COMPONENT(@"RNSVGLinearGradient", @"RNSVGLinearGradient");
+    ADD_COMPONENT(@"RNSVGMarker", @"RNSVGMarker");
+    ADD_COMPONENT(@"RNSVGMask", @"RNSVGMask");
+    ADD_COMPONENT(@"RNSVGPath", @"RNSVGPath");
+    ADD_COMPONENT(@"RNSVGPattern", @"RNSVGPattern");
+    ADD_COMPONENT(@"RNSVGRadialGradient", @"RNSVGRadialGradient");
+    ADD_COMPONENT(@"RNSVGRect", @"RNSVGRect");
+    ADD_COMPONENT(@"RNSVGSvgView", @"RNSVGSvgView");
+    ADD_COMPONENT(@"RNSVGSymbol", @"RNSVGSymbol");
+    ADD_COMPONENT(@"RNSVGTSpan", @"RNSVGTSpan");
+    ADD_COMPONENT(@"RNSVGText", @"RNSVGText");
+    ADD_COMPONENT(@"RNSVGTextPath", @"RNSVGTextPath");
+    ADD_COMPONENT(@"RNSVGUse", @"RNSVGUse");
+    ADD_COMPONENT(@"RNSFullWindowOverlay", @"RNSFullWindowOverlay");
+    ADD_COMPONENT(@"RNSModalScreen", @"RNSModalScreen");
+    ADD_COMPONENT(@"RNSScreenContainer", @"RNSScreenContainerView");
+    ADD_COMPONENT(@"RNSScreenContentWrapper", @"RNSScreenContentWrapper");
+    ADD_COMPONENT(@"RNSScreenFooter", @"RNSScreenFooter");
+    ADD_COMPONENT(@"RNSScreen", @"RNSScreenView");
+    ADD_COMPONENT(@"RNSScreenNavigationContainer", @"RNSScreenNavigationContainerView");
+    ADD_COMPONENT(@"RNSScreenStackHeaderConfig", @"RNSScreenStackHeaderConfig");
+    ADD_COMPONENT(@"RNSScreenStackHeaderSubview", @"RNSScreenStackHeaderSubview");
+    ADD_COMPONENT(@"RNSScreenStack", @"RNSScreenStackView");
+    ADD_COMPONENT(@"RNSSearchBar", @"RNSSearchBar");
+    ADD_COMPONENT(@"RNSStackScreen", @"RNSStackScreenComponentView");
+    ADD_COMPONENT(@"RNSScreenStackHost", @"RNSScreenStackHostComponentView");
+    ADD_COMPONENT(@"RNSBottomTabsScreen", @"RNSBottomTabsScreenComponentView");
+    ADD_COMPONENT(@"RNSBottomTabs", @"RNSBottomTabsHostComponentView");
+    ADD_COMPONENT(@"RNSBottomTabsAccessory", @"RNSBottomTabsAccessoryComponentView");
+    ADD_COMPONENT(@"RNSBottomTabsAccessoryContent", @"RNSBottomTabsAccessoryContentComponentView");
+    ADD_COMPONENT(@"RNSSplitViewHost", @"RNSSplitViewHostComponentView");
+    ADD_COMPONENT(@"RNSSplitViewScreen", @"RNSSplitViewScreenComponentView");
+    ADD_COMPONENT(@"RNSSafeAreaView", @"RNSSafeAreaViewComponentView");
+    
+    #undef ADD_COMPONENT
+    
+    thirdPartyComponents = [components copy];
+  });
+
+  return thirdPartyComponents;
+}
+        OBJC
+      )
+      
+      File.write(provider_file, patched_content)
+      puts "Patched RCTThirdPartyComponentsProvider.mm successfully!"
+    end
   end
 end
