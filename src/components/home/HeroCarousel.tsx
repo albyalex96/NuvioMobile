@@ -394,6 +394,7 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ items, loading = false }) =
           {(loopingEnabled ? loopData : data).map((item, index) => (
             /* TEST 5: ORIGINAL CARD WITHOUT LINEAR GRADIENT */
             <CarouselCard
+              hasTVPreferredFocus={Platform.isTV && (loopingEnabled ? index === 1 : index === 0)}
               key={`${item.id}-${index}-${loopingEnabled ? 'loop' : 'base'}`}
               item={item}
               colors={currentTheme.colors}
@@ -607,9 +608,10 @@ interface CarouselCardProps {
   cardWidth: number;
   cardHeight: number;
   isTablet: boolean;
+  hasTVPreferredFocus?: boolean;
 }
 
-const CarouselCard: React.FC<CarouselCardProps> = memo(({ item, colors, logoFailed, onLogoError, onPressInfo, scrollX, index, flipped, onToggleFlip, interval, cardWidth, cardHeight, isTablet }) => {
+const CarouselCard: React.FC<CarouselCardProps> = memo(({ item, colors, logoFailed, onLogoError, onPressInfo, scrollX, index, flipped, onToggleFlip, interval, cardWidth, cardHeight, isTablet, hasTVPreferredFocus }) => {
   const [bannerLoaded, setBannerLoaded] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
 
@@ -851,13 +853,13 @@ const CarouselCard: React.FC<CarouselCardProps> = memo(({ item, colors, logoFail
                   </Text>
                 </ScrollView>
               </View>
-              <TouchableOpacity activeOpacity={0.9} onPress={onPressInfo} style={StyleSheet.absoluteFillObject as any} />
+              <TouchableOpacity activeOpacity={0.9} onPress={onPressInfo} style={StyleSheet.absoluteFillObject as any} hasTVPreferredFocus={hasTVPreferredFocus} />
             </>
           ) : (
             <>
               {/* FRONT FACE */}
               <Animated.View style={[styles.flipFace as any, styles.frontFace as any, frontFlipStyle]} pointerEvents={flipped ? 'none' : 'auto'}>
-                <TouchableOpacity activeOpacity={0.9} onPress={onPressInfo} style={StyleSheet.absoluteFillObject as any}>
+                <TouchableOpacity activeOpacity={0.9} onPress={onPressInfo} style={StyleSheet.absoluteFillObject as any} hasTVPreferredFocus={hasTVPreferredFocus && !isTablet}>
                   <View style={styles.bannerContainer as ViewStyle}>
                     {!bannerLoaded && (
                       <View style={styles.skeletonBannerFull as ViewStyle} />

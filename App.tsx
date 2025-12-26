@@ -120,7 +120,14 @@ const ThemedApp = () => {
       try {
         // Check onboarding status
         const onboardingCompleted = await mmkvStorage.getItem('hasCompletedOnboarding');
-        setHasCompletedOnboarding(onboardingCompleted === 'true');
+
+        // On TV, auto-complete onboarding to skip the tutorial screens
+        if (Platform.isTV && onboardingCompleted !== 'true') {
+          await mmkvStorage.setItem('hasCompletedOnboarding', 'true');
+          setHasCompletedOnboarding(true);
+        } else {
+          setHasCompletedOnboarding(onboardingCompleted === 'true');
+        }
 
         // Initialize update service
         await UpdateService.initialize();
@@ -135,7 +142,7 @@ const ThemedApp = () => {
 
         // Check if announcement should be shown (version 1.0.0)
         const announcementShown = await mmkvStorage.getItem('announcement_v1.0.0_shown');
-        if (!announcementShown && onboardingCompleted === 'true') {
+        if (!announcementShown && (onboardingCompleted === 'true' || Platform.isTV) && !Platform.isTV) {
           // Show announcement only after app is ready
           setTimeout(() => {
             setShowAnnouncement(true);

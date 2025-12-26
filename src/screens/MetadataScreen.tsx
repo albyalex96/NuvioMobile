@@ -868,6 +868,7 @@ const MetadataScreen: React.FC = () => {
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: currentTheme.colors.primary }]}
             onPress={loadMetadata}
+            focusable={Platform.isTV}
           >
             <MaterialIcons name="refresh" size={20} color={currentTheme.colors.white} style={{ marginRight: 8 }} />
             <Text style={styles.retryButtonText}>Try Again</Text>
@@ -875,6 +876,7 @@ const MetadataScreen: React.FC = () => {
           <TouchableOpacity
             style={[styles.backButton, { borderColor: currentTheme.colors.primary }]}
             onPress={handleBack}
+            focusable={Platform.isTV}
           >
             <Text style={[styles.backButtonText, { color: currentTheme.colors.primary }]}>Go Back</Text>
           </TouchableOpacity>
@@ -1245,6 +1247,7 @@ const MetadataScreen: React.FC = () => {
                         type: 'movie',
                         title: metadata.name || 'Gallery'
                       })}
+                      focusable={Platform.isTV}
                     >
                       <Text style={[styles.backdropGalleryText, { color: currentTheme.colors.highEmphasis }]}>Backdrop Gallery</Text>
                       <MaterialIcons name="chevron-right" size={24} color={currentTheme.colors.highEmphasis} />
@@ -1385,6 +1388,7 @@ const MetadataScreen: React.FC = () => {
                         type: 'tv',
                         title: metadata.name || 'Gallery'
                       })}
+                      focusable={Platform.isTV}
                     >
                       <Text style={[styles.backdropGalleryText, { color: currentTheme.colors.highEmphasis }]}>Backdrop Gallery</Text>
                       <MaterialIcons name="chevron-right" size={24} color={currentTheme.colors.highEmphasis} />

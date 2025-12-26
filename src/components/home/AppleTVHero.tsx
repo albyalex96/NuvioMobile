@@ -1187,6 +1187,7 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
                     });
                   }
                 }}
+                focusable={Platform.isTV}
               >
                 <View
                   style={[
@@ -1197,7 +1198,6 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
                   ]}
                   onLayout={(event) => {
                     const { height } = event.nativeEvent.layout;
-                    setLogoHeights((prev) => ({ ...prev, [currentIndex]: height }));
                   }}
                 >
                   <Image
@@ -1223,6 +1223,7 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
                     });
                   }
                 }}
+                focusable={Platform.isTV}
               >
                 <View style={styles.titleContainer}>
                   <Text style={styles.title} numberOfLines={2}>
@@ -1256,6 +1257,8 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
               style={[styles.playButton]}
               onPress={handlePlayAction}
               activeOpacity={0.85}
+              hasTVPreferredFocus={Platform.isTV}
+              focusable={Platform.isTV}
             >
               <MaterialIcons
                 name={playButtonText === 'Resume' ? "replay" : "play-arrow"}
@@ -1270,6 +1273,7 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
               style={styles.saveButton}
               onPress={handleSaveAction}
               activeOpacity={0.85}
+              focusable={Platform.isTV}
             >
               <MaterialIcons
                 name={inLibrary ? "bookmark" : "bookmark-outline"}

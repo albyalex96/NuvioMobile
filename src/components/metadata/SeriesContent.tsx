@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo, memo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, useWindowDimensions, useColorScheme, FlatList, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, useWindowDimensions, useColorScheme, FlatList, Modal, Pressable, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import FastImage from '@d11/react-native-fast-image';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -794,12 +794,8 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                 borderRadius: isTV ? 10 : isLargeTablet ? 8 : isTablet ? 6 : 6
               }
             ]}
-            onPress={() => {
-              const newMode = seasonViewMode === 'posters' ? 'text' : 'posters';
-              updateViewMode(newMode);
-              if (__DEV__) console.log('[SeriesContent] View mode changed to:', newMode, 'Current ref value:', seasonViewMode);
-            }}
             activeOpacity={0.7}
+            focusable={Platform.isTV}
           >
             <Text style={[
               styles.seasonViewToggleText,
@@ -863,6 +859,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                       selectedSeason === season && styles.selectedSeasonTextButton
                     ]}
                     onPress={() => onSeasonChange(season)}
+                    focusable={Platform.isTV}
                   >
                     <Text style={[
                       styles.seasonTextButtonText,
@@ -898,6 +895,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
                     selectedSeason === season && [styles.selectedSeasonButton, { borderColor: currentTheme.colors.primary }]
                   ]}
                   onPress={() => onSeasonChange(season)}
+                  focusable={Platform.isTV}
                 >
                   <View style={[
                     styles.seasonPosterContainer,
@@ -945,7 +943,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
           }}
           keyExtractor={season => season.toString()}
         />
-      </View>
+      </View >
     );
   };
 
@@ -1039,6 +1037,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
         onLongPress={() => handleEpisodeLongPress(episode)}
         delayLongPress={400}
         activeOpacity={0.7}
+        focusable={Platform.isTV}
       >
         <View style={[
           styles.episodeImageContainer,
@@ -1322,6 +1321,7 @@ const SeriesContentComponent: React.FC<SeriesContentProps> = ({
         onLongPress={() => handleEpisodeLongPress(episode)}
         delayLongPress={400}
         activeOpacity={0.85}
+        focusable={Platform.isTV}
       >
         {/* Solid outline replaces gradient border */}
 

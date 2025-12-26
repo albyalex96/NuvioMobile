@@ -443,7 +443,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
               <LinearGradient
                 colors={[
                   'transparent',
-                  'transparent', 
+                  'transparent',
                   'rgba(0,0,0,0.3)',
                   'rgba(0,0,0,0.7)',
                   'rgba(0,0,0,0.95)'
@@ -459,7 +459,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
           {logoUrl && !logoLoadError ? (
             <Animated.View style={logoAnimatedStyle}>
               <FastImage
-                source={{ 
+                source={{
                   uri: logoUrl,
                   priority: FastImage.priority.high,
                   cache: FastImage.cacheControl.immutable
@@ -506,6 +506,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
                 }
               }}
               activeOpacity={0.8}
+              hasTVPreferredFocus={Platform.isTV}
             >
               <MaterialIcons name="play-arrow" size={28} color={currentTheme.colors.black} />
               <Text style={[styles.tabletPlayButtonText as TextStyle, { color: currentTheme.colors.black }]}>
@@ -536,7 +537,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
-        
+
         {/* Bottom fade to blend with background */}
         <LinearGradient
           colors={[
@@ -589,7 +590,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
                   {logoUrl && !logoLoadError ? (
                     <Animated.View style={logoAnimatedStyle}>
                       <FastImage
-                        source={{ 
+                        source={{
                           uri: logoUrl,
                           priority: FastImage.priority.high,
                           cache: FastImage.cacheControl.immutable
@@ -641,6 +642,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
                       }
                     }}
                     activeOpacity={0.8}
+                    hasTVPreferredFocus={Platform.isTV}
                   >
                     <MaterialIcons name="play-arrow" size={24} color={currentTheme.colors.black} />
                     <Text style={[styles.playButtonText as TextStyle, { color: currentTheme.colors.black }]}>
@@ -663,7 +665,7 @@ const FeaturedContent = ({ featuredContent, isSaved, handleSaveToLibrary, loadin
             </ImageBackground>
           </Animated.View>
         </TouchableOpacity>
-        
+
         {/* Bottom fade to blend with background */}
         <LinearGradient
           colors={[

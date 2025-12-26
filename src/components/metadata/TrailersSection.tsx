@@ -530,6 +530,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
             ]}
             onPress={toggleDropdown}
             activeOpacity={0.8}
+            focusable={Platform.isTV}
           >
             <Text
               style={[
@@ -585,6 +586,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
                 ]}
                 onPress={() => handleCategorySelect(category)}
                 activeOpacity={0.7}
+                focusable={Platform.isTV}
               >
                 <View style={styles.dropdownItemContent}>
                   <View style={[
@@ -664,6 +666,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
                   ]}
                   onPress={() => handleTrailerPress(trailer)}
                   activeOpacity={0.9}
+                  focusable={Platform.isTV}
                 >
                   {/* Thumbnail with Gradient Overlay */}
                   <View style={styles.thumbnailWrapper}>
