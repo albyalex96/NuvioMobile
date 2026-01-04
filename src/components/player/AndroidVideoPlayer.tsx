@@ -303,14 +303,18 @@ const AndroidVideoPlayer: React.FC = () => {
     const resumeTarget = watchProgress.initialPosition || watchProgress.initialSeekTargetRef?.current;
     if (resumeTarget && resumeTarget > 0 && !watchProgress.showResumeOverlay && videoDuration > 0) {
       const seekPosition = Math.min(resumeTarget, videoDuration - 0.5);
-      console.log('[AndroidVideoPlayer] Seeking to resume position:', seekPosition, 'duration:', videoDuration, 'useExoPlayer:', useExoPlayer);
+      console.log('[AndroidVideoPlayer] Seeking to resume position:', seekPosition, 'duration:', videoDuration, 'useExoPlayer:', useExoPlayer, 'platform:', Platform.OS);
 
       // Use a small delay to ensure the player is ready
       // Directly use refs to avoid stale closure issues
       setTimeout(() => {
-        console.log('[AndroidVideoPlayer] Executing resume seek to:', seekPosition, 'ExoPlayer available:', !!exoPlayerRef.current, 'MPV available:', !!mpvPlayerRef.current);
+        console.log('[AndroidVideoPlayer] Executing resume seek to:', seekPosition, 'ExoPlayer available:', !!exoPlayerRef.current, 'MPV available:', !!mpvPlayerRef.current, 'Web available:', !!webVideoRef.current);
 
-        if (useExoPlayer && exoPlayerRef.current) {
+        // Web platform resume
+        if (Platform.OS === 'web' && webVideoRef.current) {
+          console.log('[AndroidVideoPlayer] Seeking web video to resume position:', seekPosition);
+          webVideoRef.current.currentTime = seekPosition;
+        } else if (useExoPlayer && exoPlayerRef.current) {
           console.log('[AndroidVideoPlayer] Seeking ExoPlayer to resume position:', seekPosition);
           exoPlayerRef.current.seek(seekPosition);
         } else if (mpvPlayerRef.current) {
