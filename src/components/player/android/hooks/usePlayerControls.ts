@@ -44,9 +44,16 @@ export const usePlayerControls = (
 
         // Web video seeking
         if (Platform.OS === 'web' && webVideoRef?.current && duration > 0) {
-            console.log(`[usePlayerControls][Web] Seeking to ${timeInSeconds}`);
+            const video = webVideoRef.current;
+            console.log(`[usePlayerControls][Web] Seeking to ${timeInSeconds}`, {
+                currentTimeBefore: video.currentTime,
+                duration: video.duration,
+                readyState: video.readyState,
+                paused: video.paused,
+            });
             isSeeking.current = true;
-            webVideoRef.current.currentTime = timeInSeconds;
+            video.currentTime = timeInSeconds;
+            console.log(`[usePlayerControls][Web] After seek, currentTime:`, video.currentTime);
 
             // Reset seeking flag after a delay
             setTimeout(() => {

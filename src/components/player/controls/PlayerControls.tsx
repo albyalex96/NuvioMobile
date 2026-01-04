@@ -10,7 +10,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 // Conditionally import Slider for native platforms
 const Slider = Platform.OS !== 'web' ? require('@react-native-community/slider').default : null;
 
-// Web Slider Component
+// Web Slider Component with proper dragging state handling
 const WebSlider: React.FC<{
   value: number;
   minimumValue: number;
@@ -30,19 +30,54 @@ const WebSlider: React.FC<{
   minimumTrackTintColor,
   maximumTrackTintColor,
 }) => {
-    const progress = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
+    const [isDragging, setIsDragging] = React.useState(false);
+    const [dragValue, setDragValue] = React.useState(value);
+
+    // Use dragValue when dragging, otherwise use prop value
+    const displayValue = isDragging ? dragValue : value;
+    const progress = ((displayValue - minimumValue) / (maximumValue - minimumValue)) * 100;
+
+    const handleMouseDown = () => {
+      setIsDragging(true);
+      setDragValue(value);
+      onSlidingStart();
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = parseFloat(e.target.value);
+      setDragValue(newValue);
+      onValueChange(newValue);
+    };
+
+    const handleMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+      const finalValue = parseFloat((e.target as HTMLInputElement).value);
+      setIsDragging(false);
+      onSlidingComplete(finalValue);
+    };
+
+    const handleTouchStart = () => {
+      setIsDragging(true);
+      setDragValue(value);
+      onSlidingStart();
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent<HTMLInputElement>) => {
+      const finalValue = parseFloat((e.target as HTMLInputElement).value);
+      setIsDragging(false);
+      onSlidingComplete(finalValue);
+    };
 
     return (
       <input
         type="range"
         min={minimumValue}
         max={maximumValue}
-        value={value}
-        onChange={(e) => onValueChange(parseFloat(e.target.value))}
-        onMouseDown={() => onSlidingStart()}
-        onMouseUp={(e) => onSlidingComplete(parseFloat((e.target as HTMLInputElement).value))}
-        onTouchStart={() => onSlidingStart()}
-        onTouchEnd={(e) => onSlidingComplete(parseFloat((e.target as HTMLInputElement).value))}
+        value={displayValue}
+        onChange={handleChange}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         style={{
           width: '100%',
           height: 40,
