@@ -1,11 +1,18 @@
-import React, { useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { View, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import React, { useCallback, useRef, forwardRef, useImperativeHandle, useEffect, useState } from 'react';
+import { View, TouchableWithoutFeedback, StyleSheet, Platform } from 'react-native';
 import { PinchGestureHandler } from 'react-native-gesture-handler';
-import Video, { VideoRef, SelectedTrack, SelectedVideoTrack, ResizeMode } from 'react-native-video';
-import MpvPlayer, { MpvPlayerRef } from '../MpvPlayer';
 import { styles } from '../../utils/playerStyles';
 import { ResizeModeType } from '../../utils/playerTypes';
 import { logger } from '../../../../utils/logger';
+
+// Conditionally import native-only modules
+const Video = Platform.OS !== 'web' ? require('react-native-video').default : null;
+const ResizeMode = Platform.OS !== 'web' ? require('react-native-video').ResizeMode : null;
+const MpvPlayer = Platform.OS !== 'web' ? require('../MpvPlayer').default : null;
+
+// Type imports for TypeScript (these don't cause runtime imports)
+import type { VideoRef, SelectedTrack, SelectedVideoTrack, ResizeMode as ResizeModeEnum } from 'react-native-video';
+import type { MpvPlayerRef } from '../MpvPlayer';
 
 // Codec error patterns that indicate we should fallback to MPV
 const CODEC_ERROR_PATTERNS = [
@@ -69,6 +76,9 @@ interface VideoSurfaceProps {
     onCodecError?: () => void;
     onEngineChange?: (engine: 'exoplayer' | 'mpv') => void;
 
+    // Web video ref for seeking
+    webVideoRef?: React.RefObject<HTMLVideoElement>;
+
     // Subtitle Styling
     subtitleSize?: number;
     subtitleColor?: string;
@@ -130,6 +140,7 @@ export const VideoSurface: React.FC<VideoSurfaceProps> = ({
     subtitlePosition,
     subtitleDelay,
     subtitleAlignment,
+    webVideoRef,
 }) => {
     // Use the actual stream URL
     const streamUrl = currentStreamUrl || processedStreamUrl;
@@ -269,7 +280,8 @@ export const VideoSurface: React.FC<VideoSurfaceProps> = ({
     };
 
     // Map ResizeModeType to react-native-video ResizeMode
-    const getExoResizeMode = (): ResizeMode => {
+    const getExoResizeMode = (): any => {
+        if (!ResizeMode) return 'contain'; // Fallback for web
         switch (resizeMode) {
             case 'cover':
                 return ResizeMode.COVER;
@@ -281,12 +293,181 @@ export const VideoSurface: React.FC<VideoSurfaceProps> = ({
         }
     };
 
+    // Map ResizeModeType to CSS object-fit for web
+    const getWebObjectFit = (): 'contain' | 'cover' | 'fill' => {
+        switch (resizeMode) {
+            case 'cover':
+                return 'cover';
+            case 'stretch':
+                return 'fill';
+            case 'contain':
+            default:
+                return 'contain';
+        }
+    };
+
+    // Web video progress interval ref
+    const webProgressIntervalRef = useRef<any>(null);
+
+    // Web video event handlers and effects
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+
+        const video = webVideoRef?.current;
+        if (!video) return;
+
+        // Handle load metadata
+        const handleLoadedMetadata = () => {
+            console.log('[WebVideoPlayer] onLoadedMetadata');
+            onLoad({
+                duration: video.duration,
+                naturalSize: {
+                    width: video.videoWidth,
+                    height: video.videoHeight,
+                },
+            });
+        };
+
+        // Handle video end
+        const handleEnded = () => {
+            console.log('[WebVideoPlayer] onEnded');
+            onEnd();
+        };
+
+        // Handle errors
+        const handleError = (e: Event) => {
+            console.log('[WebVideoPlayer] onError', e);
+            onError({
+                error: {
+                    errorString: video.error?.message || 'Unknown video error',
+                },
+            });
+        };
+
+        // Handle waiting (buffering)
+        const handleWaiting = () => {
+            onBuffer({ isBuffering: true });
+        };
+
+        // Handle canplay (buffering ended)
+        const handleCanPlay = () => {
+            onBuffer({ isBuffering: false });
+        };
+
+        // Handle seeked
+        const handleSeeked = () => {
+            onSeek({ currentTime: video.currentTime });
+        };
+
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
+        video.addEventListener('ended', handleEnded);
+        video.addEventListener('error', handleError);
+        video.addEventListener('waiting', handleWaiting);
+        video.addEventListener('canplay', handleCanPlay);
+        video.addEventListener('seeked', handleSeeked);
+
+        // Progress reporting
+        webProgressIntervalRef.current = setInterval(() => {
+            if (video && !video.paused) {
+                onProgress({
+                    currentTime: video.currentTime,
+                    playableDuration: video.buffered.length > 0
+                        ? video.buffered.end(video.buffered.length - 1)
+                        : video.currentTime,
+                });
+            }
+        }, 500);
+
+        return () => {
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            video.removeEventListener('ended', handleEnded);
+            video.removeEventListener('error', handleError);
+            video.removeEventListener('waiting', handleWaiting);
+            video.removeEventListener('canplay', handleCanPlay);
+            video.removeEventListener('seeked', handleSeeked);
+            if (webProgressIntervalRef.current) {
+                clearInterval(webProgressIntervalRef.current);
+            }
+        };
+    }, [streamUrl]); // Only re-run when stream URL changes
+
+    // Handle play/pause state for web
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        const video = webVideoRef?.current;
+        if (!video) return;
+
+        if (paused) {
+            video.pause();
+        } else {
+            video.play().catch(err => {
+                console.log('[WebVideoPlayer] Play failed:', err);
+            });
+        }
+    }, [paused]);
+
+    // Handle volume for web
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        const video = webVideoRef?.current;
+        if (!video) return;
+        video.volume = volume;
+    }, [volume]);
+
+    // Handle playback rate for web
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        const video = webVideoRef?.current;
+        if (!video) return;
+        video.playbackRate = playbackSpeed;
+    }, [playbackSpeed]);
+
+    // Render based on platform
+    if (Platform.OS === 'web') {
+        return (
+            <View style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100vw' as any,
+                height: '100vh' as any,
+                backgroundColor: 'black',
+            }}>
+                <video
+                    ref={webVideoRef}
+                    src={streamUrl}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: getWebObjectFit(),
+                        backgroundColor: 'black',
+                    }}
+                    playsInline
+                    autoPlay={!paused}
+                />
+
+                {/* Gesture overlay for web - simple touch handler */}
+                <View style={localStyles.gestureOverlay} pointerEvents="box-only">
+                    <TouchableWithoutFeedback onPress={toggleControls}>
+                        <View style={localStyles.touchArea} />
+                    </TouchableWithoutFeedback>
+                </View>
+            </View>
+        );
+    }
+
+    // Native platform render
     return (
         <View style={[styles.videoContainer, {
             width: screenDimensions.width,
             height: screenDimensions.height,
         }]}>
-            {useExoPlayer ? (
+            {useExoPlayer && Video ? (
                 /* ExoPlayer via react-native-video */
                 <Video
                     ref={exoPlayerRef}
@@ -330,7 +511,7 @@ export const VideoSurface: React.FC<VideoSurfaceProps> = ({
                         subtitlesFollowVideo: false,
                     }}
                 />
-            ) : (
+            ) : MpvPlayer ? (
                 /* MPV Player fallback */
                 <MpvPlayer
                     ref={mpvPlayerRef}
@@ -359,7 +540,7 @@ export const VideoSurface: React.FC<VideoSurfaceProps> = ({
                     subtitleDelay={subtitleDelay}
                     subtitleAlignment={subtitleAlignment}
                 />
-            )}
+            ) : null}
 
             {/* Gesture overlay - transparent, on top of the player */}
             <PinchGestureHandler
@@ -397,3 +578,4 @@ const localStyles = StyleSheet.create({
         backgroundColor: 'transparent',
     },
 });
+

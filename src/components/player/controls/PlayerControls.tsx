@@ -3,10 +3,57 @@ import { View, Text, TouchableOpacity, Animated, StyleSheet, Platform, Dimension
 import { Ionicons } from '@expo/vector-icons';
 import Feather from 'react-native-vector-icons/Feather';
 import { LinearGradient } from 'expo-linear-gradient';
-import Slider from '@react-native-community/slider';
 import { styles } from '../utils/playerStyles'; // Updated styles
 import { getTrackDisplayName } from '../utils/playerUtils';
 import { useTheme } from '../../../contexts/ThemeContext';
+
+// Conditionally import Slider for native platforms
+const Slider = Platform.OS !== 'web' ? require('@react-native-community/slider').default : null;
+
+// Web Slider Component
+const WebSlider: React.FC<{
+  value: number;
+  minimumValue: number;
+  maximumValue: number;
+  onValueChange: (value: number) => void;
+  onSlidingStart: () => void;
+  onSlidingComplete: (value: number) => void;
+  minimumTrackTintColor: string;
+  maximumTrackTintColor: string;
+}> = ({
+  value,
+  minimumValue,
+  maximumValue,
+  onValueChange,
+  onSlidingStart,
+  onSlidingComplete,
+  minimumTrackTintColor,
+  maximumTrackTintColor,
+}) => {
+    const progress = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
+
+    return (
+      <input
+        type="range"
+        min={minimumValue}
+        max={maximumValue}
+        value={value}
+        onChange={(e) => onValueChange(parseFloat(e.target.value))}
+        onMouseDown={() => onSlidingStart()}
+        onMouseUp={(e) => onSlidingComplete(parseFloat((e.target as HTMLInputElement).value))}
+        onTouchStart={() => onSlidingStart()}
+        onTouchEnd={(e) => onSlidingComplete(parseFloat((e.target as HTMLInputElement).value))}
+        style={{
+          width: '100%',
+          height: 40,
+          appearance: 'none',
+          background: `linear-gradient(to right, ${minimumTrackTintColor} 0%, ${minimumTrackTintColor} ${progress}%, ${maximumTrackTintColor} ${progress}%, ${maximumTrackTintColor} 100%)`,
+          borderRadius: 4,
+          cursor: 'pointer',
+        }}
+      />
+    );
+  };
 
 interface PlayerControlsProps {
   showControls: boolean;
@@ -24,7 +71,7 @@ interface PlayerControlsProps {
   duration: number;
   zoomScale: number;
   currentResizeMode?: string;
-  ksAudioTracks: Array<{id: number, name: string, language?: string}>;
+  ksAudioTracks: Array<{ id: number, name: string, language?: string }>;
   selectedAudioTrack: number | null;
   availableStreams?: { [providerId: string]: { streams: any[]; addonName: string } };
   togglePlayback: () => void;
@@ -131,7 +178,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
   /* Handle Seek with Animation */
   const handleSeekWithAnimation = (seconds: number) => {
     const isForward = seconds > 0;
-    
+
     if (isForward) {
       setShowForwardSign(true);
     } else {
@@ -267,23 +314,36 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
     >
       {/* Progress slider with native iOS slider */}
       <View style={styles.sliderContainer}>
-        <Slider
-          style={{
-            width: '100%',
-            height: 40,
-            marginHorizontal: 0,
-          }}
-          minimumValue={0}
-          maximumValue={duration || 1}
-          value={currentTime}
-          onValueChange={onSliderValueChange}
-          onSlidingStart={onSlidingStart}
-          onSlidingComplete={onSlidingComplete}
-          minimumTrackTintColor={currentTheme.colors.primary}
-          maximumTrackTintColor={currentTheme.colors.mediumEmphasis}
-          thumbTintColor={Platform.OS === 'android' ? currentTheme.colors.white : undefined}
-          tapToSeek={Platform.OS === 'ios'}
-        />
+        {Platform.OS === 'web' ? (
+          <WebSlider
+            minimumValue={0}
+            maximumValue={duration || 1}
+            value={currentTime}
+            onValueChange={onSliderValueChange}
+            onSlidingStart={onSlidingStart}
+            onSlidingComplete={onSlidingComplete}
+            minimumTrackTintColor={currentTheme.colors.primary}
+            maximumTrackTintColor={currentTheme.colors.mediumEmphasis}
+          />
+        ) : Slider ? (
+          <Slider
+            style={{
+              width: '100%',
+              height: 40,
+              marginHorizontal: 0,
+            }}
+            minimumValue={0}
+            maximumValue={duration || 1}
+            value={currentTime}
+            onValueChange={onSliderValueChange}
+            onSlidingStart={onSlidingStart}
+            onSlidingComplete={onSlidingComplete}
+            minimumTrackTintColor={currentTheme.colors.primary}
+            maximumTrackTintColor={currentTheme.colors.mediumEmphasis}
+            thumbTintColor={Platform.OS === 'android' ? currentTheme.colors.white : undefined}
+            tapToSeek={Platform.OS === 'ios'}
+          />
+        ) : null}
         <View style={[styles.timeDisplay, { paddingHorizontal: 14 }]}>
           <View style={styles.timeContainer}>
             <Text style={styles.duration}>{formatTime(currentTime)}</Text>
@@ -343,34 +403,34 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
           </View>
         </LinearGradient>
 
-        
+
         {/* Center Controls - CloudStream Style */}
-        <View style={[styles.controls, { 
-          transform: [{ translateY: -(playButtonSize / 2) }] 
+        <View style={[styles.controls, {
+          transform: [{ translateY: -(playButtonSize / 2) }]
         }]}>
-          
+
           {/* Backward Seek Button (-10s) */}
-          <TouchableOpacity 
-            onPress={() => handleSeekWithAnimation(-10)} 
+          <TouchableOpacity
+            onPress={() => handleSeekWithAnimation(-10)}
             activeOpacity={0.7}
           >
             <Animated.View style={[
               styles.seekButtonContainer,
-              { 
+              {
                 width: seekButtonSize,
                 height: seekButtonSize,
-                transform: [{ scale: backwardScaleAnim }] 
+                transform: [{ scale: backwardScaleAnim }]
               }
             ]}>
-              <Ionicons 
-                name="reload-outline" 
-                size={seekIconSize} 
-                color="white" 
-                style={{ transform: [{ scaleX: -1 }] }} 
+              <Ionicons
+                name="reload-outline"
+                size={seekIconSize}
+                color="white"
+                style={{ transform: [{ scaleX: -1 }] }}
               />
               <Animated.View style={[
                 styles.buttonCircle,
-                { 
+                {
                   opacity: backwardPressAnim,
                   width: seekButtonSize * 0.6,
                   height: seekButtonSize * 0.6,
@@ -383,65 +443,65 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
               }]}>
                 <Animated.Text style={[
                   styles.seekNumber,
-                  { 
+                  {
                     fontSize: seekNumberSize,
                     marginLeft: 7,
-                    transform: [{ translateX: backwardSlideAnim }] 
+                    transform: [{ translateX: backwardSlideAnim }]
                   }
                 ]}>
                   {showBackwardSign ? '-10' : '10'}
                 </Animated.Text>
               </View>
-              </Animated.View>
-              <Animated.View style={[
-                styles.arcContainer,
+            </Animated.View>
+            <Animated.View style={[
+              styles.arcContainer,
+              {
+                width: seekButtonSize,
+                height: seekButtonSize,
+                opacity: backwardArcOpacity,
+                transform: [{
+                  rotate: backwardArcRotation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['90deg', '-90deg']
+                  })
+                }]
+              }
+            ]}>
+              <View style={[
+                styles.arcLeft,
                 {
                   width: seekButtonSize,
                   height: seekButtonSize,
-                  opacity: backwardArcOpacity,
-                  transform: [{
-                    rotate: backwardArcRotation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['90deg', '-90deg']
-                    })
-                  }]
+                  borderRadius: seekButtonSize / 2,
+                  borderWidth: arcBorderWidth,
                 }
-              ]}>
-                <View style={[
-                  styles.arcLeft,
-                  {
-                    width: seekButtonSize,
-                    height: seekButtonSize,
-                    borderRadius: seekButtonSize / 2,
-                    borderWidth: arcBorderWidth,
-                  }
-                ]} />
-              </Animated.View>
+              ]} />
+            </Animated.View>
           </TouchableOpacity>
 
           {/* Play/Pause Button */}
-          <TouchableOpacity 
-            onPress={handlePlayPauseWithAnimation} 
+          <TouchableOpacity
+            onPress={handlePlayPauseWithAnimation}
             activeOpacity={0.7}
             style={{ marginHorizontal: buttonSpacing }}
           >
             <View style={[styles.playButtonCircle, { width: playButtonSize, height: playButtonSize }]}>
               <Animated.View style={[
                 styles.playPressCircle,
-                { 
+                {
                   opacity: playPressAnim,
                   width: playButtonSize * 0.85,
                   height: playButtonSize * 0.85,
                   borderRadius: (playButtonSize * 0.85) / 2,
                 }
               ]} />
-              <Animated.View style={{ 
+              <Animated.View style={{
                 transform: [{ scale: playIconScale }],
-                opacity: playIconOpacity 
+                opacity: playIconOpacity
               }}>
-                <Ionicons 
-                  name={paused ? "play" : "pause"} 
-                  size={playIconSizeCalculated} 
+                <Ionicons
+                  name={paused ? "play" : "pause"}
+                  size={playIconSizeCalculated}
                   color="#FFFFFF"
                 />
               </Animated.View>
@@ -449,26 +509,26 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
           </TouchableOpacity>
 
           {/* Forward Seek Button (+10s) */}
-            <TouchableOpacity 
-              onPress={() => handleSeekWithAnimation(10)} 
-              activeOpacity={0.7}
-            >
-              <Animated.View style={[
-                styles.seekButtonContainer,
-                { 
-                  width: seekButtonSize,
-                  height: seekButtonSize,
-                  transform: [{ scale: forwardScaleAnim }] 
-                }
-              ]}>
-                <Ionicons 
-                  name="reload-outline" 
-                  size={seekIconSize} 
-                  color="white" 
-                />
+          <TouchableOpacity
+            onPress={() => handleSeekWithAnimation(10)}
+            activeOpacity={0.7}
+          >
+            <Animated.View style={[
+              styles.seekButtonContainer,
+              {
+                width: seekButtonSize,
+                height: seekButtonSize,
+                transform: [{ scale: forwardScaleAnim }]
+              }
+            ]}>
+              <Ionicons
+                name="reload-outline"
+                size={seekIconSize}
+                color="white"
+              />
               <Animated.View style={[
                 styles.buttonCircle,
-                { 
+                {
                   opacity: forwardPressAnim,
                   width: seekButtonSize * 0.6,
                   height: seekButtonSize * 0.6,
@@ -481,9 +541,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
               }]}>
                 <Animated.Text style={[
                   styles.seekNumber,
-                  { 
+                  {
                     fontSize: seekNumberSize,
-                    transform: [{ translateX: forwardSlideAnim }] 
+                    transform: [{ translateX: forwardSlideAnim }]
                   }
                 ]}>
                   {showForwardSign ? '+10' : '10'}
@@ -566,10 +626,10 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
                 onPress={() => setShowAudioModal(true)}
                 disabled={ksAudioTracks.length <= 1}
               >
-                <Ionicons 
-                  name="musical-notes-outline" 
-                  size={24} 
-                  color={ksAudioTracks.length <= 1 ? 'grey' : 'white'} 
+                <Ionicons
+                  name="musical-notes-outline"
+                  size={24}
+                  color={ksAudioTracks.length <= 1 ? 'grey' : 'white'}
                 />
               </TouchableOpacity>
 

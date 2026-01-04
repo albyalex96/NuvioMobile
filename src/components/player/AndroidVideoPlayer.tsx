@@ -141,6 +141,9 @@ const AndroidVideoPlayer: React.FC = () => {
   const [brightness, setBrightness] = useState(1.0);
   const setupHook = usePlayerSetup(playerState.setScreenDimensions, setVolume, setBrightness, playerState.paused);
 
+  // Web video ref for seeking support on web platform
+  const webVideoRef = useRef<HTMLVideoElement>(null);
+
   const controlsHook = usePlayerControls(
     mpvPlayerRef,
     playerState.paused,
@@ -150,7 +153,8 @@ const AndroidVideoPlayer: React.FC = () => {
     playerState.isSeeking,
     playerState.isMounted,
     exoPlayerRef,
-    useExoPlayer
+    useExoPlayer,
+    webVideoRef
   );
 
   const traktAutosync = useTraktAutosync({
@@ -532,10 +536,18 @@ const AndroidVideoPlayer: React.FC = () => {
   }, [tracksHook.selectedTextTrack]);
 
   return (
-    <View style={[styles.container, {
+    <View style={[styles.container, Platform.OS === 'web' ? {
+      width: '100vw' as any,
+      height: '100vh' as any,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+    } : {
       width: playerState.screenDimensions.width,
       height: playerState.screenDimensions.height,
-      position: 'absolute', top: 0, left: 0
+      position: 'absolute',
+      top: 0,
+      left: 0
     }]}>
       <LoadingOverlay
         visible={!openingAnimation.shouldHideOpeningOverlay}
@@ -638,6 +650,7 @@ const AndroidVideoPlayer: React.FC = () => {
             subtitlePosition={Math.max(50, 100 - Math.floor(subtitleBottomOffset * 0.3))} // Scale offset to MPV range
             subtitleDelay={subtitleOffsetSec}
             subtitleAlignment={subtitleAlign}
+            webVideoRef={webVideoRef}
           />
         )}
 

@@ -16,7 +16,9 @@ export const usePlayerControls = (
     isMounted: React.MutableRefObject<boolean>,
     // Dual engine support
     exoPlayerRef?: React.RefObject<VideoRef>,
-    useExoPlayer?: boolean
+    useExoPlayer?: boolean,
+    // Web video support
+    webVideoRef?: React.RefObject<HTMLVideoElement>
 ) => {
     // iOS seeking helpers
     const iosWasPausedDuringSeekRef = useRef<boolean | null>(null);
@@ -33,10 +35,27 @@ export const usePlayerControls = (
             timeInSeconds,
             hasMpvRef: !!mpvPlayerRef?.current,
             hasExoRef: !!exoPlayerRef?.current,
+            hasWebRef: !!webVideoRef?.current,
             useExoPlayer,
+            platform: Platform.OS,
             duration,
             isSeeking: isSeeking.current
         });
+
+        // Web video seeking
+        if (Platform.OS === 'web' && webVideoRef?.current && duration > 0) {
+            console.log(`[usePlayerControls][Web] Seeking to ${timeInSeconds}`);
+            isSeeking.current = true;
+            webVideoRef.current.currentTime = timeInSeconds;
+
+            // Reset seeking flag after a delay
+            setTimeout(() => {
+                if (isMounted.current) {
+                    isSeeking.current = false;
+                }
+            }, 500);
+            return;
+        }
 
         // ExoPlayer
         if (useExoPlayer && exoPlayerRef?.current && duration > 0) {
@@ -73,10 +92,11 @@ export const usePlayerControls = (
         console.log('[usePlayerControls] Cannot seek - no valid ref:', {
             hasExoRef: !!exoPlayerRef?.current,
             hasMpvRef: !!mpvPlayerRef?.current,
+            hasWebRef: !!webVideoRef?.current,
             useExoPlayer,
             duration
         });
-    }, [duration, paused, setPaused, mpvPlayerRef, exoPlayerRef, useExoPlayer, isSeeking, isMounted]);
+    }, [duration, paused, setPaused, mpvPlayerRef, exoPlayerRef, webVideoRef, useExoPlayer, isSeeking, isMounted]);
 
     const skip = useCallback((seconds: number) => {
         console.log('[usePlayerControls] skip called:', { seconds, currentTime, newTime: currentTime + seconds });
@@ -90,3 +110,4 @@ export const usePlayerControls = (
         iosWasPausedDuringSeekRef
     };
 };
+
