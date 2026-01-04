@@ -203,13 +203,37 @@ const ThemedApp = () => {
   const shouldShowApp = isAppReady && hasCompletedOnboarding !== null;
   const initialRouteName = hasCompletedOnboarding ? 'MainTabs' : 'Onboarding';
 
+  // Linking configuration for web browser history integration
+  // Using 'enabled' with 'web' to enable basic web history navigation
+  const linking = Platform.OS === 'web' ? {
+    prefixes: [window?.location?.origin || '/'],
+    config: {
+      screens: {
+        MainTabs: '',
+        Onboarding: 'onboarding',
+        Metadata: 'metadata',
+        Streams: 'streams',
+        PlayerAndroid: 'player',
+        PlayerIOS: 'player',
+        Catalog: 'catalog',
+        Addons: 'addons',
+        CatalogSettings: 'catalog-settings',
+        TraktSettings: 'trakt-settings',
+        PlayerSettings: 'player-settings',
+        ThemeSettings: 'theme-settings',
+        ScraperSettings: 'scraper-settings',
+        AISettings: 'ai-settings',
+      } as const,
+    },
+  } : undefined;
+
   return (
     <AccountProvider>
       <PaperProvider theme={customDarkTheme}>
         <NavigationContainer
           ref={navigationRef}
           theme={customNavigationTheme}
-          linking={undefined}
+          linking={linking}
         >
           <DownloadsProvider>
             <View style={[styles.container, { backgroundColor: currentTheme.colors.darkBackground }]}>

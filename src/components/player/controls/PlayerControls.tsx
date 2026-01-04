@@ -177,6 +177,40 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
 }) => {
   const { currentTheme } = useTheme();
 
+  // Web fullscreen state
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+  // Listen for fullscreen changes
+  React.useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Toggle fullscreen function for web
+  const toggleFullscreen = React.useCallback(() => {
+    if (Platform.OS !== 'web') return;
+
+    if (!document.fullscreenElement) {
+      // Enter fullscreen
+      document.documentElement.requestFullscreen().catch(err => {
+        console.log('[PlayerControls] Fullscreen request failed:', err);
+      });
+    } else {
+      // Exit fullscreen
+      document.exitFullscreen().catch(err => {
+        console.log('[PlayerControls] Exit fullscreen failed:', err);
+      });
+    }
+  }, []);
+
 
   /* Responsive Spacing */
   const screenWidth = Dimensions.get('window').width;
@@ -675,6 +709,20 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({
                   onPress={() => setShowEpisodesModal(true)}
                 >
                   <Ionicons name="list" size={24} color="white" />
+                </TouchableOpacity>
+              )}
+
+              {/* Web Fullscreen Button */}
+              {Platform.OS === 'web' && (
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={toggleFullscreen}
+                >
+                  <Ionicons
+                    name={isFullscreen ? "contract-outline" : "scan-outline"}
+                    size={24}
+                    color="white"
+                  />
                 </TouchableOpacity>
               )}
             </View>

@@ -359,6 +359,78 @@ const AndroidVideoPlayer: React.FC = () => {
   const firstFrameAtRef = useRef<number | null>(null);
   const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Web keyboard shortcuts
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default for media keys
+      if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.code)) {
+        e.preventDefault();
+      }
+
+      switch (e.code) {
+        case 'Space':
+          // Toggle play/pause
+          controlsHook.togglePlayback();
+          playerState.setShowControls(true);
+          break;
+        case 'ArrowLeft':
+          // Skip backward 10 seconds
+          controlsHook.skip(-10);
+          playerState.setShowControls(true);
+          break;
+        case 'ArrowRight':
+          // Skip forward 10 seconds
+          controlsHook.skip(10);
+          playerState.setShowControls(true);
+          break;
+        case 'ArrowUp':
+          // Increase volume
+          setVolume(v => Math.min(1, v + 0.1));
+          playerState.setShowControls(true);
+          break;
+        case 'ArrowDown':
+          // Decrease volume
+          setVolume(v => Math.max(0, v - 0.1));
+          playerState.setShowControls(true);
+          break;
+        case 'KeyF':
+          // Toggle fullscreen (handled by PlayerControls)
+          break;
+        case 'Escape':
+          // Already handled by browser for fullscreen exit
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [controlsHook, setVolume]);
+
+  // Auto-hide controls after 3 seconds
+  useEffect(() => {
+    if (playerState.showControls && !playerState.paused) {
+      // Clear any existing timeout
+      if (controlsTimeout.current) {
+        clearTimeout(controlsTimeout.current);
+      }
+
+      // Set new timeout to hide controls
+      controlsTimeout.current = setTimeout(() => {
+        if (!playerState.isDragging.current) {
+          playerState.setShowControls(false);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (controlsTimeout.current) {
+        clearTimeout(controlsTimeout.current);
+      }
+    };
+  }, [playerState.showControls, playerState.paused]);
+
   const handleClose = useCallback(() => {
     if (navigation.canGoBack()) navigation.goBack();
     else navigation.reset({ index: 0, routes: [{ name: 'Home' }] } as any);
