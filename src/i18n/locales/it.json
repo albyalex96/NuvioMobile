@@ -222,7 +222,7 @@
         "episode_label": "EPISODIO {{number}}",
         "watch_again": "Guarda di nuovo",
         "completed": "Completato",
-        "play_episode": "Riproduci S{{season}}E{{episode}}",
+        "play_episode": "Riproduci {{season}}x{{episode}}",
         "play": "Riproduci",
         "watched": "Visto",
         "watched_on_trakt": "Visto su Trakt",
@@ -419,7 +419,12 @@
         "timing_offset": "Ritardo sincronizzazione (s)",
         "visual_sync": "Sincronizzazione visiva",
         "timing_hint": "Anticipa (-) o ritarda (+) i sottotitoli per sincronizzarli se necessario.",
-        "reset_defaults": "Ripristina predefiniti"
+        "reset_defaults": "Ripristina predefiniti",
+        "mark_intro_start": "Segna Inizio Intro",
+        "mark_intro_end": "Segna Fine Intro",
+        "intro_start_marked": "Inizio intro segnato",
+        "intro_submitted": "Intro registrata con successo",
+        "intro_submit_failed": "Errore Registrazione Intro"
     },
     "downloads": {
         "title": "Download",
@@ -763,61 +768,61 @@
         "about_nuvio": "Informazioni su Nuvio",
         "cloud_sync": {
             "title": "Nuvio Sync",
-            "description": "Sync data across your Nuvio devices",
-            "hero_title": "Cloud Sync",
-            "hero_subtitle": "Keep your addons, progress, and library aligned across all devices.",
+            "description": "Sicronizza i dati sui tuoi dispositivi con Nuvio",
+            "hero_title": "Sincronizzazione su Cloud",
+            "hero_subtitle": "Mantieni i tuoi addons, progressi e libreria allineati su tutti i tuoi dispositivi.",
             "auth": {
                 "account": "Account",
-                "not_configured": "Supabase not configured",
-                "not_authenticated": "Not authenticated",
-                "email_session": "Email session",
-                "signed_in_as": "Signed in as {{email}}",
-                "not_signed_in": "Not signed in",
-                "effective_owner": "Effective owner: {{id}}"
+                "not_configured": "Supabase non configurato",
+                "not_authenticated": "Non Autenticato",
+                "email_session": "Sessione Email",
+                "signed_in_as": "Login effettuato come {{email}}",
+                "not_signed_in": "Non Registrato",
+                "effective_owner": "Proprietario effettivo: {{id}}"
             },
             "stats": {
-                "title": "Database Statistics",
+                "title": "Statistiche Database",
                 "plugins": "Plugins",
                 "addons": "Addons",
                 "watch_progress": "Watch Progress",
-                "library_items": "Library Items",
-                "watched_items": "Watched Items",
-                "signin_required": "Sign in to load remote data counts."
+                "library_items": "Oggetti della Libreria",
+                "watched_items": "Oggetti guardati",
+                "signin_required": "Accedi per caricare gli ultimi conteggi."
             },
             "actions": {
-                "title": "Actions",
-                "description": "Pull to update this device from the cloud, or push from this device as the latest source.",
-                "pull_btn": "Pull from Cloud",
-                "push_btn": "Push from Device",
-                "manage_account": "Manage Account",
-                "sign_out": "Sign Out",
-                "sign_in_up": "Sign In / Up"
+                "title": "Azioni",
+                "description": "Aggiorna dal cloud (pull) o usa le impostazioni di questo dispositivo come sorgente principale (push).",
+                "pull_btn": "Pull dal Cloud",
+                "push_btn": "Push dal Dispositivo",
+                "manage_account": "Gestiscci Account",
+                "sign_out": "Disconnetti",
+                "sign_in_up": "Accedi / Registrati"
             },
             "alerts": {
-                "pull_success_title": "Cloud Data Pulled",
-                "pull_success_msg": "The latest cloud data has been downloaded to this device.",
-                "pull_failed_title": "Pull Failed",
-                "pull_failed_msg": "Failed to download data from the cloud",
-                "push_success_title": "Push Completed",
-                "push_success_msg": "Device data has been uploaded to the cloud.",
-                "push_failed_title": "Push Failed",
-                "push_failed_msg": "Failed to upload local data",
-                "sign_out_failed": "Sign Out Failed",
-                "sign_out_failed_title": "Logout Error"
+                "pull_success_title": "Dati Cloud recuperati",
+                "pull_success_msg": "Gli ultimi dati del Cloud sono stati scaricati su questo dispositivo.",
+                "pull_failed_title": "Pull Fallito",
+                "pull_failed_msg": "Download dei dati dal cloud fallito",
+                "push_success_title": "Push Completato",
+                "push_success_msg": "Le impostazioni di questo dispositivo sono stati caricati sul Cloud.",
+                "push_failed_title": "Push Fallito",
+                "push_failed_msg": "Upload dei dati locali fallito",
+                "sign_out_failed": "Logout fallito",
+                "sign_out_failed_title": "Errore Logout"
             },
             "external_sync": {
-                "title": "External Sync Priority",
-                "active_msg": "{{services}} is active. Watch progress and library updates are managed by these services instead of Nuvio cloud database.",
-                "inactive_msg": "If Trakt or Simkl sync is enabled, watch progress and library updates will use those services instead of Nuvio cloud database."
+                "title": "Priorità sincronizzazione esterna",
+                "active_msg": "{{services}} è attivo. Il 'Continua a Guardare' e gli aggiornamenti della libreria sono gestiti da questi servizi piuttosto che dal Database Cloud di Nuvio.",
+                "inactive_msg": "Se la sincronizzazione di Trakt o Simkl è abilitata, il 'Continua a Guardare' e gli aggiornamenti della libreria saranno gestiti da quei servizi piuttosto che dal Database Cloud di Nuvio."
             },
             "pre_auth": {
-                "title": "Before Syncing",
-                "description": "Sign in to start cloud sync and keep your data consistent across devices.",
-                "point_1": "• Addons and plugins settings",
-                "point_2": "• Watch progress and library",
-                "env_warning": "Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable sync."
+                "title": "Prima della Sincronizzazione",
+                "description": "Accedi per abilitare la sincronizzazione Cloud e mantenere i dati sincronizzati fra tutti i dispositivi.",
+                "point_1": "• Imostazioni Addons e plugins ",
+                "point_2": "• Avanzamento della visione e libreria",
+                "env_warning": "Imposta EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY per abilitare la sincronizzazione."
             },
-            "connection": "Connection"
+            "connection": "Connessione"
         }
     },
     "privacy": {
@@ -1037,6 +1042,8 @@
         "select_catalogs": "Seleziona cataloghi",
         "all_catalogs": "Tutti i cataloghi",
         "selected": "selezionati",
+        "prefer_external_meta": "Preferisci Metadati Estrerni",
+        "prefer_external_meta_desc": "Usa i metadati esterni nella pagina dei dettagli",
         "hero_layout": "Layout Hero",
         "layout_legacy": "Classico",
         "layout_carousel": "Carosello",
@@ -1246,7 +1253,7 @@
         "external_desc": "Apri gli stream nel tuo video player preferito",
         "section_playback": "OPZIONI RIPRODUZIONE",
         "skip_intro_settings_title": "Salta intro",
-        "powered_by_introdb": "Powered by IntroDB",
+        "powered_by_introdb": "Offerto da IntroDB",
         "autoplay_title": "Auto-play Primo Stream",
         "autoplay_desc": "Avvia automaticamente il primo stream mostrato nella lista.",
         "resume_title": "Riprendi Sempre",
