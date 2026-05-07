@@ -1321,4 +1321,21 @@
   <string name="catalog_picker_not_set">Non impostato — tap per scegliere</string>
   <string name="choose_catalog">Scegliere Cataloghi</string>
   <string name="clear_selection">Cancella Selezione</string>
+  <string name="settings_playback_swipe_gestures">Swipe Gestures</string>
+  <string name="settings_playback_swipe_gestures_description">Usa le gesture di swipe sullo schermo del player per controllo video, volume e luminosità.</string>
+  <string name="settings_playback_reuse_binge_group">Riusa Binge Group</string>
+  <string name="settings_playback_reuse_binge_group_description">Ricorda e riutilizza l'ultimo gruppo di visione in blocco attraverso le sessioni (Continua a guardare, Dettagli, ecc.).</string>
+  <string name="settings_search_history_limit_title">Mostra solo le ultime 5 ricerche</string>
+  <string name="settings_search_history_limit_description">Mantieni e mostra solo le 5 ricerche più recenti.</string>
+  <string name="live_tv_title">Live TV</string>
+  <string name="live_tv_channel_group_default">Canale</string>
+  <string name="live_tv_empty_title">Nessun canale trovato</string>
+  <string name="live_tv_empty_message">Controlla l'URL della tua playlist o prova ad aggiornarla.</string>
+  <string name="live_tv_load_failed">La playlist non può essere caricata</string>
+  <string name="live_tv_no_playlist_title">Nessuna playlist configurata</string>
+  <string name="live_tv_no_playlist_message">Aggiungi una playlist M3U in Impostazioni > Integrazioni > Live TV per elencare i canali qui.</string>
+  <string name="live_tv_settings_section_playlist">PLAYLIST</string>
+  <string name="live_tv_settings_playlist_label">URL della playlist M3U</string>
+  <string name="live_tv_settings_playlist_placeholder">https://example.com/playlist.m3u8</string>
+  <string name="live_tv_settings_description">I canali di questa playlist appariranno nella scheda Live TV.</string>
 </resources>
