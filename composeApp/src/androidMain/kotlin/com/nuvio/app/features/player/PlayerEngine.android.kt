@@ -102,6 +102,7 @@ actual fun PlatformPlayerSurface(
     val exoPlayer = remember(sourceUrl, sourceAudioUrl, sanitizedSourceHeaders, sanitizedSourceResponseHeaders) {
         val renderersFactory = DefaultRenderersFactory(context)
             .setExtensionRendererMode(playerSettings.decoderPriority)
+            .setEnableDecoderFallback(playerSettings.decoderPriority != DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
             .setMapDV7ToHevc(playerSettings.mapDV7ToHevc)
 
         val trackSelector = DefaultTrackSelector(context).apply {
