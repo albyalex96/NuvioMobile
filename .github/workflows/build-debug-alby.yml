@@ -1,0 +1,96 @@
+name: Build Debug version 
+
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Choose the build flavor'
+        required: true
+        default: 'Debug'
+        type: choice
+        options:
+          - Full
+          - Debug
+  push:
+    branches:
+      - dev-alby-fixes # Testing Workflow
+      - autobuild-alby-fixes
+
+env:
+  BUILD_FLAVOR: ${{ github.event.inputs.flavor || 'Debug' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Generate self-signed keystore
+        run: |
+          keytool -genkeypair \
+            -alias nuvio-release \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 365 \
+            -keystore ${{ github.workspace }}/nuvio-release.keystore \
+            -storepass nuvio1234 \
+            -keypass nuvio1234 \
+            -dname "CN=Nuvio CI, OU=CI, O=Nuvio, L=Unknown, ST=Unknown, C=US"
+
+      - name: Write local.properties
+        run: |
+          printf 'SUPABASE_URL=%s\n' "${{ secrets.SUPABASE_URL }}" > local.properties
+          printf 'SUPABASE_ANON_KEY=%s\n' "${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+          printf 'TRAKT_CLIENT_ID=%s\n' "${{ secrets.TRAKT_CLIENT_ID }}" >> local.properties
+          printf 'TRAKT_CLIENT_SECRET=%s\n' "${{ secrets.TRAKT_CLIENT_SECRET }}" >> local.properties
+          printf 'TRAKT_REDIRECT_URI=%s\n' "${{ secrets.TRAKT_REDIRECT_URI }}" >> local.properties
+          printf 'INTRODB_API_URL=%s/\n' "${{ secrets.INTRODB_API_URL }}" >> local.properties
+          printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" >> local.properties
+          printf 'NUVIO_RELEASE_STORE_FILE=%s/nuvio-release.keystore\n' "${{ github.workspace }}" >> local.properties
+          printf 'NUVIO_RELEASE_STORE_PASSWORD=%s\n' "nuvio1234" >> local.properties
+          printf 'NUVIO_RELEASE_KEY_ALIAS=%s\n' "nuvio-release" >> local.properties
+          printf 'NUVIO_RELEASE_KEY_PASSWORD=%s\n' "nuvio1234" >> local.properties
+
+      - name: Set flavor variables
+        id: flavor
+        run: |
+          # Legge dalla variabile d'ambiente globale configurata in alto
+          FLAVOR="${{ env.BUILD_FLAVOR }}"
+          FLAVOR_LOWER=$(echo "$FLAVOR" | tr '[:upper:]' '[:lower:]')
+          echo "name=${FLAVOR_LOWER}" >> $GITHUB_OUTPUT
+          if [ "$FLAVOR_LOWER" = "full" ]; then
+            echo "plugins_enabled=true" >> $GITHUB_OUTPUT
+            echo "trailer_mode=IN_APP" >> $GITHUB_OUTPUT
+          else
+            echo "plugins_enabled=false" >> $GITHUB_OUTPUT
+            echo "trailer_mode=EXTERNAL" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build release APK
+        run: |
+          FLAVOR="${{ steps.flavor.outputs.name }}"
+          if [ "$FLAVOR" = "full" ]; then
+            TASK="assembleFullRelease"
+          else
+            TASK="assembleDebug"
+          fi
+          ./gradlew :composeApp:$TASK
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuvio-${{ steps.flavor.outputs.name }}-apk
+          path: composeApp/build/outputs/apk/**/*.apk
+          retention-days: 7
+          if-no-files-found: error
