@@ -66,6 +66,7 @@ private const val TAG = "NuvioPlayer"
 actual fun PlatformPlayerSurface(
     sourceUrl: String,
     sourceAudioUrl: String?,
+    streamType: String?,
     sourceHeaders: Map<String, String>,
     sourceResponseHeaders: Map<String, String>,
     useYoutubeChunkedPlayback: Boolean,
@@ -163,11 +164,11 @@ actual fun PlatformPlayerSurface(
         player.apply {
                 if (!sourceAudioUrl.isNullOrBlank()) {
                     val msf = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
-                    val videoSource = msf.createMediaSource(MediaItem.fromUri(sourceUrl))
-                    val audioSource = msf.createMediaSource(MediaItem.fromUri(sourceAudioUrl))
+                    val videoSource = msf.createMediaSource(MediaItem.Builder().setUri(sourceUrl).apply { if ("hls".equals(streamType, ignoreCase = true) || sourceUrl.isHlsUrl()) setMimeType(MimeTypes.APPLICATION_M3U8) }.build())
+                    val audioSource = msf.createMediaSource(MediaItem.Builder().setUri(sourceAudioUrl).apply { if ("hls".equals(streamType, ignoreCase = true) || sourceAudioUrl.isHlsUrl()) setMimeType(MimeTypes.APPLICATION_M3U8) }.build())
                     setMediaSource(MergingMediaSource(videoSource, audioSource))
                 } else {
-                    setMediaItem(MediaItem.fromUri(sourceUrl))
+                    setMediaItem(MediaItem.Builder().setUri(sourceUrl).apply { if ("hls".equals(streamType, ignoreCase = true) || sourceUrl.isHlsUrl()) setMimeType(MimeTypes.APPLICATION_M3U8) }.build())
                 }
                 prepare()
                 this.playWhenReady = playWhenReady
@@ -736,3 +737,10 @@ private fun guessSubtitleMime(url: String): String {
         else -> MimeTypes.TEXT_VTT
     }
 }
+
+private fun String.isHlsUrl(): Boolean =
+    endsWith(".m3u8", ignoreCase = true) ||
+    contains(".m3u8?", ignoreCase = true) ||
+    contains("/playlist/", ignoreCase = true) ||
+    contains("/master/", ignoreCase = true) ||
+    contains("/chunklist/", ignoreCase = true)
