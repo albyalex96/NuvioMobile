@@ -14,6 +14,7 @@ data class StreamItem(
     val sourceName: String? = null,
     val addonName: String,
     val addonId: String,
+    val streamType: String? = null,
     val behaviorHints: StreamBehaviorHints = StreamBehaviorHints(),
 ) {
     val streamLabel: String
