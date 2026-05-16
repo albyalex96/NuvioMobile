@@ -1284,4 +1284,23 @@
   <string name="external_player_unavailable">Nessun lettore esterno disponibile</string>
   <string name="library_remove_from_list_message">Rimuovere %1$s da %2$s?</string>
   <string name="collections_import_error_trakt_list_id">Alla sorgente %1$d nella cartella '%2$s' manca l'ID della lista Trakt.</string>
+  <string name="compose_settings_page_debrid">Debrid</string>
+  <string name="action_validate">Convalida</string>
+  <string name="settings_integrations_debrid_description">Flussi Debrid istantanei in cache</string>
+  <string name="settings_debrid_section_title">Debrid Diretto</string>
+  <string name="settings_debrid_enable">Abilita flussi Debrid</string>
+  <string name="settings_debrid_enable_description">Mostra flussi Debrid istantanei in cache.</string>
+  <string name="settings_debrid_add_key_first">Aggiungi una chiave API prima di abilitare i flussi Debrid.</string>
+  <string name="settings_debrid_section_providers">Account</string>
+  <string name="settings_debrid_provider_torbox_description">Usa Torbox per flussi istantanei in cache.</string>
+  <string name="settings_debrid_section_formatting">Formattazione del flusso</string>
+  <string name="settings_debrid_name_template">Modello del nome</string>
+  <string name="settings_debrid_name_template_description">Controlla come appaiono i nomi dei flussi Debrid nell'elenco delle sorgenti.</string>
+  <string name="settings_debrid_description_template">Modello della descrizione</string>
+  <string name="settings_debrid_description_template_description">Controlla le righe dei metadati mostrate sotto ogni flusso Debrid.</string>
+  <string name="settings_debrid_key_valid">Chiave API convalidata.</string>
+  <string name="settings_debrid_key_invalid">Impossibile convalidare questa chiave API.</string>
+  <string name="debrid_missing_api_key">Aggiungi una chiave API Debrid nelle Impostazioni.</string>
+  <string name="debrid_stream_stale">Questo risultato Debrid è scaduto. Aggiornamento dei flussi in corso.</string>
+  <string name="debrid_resolve_failed">Impossibile risolvere questo flusso Debrid.</string>
 </resources>
