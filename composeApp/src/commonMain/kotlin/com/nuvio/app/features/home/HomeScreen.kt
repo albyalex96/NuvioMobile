@@ -108,7 +108,13 @@ fun HomeScreen(
         TraktAuthRepository.isAuthenticated
     }.collectAsStateWithLifecycle()
     var observedOfflineState by remember { mutableStateOf(false) }
+    val top10ChangeEvents = Top10CatalogRepository.localChangeEvents
 
+    LaunchedEffect(top10ChangeEvents) {
+        top10ChangeEvents.collect {
+            HomeRepository.applyCurrentSettings()
+        }
+    }
     LaunchedEffect(networkStatusUiState.condition) {
         when (networkStatusUiState.condition) {
             NetworkCondition.NoInternet,

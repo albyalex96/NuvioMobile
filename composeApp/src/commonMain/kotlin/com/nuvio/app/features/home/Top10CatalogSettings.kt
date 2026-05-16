@@ -1,12 +1,14 @@
 package com.nuvio.app.features.home
-
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-
+import com.nuvio.app.features.home.HomeRepository
 @Serializable
 data class Top10CatalogSelection(
     val enabled: Boolean = false,
@@ -38,7 +40,8 @@ data class Top10CatalogUiState(
 object Top10CatalogRepository {
     private val _uiState = MutableStateFlow(Top10CatalogUiState())
     val uiState: StateFlow<Top10CatalogUiState> = _uiState.asStateFlow()
-
+    private val _localChangeEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    internal val localChangeEvents: SharedFlow<Unit> = _localChangeEvents.asSharedFlow()
     private val json = Json { ignoreUnknownKeys = true }
 
     fun ensureLoaded() {
@@ -95,6 +98,7 @@ object Top10CatalogRepository {
     private fun persist() {
         val selection = _uiState.value.toSelection()
         Top10CatalogStorage.savePayload(json.encodeToString(selection))
+        _localChangeEvents.tryEmit(Unit)
     }
 
     private fun Top10CatalogSelection.toUiState() = Top10CatalogUiState(

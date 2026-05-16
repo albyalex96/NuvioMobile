@@ -1,27 +1,40 @@
 package com.nuvio.app.features.home.components
 
+import androidx.compose.ui.graphics.StrokeJoin 
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.stableKey
+
+data class SvgData(val path: String, val viewBoxWidth: Float, val viewBoxHeight: Float)
+
 @Composable
 fun HomeTop10Section(
     title: String,
@@ -34,14 +47,14 @@ fun HomeTop10Section(
     if (items.isEmpty()) return
 
     Text(
-      text = title,
-      modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = sectionPadding)
-          .padding(bottom = 8.dp),
-      style = MaterialTheme.typography.titleMedium,
-      color = MaterialTheme.colorScheme.onBackground,
-      fontWeight = FontWeight.Bold,
+        text = title,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = sectionPadding)
+            .padding(bottom = 8.dp),
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onBackground,
+        fontWeight = FontWeight.Bold,
     )
 
     LazyRow(
@@ -66,31 +79,36 @@ private fun Top10PosterItem(
     onClick: (() -> Unit)?,
     onLongClick: (() -> Unit)?,
 ) {
-    // Each card is a poster with a large rank number overlapping on the left
     Box(
         modifier = Modifier
             .width(TOP10_ITEM_TOTAL_WIDTH.dp)
-            .padding(end = 4.dp),
+            .height(TOP10_ITEM_HEIGHT.dp),
     ) {
-        // Rank number — large, left-aligned, partially behind the poster
+        // Large rank number, vertically centered, anchored to the left
         Text(
             text = rank.toString(),
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 2.dp),
-            fontSize = 80.sp,
+                .offset(x = 4.dp),
+            fontSize = 110.sp,
             fontWeight = FontWeight.Black,
             fontStyle = FontStyle.Italic,
-            color = Color.White,
-            textAlign = TextAlign.Left,
-            lineHeight = 80.sp,
+            color = Color(0xFF1A1A1A),
+            lineHeight = 110.sp,
+            style = TextStyle(
+                drawStyle = Stroke(
+                    width = 6f,
+                    join = StrokeJoin.Round,
+                )
+),
         )
 
-        // Poster card shifted right to overlap the number
+        // Poster overlapping the right half of the number
         Box(
             modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .width(TOP10_POSTER_WIDTH.dp),
+                .width(TOP10_POSTER_WIDTH.dp)
+                .fillMaxHeight()
+                .align(Alignment.CenterEnd),
         ) {
             HomePosterCard(
                 item = item,
@@ -101,6 +119,7 @@ private fun Top10PosterItem(
     }
 }
 
-private const val TOP10_POSTER_WIDTH = 110
-private const val TOP10_RANK_WIDTH = 60
+private const val TOP10_ITEM_HEIGHT = 160
+private const val TOP10_POSTER_WIDTH = 107
+private const val TOP10_RANK_WIDTH = 80
 private const val TOP10_ITEM_TOTAL_WIDTH = TOP10_POSTER_WIDTH + TOP10_RANK_WIDTH

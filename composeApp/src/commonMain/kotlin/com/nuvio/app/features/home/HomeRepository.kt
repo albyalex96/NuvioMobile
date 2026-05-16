@@ -195,7 +195,11 @@ object HomeRepository {
         val top10Snapshot = Top10CatalogRepository.uiState.value
         val top10MovieItems = if (top10Snapshot.enabled && top10Snapshot.hasMovieCatalog) {
             cachedSections.values
-                .firstOrNull { it.manifestUrl == top10Snapshot.movieManifestUrl && it.catalogId == top10Snapshot.movieCatalogId }
+                .firstOrNull {
+                    it.manifestUrl == top10Snapshot.movieManifestUrl &&
+                    it.catalogId == top10Snapshot.movieCatalogId &&
+                    it.type == top10Snapshot.movieCatalogType
+                }
                 ?.items
                 ?.take(10)
                 ?: emptyList()
@@ -204,7 +208,11 @@ object HomeRepository {
         }
         val top10SeriesItems = if (top10Snapshot.enabled && top10Snapshot.hasSeriesCatalog) {
             cachedSections.values
-                .firstOrNull { it.manifestUrl == top10Snapshot.seriesManifestUrl && it.catalogId == top10Snapshot.seriesCatalogId }
+                .firstOrNull {
+                    it.manifestUrl == top10Snapshot.seriesManifestUrl &&
+                    it.catalogId == top10Snapshot.seriesCatalogId &&
+                    it.type == top10Snapshot.seriesCatalogType
+                }
                 ?.items
                 ?.take(10)
                 ?: emptyList()
@@ -258,7 +266,7 @@ object HomeRepository {
             supportsPagination = supportsPagination,
         )
     }
-}
+        }
 
 private const val HOME_HERO_ITEM_LIMIT = 8
 private const val HOME_CATALOG_FETCH_BATCH_SIZE = 4
