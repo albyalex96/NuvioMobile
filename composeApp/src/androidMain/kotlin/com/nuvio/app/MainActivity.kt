@@ -48,7 +48,7 @@ import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentStorage
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesStorage
 import com.nuvio.app.features.watchprogress.ResumePromptStorage
 import com.nuvio.app.features.watchprogress.WatchProgressStorage
-
+import com.nuvio.app.features.home.Top10CatalogStorage
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         WatchedStorage.initialize(applicationContext)
         MetaScreenSettingsStorage.initialize(applicationContext)
         HomeCatalogSettingsStorage.initialize(applicationContext)
+        Top10CatalogStorage.initialize(applicationContext)
         PlayerSettingsStorage.initialize(applicationContext)
         ExternalPlayerPlatform.initialize(applicationContext)
         ProfileStorage.initialize(applicationContext)
