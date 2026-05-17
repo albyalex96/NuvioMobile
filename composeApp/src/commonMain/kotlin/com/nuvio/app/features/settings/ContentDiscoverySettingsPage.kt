@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Star
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_addons
 import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
@@ -30,6 +31,7 @@ internal fun LazyListScope.contentDiscoveryContent(
     onHomescreenClick: () -> Unit,
     onMetaScreenClick: () -> Unit,
     onCollectionsClick: () -> Unit = {},
+    onTop10CatalogClick: () -> Unit = {},
 ) {
     item {
         SettingsSection(
@@ -82,6 +84,13 @@ internal fun LazyListScope.contentDiscoveryContent(
                     icon = Icons.Rounded.CollectionsBookmark,
                     isTablet = isTablet,
                     onClick = onCollectionsClick,
+                )
+                SettingsNavigationRow(
+                    title = "Top 10 Catalog",
+                    description = "Choose catalogs to display as Top 10 rows on the home screen",
+                    icon = Icons.Rounded.Star,
+                    isTablet = isTablet,
+                    onClick = onTop10CatalogClick,
                 )
             }
         }

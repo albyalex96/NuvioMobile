@@ -154,6 +154,7 @@ import com.nuvio.app.features.settings.AccountSettingsScreen
 import com.nuvio.app.features.settings.SupportersContributorsSettingsScreen
 import com.nuvio.app.features.settings.LicensesAttributionsSettingsScreen
 import com.nuvio.app.features.settings.ThemeSettingsRepository
+import com.nuvio.app.features.settings.Top10CatalogSettingsScreen
 import com.nuvio.app.features.collection.CollectionManagementScreen
 import com.nuvio.app.features.collection.CollectionEditorScreen
 import com.nuvio.app.features.collection.CollectionEditorRepository
@@ -258,6 +259,8 @@ data class CollectionEditorRoute(val collectionId: String? = null)
 @Serializable
 data class FolderDetailRoute(val collectionId: String, val folderId: String)
 
+@Serializable
+object Top10CatalogSettingsRoute
 @Serializable
 data class StreamRoute(
     val launchId: Long,
@@ -1150,6 +1153,7 @@ private fun MainAppContent(
                                             null
                                         },
                                         onCollectionsSettingsClick = { navController.navigate(CollectionsRoute) },
+                                        onTop10CatalogSettingsClick = { navController.navigate(Top10CatalogSettingsRoute) },
                                         onFolderClick = { collectionId, folderId ->
                                             navController.navigate(FolderDetailRoute(collectionId = collectionId, folderId = folderId))
                                         },
@@ -1953,6 +1957,15 @@ private fun MainAppContent(
                         },
                     )
                 }
+                composable<Top10CatalogSettingsRoute> { backStackEntry ->
+                    val onBack = rememberGuardedPopBackStack(
+                        navController = navController,
+                        backStackEntry = backStackEntry,
+                    )
+                    Top10CatalogSettingsScreen(
+                        onBack = onBack,
+                    )
+                }
                 composable<CollectionEditorRoute> { backStackEntry ->
                     val route = backStackEntry.toRoute<CollectionEditorRoute>()
                     CollectionEditorScreen(
@@ -2219,6 +2232,7 @@ private fun AppTabHost(
     onLicensesAttributionsSettingsClick: () -> Unit = {},
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsSettingsClick: () -> Unit = {},
+    onTop10CatalogSettingsClick: () -> Unit = {},
     onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
     onInitialHomeContentRendered: () -> Unit = {},
 ) {
@@ -2273,6 +2287,7 @@ private fun AppTabHost(
                         onLicensesAttributionsClick = onLicensesAttributionsSettingsClick,
                         onCheckForUpdatesClick = onCheckForUpdatesClick,
                         onCollectionsClick = onCollectionsSettingsClick,
+                        onTop10CatalogClick = onTop10CatalogSettingsClick,
                     )
                 }
             }
