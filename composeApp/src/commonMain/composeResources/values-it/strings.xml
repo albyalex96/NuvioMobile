@@ -1303,4 +1303,13 @@
   <string name="debrid_missing_api_key">Aggiungi una chiave API Debrid nelle Impostazioni.</string>
   <string name="debrid_stream_stale">Questo risultato Debrid è scaduto. Aggiornamento dei flussi in corso.</string>
   <string name="debrid_resolve_failed">Impossibile risolvere questo flusso Debrid.</string>
+  <string name="parental_alcohol">Alcol/Droghe</string>
+  <string name="parental_frightening">Paura</string>
+  <string name="parental_nudity">Nudità</string>
+  <string name="parental_profanity">Volgarità</string>
+  <string name="parental_severity_mild">Lieve</string>
+  <string name="parental_severity_moderate">Moderata</string>
+  <string name="parental_severity_severe">Severa</string>
+  <string name="parental_violence">Violenza</string>
+  <string name="settings_debrid_experimental_notice">Il supporto ai Debrid è sperimentale e può essere tenuto , cambiato o rimosso in seguito.</string>
 </resources>
