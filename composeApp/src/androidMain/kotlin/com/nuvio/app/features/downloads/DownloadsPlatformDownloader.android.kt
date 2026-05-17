@@ -47,7 +47,11 @@ internal actual object DownloadsPlatformDownloader {
         val keepAliveContext = appContext
         var foregroundRetained = false
         if (keepAliveContext != null) {
-            DownloadsForegroundService.retain(keepAliveContext)
+            DownloadsForegroundService.retain(
+                context = keepAliveContext,
+                downloadId = request.downloadId,
+                displayTitle = request.displayTitle,
+            )
             foregroundRetained = true
         }
 
@@ -158,7 +162,7 @@ internal actual object DownloadsPlatformDownloader {
         job.invokeOnCompletion {
             call?.cancel()
             if (foregroundRetained && keepAliveContext != null) {
-                DownloadsForegroundService.release(keepAliveContext)
+                DownloadsForegroundService.release(keepAliveContext, request.downloadId)
             }
         }
 
