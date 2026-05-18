@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.home.HomeCatalogDefinition
+import nuvio.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun CatalogPickerRow(
@@ -32,7 +34,7 @@ internal fun CatalogPickerRow(
 
     SettingsNavigationRow(
         title = title,
-        description = selectedTitle ?: "Not set — tap to choose",
+        description = selectedTitle ?: stringResource(Res.string.catalog_picker_not_set),
         icon = icon,
         isTablet = isTablet,
         onClick = { showPicker = true },
@@ -41,12 +43,12 @@ internal fun CatalogPickerRow(
     if (showPicker) {
         AlertDialog(
             onDismissRequest = { showPicker = false },
-            title = { Text("Choose a catalog") },
+            title = { Text(stringResource(Res.string.choose_catalog)) },
             text = {
                 Column {
                     if (selectedTitle != null) {
                         Text(
-                            text = "Clear selection",
+                            text = stringResource(Res.string.clear_selection),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier
@@ -77,7 +79,7 @@ internal fun CatalogPickerRow(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showPicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(Res.string.action_cancel))
                 }
             },
         )
