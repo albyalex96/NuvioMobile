@@ -11,7 +11,8 @@ import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.home.Top10CatalogRepository
 import com.nuvio.app.features.home.buildHomeCatalogDefinitions
-
+import nuvio.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 @Composable
 fun Top10CatalogSettingsScreen(
     onBack: () -> Unit,
@@ -32,7 +33,7 @@ fun Top10CatalogSettingsScreen(
     ) {
         stickyHeader {
             NuvioScreenHeader(
-                title = "Top 10 Catalog",
+                title = stringResource(Res.string.top10_header),
                 onBack = onBack,
             )
         }

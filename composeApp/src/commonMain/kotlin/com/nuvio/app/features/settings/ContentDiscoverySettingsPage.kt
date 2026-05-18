@@ -22,7 +22,8 @@ import nuvio.composeapp.generated.resources.settings_content_discovery_plugins_d
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_home
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_sources
 import org.jetbrains.compose.resources.stringResource
-
+import nuvio.composeapp.generated.resources.top10_header
+import nuvio.composeapp.generated.resources.top10_description
 internal fun LazyListScope.contentDiscoveryContent(
     isTablet: Boolean,
     showPluginsEntry: Boolean,
@@ -86,8 +87,8 @@ internal fun LazyListScope.contentDiscoveryContent(
                     onClick = onCollectionsClick,
                 )
                 SettingsNavigationRow(
-                    title = "Top 10 Catalog",
-                    description = "Choose catalogs to display as Top 10 rows on the home screen",
+                    title = stringResource(Res.string.top10_header),
+                    description = stringResource(Res.string.top10_description),
                     icon = Icons.Rounded.Star,
                     isTablet = isTablet,
                     onClick = onTop10CatalogClick,

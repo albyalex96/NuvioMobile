@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.nuvio.app.features.home.HomeCatalogDefinition
 import com.nuvio.app.features.home.Top10CatalogRepository
 import com.nuvio.app.features.home.Top10CatalogUiState
+import nuvio.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.top10CatalogSettingsContent(
     isTablet: Boolean,
@@ -19,13 +21,13 @@ internal fun LazyListScope.top10CatalogSettingsContent(
 ) {
     item {
         SettingsSection(
-            title = "General",
+            title = stringResource(Res.string.top10_general_header),
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
                 SettingsSwitchRow(
-                    title = "Enable Top 10 Row",
-                    description = "Show a Top 10 section on the home screen",
+                    title = stringResource(Res.string.top10_title_settings),
+                    description = stringResource(Res.string.top10_title_description),
                     checked = uiState.enabled,
                     isTablet = isTablet,
                     onCheckedChange = { Top10CatalogRepository.setEnabled(it) },
@@ -37,12 +39,12 @@ internal fun LazyListScope.top10CatalogSettingsContent(
     if (uiState.enabled) {
         item {
             SettingsSection(
-                title = "Catalogs",
+                title = stringResource(Res.string.top10_catalogs_header),
                 isTablet = isTablet,
             ) {
                 SettingsGroup(isTablet = isTablet) {
                     CatalogPickerRow(
-                        title = "Movies",
+                        title = stringResource(Res.string.media_movies),
                         selectedTitle = uiState.movieCatalogTitle.ifBlank { null },
                         icon = Icons.Rounded.Movie,
                         isTablet = isTablet,
@@ -58,7 +60,7 @@ internal fun LazyListScope.top10CatalogSettingsContent(
                         onClear = { Top10CatalogRepository.clearMovieCatalog() },
                     )
                     CatalogPickerRow(
-                        title = "TV Shows",
+                        title = stringResource(Res.string.media_series),
                         selectedTitle = uiState.seriesCatalogTitle.ifBlank { null },
                         icon = Icons.Rounded.Tv,
                         isTablet = isTablet,
