@@ -1,7 +1,14 @@
 package com.nuvio.app.features.home
 
 import com.nuvio.app.features.addons.ManagedAddon
+import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.catalog.fetchCatalogPage
+import com.nuvio.app.features.collection.Collection
+import com.nuvio.app.features.collection.CollectionRepository
+import com.nuvio.app.features.collection.CollectionSource
+import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
+import com.nuvio.app.features.collection.findCollectionCatalog
+import com.nuvio.app.features.trakt.TraktPublicListSourceResolver
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import com.nuvio.app.features.home.Top10CatalogRepository
 import kotlinx.coroutines.CoroutineScope
@@ -28,6 +35,10 @@ object HomeRepository {
     private var lastRequestKey: String? = null
     private var currentDefinitions: List<HomeCatalogDefinition> = emptyList()
     private var cachedSections: Map<String, HomeCatalogSection> = emptyMap()
+    private var cachedCollectionHeroItems: List<MetaPreview> = emptyList()
+    private var collectionHeroJob: Job? = null
+    private var collectionHeroRequestKey: String? = null
+    private var lastPublishedCatalogHeroEmpty: Boolean = true
     private var lastErrorMessage: String? = null
 
     fun refresh(addons: List<ManagedAddon>, force: Boolean = false) {
@@ -56,10 +67,14 @@ object HomeRepository {
             activeRequestKey = null
             cachedSections = emptyMap()
             lastErrorMessage = null
-            _uiState.value = HomeUiState(
+            publishCurrentState(
                 isLoading = false,
-                sections = emptyList(),
-                errorMessage = null,
+                requestKey = requestKey,
+            )
+            ensureCollectionHeroFallback(
+                addons = addons,
+                force = force,
+                requestKey = requestKey,
             )
             return
         }
@@ -133,12 +148,22 @@ object HomeRepository {
                 isLoading = false,
                 requestKey = requestKey,
             )
+            ensureCollectionHeroFallback(
+                addons = addons,
+                force = force,
+                requestKey = requestKey,
+            )
         }
     }
 
     fun applyCurrentSettings() {
         publishCurrentState(
             isLoading = _uiState.value.isLoading,
+            requestKey = activeRequestKey ?: lastRequestKey,
+        )
+        ensureCollectionHeroFallback(
+            addons = AddonRepository.uiState.value.addons,
+            force = false,
             requestKey = activeRequestKey ?: lastRequestKey,
         )
     }
@@ -150,6 +175,11 @@ object HomeRepository {
         lastRequestKey = null
         currentDefinitions = emptyList()
         cachedSections = emptyMap()
+        cachedCollectionHeroItems = emptyList()
+        collectionHeroJob?.cancel()
+        collectionHeroJob = null
+        collectionHeroRequestKey = null
+        lastPublishedCatalogHeroEmpty = true
         lastErrorMessage = null
         _uiState.value = HomeUiState()
     }
@@ -178,7 +208,7 @@ object HomeRepository {
                 )
             }
 
-        val heroItems = if (snapshot.heroEnabled) {
+        val catalogHeroItems = if (snapshot.heroEnabled) {
             val heroRandom = Random((requestKey?.hashCode() ?: 0).absoluteValue + 1)
             currentDefinitions
                 .filter { definition -> preferences[definition.key]?.heroSourceEnabled != false }
@@ -188,6 +218,12 @@ object HomeRepository {
                 .distinctBy { item -> "${item.type}:${item.id}" }
                 .shuffled(heroRandom)
                 .take(HOME_HERO_ITEM_LIMIT)
+        } else {
+            emptyList()
+        }
+        lastPublishedCatalogHeroEmpty = snapshot.heroEnabled && catalogHeroItems.isEmpty()
+        val heroItems = if (snapshot.heroEnabled) {
+            catalogHeroItems.ifEmpty { cachedCollectionHeroItems }
         } else {
             emptyList()
         }
@@ -266,9 +302,11 @@ object HomeRepository {
             supportsPagination = supportsPagination,
         )
     }
-        }
+}
 
 private const val HOME_HERO_ITEM_LIMIT = 8
+private const val HOME_COLLECTION_HERO_SOURCE_LIMIT = 6
+private const val HOME_COLLECTION_HERO_SOURCE_ITEM_LIMIT = 8
 private const val HOME_CATALOG_FETCH_BATCH_SIZE = 4
 private const val HOME_CATALOG_PREVIEW_FETCH_LIMIT = 18
 private const val HOME_CATALOG_PUBLISH_INTERVAL = 2
