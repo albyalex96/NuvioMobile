@@ -12,7 +12,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
+
+      - name: Checkout MPVKit submodule
+        run: git submodule update --init MPVKit
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
