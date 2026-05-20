@@ -54,6 +54,7 @@ jobs:
       - name: Build unsigned iOS app
         run: |
           set -euo pipefail
+          IOS_SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
           xcodebuild build \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
@@ -68,8 +69,8 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
-            FRAMEWORK_SEARCH_PATHS="$PWD/build/DerivedData/Build/Products/Release-iphoneos" \
-            OTHER_LDFLAGS="-framework ComposeApp"
+            FRAMEWORK_SEARCH_PATHS="$PWD/build/DerivedData/Build/Products/Release-iphoneos $IOS_SDK_PATH/System/Library/PrivateFrameworks" \
+            OTHER_LDFLAGS="-framework ComposeApp -framework UIUtilities"
 
       - name: Package unsigned IPA
         run: |
