@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: Build unsigned IPA
-    runs-on: macos-15
+    runs-on: macos-14
 
     steps:
       - name: Checkout
@@ -27,7 +27,19 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        run: |
+          set -euo pipefail
+          ls -1 /Applications | grep '^Xcode' || true
+          if [ -d /Applications/Xcode_16.2.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          elif [ -d /Applications/Xcode_16.1.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
+          elif [ -d /Applications/Xcode_15.4.app ]; then
+            sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          else
+            sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          fi
+          xcodebuild -version
 
       - name: Build unsigned iOS app
         run: |
