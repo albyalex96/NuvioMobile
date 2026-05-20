@@ -41,6 +41,14 @@ jobs:
           fi
           xcodebuild -version
 
+      - name: Build Kotlin iOS framework
+        run: |
+          set -euo pipefail
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64
+          mkdir -p "$PWD/build/DerivedData/Build/Products/Release-iphoneos"
+          cp -R "$PWD/composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework" \
+            "$PWD/build/DerivedData/Build/Products/Release-iphoneos/"
+
       - name: Build unsigned iOS app
         run: |
           set -euo pipefail
@@ -51,12 +59,14 @@ jobs:
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath "$PWD/build/DerivedData" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGNING_ALLOWED=YES \
+            OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES \
+            CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            FRAMEWORK_SEARCH_PATHS="$PWD/build/DerivedData/Build/Products/Release-iphoneos" \
+            OTHER_LDFLAGS="-framework ComposeApp"
 
       - name: Package unsigned IPA
         run: |
