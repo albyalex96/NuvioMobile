@@ -90,6 +90,78 @@ import nuvio.composeapp.generated.resources.settings_debrid_section_instant_play
 import nuvio.composeapp.generated.resources.settings_debrid_section_formatting
 import nuvio.composeapp.generated.resources.settings_debrid_section_providers
 import nuvio.composeapp.generated.resources.settings_debrid_section_title
+// --- new string resource imports ---
+import nuvio.composeapp.generated.resources.settings_debrid_section_filters_sorting
+import nuvio.composeapp.generated.resources.settings_debrid_max_results
+import nuvio.composeapp.generated.resources.settings_debrid_max_results_description
+import nuvio.composeapp.generated.resources.settings_debrid_sort_streams
+import nuvio.composeapp.generated.resources.settings_debrid_sort_streams_description
+import nuvio.composeapp.generated.resources.settings_debrid_per_resolution_limit
+import nuvio.composeapp.generated.resources.settings_debrid_per_resolution_limit_description
+import nuvio.composeapp.generated.resources.settings_debrid_per_quality_limit
+import nuvio.composeapp.generated.resources.settings_debrid_per_quality_limit_description
+import nuvio.composeapp.generated.resources.settings_debrid_size_range
+import nuvio.composeapp.generated.resources.settings_debrid_size_range_description
+import nuvio.composeapp.generated.resources.settings_debrid_stream_all
+import nuvio.composeapp.generated.resources.settings_debrid_stream_count
+import nuvio.composeapp.generated.resources.settings_debrid_sort_default
+import nuvio.composeapp.generated.resources.settings_debrid_sort_largest
+import nuvio.composeapp.generated.resources.settings_debrid_sort_smallest
+import nuvio.composeapp.generated.resources.settings_debrid_sort_audio
+import nuvio.composeapp.generated.resources.settings_debrid_sort_language
+import nuvio.composeapp.generated.resources.settings_debrid_selection_any
+import nuvio.composeapp.generated.resources.settings_debrid_selection_count
+import nuvio.composeapp.generated.resources.settings_debrid_size_any
+import nuvio.composeapp.generated.resources.settings_debrid_size_up_to
+import nuvio.composeapp.generated.resources.settings_debrid_size_min_plus
+import nuvio.composeapp.generated.resources.settings_debrid_size_range_between
+import nuvio.composeapp.generated.resources.settings_debrid_text_list_hint
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_resolutions
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_resolutions_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_resolutions
+import nuvio.composeapp.generated.resources.settings_debrid_required_resolutions_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_resolutions
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_resolutions_description
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_qualities
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_qualities_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_qualities
+import nuvio.composeapp.generated.resources.settings_debrid_required_qualities_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_qualities
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_qualities_description
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_visual_tags
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_visual_tags_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_visual_tags
+import nuvio.composeapp.generated.resources.settings_debrid_required_visual_tags_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_visual_tags
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_visual_tags_description
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_audio_tags
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_audio_tags_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_audio_tags
+import nuvio.composeapp.generated.resources.settings_debrid_required_audio_tags_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_audio_tags
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_audio_tags_description
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_audio_channels
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_audio_channels_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_audio_channels
+import nuvio.composeapp.generated.resources.settings_debrid_required_audio_channels_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_audio_channels
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_audio_channels_description
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_encodes
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_encodes_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_encodes
+import nuvio.composeapp.generated.resources.settings_debrid_required_encodes_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_encodes
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_encodes_description
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_languages
+import nuvio.composeapp.generated.resources.settings_debrid_preferred_languages_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_languages
+import nuvio.composeapp.generated.resources.settings_debrid_required_languages_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_languages
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_languages_description
+import nuvio.composeapp.generated.resources.settings_debrid_required_release_groups
+import nuvio.composeapp.generated.resources.settings_debrid_required_release_groups_description
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_release_groups
+import nuvio.composeapp.generated.resources.settings_debrid_excluded_release_groups_description
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.debridSettingsContent(
@@ -210,14 +282,14 @@ internal fun LazyListScope.debridSettingsContent(
         val rows = debridRuleRows(preferences)
 
         SettingsSection(
-            title = "Filters & Sorting",
+            title = stringResource(Res.string.settings_debrid_section_filters_sorting),
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
                 DebridPreferenceRow(
                     isTablet = isTablet,
-                    title = "Max results",
-                    description = "Limit how many Direct Debrid sources appear.",
+                    title = stringResource(Res.string.settings_debrid_max_results),
+                    description = stringResource(Res.string.settings_debrid_max_results_description),
                     value = streamMaxResultsLabel(preferences.maxResults),
                     enabled = settings.enabled,
                     onClick = { activeStreamPicker = DebridStreamPicker.MAX_RESULTS },
@@ -225,8 +297,8 @@ internal fun LazyListScope.debridSettingsContent(
                 SettingsGroupDivider(isTablet = isTablet)
                 DebridPreferenceRow(
                     isTablet = isTablet,
-                    title = "Sort streams",
-                    description = "Choose how Direct Debrid sources are ordered.",
+                    title = stringResource(Res.string.settings_debrid_sort_streams),
+                    description = stringResource(Res.string.settings_debrid_sort_streams_description),
                     value = sortProfileLabel(preferences.sortCriteria),
                     enabled = settings.enabled,
                     onClick = { activeStreamPicker = DebridStreamPicker.SORT_MODE },
@@ -234,8 +306,8 @@ internal fun LazyListScope.debridSettingsContent(
                 SettingsGroupDivider(isTablet = isTablet)
                 DebridPreferenceRow(
                     isTablet = isTablet,
-                    title = "Per resolution limit",
-                    description = "Cap repeated 2160p, 1080p, 720p results after sorting.",
+                    title = stringResource(Res.string.settings_debrid_per_resolution_limit),
+                    description = stringResource(Res.string.settings_debrid_per_resolution_limit_description),
                     value = streamMaxResultsLabel(preferences.maxPerResolution),
                     enabled = settings.enabled,
                     onClick = { activeStreamPicker = DebridStreamPicker.MAX_PER_RESOLUTION },
@@ -243,8 +315,8 @@ internal fun LazyListScope.debridSettingsContent(
                 SettingsGroupDivider(isTablet = isTablet)
                 DebridPreferenceRow(
                     isTablet = isTablet,
-                    title = "Per quality limit",
-                    description = "Cap repeated BluRay, WEB-DL, REMUX results after sorting.",
+                    title = stringResource(Res.string.settings_debrid_per_quality_limit),
+                    description = stringResource(Res.string.settings_debrid_per_quality_limit_description),
                     value = streamMaxResultsLabel(preferences.maxPerQuality),
                     enabled = settings.enabled,
                     onClick = { activeStreamPicker = DebridStreamPicker.MAX_PER_QUALITY },
@@ -252,8 +324,8 @@ internal fun LazyListScope.debridSettingsContent(
                 SettingsGroupDivider(isTablet = isTablet)
                 DebridPreferenceRow(
                     isTablet = isTablet,
-                    title = "Size range",
-                    description = "Filter streams by file size.",
+                    title = stringResource(Res.string.settings_debrid_size_range),
+                    description = stringResource(Res.string.settings_debrid_size_range_description),
                     value = sizeRangeLabel(preferences),
                     enabled = settings.enabled,
                     onClick = { activeStreamPicker = DebridStreamPicker.SIZE_RANGE },
@@ -571,7 +643,7 @@ private fun DebridStreamPreferenceDialog(
 ) {
     when (picker) {
         DebridStreamPicker.MAX_RESULTS -> DebridIntChoiceDialog(
-            title = "Max results",
+            title = stringResource(Res.string.settings_debrid_max_results),
             selectedValue = preferences.maxResults,
             options = listOf(0, 5, 10, 20, 50),
             label = { streamMaxResultsLabel(it) },
@@ -579,7 +651,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.MAX_PER_RESOLUTION -> DebridIntChoiceDialog(
-            title = "Max results",
+            title = stringResource(Res.string.settings_debrid_per_resolution_limit),
             selectedValue = preferences.maxPerResolution,
             options = listOf(0, 1, 2, 3, 5),
             label = { streamMaxResultsLabel(it) },
@@ -587,7 +659,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.MAX_PER_QUALITY -> DebridIntChoiceDialog(
-            title = "Max results",
+            title = stringResource(Res.string.settings_debrid_per_quality_limit),
             selectedValue = preferences.maxPerQuality,
             options = listOf(0, 1, 2, 3, 5),
             label = { streamMaxResultsLabel(it) },
@@ -595,7 +667,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.SORT_MODE -> DebridSingleChoiceDialog(
-            title = "Sort streams",
+            title = stringResource(Res.string.settings_debrid_sort_streams),
             selectedValue = sortProfileFor(preferences.sortCriteria),
             options = listOf(
                 DebridSortProfile.DEFAULT,
@@ -609,7 +681,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.SIZE_RANGE -> DebridSingleChoiceDialog(
-            title = "Size range",
+            title = stringResource(Res.string.settings_debrid_size_range),
             selectedValue = preferences.sizeMinGb to preferences.sizeMaxGb,
             options = listOf(0 to 0, 0 to 5, 0 to 10, 5 to 20, 10 to 50, 20 to 100),
             label = { sizeRangeLabel(it.first, it.second) },
@@ -617,7 +689,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.PREFERRED_RESOLUTIONS -> DebridMultiChoiceDialog(
-            title = "Preferred resolutions",
+            title = stringResource(Res.string.settings_debrid_preferred_resolutions),
             selectedValues = preferences.preferredResolutions,
             values = DebridStreamResolution.defaultOrder,
             label = { it.label },
@@ -625,7 +697,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_RESOLUTIONS -> DebridMultiChoiceDialog(
-            title = "Required resolutions",
+            title = stringResource(Res.string.settings_debrid_required_resolutions),
             selectedValues = preferences.requiredResolutions,
             values = DebridStreamResolution.defaultOrder,
             label = { it.label },
@@ -633,7 +705,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_RESOLUTIONS -> DebridMultiChoiceDialog(
-            title = "Excluded resolutions",
+            title = stringResource(Res.string.settings_debrid_excluded_resolutions),
             selectedValues = preferences.excludedResolutions,
             values = DebridStreamResolution.defaultOrder,
             label = { it.label },
@@ -641,7 +713,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.PREFERRED_QUALITIES -> DebridMultiChoiceDialog(
-            title = "Preferred qualities",
+            title = stringResource(Res.string.settings_debrid_preferred_qualities),
             selectedValues = preferences.preferredQualities,
             values = DebridStreamQuality.defaultOrder,
             label = { it.label },
@@ -649,7 +721,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_QUALITIES -> DebridMultiChoiceDialog(
-            title = "Required qualities",
+            title = stringResource(Res.string.settings_debrid_required_qualities),
             selectedValues = preferences.requiredQualities,
             values = DebridStreamQuality.defaultOrder,
             label = { it.label },
@@ -657,7 +729,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_QUALITIES -> DebridMultiChoiceDialog(
-            title = "Excluded qualities",
+            title = stringResource(Res.string.settings_debrid_excluded_qualities),
             selectedValues = preferences.excludedQualities,
             values = DebridStreamQuality.defaultOrder,
             label = { it.label },
@@ -665,7 +737,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.PREFERRED_VISUAL_TAGS -> DebridMultiChoiceDialog(
-            title = "Preferred visual tags",
+            title = stringResource(Res.string.settings_debrid_preferred_visual_tags),
             selectedValues = preferences.preferredVisualTags,
             values = DebridStreamVisualTag.defaultOrder,
             label = { it.label },
@@ -673,7 +745,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_VISUAL_TAGS -> DebridMultiChoiceDialog(
-            title = "Required visual tags",
+            title = stringResource(Res.string.settings_debrid_required_visual_tags),
             selectedValues = preferences.requiredVisualTags,
             values = DebridStreamVisualTag.defaultOrder,
             label = { it.label },
@@ -681,7 +753,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_VISUAL_TAGS -> DebridMultiChoiceDialog(
-            title = "Excluded visual tags",
+            title = stringResource(Res.string.settings_debrid_excluded_visual_tags),
             selectedValues = preferences.excludedVisualTags,
             values = DebridStreamVisualTag.defaultOrder,
             label = { it.label },
@@ -689,7 +761,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.PREFERRED_AUDIO_TAGS -> DebridMultiChoiceDialog(
-            title = "Preferred audio tags",
+            title = stringResource(Res.string.settings_debrid_preferred_audio_tags),
             selectedValues = preferences.preferredAudioTags,
             values = DebridStreamAudioTag.defaultOrder,
             label = { it.label },
@@ -697,7 +769,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_AUDIO_TAGS -> DebridMultiChoiceDialog(
-            title = "Required audio tags",
+            title = stringResource(Res.string.settings_debrid_required_audio_tags),
             selectedValues = preferences.requiredAudioTags,
             values = DebridStreamAudioTag.defaultOrder,
             label = { it.label },
@@ -705,7 +777,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_AUDIO_TAGS -> DebridMultiChoiceDialog(
-            title = "Excluded audio tags",
+            title = stringResource(Res.string.settings_debrid_excluded_audio_tags),
             selectedValues = preferences.excludedAudioTags,
             values = DebridStreamAudioTag.defaultOrder,
             label = { it.label },
@@ -713,7 +785,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.PREFERRED_AUDIO_CHANNELS -> DebridMultiChoiceDialog(
-            title = "Preferred channels",
+            title = stringResource(Res.string.settings_debrid_preferred_audio_channels),
             selectedValues = preferences.preferredAudioChannels,
             values = DebridStreamAudioChannel.defaultOrder,
             label = { it.label },
@@ -721,7 +793,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_AUDIO_CHANNELS -> DebridMultiChoiceDialog(
-            title = "Required channels",
+            title = stringResource(Res.string.settings_debrid_required_audio_channels),
             selectedValues = preferences.requiredAudioChannels,
             values = DebridStreamAudioChannel.defaultOrder,
             label = { it.label },
@@ -729,7 +801,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_AUDIO_CHANNELS -> DebridMultiChoiceDialog(
-            title = "Excluded channels",
+            title = stringResource(Res.string.settings_debrid_excluded_audio_channels),
             selectedValues = preferences.excludedAudioChannels,
             values = DebridStreamAudioChannel.defaultOrder,
             label = { it.label },
@@ -737,7 +809,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.PREFERRED_ENCODES -> DebridMultiChoiceDialog(
-            title = "Preferred encodes",
+            title = stringResource(Res.string.settings_debrid_preferred_encodes),
             selectedValues = preferences.preferredEncodes,
             values = DebridStreamEncode.defaultOrder,
             label = { it.label },
@@ -745,7 +817,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_ENCODES -> DebridMultiChoiceDialog(
-            title = "Required encodes",
+            title = stringResource(Res.string.settings_debrid_required_encodes),
             selectedValues = preferences.requiredEncodes,
             values = DebridStreamEncode.defaultOrder,
             label = { it.label },
@@ -753,7 +825,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_ENCODES -> DebridMultiChoiceDialog(
-            title = "Excluded encodes",
+            title = stringResource(Res.string.settings_debrid_excluded_encodes),
             selectedValues = preferences.excludedEncodes,
             values = DebridStreamEncode.defaultOrder,
             label = { it.label },
@@ -761,7 +833,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.PREFERRED_LANGUAGES -> DebridMultiChoiceDialog(
-            title = "Preferred languages",
+            title = stringResource(Res.string.settings_debrid_preferred_languages),
             selectedValues = preferences.preferredLanguages,
             values = DebridStreamLanguage.entries,
             label = { it.label },
@@ -769,7 +841,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_LANGUAGES -> DebridMultiChoiceDialog(
-            title = "Required languages",
+            title = stringResource(Res.string.settings_debrid_required_languages),
             selectedValues = preferences.requiredLanguages,
             values = DebridStreamLanguage.entries,
             label = { it.label },
@@ -777,7 +849,7 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_LANGUAGES -> DebridMultiChoiceDialog(
-            title = "Excluded languages",
+            title = stringResource(Res.string.settings_debrid_excluded_languages),
             selectedValues = preferences.excludedLanguages,
             values = DebridStreamLanguage.entries,
             label = { it.label },
@@ -785,13 +857,13 @@ private fun DebridStreamPreferenceDialog(
             onDismiss = onDismiss,
         )
         DebridStreamPicker.REQUIRED_RELEASE_GROUPS -> DebridTextListDialog(
-            title = "Required release groups",
+            title = stringResource(Res.string.settings_debrid_required_release_groups),
             selectedValues = preferences.requiredReleaseGroups,
             onSelected = { value -> onPreferencesChanged(preferences.copy(requiredReleaseGroups = value)) },
             onDismiss = onDismiss,
         )
         DebridStreamPicker.EXCLUDED_RELEASE_GROUPS -> DebridTextListDialog(
-            title = "Excluded release groups",
+            title = stringResource(Res.string.settings_debrid_excluded_release_groups),
             selectedValues = preferences.excludedReleaseGroups,
             onSelected = { value -> onPreferencesChanged(preferences.copy(excludedReleaseGroups = value)) },
             onDismiss = onDismiss,
@@ -918,7 +990,7 @@ private fun DebridTextListDialog(
     BasicAlertDialog(onDismissRequest = onDismiss) {
         DebridDialogSurface(title = title) {
             Text(
-                text = "Enter one group per line.",
+                text = stringResource(Res.string.settings_debrid_text_list_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1039,56 +1111,75 @@ private fun DebridDialogOptionRow(
 
 @Composable
 private fun streamMaxResultsLabel(value: Int): String =
-    if (value <= 0) "All streams" else "$value streams"
-
-private fun sortProfileLabel(value: DebridSortProfile): String =
-    when (value) {
-        DebridSortProfile.DEFAULT -> "Default"
-        DebridSortProfile.LARGEST -> "Largest first"
-        DebridSortProfile.SMALLEST -> "Smallest first"
-        DebridSortProfile.AUDIO -> "Best audio first"
-        DebridSortProfile.LANGUAGE -> "Language first"
+    if (value <= 0) {
+        stringResource(Res.string.settings_debrid_stream_all)
+    } else {
+        stringResource(Res.string.settings_debrid_stream_count, value)
     }
 
+@Composable
+private fun sortProfileLabel(value: DebridSortProfile): String =
+    when (value) {
+        DebridSortProfile.DEFAULT -> stringResource(Res.string.settings_debrid_sort_default)
+        DebridSortProfile.LARGEST -> stringResource(Res.string.settings_debrid_sort_largest)
+        DebridSortProfile.SMALLEST -> stringResource(Res.string.settings_debrid_sort_smallest)
+        DebridSortProfile.AUDIO -> stringResource(Res.string.settings_debrid_sort_audio)
+        DebridSortProfile.LANGUAGE -> stringResource(Res.string.settings_debrid_sort_language)
+    }
+
+// sortProfileLabel overload for use outside @Composable context (criteria list → string via profile)
+// kept as @Composable to match call-sites inside DebridStreamPreferenceDialog
+@Composable
+private fun sortProfileLabel(criteria: List<DebridStreamSortCriterion>): String =
+    sortProfileLabel(sortProfileFor(criteria))
+
+@Composable
 private fun debridRuleRows(preferences: DebridStreamPreferences): List<DebridRuleRow> =
     listOf(
-        DebridRuleRow(DebridStreamPicker.PREFERRED_RESOLUTIONS, "Preferred resolutions", "Sort selected resolutions first, in default order.", selectionCountLabel(preferences.preferredResolutions)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_RESOLUTIONS, "Required resolutions", "Only show selected resolutions.", selectionCountLabel(preferences.requiredResolutions)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_RESOLUTIONS, "Excluded resolutions", "Hide selected resolutions.", selectionCountLabel(preferences.excludedResolutions)),
-        DebridRuleRow(DebridStreamPicker.PREFERRED_QUALITIES, "Preferred qualities", "Sort selected qualities first, in default order.", selectionCountLabel(preferences.preferredQualities)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_QUALITIES, "Required qualities", "Only show selected source qualities.", selectionCountLabel(preferences.requiredQualities)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_QUALITIES, "Excluded qualities", "Hide selected source qualities.", selectionCountLabel(preferences.excludedQualities)),
-        DebridRuleRow(DebridStreamPicker.PREFERRED_VISUAL_TAGS, "Preferred visual tags", "Sort DV, HDR, 10bit, IMAX and similar tags.", selectionCountLabel(preferences.preferredVisualTags)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_VISUAL_TAGS, "Required visual tags", "Require DV, HDR, 10bit, IMAX, SDR and similar tags.", selectionCountLabel(preferences.requiredVisualTags)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_VISUAL_TAGS, "Excluded visual tags", "Hide DV, HDR, 10bit, 3D and similar tags.", selectionCountLabel(preferences.excludedVisualTags)),
-        DebridRuleRow(DebridStreamPicker.PREFERRED_AUDIO_TAGS, "Preferred audio tags", "Sort Atmos, TrueHD, DTS, AAC and similar tags.", selectionCountLabel(preferences.preferredAudioTags)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_AUDIO_TAGS, "Required audio tags", "Require Atmos, TrueHD, DTS, AAC and similar tags.", selectionCountLabel(preferences.requiredAudioTags)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_AUDIO_TAGS, "Excluded audio tags", "Hide selected audio tags.", selectionCountLabel(preferences.excludedAudioTags)),
-        DebridRuleRow(DebridStreamPicker.PREFERRED_AUDIO_CHANNELS, "Preferred channels", "Sort preferred channel layouts first.", selectionCountLabel(preferences.preferredAudioChannels)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_AUDIO_CHANNELS, "Required channels", "Only show selected channel layouts.", selectionCountLabel(preferences.requiredAudioChannels)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_AUDIO_CHANNELS, "Excluded channels", "Hide selected channel layouts.", selectionCountLabel(preferences.excludedAudioChannels)),
-        DebridRuleRow(DebridStreamPicker.PREFERRED_ENCODES, "Preferred encodes", "Sort AV1, HEVC, AVC and similar encodes.", selectionCountLabel(preferences.preferredEncodes)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_ENCODES, "Required encodes", "Require AV1, HEVC, AVC and similar encodes.", selectionCountLabel(preferences.requiredEncodes)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_ENCODES, "Excluded encodes", "Hide selected encodes.", selectionCountLabel(preferences.excludedEncodes)),
-        DebridRuleRow(DebridStreamPicker.PREFERRED_LANGUAGES, "Preferred languages", "Sort preferred audio languages first.", selectionCountLabel(preferences.preferredLanguages)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_LANGUAGES, "Required languages", "Only show streams with selected languages.", selectionCountLabel(preferences.requiredLanguages)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_LANGUAGES, "Excluded languages", "Hide streams where every language is excluded.", selectionCountLabel(preferences.excludedLanguages)),
-        DebridRuleRow(DebridStreamPicker.REQUIRED_RELEASE_GROUPS, "Required release groups", "Only show selected release groups.", selectionCountLabel(preferences.requiredReleaseGroups)),
-        DebridRuleRow(DebridStreamPicker.EXCLUDED_RELEASE_GROUPS, "Excluded release groups", "Hide selected release groups.", selectionCountLabel(preferences.excludedReleaseGroups)),
+        DebridRuleRow(DebridStreamPicker.PREFERRED_RESOLUTIONS, stringResource(Res.string.settings_debrid_preferred_resolutions), stringResource(Res.string.settings_debrid_preferred_resolutions_description), selectionCountLabel(preferences.preferredResolutions)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_RESOLUTIONS, stringResource(Res.string.settings_debrid_required_resolutions), stringResource(Res.string.settings_debrid_required_resolutions_description), selectionCountLabel(preferences.requiredResolutions)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_RESOLUTIONS, stringResource(Res.string.settings_debrid_excluded_resolutions), stringResource(Res.string.settings_debrid_excluded_resolutions_description), selectionCountLabel(preferences.excludedResolutions)),
+        DebridRuleRow(DebridStreamPicker.PREFERRED_QUALITIES, stringResource(Res.string.settings_debrid_preferred_qualities), stringResource(Res.string.settings_debrid_preferred_qualities_description), selectionCountLabel(preferences.preferredQualities)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_QUALITIES, stringResource(Res.string.settings_debrid_required_qualities), stringResource(Res.string.settings_debrid_required_qualities_description), selectionCountLabel(preferences.requiredQualities)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_QUALITIES, stringResource(Res.string.settings_debrid_excluded_qualities), stringResource(Res.string.settings_debrid_excluded_qualities_description), selectionCountLabel(preferences.excludedQualities)),
+        DebridRuleRow(DebridStreamPicker.PREFERRED_VISUAL_TAGS, stringResource(Res.string.settings_debrid_preferred_visual_tags), stringResource(Res.string.settings_debrid_preferred_visual_tags_description), selectionCountLabel(preferences.preferredVisualTags)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_VISUAL_TAGS, stringResource(Res.string.settings_debrid_required_visual_tags), stringResource(Res.string.settings_debrid_required_visual_tags_description), selectionCountLabel(preferences.requiredVisualTags)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_VISUAL_TAGS, stringResource(Res.string.settings_debrid_excluded_visual_tags), stringResource(Res.string.settings_debrid_excluded_visual_tags_description), selectionCountLabel(preferences.excludedVisualTags)),
+        DebridRuleRow(DebridStreamPicker.PREFERRED_AUDIO_TAGS, stringResource(Res.string.settings_debrid_preferred_audio_tags), stringResource(Res.string.settings_debrid_preferred_audio_tags_description), selectionCountLabel(preferences.preferredAudioTags)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_AUDIO_TAGS, stringResource(Res.string.settings_debrid_required_audio_tags), stringResource(Res.string.settings_debrid_required_audio_tags_description), selectionCountLabel(preferences.requiredAudioTags)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_AUDIO_TAGS, stringResource(Res.string.settings_debrid_excluded_audio_tags), stringResource(Res.string.settings_debrid_excluded_audio_tags_description), selectionCountLabel(preferences.excludedAudioTags)),
+        DebridRuleRow(DebridStreamPicker.PREFERRED_AUDIO_CHANNELS, stringResource(Res.string.settings_debrid_preferred_audio_channels), stringResource(Res.string.settings_debrid_preferred_audio_channels_description), selectionCountLabel(preferences.preferredAudioChannels)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_AUDIO_CHANNELS, stringResource(Res.string.settings_debrid_required_audio_channels), stringResource(Res.string.settings_debrid_required_audio_channels_description), selectionCountLabel(preferences.requiredAudioChannels)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_AUDIO_CHANNELS, stringResource(Res.string.settings_debrid_excluded_audio_channels), stringResource(Res.string.settings_debrid_excluded_audio_channels_description), selectionCountLabel(preferences.excludedAudioChannels)),
+        DebridRuleRow(DebridStreamPicker.PREFERRED_ENCODES, stringResource(Res.string.settings_debrid_preferred_encodes), stringResource(Res.string.settings_debrid_preferred_encodes_description), selectionCountLabel(preferences.preferredEncodes)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_ENCODES, stringResource(Res.string.settings_debrid_required_encodes), stringResource(Res.string.settings_debrid_required_encodes_description), selectionCountLabel(preferences.requiredEncodes)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_ENCODES, stringResource(Res.string.settings_debrid_excluded_encodes), stringResource(Res.string.settings_debrid_excluded_encodes_description), selectionCountLabel(preferences.excludedEncodes)),
+        DebridRuleRow(DebridStreamPicker.PREFERRED_LANGUAGES, stringResource(Res.string.settings_debrid_preferred_languages), stringResource(Res.string.settings_debrid_preferred_languages_description), selectionCountLabel(preferences.preferredLanguages)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_LANGUAGES, stringResource(Res.string.settings_debrid_required_languages), stringResource(Res.string.settings_debrid_required_languages_description), selectionCountLabel(preferences.requiredLanguages)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_LANGUAGES, stringResource(Res.string.settings_debrid_excluded_languages), stringResource(Res.string.settings_debrid_excluded_languages_description), selectionCountLabel(preferences.excludedLanguages)),
+        DebridRuleRow(DebridStreamPicker.REQUIRED_RELEASE_GROUPS, stringResource(Res.string.settings_debrid_required_release_groups), stringResource(Res.string.settings_debrid_required_release_groups_description), selectionCountLabel(preferences.requiredReleaseGroups)),
+        DebridRuleRow(DebridStreamPicker.EXCLUDED_RELEASE_GROUPS, stringResource(Res.string.settings_debrid_excluded_release_groups), stringResource(Res.string.settings_debrid_excluded_release_groups_description), selectionCountLabel(preferences.excludedReleaseGroups)),
     )
 
+@Composable
 private fun selectionCountLabel(values: List<*>): String =
-    if (values.isEmpty()) "Any" else "${values.size} selected"
+    if (values.isEmpty()) {
+        stringResource(Res.string.settings_debrid_selection_any)
+    } else {
+        stringResource(Res.string.settings_debrid_selection_count, values.size)
+    }
 
+@Composable
 private fun sizeRangeLabel(preferences: DebridStreamPreferences): String =
     sizeRangeLabel(preferences.sizeMinGb, preferences.sizeMaxGb)
 
+@Composable
 private fun sizeRangeLabel(minGb: Int, maxGb: Int): String =
     when {
-        minGb <= 0 && maxGb <= 0 -> "Any"
-        minGb <= 0 -> "Up to ${maxGb}GB"
-        maxGb <= 0 -> "${minGb}GB+"
-        else -> "${minGb}-${maxGb}GB"
+        minGb <= 0 && maxGb <= 0 -> stringResource(Res.string.settings_debrid_size_any)
+        minGb <= 0 -> stringResource(Res.string.settings_debrid_size_up_to, maxGb)
+        maxGb <= 0 -> stringResource(Res.string.settings_debrid_size_min_plus, minGb)
+        else -> stringResource(Res.string.settings_debrid_size_range_between, minGb, maxGb)
     }
 
 private fun sortProfileFor(criteria: List<DebridStreamSortCriterion>): DebridSortProfile {
@@ -1104,9 +1195,6 @@ private fun sortProfileFor(criteria: List<DebridStreamSortCriterion>): DebridSor
         else -> DebridSortProfile.DEFAULT
     }
 }
-
-private fun sortProfileLabel(criteria: List<DebridStreamSortCriterion>): String =
-    sortProfileLabel(sortProfileFor(criteria))
 
 private fun sortCriteriaForProfile(profile: DebridSortProfile): List<DebridStreamSortCriterion> =
     when (profile) {
