@@ -41,6 +41,11 @@ jobs:
           fi
           xcodebuild -version
 
+      - name: Create local properties
+        run: |
+          set -euo pipefail
+          touch local.properties
+
       - name: Build Kotlin iOS framework
         run: |
           set -euo pipefail
