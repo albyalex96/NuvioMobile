@@ -23,6 +23,7 @@ actual object PlayerSettingsStorage {
     private const val resizeModeKey = "resize_mode"
     private const val holdToSpeedEnabledKey = "hold_to_speed_enabled"
     private const val holdToSpeedValueKey = "hold_to_speed_value"
+    private const val swipeGesturesEnabledKey = "swipe_gestures_enabled"
     private const val externalPlayerEnabledKey = "external_player_enabled"
     private const val externalPlayerIdKey = "external_player_id"
     private const val preferredAudioLanguageKey = "preferred_audio_language"
@@ -76,6 +77,7 @@ actual object PlayerSettingsStorage {
         resizeModeKey,
         holdToSpeedEnabledKey,
         holdToSpeedValueKey,
+        swipeGesturesEnabledKey,
         externalPlayerEnabledKey,
         externalPlayerIdKey,
         preferredAudioLanguageKey,
@@ -188,6 +190,23 @@ actual object PlayerSettingsStorage {
         preferences
             ?.edit()
             ?.putFloat(ProfileScopedKey.of(holdToSpeedValueKey), speed)
+            ?.apply()
+    }
+
+    actual fun loadSwipeGesturesEnabled(): Boolean? =
+        preferences?.let { sharedPreferences ->
+            val key = ProfileScopedKey.of(swipeGesturesEnabledKey)
+            if (sharedPreferences.contains(key)) {
+                sharedPreferences.getBoolean(key, true)
+            } else {
+                null
+            }
+        }
+
+    actual fun saveSwipeGesturesEnabled(enabled: Boolean) {
+        preferences
+            ?.edit()
+            ?.putBoolean(ProfileScopedKey.of(swipeGesturesEnabledKey), enabled)
             ?.apply()
     }
 
@@ -818,6 +837,7 @@ actual object PlayerSettingsStorage {
         loadResizeMode()?.let { put(resizeModeKey, encodeSyncString(it)) }
         loadHoldToSpeedEnabled()?.let { put(holdToSpeedEnabledKey, encodeSyncBoolean(it)) }
         loadHoldToSpeedValue()?.let { put(holdToSpeedValueKey, encodeSyncFloat(it)) }
+        loadSwipeGesturesEnabled()?.let { put(swipeGesturesEnabledKey, encodeSyncBoolean(it)) }
         loadExternalPlayerEnabled()?.let { put(externalPlayerEnabledKey, encodeSyncBoolean(it)) }
         loadExternalPlayerId()?.let { put(externalPlayerIdKey, encodeSyncString(it)) }
         loadPreferredAudioLanguage()?.let { put(preferredAudioLanguageKey, encodeSyncString(it)) }
@@ -875,6 +895,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncString(resizeModeKey)?.let(::saveResizeMode)
         payload.decodeSyncBoolean(holdToSpeedEnabledKey)?.let(::saveHoldToSpeedEnabled)
         payload.decodeSyncFloat(holdToSpeedValueKey)?.let(::saveHoldToSpeedValue)
+        payload.decodeSyncBoolean(swipeGesturesEnabledKey)?.let(::saveSwipeGesturesEnabled)
         payload.decodeSyncBoolean(externalPlayerEnabledKey)?.let(::saveExternalPlayerEnabled)
         payload.decodeSyncString(externalPlayerIdKey)?.let(::saveExternalPlayerId)
         payload.decodeSyncString(preferredAudioLanguageKey)?.let(::savePreferredAudioLanguage)

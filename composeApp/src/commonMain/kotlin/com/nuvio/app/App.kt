@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -124,9 +125,12 @@ import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySourceMode
+import com.nuvio.app.features.library.LibraryCalendarScreen
 import com.nuvio.app.features.library.LibraryScreen
 import com.nuvio.app.features.library.toLibraryItem
 import com.nuvio.app.features.library.toMetaPreview
+import com.nuvio.app.features.livetv.LiveTvChannel
+import com.nuvio.app.features.livetv.LiveTvScreen
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
@@ -227,6 +231,9 @@ data class EntityBrowseRoute(
 )
 
 @Serializable
+object LibraryCalendarRoute
+
+@Serializable
 object HomescreenSettingsRoute
 
 @Serializable
@@ -290,6 +297,7 @@ enum class AppScreenTab {
     Home,
     Search,
     Library,
+    LiveTv,
     Settings,
 }
 
@@ -297,6 +305,7 @@ private fun AppScreenTab.toNativeNavigationTab(): NativeNavigationTab = when (th
     AppScreenTab.Home -> NativeNavigationTab.Home
     AppScreenTab.Search -> NativeNavigationTab.Search
     AppScreenTab.Library -> NativeNavigationTab.Library
+    AppScreenTab.LiveTv -> NativeNavigationTab.LiveTv
     AppScreenTab.Settings -> NativeNavigationTab.Settings
 }
 
@@ -304,6 +313,7 @@ private fun NativeNavigationTab.toAppScreenTab(): AppScreenTab = when (this) {
     NativeNavigationTab.Home -> AppScreenTab.Home
     NativeNavigationTab.Search -> AppScreenTab.Search
     NativeNavigationTab.Library -> AppScreenTab.Library
+    NativeNavigationTab.LiveTv -> AppScreenTab.LiveTv
     NativeNavigationTab.Settings -> AppScreenTab.Settings
 }
 
@@ -559,6 +569,7 @@ private fun MainAppContent(
         val homeScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val searchScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val libraryScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+        val liveTvScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val settingsRootActionRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val currentBackStackEntry by navController.currentBackStackEntryAsState()
         val liquidGlassNativeTabBarEnabled by remember {
@@ -630,6 +641,7 @@ private fun MainAppContent(
                 searchScrollToTopRequests.tryEmit(Unit)
             }
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
+            AppScreenTab.LiveTv -> liveTvScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
         }
     }
@@ -857,11 +869,12 @@ private fun MainAppContent(
             resumeProgressFraction: Float?,
             manualSelection: Boolean,
             startFromBeginning: Boolean,
+            downloadMode: Boolean = false,
         ) {
             val targetResumePositionMs = if (startFromBeginning) 0L else (resumePositionMs ?: 0L)
             val targetResumeProgressFraction = if (startFromBeginning) null else resumeProgressFraction
 
-            if (!manualSelection) {
+            if (!manualSelection && !downloadMode) {
                 val downloadedItem = DownloadsRepository.findPlayableDownload(
                     parentMetaId = parentMetaId,
                     seasonNumber = seasonNumber,
@@ -923,6 +936,7 @@ private fun MainAppContent(
                     resumeProgressFraction = targetResumeProgressFraction,
                     manualSelection = manualSelection,
                     startFromBeginning = startFromBeginning,
+                    downloadMode = downloadMode,
                 ),
             )
             navController.navigate(
@@ -973,6 +987,30 @@ private fun MainAppContent(
                     resumeProgressFraction = null,
                     manualSelection = true,
                     startFromBeginning = false,
+                )
+            }
+
+        val onDownloadSelection: (String, String, String, String, String, String?, String?, String?, Int?, Int?, String?, String?, String?) -> Unit =
+            { type, videoId, parentMetaId, parentMetaType, title, logo, poster, background, seasonNumber, episodeNumber, episodeTitle, episodeThumbnail, pauseDescription ->
+                launchPlaybackWithDownloadPreference(
+                    type = type,
+                    videoId = videoId,
+                    parentMetaId = parentMetaId,
+                    parentMetaType = parentMetaType,
+                    title = title,
+                    logo = logo,
+                    poster = poster,
+                    background = background,
+                    seasonNumber = seasonNumber,
+                    episodeNumber = episodeNumber,
+                    episodeTitle = episodeTitle,
+                    episodeThumbnail = episodeThumbnail,
+                    pauseDescription = pauseDescription,
+                    resumePositionMs = null,
+                    resumeProgressFraction = null,
+                    manualSelection = true,
+                    startFromBeginning = false,
+                    downloadMode = true,
                 )
             }
 
@@ -1047,6 +1085,24 @@ private fun MainAppContent(
             selectedContinueWatchingForActions = item
         }
 
+        val onLiveTvChannelClick: (LiveTvChannel) -> Unit = { channel ->
+            val launchId = PlayerLaunchStore.put(
+                PlayerLaunch(
+                    title = channel.name,
+                    sourceUrl = channel.streamUrl,
+                    logo = channel.logoUrl,
+                    streamTitle = channel.name,
+                    streamSubtitle = channel.group,
+                    providerName = "Live TV",
+                    contentType = "live",
+                    videoId = channel.id,
+                    parentMetaId = channel.id,
+                    parentMetaType = "live",
+                ),
+            )
+            navController.navigate(PlayerRoute(launchId = launchId))
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -1110,6 +1166,12 @@ private fun MainAppContent(
                                             contentDescription = stringResource(Res.string.compose_nav_library),
                                         )
                                         NavItem(
+                                            selected = selectedTab == AppScreenTab.LiveTv,
+                                            onClick = { handleRootTabClick(AppScreenTab.LiveTv) },
+                                            icon = Icons.Rounded.LiveTv,
+                                            contentDescription = stringResource(Res.string.compose_nav_live_tv),
+                                        )
+                                        NavItem(
                                             selected = selectedTab == AppScreenTab.Settings,
                                             onClick = { handleRootTabClick(AppScreenTab.Settings) },
                                         ) {
@@ -1138,6 +1200,7 @@ private fun MainAppContent(
                                         homeScrollToTopRequests = homeScrollToTopRequests,
                                         searchScrollToTopRequests = searchScrollToTopRequests,
                                         libraryScrollToTopRequests = libraryScrollToTopRequests,
+                                        liveTvScrollToTopRequests = liveTvScrollToTopRequests,
                                         settingsRootActionRequests = settingsRootActionRequests,
                                         animateHomeCollectionGifs = tabsRouteActive,
                                         onCatalogClick = onCatalogClick,
@@ -1160,6 +1223,8 @@ private fun MainAppContent(
                                             )
                                         },
                                         onLibrarySectionViewAllClick = onLibrarySectionViewAllClick,
+                                        onLibraryCalendarClick = { navController.navigate(LibraryCalendarRoute) },
+                                        onLiveTvChannelClick = onLiveTvChannelClick,
                                         onContinueWatchingClick = onContinueWatchingClick,
                                         onContinueWatchingLongPress = onContinueWatchingLongPress,
                                         onSwitchProfile = onSwitchProfile,
@@ -1224,6 +1289,7 @@ private fun MainAppContent(
                         },
                         onPlay = onPlay,
                         onPlayManually = onPlayManually,
+                        onDownloadClick = onDownloadSelection,
                         onOpenMeta = { preview ->
                             coroutineScope.launch {
                                 val resolvedId = if (preview.id.startsWith("tmdb:")) {
@@ -1282,6 +1348,15 @@ private fun MainAppContent(
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this,
                         modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                composable<LibraryCalendarRoute> {
+                    LibraryCalendarScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        onBack = { navController.popBackStack() },
+                        onEpisodeClick = { episode ->
+                            navController.navigate(DetailRoute(type = episode.showType, id = episode.showId))
+                        },
                     )
                 }
                 composable<PersonDetailRoute> { backStackEntry ->
@@ -1733,6 +1808,7 @@ private fun MainAppContent(
                             resumeProgressFraction = launch.resumeProgressFraction,
                             manualSelection = launch.manualSelection,
                             startFromBeginning = launch.startFromBeginning,
+                            downloadMode = launch.downloadMode,
                             onStreamSelected = { stream, resolvedResumePositionMs, resolvedResumeProgressFraction ->
                                 openSelectedStream(
                                     stream = stream,
@@ -2288,6 +2364,7 @@ private fun AppTabHost(
     homeScrollToTopRequests: Flow<Unit>,
     searchScrollToTopRequests: Flow<Unit>,
     libraryScrollToTopRequests: Flow<Unit>,
+    liveTvScrollToTopRequests: Flow<Unit>,
     settingsRootActionRequests: Flow<Unit>,
     animateHomeCollectionGifs: Boolean = true,
     onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
@@ -2296,6 +2373,8 @@ private fun AppTabHost(
     onLibraryPosterClick: ((LibraryItem) -> Unit)? = null,
     onLibraryPosterLongClick: ((LibraryItem, LibrarySection) -> Unit)? = null,
     onLibrarySectionViewAllClick: ((LibrarySection) -> Unit)? = null,
+    onLibraryCalendarClick: () -> Unit = {},
+    onLiveTvChannelClick: (LiveTvChannel) -> Unit = {},
     onContinueWatchingClick: ((ContinueWatchingItem) -> Unit)? = null,
     onContinueWatchingLongPress: ((ContinueWatchingItem) -> Unit)? = null,
     onSwitchProfile: (() -> Unit)? = null,
@@ -2351,6 +2430,15 @@ private fun AppTabHost(
                         onPosterClick = onLibraryPosterClick,
                         onPosterLongClick = onLibraryPosterLongClick,
                         onSectionViewAllClick = onLibrarySectionViewAllClick,
+                        onCalendarClick = onLibraryCalendarClick,
+                    )
+                }
+
+                AppScreenTab.LiveTv -> {
+                    LiveTvScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        scrollToTopRequests = liveTvScrollToTopRequests,
+                        onChannelClick = onLiveTvChannelClick,
                     )
                 }
 
@@ -2450,6 +2538,23 @@ private fun TabletFloatingTopBar(
                             contentDescription = stringResource(Res.string.compose_nav_library),
                             modifier = Modifier.size(18.dp),
                             tint = if (selectedTab == AppScreenTab.Library) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    },
+                )
+                TabletTopPillItem(
+                    label = stringResource(Res.string.compose_nav_live_tv),
+                    selected = selectedTab == AppScreenTab.LiveTv,
+                    onClick = { onTabSelected(AppScreenTab.LiveTv) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.LiveTv,
+                            contentDescription = stringResource(Res.string.compose_nav_live_tv),
+                            modifier = Modifier.size(18.dp),
+                            tint = if (selectedTab == AppScreenTab.LiveTv) {
                                 MaterialTheme.colorScheme.onPrimaryContainer
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant

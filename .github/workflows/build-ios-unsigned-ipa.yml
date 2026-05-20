@@ -1,0 +1,93 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Checkout MPVKit submodule
+        run: git submodule update --init MPVKit
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          ls -1 /Applications | grep '^Xcode' || true
+          if [ -d /Applications/Xcode_16.4.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          else
+            echo "Xcode 16.4 is required for the iOS 18 SDK symbols used by Compose."
+            exit 1
+          fi
+          xcodebuild -version
+
+      - name: Create local properties
+        run: |
+          set -euo pipefail
+          touch local.properties
+
+      - name: Build Kotlin iOS framework
+        run: |
+          set -euo pipefail
+          IPHONEOS_DEPLOYMENT_TARGET=17.5 ./gradlew :composeApp:linkReleaseFrameworkIosArm64
+          mkdir -p "$PWD/build/DerivedData/Build/Products/Release-iphoneos"
+          cp -R "$PWD/composeApp/build/bin/iosArm64/releaseFramework/ComposeApp.framework" \
+            "$PWD/build/DerivedData/Build/Products/Release-iphoneos/"
+
+      - name: Build unsigned iOS app
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$PWD/build/DerivedData" \
+            IPHONEOS_DEPLOYMENT_TARGET=17.5 \
+            OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            FRAMEWORK_SEARCH_PATHS="$PWD/build/DerivedData/Build/Products/Release-iphoneos" \
+            OTHER_LDFLAGS="-framework ComposeApp"
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find "$PWD/build/DerivedData/Build/Products/Release-iphoneos" -maxdepth 1 -name "*.app" -print -quit)"
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app found in Release-iphoneos build products"
+            exit 1
+          fi
+          rm -rf "$PWD/build/ipa"
+          mkdir -p "$PWD/build/ipa/Payload"
+          cp -R "$APP_PATH" "$PWD/build/ipa/Payload/"
+          cd "$PWD/build/ipa"
+          zip -qry "$PWD/build/Nuvio-unsigned.ipa" Payload
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nuvio-unsigned-ipa
+          path: build/Nuvio-unsigned.ipa
+          if-no-files-found: error

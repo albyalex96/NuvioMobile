@@ -48,31 +48,58 @@ object StreamsRepository {
     ): String =
         "$type::$videoId::$season::$episode::$manualSelection"
 
-    fun load(type: String, videoId: String, parentMetaId: String? = null, season: Int? = null, episode: Int? = null, manualSelection: Boolean = false) {
+    fun load(
+        type: String,
+        videoId: String,
+        parentMetaId: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        searchQuery: String? = null,
+        manualSelection: Boolean = false,
+    ) {
         load(
             type = type,
             videoId = videoId,
             parentMetaId = parentMetaId,
             season = season,
             episode = episode,
+            searchQuery = searchQuery,
             manualSelection = manualSelection,
             forceRefresh = false,
         )
     }
 
-    fun reload(type: String, videoId: String, parentMetaId: String? = null, season: Int? = null, episode: Int? = null, manualSelection: Boolean = false) {
+    fun reload(
+        type: String,
+        videoId: String,
+        parentMetaId: String? = null,
+        season: Int? = null,
+        episode: Int? = null,
+        searchQuery: String? = null,
+        manualSelection: Boolean = false,
+    ) {
         load(
             type = type,
             videoId = videoId,
             parentMetaId = parentMetaId,
             season = season,
             episode = episode,
+            searchQuery = searchQuery,
             manualSelection = manualSelection,
             forceRefresh = true,
         )
     }
 
-    private fun load(type: String, videoId: String, parentMetaId: String?, season: Int?, episode: Int?, manualSelection: Boolean, forceRefresh: Boolean) {
+    private fun load(
+        type: String,
+        videoId: String,
+        parentMetaId: String?,
+        season: Int?,
+        episode: Int?,
+        searchQuery: String?,
+        manualSelection: Boolean,
+        forceRefresh: Boolean,
+    ) {
         val pluginUiState = if (AppFeaturePolicy.pluginsEnabled) {
             PluginRepository.initialize()
             PluginRepository.uiState.value
@@ -149,7 +176,7 @@ object StreamsRepository {
             return
         }
 
-        val installedAddons = AddonRepository.uiState.value.addons
+        val installedAddons = AddonRepository.uiState.value.addons.filter { it.isActive }
         val debridTargets = DirectDebridStreamSource.configuredTargets()
         val pluginScrapers = if (AppFeaturePolicy.pluginsEnabled) {
             PluginRepository.getEnabledScrapersForType(type)
@@ -430,6 +457,9 @@ object StreamsRepository {
                                 type = type,
                                 videoId = videoId,
                                 target = target,
+                                season = season,
+                                episode = episode,
+                                searchQuery = searchQuery,
                             ),
                         ),
                     )

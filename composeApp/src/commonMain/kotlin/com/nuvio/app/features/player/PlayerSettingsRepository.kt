@@ -36,6 +36,7 @@ data class PlayerSettingsUiState(
     val resizeMode: PlayerResizeMode = PlayerResizeMode.Fit,
     val holdToSpeedEnabled: Boolean = true,
     val holdToSpeedValue: Float = 2f,
+    val swipeGesturesEnabled: Boolean = true,
     val externalPlayerEnabled: Boolean = false,
     val externalPlayerId: String? = ExternalPlayerPlatform.defaultPlayerId(),
     val preferredAudioLanguage: String = AudioLanguageOption.DEVICE,
@@ -92,6 +93,7 @@ object PlayerSettingsRepository {
     private var resizeMode = PlayerResizeMode.Fit
     private var holdToSpeedEnabled = true
     private var holdToSpeedValue = 2f
+    private var swipeGesturesEnabled = true
     private var externalPlayerEnabled = false
     private var externalPlayerId: String? = ExternalPlayerPlatform.defaultPlayerId()
     private var preferredAudioLanguage = AudioLanguageOption.DEVICE
@@ -153,6 +155,7 @@ object PlayerSettingsRepository {
         resizeMode = PlayerResizeMode.Fit
         holdToSpeedEnabled = true
         holdToSpeedValue = 2f
+        swipeGesturesEnabled = true
         externalPlayerEnabled = false
         externalPlayerId = ExternalPlayerPlatform.defaultPlayerId()
         preferredAudioLanguage = AudioLanguageOption.DEVICE
@@ -209,6 +212,7 @@ object PlayerSettingsRepository {
             ?: PlayerResizeMode.Fit
         holdToSpeedEnabled = PlayerSettingsStorage.loadHoldToSpeedEnabled() ?: true
         holdToSpeedValue = PlayerSettingsStorage.loadHoldToSpeedValue() ?: 2f
+        swipeGesturesEnabled = PlayerSettingsStorage.loadSwipeGesturesEnabled() ?: true
         externalPlayerEnabled = PlayerSettingsStorage.loadExternalPlayerEnabled() ?: false
         externalPlayerId = PlayerSettingsStorage.loadExternalPlayerId()
             ?: ExternalPlayerPlatform.defaultPlayerId()
@@ -339,6 +343,14 @@ object PlayerSettingsRepository {
         holdToSpeedValue = normalized
         publish()
         PlayerSettingsStorage.saveHoldToSpeedValue(normalized)
+    }
+
+    fun setSwipeGesturesEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (swipeGesturesEnabled == enabled) return
+        swipeGesturesEnabled = enabled
+        publish()
+        PlayerSettingsStorage.saveSwipeGesturesEnabled(enabled)
     }
 
     fun setExternalPlayerEnabled(enabled: Boolean) {
@@ -771,6 +783,7 @@ object PlayerSettingsRepository {
             resizeMode = resizeMode,
             holdToSpeedEnabled = holdToSpeedEnabled,
             holdToSpeedValue = holdToSpeedValue,
+            swipeGesturesEnabled = swipeGesturesEnabled,
             externalPlayerEnabled = externalPlayerEnabled,
             externalPlayerId = externalPlayerId,
             preferredAudioLanguage = preferredAudioLanguage,
