@@ -2,8 +2,8 @@ name: Remote Android Build
 
 on:
   push:
-    branches: [ feature/custom-season-posters ] # Tells GitHub to ONLY build for this branch
-  workflow_dispatch: # Keeps the manual run button active just in case
+    branches: [ feature/custom-season-posters ]
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -23,6 +23,7 @@ jobs:
 
       - name: Build Android Debug APK
         run: |
+          touch local.properties
           chmod +x gradlew
           ./gradlew :composeApp:assembleDebug
 
