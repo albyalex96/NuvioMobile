@@ -140,6 +140,10 @@ fun StreamsScreen(
         DownloadsRepository.ensureLoaded()
     }
     val isEpisode = seasonNumber != null && episodeNumber != null
+    val streamsAppearance by remember {
+    StreamsAppearanceRepository.ensureLoaded()
+    StreamsAppearanceRepository.uiState
+    }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
     val clipboardManager = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
     val streamLinkCopiedText = stringResource(Res.string.streams_link_copied)
@@ -238,6 +242,7 @@ fun StreamsScreen(
                 poster = poster,
                 background = background,
                 episodeThumbnail = episodeThumbnail,
+                displayMode = streamsAppearance.displayMode,
                 seasonNumber = seasonNumber,
                 episodeNumber = episodeNumber,
                 episodeTitle = episodeTitle,
@@ -264,6 +269,7 @@ fun StreamsScreen(
                 seasonNumber = seasonNumber,
                 episodeNumber = episodeNumber,
                 episodeTitle = episodeTitle,
+                displayMode = streamsAppearance.displayMode,
                 uiState = uiState,
                 resumePositionMs = effectiveResumePositionMs,
                 resumeProgressFraction = effectiveResumeProgressFraction,
@@ -415,6 +421,7 @@ private fun MobileStreamsLayout(
     logo: String?,
     heroArtwork: String?,
     seasonNumber: Int?,
+    displayMode: DisplayMode, 
     episodeNumber: Int?,
     episodeTitle: String?,
     uiState: StreamsUiState,
@@ -501,6 +508,7 @@ private fun MobileStreamsLayout(
                         onStreamSelected = onStreamSelected,
                         onStreamLongPress = onStreamLongPress,
                         resumePositionMs = resumePositionMs,
+                        displayMode = displayMode,
                         resumeProgressFraction = resumeProgressFraction,
                         modifier = Modifier.weight(1f),
                     )
@@ -794,6 +802,7 @@ internal fun StreamList(
     onStreamSelected: (stream: StreamItem, resumePositionMs: Long?, resumeProgressFraction: Float?) -> Unit,
     onStreamLongPress: (StreamItem) -> Unit,
     resumePositionMs: Long?,
+    displayMode: DisplayMode,
     resumeProgressFraction: Float?,
     modifier: Modifier = Modifier,
 ) {
@@ -830,6 +839,7 @@ internal fun StreamList(
                         group = group,
                         showHeader = uiState.selectedFilter == null,
                         onStreamSelected = onStreamSelected,
+                        displayMode = displayMode,
                         onStreamLongPress = onStreamLongPress,
                         resumePositionMs = resumePositionMs,
                         resumeProgressFraction = resumeProgressFraction,
@@ -856,6 +866,7 @@ private fun LazyListScope.streamSection(
     onStreamLongPress: (StreamItem) -> Unit,
     resumePositionMs: Long?,
     resumeProgressFraction: Float?,
+    displayMode: DisplayMode,
 ) {
     if (group.streams.isEmpty() && !group.isLoading) return
 
@@ -905,6 +916,7 @@ private fun LazyListScope.streamSection(
                         onStreamLongPress(stream)
                     }
                 },
+                displayMode = displayMode,
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
@@ -998,6 +1010,7 @@ private fun StreamSourceHeader(
 @Composable
 private fun StreamCard(
     stream: StreamItem,
+    displayMode: DisplayMode,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,

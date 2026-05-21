@@ -87,7 +87,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
+import com.nuvio.app.features.streams.StreamsAppearanceSettings
 private val SettingsSearchRevealThreshold = 28.dp
 private const val SettingsSearchRevealAnimationMillis = 240L
 private const val SettingsSearchRevealHapticDelayMillis = 90L
@@ -118,7 +119,10 @@ fun SettingsScreen(
             PlayerSettingsRepository.ensureLoaded()
             PlayerSettingsRepository.uiState
         }.collectAsStateWithLifecycle()
-
+        val streamsAppearance by remember {
+            StreamsAppearanceRepository.ensureLoaded()
+            StreamsAppearanceRepository.uiState
+        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
         val selectedTheme by remember {
             ThemeSettingsRepository.ensureLoaded()
             ThemeSettingsRepository.selectedTheme
@@ -290,6 +294,7 @@ fun SettingsScreen(
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
                 onTop10CatalogClick = onTop10CatalogClick,
+                streamsAppearance=streamsAppearance,
             )
         } else {
             MobileSettingsScreen(
@@ -349,6 +354,7 @@ fun SettingsScreen(
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
                 onTop10CatalogClick = onTop10CatalogClick,
+                streamsAppearance= streamsAppearance
             )
         }
     }
@@ -412,6 +418,7 @@ private fun MobileSettingsScreen(
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
     onTop10CatalogClick: () -> Unit = {},
+    streamsAppearance: StreamsAppearanceSettings,
 ) {
     val saveableStateHolder = rememberSaveableStateHolder()
     saveableStateHolder.SaveableStateProvider(page.name) {
@@ -440,7 +447,10 @@ private fun MobileSettingsScreen(
             switchProfileAvailable = onSwitchProfile != null,
             checkForUpdatesAvailable = onCheckForUpdatesClick != null,
         )
-
+        val streamsAppearance by remember {
+            StreamsAppearanceRepository.ensureLoaded()
+            StreamsAppearanceRepository.uiState
+        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
         fun openSearchTarget(target: SettingsSearchTarget) {
             when (target) {
                 is SettingsSearchTarget.Page -> when (target.page) {
@@ -558,6 +568,7 @@ private fun MobileSettingsScreen(
                     selectedAppLanguage = selectedAppLanguage,
                     onAppLanguageSelected = onAppLanguageSelected,
                     onContinueWatchingClick = onContinueWatchingClick,
+                    streamsAppearance=streamsAppearance,
                     onPosterCustomizationClick = { onPageChange(SettingsPage.PosterCustomization) },
                 )
                 SettingsPage.Notifications -> notificationsSettingsContent(
@@ -733,6 +744,7 @@ private fun TabletSettingsScreen(
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
     onTop10CatalogClick: () -> Unit = {},
+    streamsAppearance: StreamsAppearanceSettings,
 ) {
     var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.General.name) }
     val activeCategory = SettingsCategory.valueOf(selectedCategory)
@@ -941,6 +953,7 @@ private fun TabletSettingsScreen(
                         liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
                         onLiquidGlassNativeTabBarToggle = onLiquidGlassNativeTabBarToggle,
                         selectedAppLanguage = selectedAppLanguage,
+                        streamsAppearance=streamsAppearance,
                         onAppLanguageSelected = onAppLanguageSelected,
                         onContinueWatchingClick = { openInlinePage(SettingsPage.ContinueWatching) },
                         onPosterCustomizationClick = { openInlinePage(SettingsPage.PosterCustomization) },

@@ -56,6 +56,7 @@ internal fun TabletStreamsLayout(
     poster: String?,
     background: String?,
     episodeThumbnail: String?,
+    displayMode: DisplayMode,
     seasonNumber: Int?,
     episodeNumber: Int?,
     episodeTitle: String?,
@@ -203,6 +204,7 @@ internal fun TabletStreamsLayout(
                             onStreamLongPress = onStreamLongPress,
                             resumePositionMs = resumePositionMs,
                             resumeProgressFraction = resumeProgressFraction,
+                            displayMode = displayMode,
                             modifier = Modifier.weight(1f),
                         )
                     }

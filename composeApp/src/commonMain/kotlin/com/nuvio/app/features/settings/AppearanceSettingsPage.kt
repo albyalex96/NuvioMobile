@@ -64,7 +64,9 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
-
+import com.nuvio.app.features.streams.DisplayMode
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
+import com.nuvio.app.features.streams.StreamsAppearanceSettings
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.appearanceSettingsContent(
     isTablet: Boolean,
@@ -74,6 +76,7 @@ internal fun LazyListScope.appearanceSettingsContent(
     onAmoledToggle: (Boolean) -> Unit,
     liquidGlassNativeTabBarSupported: Boolean,
     liquidGlassNativeTabBarEnabled: Boolean,
+    streamsAppearance: StreamsAppearanceSettings,
     onLiquidGlassNativeTabBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
@@ -176,6 +179,18 @@ internal fun LazyListScope.appearanceSettingsContent(
                     icon = Icons.Rounded.Tune,
                     isTablet = isTablet,
                     onClick = onPosterCustomizationClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = "Polished Display",
+                    description = "Show streams with clean badges instead of raw text",
+                    isTablet = isTablet,
+                    checked = streamsAppearance.displayMode == DisplayMode.POLISHED,
+                    onCheckedChange = { isPolished ->
+                        StreamsAppearanceRepository.setDisplayMode(
+                            if (isPolished) DisplayMode.POLISHED else DisplayMode.ORIGINAL
+                        )
+                    },
                 )
             }
         }

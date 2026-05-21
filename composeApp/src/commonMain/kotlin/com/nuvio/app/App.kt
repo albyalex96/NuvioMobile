@@ -36,7 +36,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
+import com.nuvio.app.features.streams.StreamsAppearanceSettings
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -1789,6 +1790,11 @@ private fun MainAppContent(
                             PlayerRoute(launchId = launchId)
                         )
                     }
+
+                    val streamsAppearance by remember {
+                        StreamsAppearanceRepository.ensureLoaded()
+                        StreamsAppearanceRepository.uiState
+                    }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         StreamsScreen(
