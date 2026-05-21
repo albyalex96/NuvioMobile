@@ -319,6 +319,7 @@ fun PlayerScreen(
         // Next episode state
         var nextEpisodeInfo by remember { mutableStateOf<NextEpisodeInfo?>(null) }
         var showNextEpisodeCard by remember { mutableStateOf(false) }
+        var nextEpisodeCardDismissed by remember { mutableStateOf(false) }
         var nextEpisodeAutoPlaySearching by remember { mutableStateOf(false) }
         var nextEpisodeAutoPlaySourceName by remember { mutableStateOf<String?>(null) }
         var nextEpisodeAutoPlayCountdown by remember { mutableStateOf<Int?>(null) }
@@ -1680,7 +1681,9 @@ fun PlayerScreen(
                 )
             } else null
         }
-
+        LaunchedEffect(nextEpisodeInfo?.videoId) {
+            nextEpisodeCardDismissed = false
+        }
         // Show next episode card at threshold
         LaunchedEffect(
             playbackSnapshot.positionMs,
@@ -1703,7 +1706,7 @@ fun PlayerScreen(
                 thresholdPercent = playerSettingsUiState.nextEpisodeThresholdPercent,
                 thresholdMinutesBeforeEnd = playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
             )
-            if (shouldShow && !showNextEpisodeCard) {
+            if (shouldShow && !showNextEpisodeCard && !nextEpisodeCardDismissed) {
                 showNextEpisodeCard = true
                 // Auto-play if enabled
                 if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
@@ -1716,7 +1719,7 @@ fun PlayerScreen(
 
         // Auto-play on video ended if next episode card isn't already showing
         LaunchedEffect(playbackSnapshot.isEnded, nextEpisodeInfo) {
-            if (playbackSnapshot.isEnded && nextEpisodeInfo != null && !showNextEpisodeCard) {
+            if (playbackSnapshot.isEnded && nextEpisodeInfo != null && !showNextEpisodeCard && !nextEpisodeCardDismissed) {
                 showNextEpisodeCard = true
                 if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
                     playNextEpisode()
@@ -2105,6 +2108,7 @@ fun PlayerScreen(
                         nextEpisodeAutoPlaySearching = false
                         nextEpisodeAutoPlaySourceName = null
                         nextEpisodeAutoPlayCountdown = null
+                        nextEpisodeCardDismissed = true
                     },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
