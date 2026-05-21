@@ -31,4 +31,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NuvioMobile-Test-Build
-          path: composeApp/build/outputs/apk/debug/composeApp-debug.apk
+          path: composeApp/build/outputs/apk/**/*.apk # This will find them wherever they are!
