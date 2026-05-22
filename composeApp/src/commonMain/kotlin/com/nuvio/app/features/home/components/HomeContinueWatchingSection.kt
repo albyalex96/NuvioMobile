@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,8 @@ import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.NuvioProgressBar
 import com.nuvio.app.core.ui.NuvioShelfSection
 import com.nuvio.app.core.ui.posterCardClickable
+import com.nuvio.app.features.cloud.CloudLibraryContentType
+import com.nuvio.app.features.cloud.cloudLibraryDisplayArtworkUrl
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingItem
 import com.nuvio.app.features.watchprogress.ContinueWatchingSectionStyle
@@ -63,9 +66,14 @@ private fun localizedContinueWatchingMetaLine(item: ContinueWatchingItem): Strin
             stringResource(Res.string.compose_player_episode_code_full, item.seasonNumber, item.episodeNumber)
         item.isNextUp ->
             stringResource(Res.string.continue_watching_up_next)
+        item.isCloudLibraryItem() ->
+            stringResource(Res.string.library_source_cloud)
         else ->
             stringResource(Res.string.media_movie)
     }
+
+private fun ContinueWatchingItem.isCloudLibraryItem(): Boolean =
+    parentMetaType.equals(CloudLibraryContentType, ignoreCase = true)
 
 private fun ContinueWatchingItem.continueWatchingArtworkUrl(
     useEpisodeThumbnails: Boolean,
@@ -92,6 +100,27 @@ private fun ContinueWatchingItem.continueWatchingArtworkUrl(
         poster,
         background,
         episodeThumbnail,
+        imageUrl,
+    )
+}
+
+private fun ContinueWatchingItem.continueWatchingPosterArtworkUrl(
+    useEpisodeThumbnails: Boolean,
+): String? {
+    if (seasonNumber == null || episodeNumber == null) {
+        return continueWatchingArtworkUrl(useEpisodeThumbnails)
+    }
+
+    val normalizedEpisodeThumbnail = episodeThumbnail?.trim()?.takeIf { it.isNotBlank() }
+    val nonEpisodeImageUrl = imageUrl
+        ?.trim()
+        ?.takeIf { it.isNotBlank() && it != normalizedEpisodeThumbnail }
+
+    return firstNonBlank(
+        poster,
+        background,
+        nonEpisodeImageUrl,
+        if (useEpisodeThumbnails) episodeThumbnail else null,
         imageUrl,
     )
 }
@@ -159,36 +188,59 @@ private fun HomeContinueWatchingSectionContent(
         HomeCatalogSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
 
-    NuvioShelfSection(
-        title = stringResource(Res.string.compose_settings_page_continue_watching),
-        entries = items,
-        modifier = modifier,
-        headerHorizontalPadding = sectionPadding,
-        rowContentPadding = PaddingValues(horizontal = sectionPadding),
-        itemSpacing = layout.itemGap,
-        showHeaderAccent = !homeCatalogSettings.hideCatalogUnderline,
-        key = { item -> item.videoId },
-    ) { item ->
-        when (style) {
-            ContinueWatchingSectionStyle.Wide -> ContinueWatchingWideCard(
-                item = item,
-                layout = layout,
-                useEpisodeThumbnails = useEpisodeThumbnails,
-                blurNextUp = blurNextUp,
-                onClick = onItemClick?.let { { it(item) } },
-                onLongClick = onItemLongPress?.let { { it(item) } },
-            )
-            ContinueWatchingSectionStyle.Poster -> ContinueWatchingPosterCard(
-                item = item,
-                layout = layout,
-                useEpisodeThumbnails = useEpisodeThumbnails,
-                blurNextUp = blurNextUp,
-                onClick = onItemClick?.let { { it(item) } },
-                onLongClick = onItemLongPress?.let { { it(item) } },
-            )
+    val itemOrderKey = remember(items) {
+        items.joinToString(separator = "|") { item -> item.continueWatchingRowOrderKey() }
+    }
+
+    key(itemOrderKey) {
+        NuvioShelfSection(
+            title = stringResource(Res.string.compose_settings_page_continue_watching),
+            entries = items,
+            modifier = modifier,
+            headerHorizontalPadding = sectionPadding,
+            rowContentPadding = PaddingValues(horizontal = sectionPadding),
+            itemSpacing = layout.itemGap,
+            showHeaderAccent = !homeCatalogSettings.hideCatalogUnderline,
+            key = { item -> item.videoId },
+        ) { item ->
+            when (style) {
+                ContinueWatchingSectionStyle.Wide -> ContinueWatchingWideCard(
+                    item = item,
+                    layout = layout,
+                    useEpisodeThumbnails = useEpisodeThumbnails,
+                    blurNextUp = blurNextUp,
+                    onClick = onItemClick?.let { { it(item) } },
+                    onLongClick = onItemLongPress?.let { { it(item) } },
+                )
+                ContinueWatchingSectionStyle.Poster -> ContinueWatchingPosterCard(
+                    item = item,
+                    layout = layout,
+                    useEpisodeThumbnails = useEpisodeThumbnails,
+                    blurNextUp = blurNextUp,
+                    onClick = onItemClick?.let { { it(item) } },
+                    onLongClick = onItemLongPress?.let { { it(item) } },
+                )
+            }
         }
     }
 }
+
+private fun ContinueWatchingItem.continueWatchingRowOrderKey(): String =
+    buildString {
+        append(if (isNextUp) "next" else "progress")
+        append(':')
+        append(parentMetaId)
+        append(':')
+        append(videoId)
+        append(':')
+        append(seasonNumber)
+        append('x')
+        append(episodeNumber)
+        append(":seed=")
+        append(nextUpSeedSeasonNumber)
+        append('x')
+        append(nextUpSeedEpisodeNumber)
+    }
 
 @Composable
 fun ContinueWatchingStylePreview(
@@ -368,6 +420,7 @@ private fun ContinueWatchingWideCard(
             imageUrl = artworkUrl,
             width = layout.widePosterStripWidth,
             blurred = shouldBlurArtwork,
+            contentScale = if (item.isCloudLibraryItem()) ContentScale.Fit else ContentScale.Crop,
             modifier = Modifier.fillMaxHeight(),
         )
         Column(
@@ -476,16 +529,19 @@ private fun ContinueWatchingPosterCard(
                 )
                 .posterCardClickable(onClick = onClick, onLongClick = onLongClick),
         ) {
-            val shouldBlurArtwork = blurNextUp && useEpisodeThumbnails && item.isNextUp
-            val imageUrl = item.continueWatchingArtworkUrl(useEpisodeThumbnails)
+            val imageUrl = item.continueWatchingPosterArtworkUrl(useEpisodeThumbnails)
+            val shouldBlurArtwork = blurNextUp &&
+                useEpisodeThumbnails &&
+                item.isNextUp &&
+                imageUrl == firstNonBlank(item.episodeThumbnail)
             if (imageUrl != null) {
                 AsyncImage(
-                    model = imageUrl,
+                    model = cloudLibraryDisplayArtworkUrl(imageUrl),
                     contentDescription = item.title,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
-                    contentScale = ContentScale.Crop,
+                    contentScale = if (item.isCloudLibraryItem()) ContentScale.Fit else ContentScale.Crop,
                 )
             }
             if (item.progressFraction <= 0f && item.seasonNumber != null && item.episodeNumber != null) {
@@ -565,6 +621,7 @@ private fun ArtworkPanel(
     imageUrl: String?,
     width: Dp,
     blurred: Boolean = false,
+    contentScale: ContentScale = ContentScale.Crop,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -574,12 +631,12 @@ private fun ArtworkPanel(
     ) {
         if (imageUrl != null) {
             AsyncImage(
-                model = imageUrl,
+                model = cloudLibraryDisplayArtworkUrl(imageUrl),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
                     .then(if (blurred) Modifier.blur(18.dp) else Modifier),
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
             )
         }
     }
