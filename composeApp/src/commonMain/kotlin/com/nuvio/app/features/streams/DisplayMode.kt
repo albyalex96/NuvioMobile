@@ -6,6 +6,6 @@ enum class DisplayMode {
 
     companion object {
         fun fromString(value: String?): DisplayMode =
-            entries.firstOrNull { it.name == value } ?: POLISHED
+            entries.firstOrNull { it.name == value } ?: ORIGINAL
     }
 }

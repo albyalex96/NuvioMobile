@@ -447,10 +447,7 @@ private fun MobileSettingsScreen(
             switchProfileAvailable = onSwitchProfile != null,
             checkForUpdatesAvailable = onCheckForUpdatesClick != null,
         )
-        val streamsAppearance by remember {
-            StreamsAppearanceRepository.ensureLoaded()
-            StreamsAppearanceRepository.uiState
-        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
+        
         fun openSearchTarget(target: SettingsSearchTarget) {
             when (target) {
                 is SettingsSearchTarget.Page -> when (target.page) {

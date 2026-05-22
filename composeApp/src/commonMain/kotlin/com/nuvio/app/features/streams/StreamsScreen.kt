@@ -1007,6 +1007,8 @@ private fun StreamSourceHeader(
 // Stream Card
 // ---------------------------------------------------------------------------
 
+private data class StreamBadgeData(val label: String, val color: Color)
+
 @Composable
 private fun StreamCard(
     stream: StreamItem,
@@ -1037,36 +1039,149 @@ private fun StreamCard(
             .padding(14.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        if (displayMode == DisplayMode.POLISHED) {
+            PolishedStreamCardContent(stream = stream, modifier = Modifier.weight(1f))
+        } else {
+            OriginalStreamCardContent(stream = stream, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun OriginalStreamCardContent(stream: StreamItem, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = stream.streamLabel,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 20.sp,
+                letterSpacing = 0.1.sp,
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        val subtitle = stream.streamSubtitle
+        if (!subtitle.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = stream.streamLabel,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 20.sp,
-                    letterSpacing = 0.1.sp,
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 12.sp,
+                    lineHeight = 18.sp,
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            StreamFileSizeBadge(stream = stream)
+        }
+    }
+}
 
-            val subtitle = stream.streamSubtitle
-            if (!subtitle.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                StreamFileSizeBadge(stream = stream)
+@Composable
+private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            text = stream.streamLabel,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 12.sp,
+                lineHeight = 17.sp,
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        val badges = rememberStreamBadges(stream)
+        if (badges.isNotEmpty()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                badges.forEach { badge ->
+                    StreamBadgeChip(label = badge.label, color = badge.color)
+                }
             }
         }
+    }
+}
+
+private fun buildStreamBadges(stream: StreamItem): List<StreamBadgeData> {
+    val combined = "${stream.streamLabel} ${stream.streamSubtitle.orEmpty()}"
+    return buildList {
+        when {
+            Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("4K", Color(0xFF6C3FE8)))
+            Regex("\\b(1080p|FHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("1080p", Color(0xFF1976D2)))
+            Regex("\\b(720p|HD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("720p", Color(0xFF388E3C)))
+            Regex("\\b(480p|SD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("SD", Color(0xFF757575)))
+        }
+        when {
+            Regex("\\bDolby Vision\\b|\\bDV\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("DV", Color(0xFF0A3D62)))
+            Regex("\\bHDR10\\+", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("HDR10+", Color(0xFFB7950B)))
+            Regex("\\bHDR\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("HDR", Color(0xFF9C6A00)))
+        }
+        when {
+            Regex("\\bAtmos\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("Atmos", Color(0xFF00838F)))
+            Regex("\\bDTS[-: ]?X\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("DTS:X", Color(0xFF5D4037)))
+            Regex("\\bDTS\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("DTS", Color(0xFF6D4C41)))
+            Regex("\\bDolby Digital\\b|\\bDD\\+|\\bEAC3\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("DD+", Color(0xFF37474F)))
+            Regex("\\bAAC\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("AAC", Color(0xFF424242)))
+        }
+        when {
+            Regex("\\bHEVC\\b|\\bx265\\b|\\bH\\.265\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("HEVC", Color(0xFF1B5E20)))
+            Regex("\\bAV1\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+                add(StreamBadgeData("AV1", Color(0xFF004D40)))
+        }
+        val sizeBytes = stream.behaviorHints.videoSize
+        if (sizeBytes != null) {
+            val gib = sizeBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+            val label = if (gib >= 1.0) {
+                "${kotlin.math.round(gib * 10) / 10} GB"
+            } else {
+                "${kotlin.math.round(sizeBytes / (1024.0 * 1024.0)).toInt()} MB"
+            }
+            add(StreamBadgeData(label, Color(0xFF0A0C0C)))
+        }
+    }
+}
+
+@Composable
+private fun rememberStreamBadges(stream: StreamItem): List<StreamBadgeData> =
+    remember(stream.streamLabel, stream.streamSubtitle, stream.behaviorHints.videoSize) {
+        buildStreamBadges(stream)
+    }
+
+@Composable
+private fun StreamBadgeChip(label: String, color: Color) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(color)
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.2.sp,
+            ),
+            color = Color.White,
+        )
     }
 }
 
