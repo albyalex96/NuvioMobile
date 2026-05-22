@@ -1170,4 +1170,7 @@
   <string name="collections_editor_tmdb_subtitle_person">Persona</string>
   <string name="collections_editor_tmdb_subtitle_director">Regista</string>
   <string name="collections_editor_tmdb_subtitle_discover">TMDB Discover</string>
+  <string name="stream_parser_title">Visualizzazione Pulita</string>
+  <string name="stream_parser_description">Mostra info stream con badge puliti invece di testo grezzo</string>
+  <string name="stream_parser_cached">In Cache</string>
 </resources>

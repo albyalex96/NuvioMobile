@@ -1397,4 +1397,7 @@
     <string name="unit_bytes_kb">KB</string>
     <string name="unit_bytes_mb">MB</string>
     <string name="unit_bytes_gb">GB</string>
+    <string name="stream_parser_title">Polished Display</string>
+    <string name="stream_parser_description">Show streams with clean badges instead of raw text</string>
+    <string name="stream_parser_cached">Cached</string>
 </resources>
