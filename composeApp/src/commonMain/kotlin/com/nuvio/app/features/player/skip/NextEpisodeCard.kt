@@ -2,6 +2,7 @@ package com.nuvio.app.features.player.skip
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -9,6 +10,15 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,19 +72,56 @@ fun NextEpisodeCard(
     if (nextEpisode == null) return
 
     val isPlayable = nextEpisode.hasAired
+    val coroutineScope = rememberCoroutineScope()
+    val dragOffsetX = remember { Animatable(0f) }
+    val dismissThresholdPx = with(LocalDensity.current) { 40.dp.toPx() }
+    val fadeOutDistancePx = with(LocalDensity.current) { 120.dp.toPx() }
+
+    LaunchedEffect(nextEpisode.videoId) {
+        dragOffsetX.snapTo(0f)
+    }
 
     AnimatedVisibility(
         visible = visible,
         enter = slideInHorizontally(animationSpec = tween(260), initialOffsetX = { it / 2 }) +
             fadeIn(animationSpec = tween(220)),
-        exit = slideOutHorizontally(animationSpec = tween(200), targetOffsetX = { it / 2 }) +
-            fadeOut(animationSpec = tween(160)),
+        exit = fadeOut(animationSpec = tween(160)),
         modifier = modifier,
     ) {
         val shape = RoundedCornerShape(16.dp)
         Row(
             modifier = Modifier
                 .widthIn(max = 292.dp)
+                .graphicsLayer {
+                    translationX = dragOffsetX.value
+                    alpha = (1f - abs(dragOffsetX.value) / fadeOutDistancePx).coerceIn(0f, 1f)
+                }
+                .pointerInput(Unit) {
+                    val exitDistancePx = fadeOutDistancePx
+                    detectDragGestures(
+                        onDragEnd = {
+                            val shouldDismiss = abs(dragOffsetX.value) > dismissThresholdPx
+                            coroutineScope.launch {
+                                if (shouldDismiss) {
+                                    val target = if (dragOffsetX.value >= 0f) exitDistancePx else -exitDistancePx
+                                    dragOffsetX.animateTo(target, animationSpec = tween(280))
+                                    onDismiss()
+                                } else {
+                                    dragOffsetX.animateTo(0f, animationSpec = tween(180))
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            coroutineScope.launch {
+                                dragOffsetX.animateTo(0f, animationSpec = tween(180))
+                            }
+                        },
+                    ) { _, dragAmount ->
+                        coroutineScope.launch {
+                            dragOffsetX.snapTo(dragOffsetX.value + dragAmount.x)
+                        }
+                    }
+                }
                 .clip(shape)
                 .background(Color(0xFF191919).copy(alpha = 0.89f))
                 .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
