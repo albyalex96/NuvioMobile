@@ -64,6 +64,7 @@ import com.nuvio.app.features.debrid.DebridSettings
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSettingsItem
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
+import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.mdblist.MdbListSettings
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
@@ -200,7 +201,11 @@ fun SettingsScreen(
         val streamsAppearance by remember {
             StreamsAppearanceRepository.ensureLoaded()
             StreamsAppearanceRepository.uiState
-        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
+        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())        val liveTvUiState by remember {
+            LiveTvRepository.ensureLoaded()
+            LiveTvRepository.uiState
+        }.collectAsStateWithLifecycle()
+
         LaunchedEffect(homescreenCatalogRefreshKey) {
             if (homescreenCatalogRefreshKey.isEmpty()) return@LaunchedEffect
             HomeCatalogSettingsRepository.syncCatalogs(addonsUiState.addons.enabledAddons())
@@ -277,6 +282,7 @@ fun SettingsScreen(
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
                 debridSettings = debridSettings,
+                liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
                 traktCommentsEnabled = traktCommentsEnabled,
                 traktSettingsUiState = traktSettingsUiState,
@@ -328,6 +334,7 @@ fun SettingsScreen(
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
                 debridSettings = debridSettings,
+                liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
                 traktCommentsEnabled = traktCommentsEnabled,
                 traktSettingsUiState = traktSettingsUiState,
@@ -389,6 +396,7 @@ private fun MobileSettingsScreen(
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
     debridSettings: DebridSettings,
+    liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
     traktCommentsEnabled: Boolean,
     traktSettingsUiState: TraktSettingsUiState,
@@ -607,6 +615,7 @@ private fun MobileSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                    onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                 )
                 SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                     isTablet = false,
@@ -619,6 +628,10 @@ private fun MobileSettingsScreen(
                 SettingsPage.Debrid -> debridSettingsContent(
                     isTablet = false,
                     settings = debridSettings,
+                )
+                SettingsPage.LiveTv -> liveTvSettingsContent(
+                    isTablet = false,
+                    uiState = liveTvUiState,
                 )
                 SettingsPage.TraktAuthentication -> traktSettingsContent(
                     isTablet = false,
@@ -706,6 +719,7 @@ private fun TabletSettingsScreen(
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
     debridSettings: DebridSettings,
+    liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
     traktCommentsEnabled: Boolean,
     traktSettingsUiState: TraktSettingsUiState,
@@ -983,6 +997,7 @@ private fun TabletSettingsScreen(
                         onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                         onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                         onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                        onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                     )
                     SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                         isTablet = true,
@@ -995,6 +1010,10 @@ private fun TabletSettingsScreen(
                     SettingsPage.Debrid -> debridSettingsContent(
                         isTablet = true,
                         settings = debridSettings,
+                    )
+                    SettingsPage.LiveTv -> liveTvSettingsContent(
+                        isTablet = true,
+                        uiState = liveTvUiState,
                     )
                     SettingsPage.TraktAuthentication -> traktSettingsContent(
                         isTablet = true,
