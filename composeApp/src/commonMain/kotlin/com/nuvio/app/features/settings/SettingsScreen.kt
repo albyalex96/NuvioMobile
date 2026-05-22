@@ -112,6 +112,7 @@ fun SettingsScreen(
     onLicensesAttributionsClick: () -> Unit = {},
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
+    onTop10CatalogClick: () -> Unit = {},
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
@@ -292,6 +293,7 @@ fun SettingsScreen(
                 onLicensesAttributionsClick = onLicensesAttributionsClick,
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
+                onTop10CatalogClick = onTop10CatalogClick,
                 streamsAppearance=streamsAppearance,
             )
         } else {
@@ -348,6 +350,7 @@ fun SettingsScreen(
                 onLicensesAttributionsClick = onLicensesAttributionsClick,
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
+                onTop10CatalogClick = onTop10CatalogClick,
                 streamsAppearance=streamsAppearance,
             )
         }
@@ -408,6 +411,7 @@ private fun MobileSettingsScreen(
     onLicensesAttributionsClick: () -> Unit = {},
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
+    onTop10CatalogClick: () -> Unit = {},
     streamsAppearance: StreamsAppearanceSettings,
 ) {
     val saveableStateHolder = rememberSaveableStateHolder()
@@ -583,6 +587,7 @@ private fun MobileSettingsScreen(
                     onHomescreenClick = onHomescreenClick,
                     onMetaScreenClick = onMetaScreenClick,
                     onCollectionsClick = onCollectionsClick,
+                    onTop10CatalogClick = onTop10CatalogClick,
                 )
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
@@ -717,6 +722,7 @@ private fun TabletSettingsScreen(
     onLicensesAttributionsClick: () -> Unit = {},
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
+    onTop10CatalogClick: () -> Unit = {},
     streamsAppearance: StreamsAppearanceSettings,
 ) {
     var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.General.name) }
@@ -957,6 +963,7 @@ private fun TabletSettingsScreen(
                         onHomescreenClick = { openInlinePage(SettingsPage.Homescreen) },
                         onMetaScreenClick = { openInlinePage(SettingsPage.MetaScreen) },
                         onCollectionsClick = onCollectionsClick,
+                        onTop10CatalogClick = onTop10CatalogClick,
                     )
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()

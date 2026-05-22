@@ -1173,4 +1173,13 @@
   <string name="stream_parser_title">Visualizzazione Pulita</string>
   <string name="stream_parser_description">Mostra info stream con badge puliti invece di testo grezzo</string>
   <string name="stream_parser_cached">In Cache</string>
+  <string name="top10_header">Cataloghi Top 10</string>
+  <string name="top10_description">Scegli i cataloghi da mostrare come riga Top 10 sulla Home</string>
+  <string name="top10_general_header">Generale</string>
+  <string name="top10_catalogs_header">Cataloghi</string>
+  <string name="top10_title_settings">Abilita Riga Top 10</string>
+  <string name="top10_title_description">Mostra una sezione Top 10 sulla Home</string>
+  <string name="catalog_picker_not_set">Non impostato — tap per scegliere</string>
+  <string name="choose_catalog">Scegliere Cataloghi</string>
+  <string name="clear_selection">Cancella Selezione</string>
 </resources>
