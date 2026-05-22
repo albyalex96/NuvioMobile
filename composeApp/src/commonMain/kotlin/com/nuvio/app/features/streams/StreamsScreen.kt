@@ -1208,15 +1208,15 @@ private fun QualityBadge(badge: StreamBadgeData) {
             .background(badge.color)
             .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = badge.label,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.sp,
-            ),
-            color = Color.White,
+        ) {
+            Text(
+                text = badge.label,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.sp,
+                ),
+                color = Color.White,
         )
     }
 }
@@ -1238,7 +1238,7 @@ private fun CachedBadge() {
                 imageVector = Icons.Rounded.Bolt,
                 contentDescription = null,
                 tint = Color(0xFF4ADE80),
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(13.dp),
             )
             Text(
                 text = "Cached",
@@ -1254,10 +1254,13 @@ private fun CachedBadge() {
 
 @Composable
 private fun SmallBadgeChip(badge: StreamBadgeData) {
+    val bgColor = badge.color.copy(alpha = 0.15f)
+    val contentColor = badge.iconTint ?: badge.color
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(badge.color.copy(alpha = 0.18f))
+            .background(bgColor)
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Row(
@@ -1268,7 +1271,7 @@ private fun SmallBadgeChip(badge: StreamBadgeData) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = badge.iconTint ?: badge.color,
+                    tint = contentColor,
                     modifier = Modifier.size(12.dp),
                 )
             }
@@ -1279,7 +1282,7 @@ private fun SmallBadgeChip(badge: StreamBadgeData) {
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 0.1.sp,
                 ),
-                color = badge.iconTint ?: badge.color,
+                color = contentColor,
             )
         }
     }
@@ -1335,92 +1338,121 @@ private fun rememberParsedLanguage(stream: StreamItem): String? =
 private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
     val combined = "${stream.streamLabel} ${stream.streamSubtitle.orEmpty()}"
 
-    // --- Qualità video (default: SD)
+    // --- Qualità video: colore diverso per ogni livello
     val quality = when {
         Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("4K", Color(0xFF1565C0))
+            StreamBadgeData("4K", Color(0xFF6C3FE8))           // viola intenso
         Regex("\\b1080p\\b|\\bFHD\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("1080p", Color(0xFF1565C0))
+            StreamBadgeData("1080p", Color(0xFF1565C0))        // blu
         Regex("\\b720p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("720p", Color(0xFF2E7D32))
+            StreamBadgeData("720p", Color(0xFF2E7D32))         // verde
         Regex("\\b480p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("SD", Color(0xFF757575))
-        else -> StreamBadgeData("SD", Color(0xFF757575)) // default
+            StreamBadgeData("SD", Color(0xFF616161))           // grigio medio
+        else ->
+            StreamBadgeData("SD", Color(0xFF616161))           // default grigio
     }
 
-    // --- HDR (opzionale, nessun default)
+    // --- HDR
     val hdr = when {
         Regex("\\bDolby[ .]Vision\\b|\\bDV\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
             StreamBadgeData(
                 label = "DV",
-                color = Color(0xFF1E88E5),
+                color = Color(0xFF1565C0),
                 icon = Icons.Rounded.AutoAwesome,
-                iconTint = Color(0xFF90CAF9),
+                iconTint = Color(0xFF90CAF9),                  // azzurro chiaro
             )
         Regex("\\bHDR10\\+", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("HDR10+", Color(0xFFB7950B))
+            StreamBadgeData(
+                label = "HDR10+",
+                color = Color(0xFFB7950B),
+                iconTint = Color(0xFFFFD54F),                  // ambra
+            )
         Regex("\\bHDR\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("HDR", Color(0xFF9C6A00))
+            StreamBadgeData(
+                label = "HDR",
+                color = Color(0xFF9C6A00),
+                iconTint = Color(0xFFFFCC80),                  // arancio chiaro
+            )
         else -> null
     }
 
-    // --- Audio (default: Stereo)
+    // --- Audio: ogni formato ha il suo colore distinto
     val audio = when {
         Regex("\\bAtmos\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
             StreamBadgeData(
                 label = "Atmos",
-                color = Color(0xFF1E88E5),
+                color = Color(0xFF0277BD),                     // azzurro Dolby
                 icon = Icons.Rounded.VolumeUp,
-                iconTint = Color(0xFF90CAF9),
+                iconTint = Color(0xFF81D4FA),
             )
         Regex("\\bDTS[-: ]?X\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
             StreamBadgeData(
                 label = "DTS:X",
-                color = Color(0xFF5D4037),
+                color = Color(0xFF6A1B9A),                     // viola DTS
                 icon = Icons.Rounded.VolumeUp,
-                iconTint = Color(0xFFBCAAA4),
+                iconTint = Color(0xFFCE93D8),
             )
         Regex("\\bDTS\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
             StreamBadgeData(
                 label = "DTS",
-                color = Color(0xFF5D4037),
+                color = Color(0xFF4A148C),                     // viola scuro
                 icon = Icons.Rounded.VolumeUp,
-                iconTint = Color(0xFFBCAAA4),
+                iconTint = Color(0xFFB39DDB),
             )
         Regex("\\bEAC3\\b|\\bDD\\+|\\bDolby Digital\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
             StreamBadgeData(
                 label = "DD+",
-                color = Color(0xFF37474F),
+                color = Color(0xFF1565C0),                     // blu Dolby Digital
                 icon = Icons.Rounded.VolumeUp,
-                iconTint = Color(0xFFB0BEC5),
+                iconTint = Color(0xFF90CAF9),
+            )
+        Regex("\\bAC3\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData(
+                label = "AC3",
+                color = Color(0xFF0D47A1),
+                icon = Icons.Rounded.VolumeUp,
+                iconTint = Color(0xFF82B1FF),
             )
         Regex("\\bAAC\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
             StreamBadgeData(
                 label = "AAC",
+                color = Color(0xFF37474F),                     // grigio-blu scuro
+                icon = Icons.Rounded.VolumeUp,
+                iconTint = Color(0xFF90A4AE),
+            )
+        else ->
+            StreamBadgeData(                                   // default: Stereo
+                label = "Stereo",
                 color = Color(0xFF424242),
                 icon = Icons.Rounded.VolumeUp,
                 iconTint = Color(0xFFBDBDBD),
             )
-        else -> StreamBadgeData( // default: Stereo
-            label = "Stereo",
-            color = Color(0xFF424242),
-            icon = Icons.Rounded.VolumeUp,
-            iconTint = Color(0xFFBDBDBD),
-        )
     }
 
-    // --- Codec (opzionale, nessun default)
+    // --- Codec
     val codec = when {
         Regex("\\bHEVC\\b|\\bx265\\b|\\bH\\.265\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("HEVC", Color(0xFF546E7A))
+            StreamBadgeData(
+                label = "HEVC",
+                color = Color(0xFF546E7A),
+                iconTint = Color(0xFFB0BEC5),
+            )
         Regex("\\bAVC\\b|\\bx264\\b|\\bH\\.264\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("AVC", Color(0xFF546E7A))
+            StreamBadgeData(
+                label = "AVC",
+                color = Color(0xFF455A64),
+                iconTint = Color(0xFFCFD8DC),
+            )
         Regex("\\bAV1\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("AV1", Color(0xFF004D40))
+            StreamBadgeData(
+                label = "AV1",
+                color = Color(0xFF004D40),                     // verde scuro
+                iconTint = Color(0xFF80CBC4),
+            )
         else -> null
     }
 
-    // --- Dimensione file (opzionale)
+    // --- Dimensione file
     val sizeBytes = stream.behaviorHints.videoSize
     val size = if (sizeBytes != null) {
         val gib = sizeBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
@@ -1432,9 +1464,9 @@ private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
         StreamBadgeData(label, Color(0xFF424242))
     } else null
 
-    // --- Cached (cerca parole chiave tipiche dei provider debrid)
+    // --- Cached: cerca keyword tipiche debrid/cache
     val isCached = Regex(
-        "\\b(cached|⚡|instant|RD\\+|AD\\+|debrid)\\b",
+        "\\b(cached|instant|RD\\+|AD\\+|debrid)\\b|⚡",
         RegexOption.IGNORE_CASE,
     ).containsMatchIn(combined)
 
