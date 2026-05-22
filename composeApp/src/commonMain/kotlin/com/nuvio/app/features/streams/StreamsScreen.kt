@@ -98,6 +98,12 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 // ---------------------------------------------------------------------------
 // Streams Screen
 // ---------------------------------------------------------------------------
@@ -1223,10 +1229,21 @@ private fun QualityBadge(badge: StreamBadgeData) {
 
 @Composable
 private fun CachedBadge() {
+    val infiniteTransition = rememberInfiniteTransition(label = "cached_pulse")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 750, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "cached_alpha",
+    )
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF1A6B2F))
+            .background(Color(0xFF1A6B2F).copy(alpha = alpha))  // ← alpha qui
             .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -1237,7 +1254,7 @@ private fun CachedBadge() {
             Icon(
                 imageVector = Icons.Rounded.Bolt,
                 contentDescription = null,
-                tint = Color(0xFF4ADE80),
+                tint = Color(0xFF4ADE80),  // ← fisso
                 modifier = Modifier.size(13.dp),
             )
             Text(
@@ -1246,7 +1263,7 @@ private fun CachedBadge() {
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                 ),
-                color = Color(0xFF4ADE80),
+                color = Color(0xFF4ADE80),  // ← fisso
             )
         }
     }
