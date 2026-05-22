@@ -93,7 +93,11 @@ import kotlin.math.round
 import kotlin.math.roundToInt
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.VolumeUp
+import androidx.compose.foundation.layout.width
 // ---------------------------------------------------------------------------
 // Streams Screen
 // ---------------------------------------------------------------------------
@@ -1007,8 +1011,6 @@ private fun StreamSourceHeader(
 // Stream Card
 // ---------------------------------------------------------------------------
 
-private data class StreamBadgeData(val label: String, val color: Color)
-
 @Composable
 private fun StreamCard(
     stream: StreamItem,
@@ -1046,7 +1048,6 @@ private fun StreamCard(
         }
     }
 }
-
 @Composable
 private fun OriginalStreamCardContent(stream: StreamItem, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
@@ -1078,92 +1079,211 @@ private fun OriginalStreamCardContent(stream: StreamItem, modifier: Modifier = M
         }
     }
 }
+private data class StreamBadgeData(
+    val label: String,
+    val color: Color,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    val iconTint: Color? = null,
+)
 
 @Composable
 private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = Modifier) {
+    val badges = rememberStreamBadges(stream)
+    val qualityBadge = badges.quality
+    val hdrBadge = badges.hdr
+    val audioBadge = badges.audio
+    val codecBadge = badges.codec
+    val sizeBadge = badges.size
+    val isCached = badges.isCached
+    val sourceName = stream.sourceName?.takeIf { it.isNotBlank() }
+
     Column(modifier = modifier) {
-        Text(
-            text = stream.streamLabel,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = 12.sp,
-                lineHeight = 17.sp,
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        // Riga 1: badge qualità (grande) + titolo fonte + cached
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            // Badge qualità video — sfondo colorato pieno, testo grande
+            QualityBadge(badge = qualityBadge)
+
+            // Titolo / source name al centro con peso
+            Text(
+                text = sourceName ?: stream.streamLabel,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 20.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+
+            // Badge "Cached" con icona fulmine
+            if (isCached) {
+                CachedBadge()
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Riga 2: HDR + Audio + Codec
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            hdrBadge?.let { SmallBadgeChip(badge = it) }
+            audioBadge?.let { SmallBadgeChip(badge = it) }
+            codecBadge?.let { SmallBadgeChip(badge = it) }
+        }
+
         Spacer(modifier = Modifier.height(6.dp))
-        val badges = rememberStreamBadges(stream)
-        if (badges.isNotEmpty()) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                badges.forEach { badge ->
-                    StreamBadgeChip(label = badge.label, color = badge.color)
-                }
+
+        // Riga 3: dimensione file + provider (allineato a destra)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            sizeBadge?.let { badge ->
+                Icon(
+                    imageVector = Icons.Rounded.Storage,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = badge.label,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
+            // Lingua (se presente nel subtitle)
+            val lang = rememberParsedLanguage(stream)
+            if (lang != null) {
+                Text(
+                    text = lang,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Provider name allineato a destra
+            val provider = stream.addonName.takeIf { it.isNotBlank() }
+            if (provider != null) {
+                Text(
+                    text = provider,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Normal,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
 }
 
-private fun buildStreamBadges(stream: StreamItem): List<StreamBadgeData> {
-    val combined = "${stream.streamLabel} ${stream.streamSubtitle.orEmpty()}"
-    return buildList {
-        when {
-            Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("4K", Color(0xFF6C3FE8)))
-            Regex("\\b(1080p|FHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("1080p", Color(0xFF1976D2)))
-            Regex("\\b(720p|HD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("720p", Color(0xFF388E3C)))
-            Regex("\\b(480p|SD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("SD", Color(0xFF757575)))
-        }
-        when {
-            Regex("\\bDolby Vision\\b|\\bDV\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("DV", Color(0xFF0A3D62)))
-            Regex("\\bHDR10\\+", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("HDR10+", Color(0xFFB7950B)))
-            Regex("\\bHDR\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("HDR", Color(0xFF9C6A00)))
-        }
-        when {
-            Regex("\\bAtmos\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("Atmos", Color(0xFF00838F)))
-            Regex("\\bDTS[-: ]?X\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("DTS:X", Color(0xFF5D4037)))
-            Regex("\\bDTS\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("DTS", Color(0xFF6D4C41)))
-            Regex("\\bDolby Digital\\b|\\bDD\\+|\\bEAC3\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("DD+", Color(0xFF37474F)))
-            Regex("\\bAAC\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("AAC", Color(0xFF424242)))
-        }
-        when {
-            Regex("\\bHEVC\\b|\\bx265\\b|\\bH\\.265\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("HEVC", Color(0xFF1B5E20)))
-            Regex("\\bAV1\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-                add(StreamBadgeData("AV1", Color(0xFF004D40)))
-        }
-        val sizeBytes = stream.behaviorHints.videoSize
-        if (sizeBytes != null) {
-            val gib = sizeBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
-            val label = if (gib >= 1.0) {
-                "${kotlin.math.round(gib * 10) / 10} GB"
-            } else {
-                "${kotlin.math.round(sizeBytes / (1024.0 * 1024.0)).toInt()} MB"
-            }
-            add(StreamBadgeData(label, Color(0xFF0A0C0C)))
+// ---------------------------------------------------------------------------
+// Badge composable
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun QualityBadge(badge: StreamBadgeData) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(badge.color)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = badge.label,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.sp,
+            ),
+            color = Color.White,
+        )
+    }
+}
+
+@Composable
+private fun CachedBadge() {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF1A6B2F))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Bolt,
+                contentDescription = null,
+                tint = Color(0xFF4ADE80),
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                text = "Cached",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = Color(0xFF4ADE80),
+            )
         }
     }
 }
 
 @Composable
-private fun rememberStreamBadges(stream: StreamItem): List<StreamBadgeData> =
-    remember(stream.streamLabel, stream.streamSubtitle, stream.behaviorHints.videoSize) {
-        buildStreamBadges(stream)
+private fun SmallBadgeChip(badge: StreamBadgeData) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(badge.color.copy(alpha = 0.18f))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            badge.icon?.let { icon ->
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = badge.iconTint ?: badge.color,
+                    modifier = Modifier.size(12.dp),
+                )
+            }
+            Text(
+                text = badge.label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.1.sp,
+                ),
+                color = badge.iconTint ?: badge.color,
+            )
+        }
     }
+}
 
 @Composable
 private fun StreamBadgeChip(label: String, color: Color) {
@@ -1183,6 +1303,149 @@ private fun StreamBadgeChip(label: String, color: Color) {
             color = Color.White,
         )
     }
+}
+
+// ---------------------------------------------------------------------------
+// Badge parsing
+// ---------------------------------------------------------------------------
+
+private data class ParsedStreamBadges(
+    val quality: StreamBadgeData,
+    val hdr: StreamBadgeData?,
+    val audio: StreamBadgeData,
+    val codec: StreamBadgeData?,
+    val size: StreamBadgeData?,
+    val isCached: Boolean,
+)
+
+@Composable
+private fun rememberStreamBadges(stream: StreamItem): ParsedStreamBadges =
+    remember(stream.streamLabel, stream.streamSubtitle, stream.behaviorHints.videoSize) {
+        buildParsedBadges(stream)
+    }
+
+@Composable
+private fun rememberParsedLanguage(stream: StreamItem): String? =
+    remember(stream.streamLabel, stream.streamSubtitle) {
+        val combined = "${stream.streamLabel} ${stream.streamSubtitle.orEmpty()}"
+        Regex("\\b(English|Italian|French|Spanish|German|Japanese|Korean|Portuguese|Chinese|Arabic|Hindi|Russian)\\b", RegexOption.IGNORE_CASE)
+            .find(combined)?.value
+    }
+
+private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
+    val combined = "${stream.streamLabel} ${stream.streamSubtitle.orEmpty()}"
+
+    // --- Qualità video (default: SD)
+    val quality = when {
+        Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("4K", Color(0xFF1565C0))
+        Regex("\\b1080p\\b|\\bFHD\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("1080p", Color(0xFF1565C0))
+        Regex("\\b720p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("720p", Color(0xFF2E7D32))
+        Regex("\\b480p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("SD", Color(0xFF757575))
+        else -> StreamBadgeData("SD", Color(0xFF757575)) // default
+    }
+
+    // --- HDR (opzionale, nessun default)
+    val hdr = when {
+        Regex("\\bDolby[ .]Vision\\b|\\bDV\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData(
+                label = "DV",
+                color = Color(0xFF1E88E5),
+                icon = Icons.Rounded.AutoAwesome,
+                iconTint = Color(0xFF90CAF9),
+            )
+        Regex("\\bHDR10\\+", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("HDR10+", Color(0xFFB7950B))
+        Regex("\\bHDR\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("HDR", Color(0xFF9C6A00))
+        else -> null
+    }
+
+    // --- Audio (default: Stereo)
+    val audio = when {
+        Regex("\\bAtmos\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData(
+                label = "Atmos",
+                color = Color(0xFF1E88E5),
+                icon = Icons.Rounded.VolumeUp,
+                iconTint = Color(0xFF90CAF9),
+            )
+        Regex("\\bDTS[-: ]?X\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData(
+                label = "DTS:X",
+                color = Color(0xFF5D4037),
+                icon = Icons.Rounded.VolumeUp,
+                iconTint = Color(0xFFBCAAA4),
+            )
+        Regex("\\bDTS\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData(
+                label = "DTS",
+                color = Color(0xFF5D4037),
+                icon = Icons.Rounded.VolumeUp,
+                iconTint = Color(0xFFBCAAA4),
+            )
+        Regex("\\bEAC3\\b|\\bDD\\+|\\bDolby Digital\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData(
+                label = "DD+",
+                color = Color(0xFF37474F),
+                icon = Icons.Rounded.VolumeUp,
+                iconTint = Color(0xFFB0BEC5),
+            )
+        Regex("\\bAAC\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData(
+                label = "AAC",
+                color = Color(0xFF424242),
+                icon = Icons.Rounded.VolumeUp,
+                iconTint = Color(0xFFBDBDBD),
+            )
+        else -> StreamBadgeData( // default: Stereo
+            label = "Stereo",
+            color = Color(0xFF424242),
+            icon = Icons.Rounded.VolumeUp,
+            iconTint = Color(0xFFBDBDBD),
+        )
+    }
+
+    // --- Codec (opzionale, nessun default)
+    val codec = when {
+        Regex("\\bHEVC\\b|\\bx265\\b|\\bH\\.265\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("HEVC", Color(0xFF546E7A))
+        Regex("\\bAVC\\b|\\bx264\\b|\\bH\\.264\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("AVC", Color(0xFF546E7A))
+        Regex("\\bAV1\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("AV1", Color(0xFF004D40))
+        else -> null
+    }
+
+    // --- Dimensione file (opzionale)
+    val sizeBytes = stream.behaviorHints.videoSize
+    val size = if (sizeBytes != null) {
+        val gib = sizeBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+        val label = if (gib >= 1.0) {
+            "${kotlin.math.round(gib * 10.0) / 10.0} GB"
+        } else {
+            "${kotlin.math.round(sizeBytes / (1024.0 * 1024.0)).toInt()} MB"
+        }
+        StreamBadgeData(label, Color(0xFF424242))
+    } else null
+
+    // --- Cached (cerca parole chiave tipiche dei provider debrid)
+    val isCached = Regex(
+        "\\b(cached|⚡|instant|RD\\+|AD\\+|debrid)\\b",
+        RegexOption.IGNORE_CASE,
+    ).containsMatchIn(combined)
+
+    return ParsedStreamBadges(
+        quality = quality,
+        hdr = hdr,
+        audio = audio,
+        codec = codec,
+        size = size,
+        isCached = isCached,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
