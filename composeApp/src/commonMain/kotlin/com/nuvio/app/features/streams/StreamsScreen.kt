@@ -1208,21 +1208,31 @@ private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = M
 
 @Composable
 private fun QualityBadge(badge: StreamBadgeData) {
+    val gradientColors = when (badge.label) {
+        "4K"    -> listOf(Color(0xFF6C3FE8), Color(0xFF1565C0))  // viola → blu
+        "1080p" -> listOf(Color(0xFF1565C0), Color(0xFF0288D1))  // blu → azzurro
+        "720p"  -> listOf(Color(0xFF2E7D32), Color(0xFF00897B))  // verde → teal
+        "SD"    -> listOf(Color(0xFF616161), Color(0xFF424242))  // grigio scuro → più scuro
+        else    -> listOf(badge.color, badge.color)
+    }
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(badge.color)
+            .background(
+                brush = Brush.horizontalGradient(colors = gradientColors),
+            )
             .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = badge.label,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 0.sp,
-                ),
-                color = Color.White,
+    ) {
+        Text(
+            text = badge.label,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.sp,
+            ),
+            color = Color.White,
         )
     }
 }
@@ -1271,13 +1281,10 @@ private fun CachedBadge() {
 
 @Composable
 private fun SmallBadgeChip(badge: StreamBadgeData) {
-    val bgColor = badge.color.copy(alpha = 0.15f)
-    val contentColor = badge.iconTint ?: badge.color
-
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
+            .background(badge.color)          // ← sfondo pieno, non più alpha 0.15
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
         Row(
@@ -1288,7 +1295,7 @@ private fun SmallBadgeChip(badge: StreamBadgeData) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = contentColor,
+                    tint = Color.White,        // ← icona sempre bianca
                     modifier = Modifier.size(12.dp),
                 )
             }
@@ -1299,7 +1306,7 @@ private fun SmallBadgeChip(badge: StreamBadgeData) {
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 0.1.sp,
                 ),
-                color = contentColor,
+                color = Color.White,           // ← testo sempre bianco
             )
         }
     }
