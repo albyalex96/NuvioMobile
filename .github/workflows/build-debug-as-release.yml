@@ -1,4 +1,4 @@
-name: Build Debug version 
+name: Build Debug as Release version 
 
 on:
   workflow_dispatch:
@@ -13,11 +13,14 @@ on:
           - Debug
   push:
     branches:
-      - dev-alby-fixes # Testing Workflow
-      - autobuild-alby-fixes
+      - app/enhanced
 
 env:
   BUILD_FLAVOR: ${{ github.event.inputs.flavor || 'Debug' }}
+
+# Permessi necessari per poter creare e associare la Release su GitHub
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -66,7 +69,6 @@ jobs:
       - name: Set flavor variables
         id: flavor
         run: |
-          # Legge dalla variabile d'ambiente globale configurata in alto
           FLAVOR="${{ env.BUILD_FLAVOR }}"
           FLAVOR_LOWER=$(echo "$FLAVOR" | tr '[:upper:]' '[:lower:]')
           echo "name=${FLAVOR_LOWER}" >> $GITHUB_OUTPUT
@@ -88,26 +90,52 @@ jobs:
           fi
           ./gradlew :composeApp:$TASK
 
-      - name: Upload APK
+      # Step per mappare il percorso esatto dell'APK generato
+      - name: Find Target APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find composeApp/build/outputs/apk/ -name "*.apk" | head -n 1)
+          if [ -f "$APK_PATH" ]; then
+            echo "path=$APK_PATH" >> $GITHUB_OUTPUT
+            echo "Found APK at: $APK_PATH"
+          else
+            echo "Errore: Nessun APK trovato!"
+            exit 1
+          fi
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: nuvio-${{ steps.flavor.outputs.name }}-apk
-          path: composeApp/build/outputs/apk/**/*.apk
+          path: ${{ steps.find_apk.outputs.path }}
           retention-days: 7
           if-no-files-found: error
 
+      # Crea la GitHub Release ufficiale e ci allega l'APK (anche se è una build debug)
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}"
+          name: "Nuvio Build ${{ env.BUILD_FLAVOR }} #${{ github.run_number }}"
+          body: |
+            Nuovo rilascio generato automaticamente per il branch `app/enhanced`.
+            - **Flavor:** ${{ env.BUILD_FLAVOR }}
+            - **Tipo Build:** Spinta come release su GitHub.
+          draft: false
+          prerelease: false
+          target_commitish: app/enhanced
+          files: ${{ steps.find_apk.outputs.path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Estrai e Invia l'APK Full su ntfy
         run: |
-          # Cerchiamo l'APK specifico della versione full generato da Gradle
-          # (Gradle genera i file dentro composeApp/build/outputs/apk/)
-          
           APK_PATH=$(find composeApp/build/outputs/apk/ -path "*/full/*.apk" | head -n 1)
           
           if [ -f "$APK_PATH" ]; then
             echo "APK trovato in: $APK_PATH"
             echo "Invio in corso su ntfy..."
             
-            # Inviamo il file APK "puro" (non zippato) direttamente al tuo server ntfy
             curl -H "Title: Nuova Build Nuvio Full 🚀" \
                  -H "Priority: high" \
                  -H "Tags: package,android" \
@@ -117,6 +145,5 @@ jobs:
                  
             echo "Inviato con successo!"
           else
-            echo "Errore: APK nella cartella 'full' non trovato!"
-            exit 1
+            echo "APK nella cartella 'full' non trovato. Salto l'invio ntfy (normale se hai scelto la build Debug)."
           fi
