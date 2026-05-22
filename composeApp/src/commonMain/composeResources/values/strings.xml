@@ -1488,4 +1488,7 @@
     <string name="plugins_password_hide">Hide</string>
     <string name="plugins_password_show">Show</string>
     <string name="plugins_fallback_repo_label">Plugin repository</string>
+    <string name="stream_parser_cached_badge_label">Cached</string>
+    <string name="stream_parser_polished_title">Polished Display</string>
+    <string name="stream_parser_polished_description">Show streams with clean badges instead of raw text</string>
 </resources>

@@ -1459,4 +1459,7 @@
   <string name="settings_debrid_prepare_stream_count_warning">Usa un valore basso se possibile. I servizi di debrid possono limitare il numero di link che possono essere risolti in un periodo di tempo. L'apertura di un film o un episodio può contare verso questi limiti anche se non premi "Guarda", perché i link sono preparati in anticipo.</string>
   <string name="settings_debrid_prepare_count_one">1 sorgente</string>
   <string name="settings_debrid_prepare_count_many">%1$d sorgenti</string>
+  <string name="stream_parser_cached_badge_label">In Cache</string>
+    <string name="stream_parser_polished_title">Visualizzazione Pulita</string>
+    <string name="stream_parser_polished_description">Mostra info stream con badge invece di testo grezzo</string>
   </resources>

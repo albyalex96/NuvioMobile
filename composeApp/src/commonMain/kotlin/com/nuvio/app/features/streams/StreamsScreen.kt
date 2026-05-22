@@ -104,6 +104,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import org.jetbrains.compose.resources.stringResource
+import nuvio.composeapp.generated.resources.stream_parser_cached_badge_label
 // ---------------------------------------------------------------------------
 // Streams Screen
 // ---------------------------------------------------------------------------
@@ -1133,7 +1135,7 @@ private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = M
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Riga 2: HDR + Audio + Codec
         Row(
@@ -1145,7 +1147,7 @@ private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = M
             codecBadge?.let { SmallBadgeChip(badge = it) }
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Riga 3: dimensione file + provider (allineato a destra)
         Row(
@@ -1268,7 +1270,7 @@ private fun CachedBadge() {
                 modifier = Modifier.size(13.dp),
             )
             Text(
-                text = "Cached",
+                text = stringResource(Res.string.stream_parser_cached_badge_label),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,

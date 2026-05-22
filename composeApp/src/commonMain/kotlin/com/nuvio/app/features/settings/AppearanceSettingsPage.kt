@@ -49,6 +49,8 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.cd_selected
 import nuvio.composeapp.generated.resources.compose_settings_page_continue_watching
 import nuvio.composeapp.generated.resources.compose_settings_page_poster_customization
+import nuvio.composeapp.generated.resources.stream_parser_polished_title
+import nuvio.composeapp.generated.resources.stream_parser_polished_description
 import nuvio.composeapp.generated.resources.settings_appearance_app_language
 import nuvio.composeapp.generated.resources.settings_appearance_app_language_sheet_title
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_black
@@ -182,8 +184,8 @@ internal fun LazyListScope.appearanceSettingsContent(
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
-                    title = "Polished Display",
-                    description = "Show streams with clean badges instead of raw text",
+                    title = stringResource(Res.string.stream_parser_polished_title),
+                    description = stringResource(Res.string.stream_parser_polished_description),
                     isTablet = isTablet,
                     checked = streamsAppearance.displayMode == DisplayMode.POLISHED,
                     onCheckedChange = { isPolished ->
