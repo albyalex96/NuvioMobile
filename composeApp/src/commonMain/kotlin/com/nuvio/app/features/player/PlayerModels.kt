@@ -11,6 +11,7 @@ data class PlayerLaunch(
     val title: String,
     val sourceUrl: String,
     val sourceAudioUrl: String? = null,
+    val streamType: String? = null,
     val sourceHeaders: Map<String, String> = emptyMap(),
     val sourceResponseHeaders: Map<String, String> = emptyMap(),
     val logo: String? = null,
