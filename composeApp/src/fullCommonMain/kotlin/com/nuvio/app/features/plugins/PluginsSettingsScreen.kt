@@ -53,6 +53,8 @@ import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.NuvioSurfaceCard
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import kotlinx.coroutines.launch
+import nuvio.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PluginsSettingsPageContent(
@@ -109,25 +111,31 @@ fun PluginsSettingsPageContent(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        NuvioSectionLabel("OVERVIEW")
+        NuvioSectionLabel(stringResource(Res.string.plugins_section_overview))
         NuvioSurfaceCard {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                NuvioInfoBadge(text = "${sortedRepos.size} repos")
-                NuvioInfoBadge(text = "${sortedScrapers.size} providers")
+                NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_repos, sortedRepos.size))
+                NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_providers, sortedScrapers.size))
                 NuvioInfoBadge(
-                    text = if (uiState.pluginsEnabled) "Plugins enabled" else "Plugins disabled",
+                    text = if (uiState.pluginsEnabled)
+                        stringResource(Res.string.plugins_badge_enabled)
+                    else
+                        stringResource(Res.string.plugins_badge_disabled),
                 )
                 NuvioInfoBadge(
-                    text = if (hasTmdbApiKey) "TMDB API key set" else "TMDB API key missing",
+                    text = if (hasTmdbApiKey)
+                        stringResource(Res.string.plugins_badge_tmdb_set)
+                    else
+                        stringResource(Res.string.plugins_badge_tmdb_missing),
                 )
             }
             if (!hasTmdbApiKey) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Plugin providers require a TMDB API key. Set it on the TMDB screen or plugin providers will not work correctly.",
+                    text = stringResource(Res.string.plugins_tmdb_warning),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -140,13 +148,13 @@ fun PluginsSettingsPageContent(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Enable plugin providers globally",
+                        text = stringResource(Res.string.plugins_toggle_enable_title),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Use plugin providers during stream discovery.",
+                        text = stringResource(Res.string.plugins_toggle_enable_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -169,13 +177,13 @@ fun PluginsSettingsPageContent(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Group plugin providers by repository",
+                        text = stringResource(Res.string.plugins_toggle_group_title),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "In Streams, show one provider per repository instead of one per source.",
+                        text = stringResource(Res.string.plugins_toggle_group_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -188,7 +196,7 @@ fun PluginsSettingsPageContent(
             }
         }
 
-        NuvioSectionLabel("ADD REPOSITORY")
+        NuvioSectionLabel(stringResource(Res.string.plugins_section_add_repository))
         NuvioSurfaceCard {
             NuvioInputField(
                 value = repositoryUrl,
@@ -196,16 +204,19 @@ fun PluginsSettingsPageContent(
                     repositoryUrl = it
                     message = null
                 },
-                placeholder = "Plugin manifest URL",
+                placeholder = stringResource(Res.string.plugins_input_manifest_url),
             )
             Spacer(modifier = Modifier.height(16.dp))
             NuvioPrimaryButton(
-                text = if (isAdding) "Installing..." else "Install Plugin Repository",
+                text = if (isAdding)
+                    stringResource(Res.string.plugins_button_installing)
+                else
+                    stringResource(Res.string.plugins_button_install),
                 enabled = repositoryUrl.isNotBlank() && !isAdding,
                 onClick = {
                     val requested = repositoryUrl.trim()
                     if (requested.isBlank()) {
-                        message = "Enter a plugin repository URL."
+                        message = "plugins_msg_enter_url" // resolved below via state
                         return@NuvioPrimaryButton
                     }
                     isAdding = true
@@ -214,7 +225,7 @@ fun PluginsSettingsPageContent(
                         when (val result = PluginRepository.addRepository(requested)) {
                             is AddPluginRepositoryResult.Success -> {
                                 repositoryUrl = ""
-                                message = "Installed ${result.repository.name}."
+                                message = result.repository.name
                             }
                             is AddPluginRepositoryResult.Error -> {
                                 message = result.message
@@ -234,17 +245,17 @@ fun PluginsSettingsPageContent(
             }
         }
 
-        NuvioSectionLabel("INSTALLED REPOSITORIES")
+        NuvioSectionLabel(stringResource(Res.string.plugins_section_installed))
         if (sortedRepos.isEmpty()) {
             NuvioSurfaceCard {
                 Text(
-                    text = "No plugin repositories installed yet.",
+                    text = stringResource(Res.string.plugins_repos_empty_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Add a repository URL to install provider plugins for stream discovery.",
+                    text = stringResource(Res.string.plugins_repos_empty_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -268,7 +279,7 @@ fun PluginsSettingsPageContent(
                             repo.version?.let { version ->
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Version $version",
+                                    text = stringResource(Res.string.plugins_repo_version, version),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -293,13 +304,13 @@ fun PluginsSettingsPageContent(
                             }
                             NuvioIconActionButton(
                                 icon = Icons.Rounded.Refresh,
-                                contentDescription = "Refresh plugin repository",
+                                contentDescription = stringResource(Res.string.plugins_repo_refresh_cd),
                                 tint = MaterialTheme.colorScheme.primary,
                                 onClick = { PluginRepository.refreshRepository(repo.manifestUrl, pushAfterRefresh = true) },
                             )
                             NuvioIconActionButton(
                                 icon = Icons.Rounded.Delete,
-                                contentDescription = "Delete plugin repository",
+                                contentDescription = stringResource(Res.string.plugins_repo_delete_cd),
                                 tint = MaterialTheme.colorScheme.error,
                                 onClick = { PluginRepository.removeRepository(repo.manifestUrl) },
                             )
@@ -310,12 +321,13 @@ fun PluginsSettingsPageContent(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        NuvioInfoBadge(text = "${repo.scraperCount} providers")
+                        NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_providers, repo.scraperCount))
+                        
                         if (repo.settings.isNotEmpty()) {
                             NuvioInfoBadge(text = "Configurable")
                         }
                         if (repo.isRefreshing) {
-                            NuvioInfoBadge(text = "Refreshing")
+                            NuvioInfoBadge(text = stringResource(Res.string.plugins_repo_refreshing))
                         }
                     }
                     repo.errorMessage?.let { errorMessage ->
@@ -330,11 +342,11 @@ fun PluginsSettingsPageContent(
             }
         }
 
-        NuvioSectionLabel("PROVIDERS")
+        NuvioSectionLabel(stringResource(Res.string.plugins_section_providers))
         if (sortedScrapers.isEmpty()) {
             NuvioSurfaceCard {
                 Text(
-                    text = "No providers available yet.",
+                    text = stringResource(Res.string.plugins_scrapers_empty),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -379,7 +391,7 @@ fun PluginsSettingsPageContent(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
-                                    text = scraper.description.ifBlank { "No description" },
+                                    text = scraper.description.ifBlank { stringResource(Res.string.plugins_scraper_no_description) },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 2,
@@ -400,15 +412,18 @@ fun PluginsSettingsPageContent(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         NuvioInfoBadge(text = scraper.supportedTypes.joinToString(" | "))
-                        NuvioInfoBadge(text = "v${scraper.version}")
+                        NuvioInfoBadge(text = stringResource(Res.string.plugins_scraper_version, scraper.version))
                         if (!scraper.manifestEnabled) {
-                            NuvioInfoBadge(text = "Disabled by repo")
+                            NuvioInfoBadge(text = stringResource(Res.string.plugins_scraper_disabled_by_repo))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
                     NuvioPrimaryButton(
-                        text = if (isTestingThisScraper) "Testing..." else "Test Provider",
+                        text = if (isTestingThisScraper)
+                            stringResource(Res.string.plugins_button_testing)
+                        else
+                            stringResource(Res.string.plugins_button_test),
                         enabled = hasTmdbApiKey && !isTestingThisScraper,
                         onClick = {
                             testingScraperId = scraper.id
@@ -436,7 +451,7 @@ fun PluginsSettingsPageContent(
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Test results (${scraperResults.size})",
+                            text = stringResource(Res.string.plugins_test_results, scraperResults.size),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
