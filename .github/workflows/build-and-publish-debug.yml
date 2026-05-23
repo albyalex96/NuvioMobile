@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: app-enhanced
+          fetch-depth: 0 # <--- FONDAMENTALE: scarica tutta la cronologia per poter leggere i commit precedenti
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -111,6 +112,31 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      # --- NUOVO STEP: RECUPERO CRONOLOGIA COMMIT ---
+      - name: Generate Commit Log
+        id: commit_log
+        run: |
+          # Trova l'ultimo tag presente sulla branch
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            # Se non trova tag precedenti, elenca gli ultimi 15 commit
+            COMMITS=$(git log --oneline -n 15 --no-merges)
+          else
+            # Prende i commit dall'ultimo tag fino ad oggi
+            COMMITS=$(git log --oneline ${LAST_TAG}..HEAD --no-merges)
+          fi
+          
+          # Se non ci sono nuovi commit (es. push vuoto o trigger manuale consecutivo)
+          if [ -z "$COMMITS" ]; then
+            COMMITS="Nessun nuovo commit dall'ultimo rilascio."
+          fi
+
+          # Scrittura sicura multilinea per GitHub Actions
+          echo "logs<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
@@ -120,26 +146,31 @@ jobs:
             Nuovo rilascio generato automaticamente basato sul codice di `app-enhanced`.
             - **Flavor:** ${{ env.BUILD_FLAVOR }}
             - **Workflow lanciato da:** `${{ github.ref_name }}`
-          draft: false
-          prerelease: false
-          target_commitish: app-enhanced
-          files: ${{ steps.find_apk.outputs.path }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            
+            ### Log dei commit dall'ultima build:
+```text
+            ${{ steps.commit_log.outputs.logs }}
+            ```
+draft: false
+prerelease: false
+target_commitish: app-enhanced
+files: ${{ steps.find_apk.outputs.path }}
+env:
+GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Estrai e Invia l'APK Full su ntfy
-        run: |
-          APK_PATH=$(find composeApp/build/outputs/apk/ -path "*/full/*.apk" | head -n 1)
-          if [ -f "$APK_PATH" ]; then
-            echo "APK trovato in: $APK_PATH"
-            echo "Invio in corso su ntfy..."
-            curl -H "Title: Nuova Build Nuvio Full 🚀" \
-                 -H "Priority: high" \
-                 -H "Tags: package,android" \
-                 -H "X-Filename: nuvio-full.apk" \
-                 --upload-file "$APK_PATH" \
-                 "${{ secrets.NTFY_SERVER }}"
-            echo "Inviato con successo!"
-          else
-            echo "APK nella cartella 'full' non trovato. Salto l'invio ntfy."
-          fi
+- name: Estrai e Invia l'APK Full su ntfy
+run: |
+APK_PATH=$(find composeApp/build/outputs/apk/ -path "*/full/*.apk" | head -n 1)
+if [ -f "$APK_PATH" ]; then
+echo "APK trovato in: $APK_PATH"
+echo "Invio in corso su ntfy..."
+curl -H "Title: Nuova Build Nuvio Full 🚀" \
+     -H "Priority: high" \
+     -H "Tags: package,android" \
+     -H "X-Filename: nuvio-full.apk" \
+     --upload-file "$APK_PATH" \
+     "${{ secrets.NTFY_SERVER }}"
+echo "Inviato con successo!"
+else
+echo "APK nella cartella 'full' non trovato. Salto l'invio ntfy."
+fi
