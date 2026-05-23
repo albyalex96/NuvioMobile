@@ -201,7 +201,8 @@ fun SettingsScreen(
         val streamsAppearance by remember {
             StreamsAppearanceRepository.ensureLoaded()
             StreamsAppearanceRepository.uiState
-        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())        val liveTvUiState by remember {
+        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())        
+        val liveTvUiState by remember {
             LiveTvRepository.ensureLoaded()
             LiveTvRepository.uiState
         }.collectAsStateWithLifecycle()
