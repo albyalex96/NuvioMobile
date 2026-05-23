@@ -1170,4 +1170,6 @@
   <string name="collections_editor_tmdb_subtitle_person">Persona</string>
   <string name="collections_editor_tmdb_subtitle_director">Regista</string>
   <string name="collections_editor_tmdb_subtitle_discover">TMDB Discover</string>
+  <string name="settings_playback_enable_swipe_gestures">Swipe Gesture</string>
+  <string name="settings_playback_enable_swipe_gestures_description">Permetti lo swipe verticale sulla superficie del player per controllare volume e luminosità.</string>
 </resources>
