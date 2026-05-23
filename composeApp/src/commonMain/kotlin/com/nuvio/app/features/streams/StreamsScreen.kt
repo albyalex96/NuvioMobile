@@ -109,8 +109,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.animation.core.LinearEasing
 
-import co.touchlab.kermit.Logger
 
 // ---------------------------------------------------------------------------
 // Streams Screen
@@ -1185,15 +1186,58 @@ private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = M
 @Composable
 private fun QualityBadge(badge: StreamBadgeData) {
     val gradientColors = when (badge.label) {
-        "4K"    -> listOf(Color(0xFF6C3FE8), Color(0xFF1565C0))
-        "1080p" -> listOf(Color(0xFF1565C0), Color(0xFF0288D1))
-        "720p"  -> listOf(Color(0xFF2E7D32), Color(0xFF00897B))
-        else    -> listOf(Color(0xFF616161), Color(0xFF424242))
+        "4K"    -> listOf(Color(0xFFB8860B), Color(0xFFFFD700))  // oro scuro → oro brillante
+        "1080p" -> listOf(Color(0xFF1565C0), Color(0xFF0288D1))  // blu → azzurro
+        "720p"  -> listOf(Color(0xFF2E7D32), Color(0xFF00897B))  // verde → teal
+        else -> listOf(Color(0xFFB71C1C), Color(0xFFC62828))
     }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "quality_sweep")
+    val sweepOffset by infiniteTransition.animateFloat(
+        initialValue = -0.4f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "sweep_offset",
+    )
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(brush = Brush.horizontalGradient(colors = gradientColors))
+            .drawWithContent {
+                drawContent()
+                val w = size.width
+                val h = size.height
+                val sweepX = sweepOffset * (w * 1.8f) - w * 0.4f
+                val halfWidth = w * 0.45f  // nastro largo
+                val skew = h * 0.58f       // tan(30°) ≈ 0.577
+
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(sweepX - halfWidth + skew, 0f)
+                    lineTo(sweepX + halfWidth + skew, 0f)
+                    lineTo(sweepX + halfWidth - skew, h)
+                    lineTo(sweepX - halfWidth - skew, h)
+                    close()
+                }
+                drawPath(
+                    path = path,
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.White.copy(alpha = 0.18f),
+                            Color.White.copy(alpha = 0.32f),
+                            Color.White.copy(alpha = 0.32f),
+                            Color.White.copy(alpha = 0.18f),
+                            Color.Transparent,
+                        ),
+                        startX = sweepX - halfWidth,
+                        endX = sweepX + halfWidth,
+                    ),
+                )
+            }
             .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -1313,16 +1357,16 @@ private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
     ).joinToString(" ")
 
     val quality = when {
-        Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("4K", Color(0xFF6C3FE8))
-        Regex("\\b(1080p|FHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("1080p", Color(0xFF1565C0))
-        Regex("\\b720p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("720p", Color(0xFF2E7D32))
-        Regex("\\b480p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
-            StreamBadgeData("SD", Color(0xFF616161))
-        else ->
-            StreamBadgeData("SD", Color(0xFF616161))
+    Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("4K", Color(0xFFB8860B))     // oro
+    Regex("\\b(1080p|FHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("1080p", Color(0xFF1565C0))  // blu
+    Regex("\\b720p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("720p", Color(0xFF2E7D32))   // verde
+    Regex("\\b480p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("SD", Color(0xFFB71C1C))
+    else ->
+        StreamBadgeData("SD", Color(0xFFB71C1C))     // giallo
     }
 
     val hdr = when {
