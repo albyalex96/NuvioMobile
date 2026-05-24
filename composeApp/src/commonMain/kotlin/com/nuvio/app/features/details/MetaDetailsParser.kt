@@ -53,6 +53,7 @@ internal object MetaDetailsParser {
             trailers = meta.trailers(),
             links = links,
             videos = meta.videos(),
+            customSeasons = meta.customSeasons(),
         )
     }
 
@@ -216,6 +217,16 @@ internal object MetaDetailsParser {
         }
         return merged.values.toList()
     }
+
+    private fun JsonObject.customSeasons(): List<MetaSeason> =
+        array("seasons").mapNotNull { element ->
+            val obj = element as? JsonObject ?: return@mapNotNull null
+            val season = obj.int("season") ?: return@mapNotNull null
+            MetaSeason(
+                season = season,
+                poster = obj.string("poster") ?: obj.string("poster_path"),
+            )
+        }
 
     private fun JsonObject.videos(): List<MetaVideo> =
         array("videos").mapNotNull { element ->
