@@ -66,7 +66,7 @@ jobs:
           printf 'NUVIO_RELEASE_STORE_PASSWORD=%s\n' "nuvio1234" >> local.properties
           printf 'NUVIO_RELEASE_KEY_ALIAS=%s\n' "nuvio-release" >> local.properties
           printf 'NUVIO_RELEASE_KEY_PASSWORD=%s\n' "nuvio1234" >> local.properties
-          printf 'DONATION_BASE_URL=%s\n' "https://donate.nuvioapp.space/" >> local.properties
+          printf 'DONATIONS_BASE_URL=%s\n' "https://donate.nuvioapp.space/" >> local.properties
           printf 'DIRECT_DEBRID_API_BASE_URL=%s\n' "https://api.torbox.app/v1/api" >> local.properties
 
       - name: Set flavor variables
