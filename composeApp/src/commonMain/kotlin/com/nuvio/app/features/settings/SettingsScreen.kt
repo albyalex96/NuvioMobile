@@ -201,7 +201,7 @@ fun SettingsScreen(
         val streamsAppearance by remember {
             StreamsAppearanceRepository.ensureLoaded()
             StreamsAppearanceRepository.uiState
-        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())        
+        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
         val liveTvUiState by remember {
             LiveTvRepository.ensureLoaded()
             LiveTvRepository.uiState
@@ -302,7 +302,7 @@ fun SettingsScreen(
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
                 onTop10CatalogClick = onTop10CatalogClick,
-                streamsAppearance=streamsAppearance,
+                streamsAppearance = streamsAppearance,
             )
         } else {
             MobileSettingsScreen(
@@ -361,7 +361,7 @@ fun SettingsScreen(
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
                 onTop10CatalogClick = onTop10CatalogClick,
-                streamsAppearance=streamsAppearance,
+                streamsAppearance = streamsAppearance,
             )
         }
     }
@@ -453,6 +453,7 @@ private fun MobileSettingsScreen(
             switchProfileAvailable = onSwitchProfile != null,
             checkForUpdatesAvailable = onCheckForUpdatesClick != null,
         )
+
         fun openSearchTarget(target: SettingsSearchTarget) {
             when (target) {
                 is SettingsSearchTarget.Page -> when (target.page) {
@@ -520,7 +521,7 @@ private fun MobileSettingsScreen(
                             onAppearanceClick = { onPageChange(SettingsPage.Appearance) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
                             onContentDiscoveryClick = { onPageChange(SettingsPage.ContentDiscovery) },
-                onNetworkClick = { onPageChange(SettingsPage.Network) },
+                            onNetworkClick = { onPageChange(SettingsPage.Network) },
                             onIntegrationsClick = { onPageChange(SettingsPage.Integrations) },
                             onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                             onSupportersContributorsClick = onSupportersContributorsClick,
@@ -572,7 +573,7 @@ private fun MobileSettingsScreen(
                     onAppLanguageSelected = onAppLanguageSelected,
                     onContinueWatchingClick = onContinueWatchingClick,
                     onPosterCustomizationClick = { onPageChange(SettingsPage.PosterCustomization) },
-                    streamsAppearance=streamsAppearance,
+                    streamsAppearance = streamsAppearance,
                 )
                 SettingsPage.Notifications -> notificationsSettingsContent(
                     isTablet = false,
@@ -646,9 +647,9 @@ private fun MobileSettingsScreen(
                     commentsEnabled = traktCommentsEnabled,
                     onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
-            SettingsPage.Network -> networkSettingsContent(
-                isTablet = false,
-            )
+                SettingsPage.Network -> networkSettingsContent(
+                    isTablet = false,
+                )
             }
         }
     }
@@ -905,6 +906,7 @@ private fun TabletSettingsScreen(
                                 onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
                                 onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
                                 onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
+                                onNetworkClick = { openInlinePage(SettingsPage.Network) },
                                 onIntegrationsClick = { openInlinePage(SettingsPage.Integrations) },
                                 onTraktClick = { openInlinePage(SettingsPage.TraktAuthentication) },
                                 onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
@@ -944,6 +946,7 @@ private fun TabletSettingsScreen(
                         tunnelingEnabled = tunnelingEnabled,
                         useLibass = useLibass,
                         libassRenderType = libassRenderType,
+                        swipeGesturesEnabled = swipeGesturesEnabled,
                     )
                     SettingsPage.Appearance -> appearanceSettingsContent(
                         isTablet = true,
@@ -958,6 +961,7 @@ private fun TabletSettingsScreen(
                         onAppLanguageSelected = onAppLanguageSelected,
                         onContinueWatchingClick = { openInlinePage(SettingsPage.ContinueWatching) },
                         onPosterCustomizationClick = { openInlinePage(SettingsPage.PosterCustomization) },
+                        streamsAppearance = streamsAppearance,
                     )
                     SettingsPage.Notifications -> notificationsSettingsContent(
                         isTablet = true,
@@ -986,6 +990,7 @@ private fun TabletSettingsScreen(
                         onHomescreenClick = { openInlinePage(SettingsPage.Homescreen) },
                         onMetaScreenClick = { openInlinePage(SettingsPage.MetaScreen) },
                         onCollectionsClick = onCollectionsClick,
+                        onTop10CatalogClick = onTop10CatalogClick,
                     )
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
@@ -1002,9 +1007,10 @@ private fun TabletSettingsScreen(
                     )
                     SettingsPage.Integrations -> integrationsContent(
                         isTablet = true,
-                        onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
-                        onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
-                        onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                        onTmdbClick = { openInlinePage(SettingsPage.TmdbEnrichment) },
+                        onMdbListClick = { openInlinePage(SettingsPage.MdbListRatings) },
+                        onDebridClick = { openInlinePage(SettingsPage.Debrid) },
+                        onLiveTvClick = { openInlinePage(SettingsPage.LiveTv) },
                     )
                     SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                         isTablet = true,
@@ -1018,12 +1024,19 @@ private fun TabletSettingsScreen(
                         isTablet = true,
                         settings = debridSettings,
                     )
+                    SettingsPage.LiveTv -> liveTvSettingsContent(
+                        isTablet = true,
+                        uiState = liveTvUiState,
+                    )
                     SettingsPage.TraktAuthentication -> traktSettingsContent(
                         isTablet = true,
                         uiState = traktAuthUiState,
                         settingsUiState = traktSettingsUiState,
                         commentsEnabled = traktCommentsEnabled,
                         onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
+                    )
+                    SettingsPage.Network -> networkSettingsContent(
+                        isTablet = true,
                     )
                 }
             }
