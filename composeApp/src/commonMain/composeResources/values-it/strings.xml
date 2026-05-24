@@ -1533,4 +1533,5 @@
   <string name="parental_violence">Violenza</string>
   <string name="settings_playback_enable_swipe_gestures">Swipe Gesture</string>
   <string name="settings_playback_enable_swipe_gestures_description">Permetti lo swipe verticale sulla superficie del player per controllare volume e luminosità.</string>
+  <string name="compose_settings_page_network">Rete</string>
 </resources>

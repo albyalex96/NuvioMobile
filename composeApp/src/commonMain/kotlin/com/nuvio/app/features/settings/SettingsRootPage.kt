@@ -14,6 +14,7 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
@@ -58,6 +59,7 @@ internal fun LazyListScope.settingsRootContent(
     onAppearanceClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onContentDiscoveryClick: () -> Unit,
+    onNetworkClick: () -> Unit,
     onIntegrationsClick: () -> Unit,
     onTraktClick: () -> Unit,
     onSupportersContributorsClick: () -> Unit,
@@ -144,6 +146,16 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onPlaybackClick,
                     )
+                    if (com.nuvio.app.features.settings.globalNetworkSettingsRepository != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = "Network",
+                            description = "Configure DNS over HTTPS.",
+                            icon = Icons.Rounded.Settings,
+                            isTablet = isTablet,
+                            onClick = onNetworkClick,
+                        )
+                    }
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_integrations),

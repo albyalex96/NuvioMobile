@@ -520,6 +520,7 @@ private fun MobileSettingsScreen(
                             onAppearanceClick = { onPageChange(SettingsPage.Appearance) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
                             onContentDiscoveryClick = { onPageChange(SettingsPage.ContentDiscovery) },
+                onNetworkClick = { onPageChange(SettingsPage.Network) },
                             onIntegrationsClick = { onPageChange(SettingsPage.Integrations) },
                             onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                             onSupportersContributorsClick = onSupportersContributorsClick,
@@ -645,6 +646,9 @@ private fun MobileSettingsScreen(
                     commentsEnabled = traktCommentsEnabled,
                     onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
+            SettingsPage.Network -> networkSettingsContent(
+                isTablet = false,
+            )
             }
         }
     }
@@ -940,7 +944,6 @@ private fun TabletSettingsScreen(
                         tunnelingEnabled = tunnelingEnabled,
                         useLibass = useLibass,
                         libassRenderType = libassRenderType,
-                        swipeGesturesEnabled = swipeGesturesEnabled,
                     )
                     SettingsPage.Appearance -> appearanceSettingsContent(
                         isTablet = true,
@@ -955,7 +958,6 @@ private fun TabletSettingsScreen(
                         onAppLanguageSelected = onAppLanguageSelected,
                         onContinueWatchingClick = { openInlinePage(SettingsPage.ContinueWatching) },
                         onPosterCustomizationClick = { openInlinePage(SettingsPage.PosterCustomization) },
-                        streamsAppearance=streamsAppearance,
                     )
                     SettingsPage.Notifications -> notificationsSettingsContent(
                         isTablet = true,
@@ -984,7 +986,6 @@ private fun TabletSettingsScreen(
                         onHomescreenClick = { openInlinePage(SettingsPage.Homescreen) },
                         onMetaScreenClick = { openInlinePage(SettingsPage.MetaScreen) },
                         onCollectionsClick = onCollectionsClick,
-                        onTop10CatalogClick = onTop10CatalogClick,
                     )
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
@@ -1004,7 +1005,6 @@ private fun TabletSettingsScreen(
                         onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                         onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                         onDebridClick = { onPageChange(SettingsPage.Debrid) },
-                        onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                     )
                     SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                         isTablet = true,
@@ -1017,10 +1017,6 @@ private fun TabletSettingsScreen(
                     SettingsPage.Debrid -> debridSettingsContent(
                         isTablet = true,
                         settings = debridSettings,
-                    )
-                    SettingsPage.LiveTv -> liveTvSettingsContent(
-                        isTablet = true,
-                        uiState = liveTvUiState,
                     )
                     SettingsPage.TraktAuthentication -> traktSettingsContent(
                         isTablet = true,

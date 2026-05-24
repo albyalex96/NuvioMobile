@@ -30,7 +30,8 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 
 private val downloadHttpClient = OkHttpClient.Builder()
-    .connectTimeout(60, TimeUnit.SECONDS)
+    .dns(com.nuvio.app.core.network.AndroidDnsProvider)
+    .connectTimeout(30, TimeUnit.SECONDS)
     .readTimeout(60, TimeUnit.SECONDS)
     .writeTimeout(60, TimeUnit.SECONDS)
     .followRedirects(true)

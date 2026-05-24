@@ -1416,6 +1416,7 @@
     <string name="unit_bytes_kb">KB</string>
     <string name="unit_bytes_mb">MB</string>
     <string name="unit_bytes_gb">GB</string>
+    <string name="compose_settings_page_network">Network</string>
         <string name="settings_debrid_result_management_title">Result Management</string>
     <string name="settings_debrid_max_results_title">Max results</string>
     <string name="settings_debrid_max_results_description">Limit how many results appear.</string>
