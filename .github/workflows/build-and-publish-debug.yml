@@ -166,20 +166,3 @@ jobs:
           files: ${{ steps.find_apk.outputs.path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Estrai e Invia l'APK Full su ntfy
-        run: |
-          APK_PATH=$(find composeApp/build/outputs/apk/ -path "*/full/*.apk" | head -n 1)
-          if [ -f "$APK_PATH" ]; then
-            echo "APK trovato in: $APK_PATH"
-            echo "Invio in corso su ntfy..."
-            curl -H "Title: Nuova Build Nuvio Full 🚀" \
-                 -H "Priority: high" \
-                 -H "Tags: package,android" \
-                 -H "X-Filename: nuvio-full.apk" \
-                 --upload-file "$APK_PATH" \
-                 "${{ secrets.NTFY_SERVER }}"
-            echo "Inviato con successo!"
-          else
-            echo "APK nella cartella 'full' non trovato. Salto l'invio ntfy."
-          fi
