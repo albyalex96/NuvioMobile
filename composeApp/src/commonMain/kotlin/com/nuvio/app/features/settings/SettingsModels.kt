@@ -29,6 +29,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_supporters_con
 import nuvio.composeapp.generated.resources.compose_settings_page_tmdb_enrichment
 import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.settings_account
+import nuvio.composeapp.generated.resources.compose_settings_page_network
 import org.jetbrains.compose.resources.StringResource
 
 internal enum class SettingsCategory(
@@ -56,7 +57,7 @@ internal enum class SettingsPage(
         parentPage = Root,
     ),
     Network(
-        title = "Network",
+        titleRes = Res.string.compose_settings_page_network,
         category = SettingsCategory.General,
         parentPage = Root,
     ),

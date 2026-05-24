@@ -787,11 +787,11 @@ private fun TabletSettingsScreen(
             item {
                 val previousPage = page.previousPage()
                 TabletPageHeader(
-                    title = if (page == SettingsPage.Root) activeCategory.label else page.title,
+                    title = stringResource(if (page == SettingsPage.Root) activeCategory.labelRes else page.titleRes),
                     showBack = previousPage != null,
                     onBack = { previousPage?.let(onPageChange) },
                 )
-            }
+}
             when (page) {
                 SettingsPage.Root -> settingsRootContent(
                     isTablet = true,
@@ -810,6 +810,7 @@ private fun TabletSettingsScreen(
                     showAccountSection = activeCategory == SettingsCategory.Account,
                     showGeneralSection = activeCategory == SettingsCategory.General,
                     showAboutSection = activeCategory == SettingsCategory.About,
+                    onLicensesAttributionsClick = onLicensesAttributionsClick
                 )
                 SettingsPage.Account -> accountSettingsContent(
                     isTablet = true,
@@ -842,6 +843,11 @@ private fun TabletSettingsScreen(
                     onAmoledToggle = onAmoledToggle,
                     onContinueWatchingClick = { openInlinePage(SettingsPage.ContinueWatching) },
                     onPosterCustomizationClick = { openInlinePage(SettingsPage.PosterCustomization) },
+                    liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
+                    liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
+                    onLiquidGlassNativeTabBarToggle = onLiquidGlassNativeTabBarToggle,
+                    selectedAppLanguage = selectedAppLanguage,
+                    onAppLanguageSelected = onAppLanguageSelected,
                 )
                 SettingsPage.Notifications -> notificationsSettingsContent(
                     isTablet = true,
@@ -853,6 +859,10 @@ private fun TabletSettingsScreen(
                     style = continueWatchingPreferencesUiState.style,
                     upNextFromFurthestEpisode = continueWatchingPreferencesUiState.upNextFromFurthestEpisode,
                     showResumePromptOnLaunch = continueWatchingPreferencesUiState.showResumePromptOnLaunch,
+                    useEpisodeThumbnails = continueWatchingPreferencesUiState.useEpisodeThumbnails,
+                    showUnairedNextUp = continueWatchingPreferencesUiState.showUnairedNextUp,
+                    blurNextUp = continueWatchingPreferencesUiState.blurNextUp,
+                    sortMode = continueWatchingPreferencesUiState.sortMode,
                 )
                 SettingsPage.PosterCustomization -> posterCustomizationSettingsContent(
                     isTablet = true,
@@ -873,6 +883,8 @@ private fun TabletSettingsScreen(
                     isTablet = true,
                     heroEnabled = homescreenHeroEnabled,
                     items = homescreenItems,
+                    hideCatalogUnderline = homescreenHideCatalogUnderline,
+                    hideUnreleasedContent= homescreenHideUnreleasedContent,
                 )
                 SettingsPage.MetaScreen -> metaScreenSettingsContent(
                     isTablet = true,
@@ -882,6 +894,7 @@ private fun TabletSettingsScreen(
                     isTablet = true,
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
+                    onDebridClick = { openInlinePage(SettingsPage.Debrid) },
                 )
                 SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                     isTablet = true,
@@ -894,12 +907,15 @@ private fun TabletSettingsScreen(
                 SettingsPage.TraktAuthentication -> traktSettingsContent(
                     isTablet = true,
                     uiState = traktAuthUiState,
+                    settingsUiState = traktSettingsUiState,
                     commentsEnabled = traktCommentsEnabled,
                     onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
                 SettingsPage.Network -> networkSettingsContent(
                     isTablet = true,
                 )
+                SettingsPage.LicensesAttributions -> licensesAttributionsContent(isTablet = true)
+SettingsPage.Debrid -> debridSettingsContent(isTablet = true, settings = debridSettings)
             }
         }
     }
