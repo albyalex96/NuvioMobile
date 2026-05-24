@@ -75,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         SearchHistoryStorage.initialize(applicationContext)
         SeasonViewModeStorage.initialize(applicationContext)
         PosterCardStyleStorage.initialize(applicationContext)
+        com.nuvio.app.features.settings.globalNetworkSettingsRepository = com.nuvio.app.features.settings.NetworkSettingsRepository(com.nuvio.app.features.settings.AndroidNetworkSettingsStorage(applicationContext))
         DebridSettingsStorage.initialize(applicationContext)
         TmdbSettingsStorage.initialize(applicationContext)
         MdbListSettingsStorage.initialize(applicationContext)

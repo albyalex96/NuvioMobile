@@ -55,6 +55,11 @@ internal enum class SettingsPage(
         category = SettingsCategory.Account,
         parentPage = Root,
     ),
+    Network(
+        title = "Network",
+        category = SettingsCategory.General,
+        parentPage = Root,
+    ),
     SupportersContributors(
         titleRes = Res.string.compose_settings_page_supporters_contributors,
         category = SettingsCategory.About,
