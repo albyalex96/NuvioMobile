@@ -1398,4 +1398,10 @@
     <string name="unit_bytes_mb">MB</string>
     <string name="unit_bytes_gb">GB</string>
     <string name="compose_settings_page_network">Network</string>
+    <string name="dns_section_title">DNS OVER HTTPS (ANDROID ONLY)</string>
+    <string name="settings_network_title">Network</string>
+    <string name="settings_network_description">Configure DNS over HTTPS.</string>
+    <string name="settings_network_dns_default">Use the system's default DNS resolver.</string>
+    <string name="settings_network_dns_custom">Encrypt DNS queries via %1$s.</string>
+     
 </resources>

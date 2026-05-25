@@ -1171,4 +1171,10 @@
   <string name="collections_editor_tmdb_subtitle_director">Regista</string>
   <string name="collections_editor_tmdb_subtitle_discover">TMDB Discover</string>
   <string name="compose_settings_page_network">Rete</string>
+  <string name="dns_section_title">DNS OVER HTTPS (SOLO ANDROID)</string>
+  <string name="settings_network_title">Rete</string>
+  <string name="settings_network_description">Configura DNS over HTTPS.</string>
+  <string name="settings_network_dns_default">Usa il risolutore DNS di sistema.</string>
+  <string name="settings_network_dns_custom">Cifra le query DNS tramite %1$s.</string>
+   
 </resources>
