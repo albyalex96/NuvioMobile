@@ -51,6 +51,10 @@ import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.settings_playback_subtitle
 import nuvio.composeapp.generated.resources.about_supporters_contributors_subtitle
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
+import nuvio.composeapp.generated.resources.settings_network_title
+import nuvio.composeapp.generated.resources.settings_network_description
+import nuvio.composeapp.generated.resources.settings_network_dns_default
+import nuvio.composeapp.generated.resources.settings_network_dns_custom
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.settingsRootContent(
@@ -149,8 +153,8 @@ internal fun LazyListScope.settingsRootContent(
                     if (com.nuvio.app.features.settings.globalNetworkSettingsRepository != null) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(
-                            title = "Network",
-                            description = "Configure DNS over HTTPS.",
+                            title = stringResource(Res.string.settings_network_title),
+                            description = stringResource(Res.string.settings_network_description),
                             icon = Icons.Rounded.Settings,
                             isTablet = isTablet,
                             onClick = onNetworkClick,
