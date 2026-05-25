@@ -109,14 +109,14 @@ jobs:
             echo "## 📦 Nuvio Build ${{ env.BUILD_FLAVOR }} #${{ github.run_number }}"
             echo ""
             echo "**Flavor:** ${{ env.BUILD_FLAVOR }}"
-            echo "**Branch:** \`${{ github.ref_name }}\`"
+            echo "**Branch:** \`app-enhanced\`"
             if [ -n "$PREV_TAG" ]; then
-              echo "**Cambiamenti da:** \`$PREV_TAG\`"
+              echo "**Previous Version:** \`$PREV_TAG\`"
             fi
             echo ""
             echo "---"
             echo ""
-            echo "## 🔨 Patch applicate"
+            echo "## 🔨 Applied Patches"
             echo ""
             echo "$COMMITS"
           } > release_body.md
