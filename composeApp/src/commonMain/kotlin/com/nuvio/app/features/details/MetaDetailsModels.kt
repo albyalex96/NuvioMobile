@@ -36,6 +36,7 @@ data class MetaDetails(
     val trailers: List<MetaTrailer> = emptyList(),
     val links: List<MetaLink> = emptyList(),
     val videos: List<MetaVideo> = emptyList(),
+    val customSeasons: List<MetaSeason> = emptyList(),
 )
 
 data class MetaExternalRating(
@@ -73,6 +74,11 @@ data class MetaLink(
     val name: String,
     val category: String,
     val url: String,
+)
+
+data class MetaSeason(
+    val season: Int,
+    val poster: String? = null,
 )
 
 data class MetaVideo(

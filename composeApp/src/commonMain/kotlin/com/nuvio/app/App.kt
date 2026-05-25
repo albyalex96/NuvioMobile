@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -136,6 +137,8 @@ import com.nuvio.app.features.library.LibrarySourceMode
 import com.nuvio.app.features.library.LibraryScreen
 import com.nuvio.app.features.library.toLibraryItem
 import com.nuvio.app.features.library.toMetaPreview
+import com.nuvio.app.features.livetv.LiveTvChannel
+import com.nuvio.app.features.livetv.LiveTvScreen
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
@@ -164,6 +167,7 @@ import com.nuvio.app.features.settings.AccountSettingsScreen
 import com.nuvio.app.features.settings.SupportersContributorsSettingsScreen
 import com.nuvio.app.features.settings.LicensesAttributionsSettingsScreen
 import com.nuvio.app.features.settings.ThemeSettingsRepository
+import com.nuvio.app.features.settings.Top10CatalogSettingsScreen
 import com.nuvio.app.features.collection.CollectionManagementScreen
 import com.nuvio.app.features.collection.CollectionEditorScreen
 import com.nuvio.app.features.collection.CollectionEditorRepository
@@ -211,7 +215,8 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
+import com.nuvio.app.features.streams.StreamsAppearanceSettings
 @Serializable
 object TabsRoute
 
@@ -272,6 +277,8 @@ data class CollectionEditorRoute(val collectionId: String? = null)
 data class FolderDetailRoute(val collectionId: String, val folderId: String)
 
 @Serializable
+object Top10CatalogSettingsRoute
+@Serializable
 data class StreamRoute(
     val launchId: Long,
 )
@@ -297,6 +304,7 @@ enum class AppScreenTab {
     Home,
     Search,
     Library,
+    LiveTv,
     Settings,
 }
 
@@ -304,6 +312,7 @@ private fun AppScreenTab.toNativeNavigationTab(): NativeNavigationTab = when (th
     AppScreenTab.Home -> NativeNavigationTab.Home
     AppScreenTab.Search -> NativeNavigationTab.Search
     AppScreenTab.Library -> NativeNavigationTab.Library
+    AppScreenTab.LiveTv -> NativeNavigationTab.LiveTv
     AppScreenTab.Settings -> NativeNavigationTab.Settings
 }
 
@@ -311,6 +320,7 @@ private fun NativeNavigationTab.toAppScreenTab(): AppScreenTab = when (this) {
     NativeNavigationTab.Home -> AppScreenTab.Home
     NativeNavigationTab.Search -> AppScreenTab.Search
     NativeNavigationTab.Library -> AppScreenTab.Library
+    NativeNavigationTab.LiveTv -> AppScreenTab.LiveTv
     NativeNavigationTab.Settings -> AppScreenTab.Settings
 }
 
@@ -566,6 +576,7 @@ private fun MainAppContent(
         val homeScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val searchScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val libraryScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+        val liveTvScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val settingsRootActionRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val currentBackStackEntry by navController.currentBackStackEntryAsState()
         val liquidGlassNativeTabBarEnabled by remember {
@@ -642,6 +653,7 @@ private fun MainAppContent(
                 searchScrollToTopRequests.tryEmit(Unit)
             }
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
+            AppScreenTab.LiveTv -> liveTvScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
         }
     }
@@ -1147,6 +1159,24 @@ private fun MainAppContent(
             selectedContinueWatchingForActions = item
         }
 
+        val onLiveTvChannelClick: (LiveTvChannel) -> Unit = { channel ->
+            val launchId = PlayerLaunchStore.put(
+                PlayerLaunch(
+                    title = channel.name,
+                    sourceUrl = channel.streamUrl,
+                    logo = channel.logoUrl,
+                    streamTitle = channel.name,
+                    streamSubtitle = channel.group,
+                    providerName = "Live TV",
+                    contentType = "live",
+                    videoId = channel.id,
+                    parentMetaId = channel.id,
+                    parentMetaType = "live",
+                ),
+            )
+            navController.navigate(PlayerRoute(launchId = launchId))
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -1210,6 +1240,12 @@ private fun MainAppContent(
                                             contentDescription = stringResource(Res.string.compose_nav_library),
                                         )
                                         NavItem(
+                                            selected = selectedTab == AppScreenTab.LiveTv,
+                                            onClick = { handleRootTabClick(AppScreenTab.LiveTv) },
+                                            icon = Icons.Rounded.LiveTv,
+                                            contentDescription = stringResource(Res.string.compose_nav_live_tv),
+                                        )
+                                        NavItem(
                                             selected = selectedTab == AppScreenTab.Settings,
                                             onClick = { handleRootTabClick(AppScreenTab.Settings) },
                                         ) {
@@ -1238,6 +1274,7 @@ private fun MainAppContent(
                                         homeScrollToTopRequests = homeScrollToTopRequests,
                                         searchScrollToTopRequests = searchScrollToTopRequests,
                                         libraryScrollToTopRequests = libraryScrollToTopRequests,
+                                        liveTvScrollToTopRequests = liveTvScrollToTopRequests,
                                         settingsRootActionRequests = settingsRootActionRequests,
                                         animateHomeCollectionGifs = tabsRouteActive,
                                         onCatalogClick = onCatalogClick,
@@ -1282,6 +1319,7 @@ private fun MainAppContent(
                                             requestedSettingsPageName = "Debrid"
                                             selectedTab = AppScreenTab.Settings
                                         },
+                                        onLiveTvChannelClick = onLiveTvChannelClick,
                                         onContinueWatchingClick = onContinueWatchingClick,
                                         onContinueWatchingLongPress = onContinueWatchingLongPress,
                                         onSwitchProfile = onSwitchProfile,
@@ -1313,6 +1351,7 @@ private fun MainAppContent(
                                             null
                                         },
                                         onCollectionsSettingsClick = { navController.navigate(CollectionsRoute) },
+                                        onTop10CatalogSettingsClick = { navController.navigate(Top10CatalogSettingsRoute) },
                                         onFolderClick = { collectionId, folderId ->
                                             navController.navigate(FolderDetailRoute(collectionId = collectionId, folderId = folderId))
                                         },
@@ -1598,7 +1637,7 @@ private fun MainAppContent(
                                     bingeGroup = cached.bingeGroup,
                                     pauseDescription = pauseDescription,
                                     providerName = cached.addonName,
-                                    providerAddonId = cached.addonId,
+                                providerAddonId = cached.addonId,
                                     contentType = launch.type,
                                     videoId = effectiveVideoId,
                                     parentMetaId = launch.parentMetaId ?: effectiveVideoId,
@@ -1716,6 +1755,7 @@ private fun MainAppContent(
                                 pauseDescription = pauseDescription,
                                 providerName = stream.addonName,
                                 providerAddonId = stream.addonId,
+                                streamType = stream.streamType,
                                 contentType = launch.type,
                                 videoId = effectiveVideoId,
                                 parentMetaId = launch.parentMetaId ?: effectiveVideoId,
@@ -1827,6 +1867,7 @@ private fun MainAppContent(
                             pauseDescription = pauseDescription,
                             providerName = stream.addonName,
                             providerAddonId = stream.addonId,
+                                streamType = stream.streamType,
                             contentType = launch.type,
                             videoId = effectiveVideoId,
                             parentMetaId = launch.parentMetaId ?: effectiveVideoId,
@@ -1847,7 +1888,11 @@ private fun MainAppContent(
                             PlayerRoute(launchId = launchId)
                         )
                     }
-
+                    val streamsAppearance by remember {
+                        StreamsAppearanceRepository.ensureLoaded()
+                        StreamsAppearanceRepository.uiState
+                    }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
+                    
                     Box(modifier = Modifier.fillMaxSize()) {
                         StreamsScreen(
                             type = launch.type,
@@ -1942,6 +1987,7 @@ private fun MainAppContent(
                         title = launch.title,
                         sourceUrl = launch.sourceUrl,
                         sourceAudioUrl = launch.sourceAudioUrl,
+                        streamType = launch.streamType,
                         sourceHeaders = launch.sourceHeaders,
                         sourceResponseHeaders = launch.sourceResponseHeaders,
                         logo = launch.logo,
@@ -2059,7 +2105,7 @@ private fun MainAppContent(
                                     streamTitle = item.streamTitle,
                                     streamSubtitle = item.streamSubtitle,
                                     providerName = item.providerName,
-                                    providerAddonId = item.providerAddonId,
+                                providerAddonId = item.providerAddonId,
                                     contentType = item.contentType,
                                     videoId = item.videoId,
                                     parentMetaId = item.parentMetaId,
@@ -2133,6 +2179,15 @@ private fun MainAppContent(
                         onNavigateToEditor = { collectionId ->
                             navController.navigate(CollectionEditorRoute(collectionId = collectionId))
                         },
+                    )
+                }
+                composable<Top10CatalogSettingsRoute> { backStackEntry ->
+                    val onBack = rememberGuardedPopBackStack(
+                        navController = navController,
+                        backStackEntry = backStackEntry,
+                    )
+                    Top10CatalogSettingsScreen(
+                        onBack = onBack,
                     )
                 }
                 composable<CollectionEditorRoute> { backStackEntry ->
@@ -2412,6 +2467,7 @@ private fun AppTabHost(
     homeScrollToTopRequests: Flow<Unit>,
     searchScrollToTopRequests: Flow<Unit>,
     libraryScrollToTopRequests: Flow<Unit>,
+    liveTvScrollToTopRequests: Flow<Unit>,
     settingsRootActionRequests: Flow<Unit>,
     animateHomeCollectionGifs: Boolean = true,
     onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
@@ -2422,6 +2478,7 @@ private fun AppTabHost(
     onLibrarySectionViewAllClick: ((LibrarySection) -> Unit)? = null,
     onCloudFilePlay: ((CloudLibraryItem, CloudLibraryFile) -> Unit)? = null,
     onConnectCloudClick: (() -> Unit)? = null,
+    onLiveTvChannelClick: (LiveTvChannel) -> Unit = {},
     onContinueWatchingClick: ((ContinueWatchingItem) -> Unit)? = null,
     onContinueWatchingLongPress: ((ContinueWatchingItem) -> Unit)? = null,
     onSwitchProfile: (() -> Unit)? = null,
@@ -2436,6 +2493,7 @@ private fun AppTabHost(
     onLicensesAttributionsSettingsClick: () -> Unit = {},
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsSettingsClick: () -> Unit = {},
+    onTop10CatalogSettingsClick: () -> Unit = {},
     onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
     requestedSettingsPageName: String? = null,
     onRequestedSettingsPageConsumed: () -> Unit = {},
@@ -2483,6 +2541,14 @@ private fun AppTabHost(
                     )
                 }
 
+                AppScreenTab.LiveTv -> {
+                    LiveTvScreen(
+                        modifier = Modifier.fillMaxSize(),
+                        scrollToTopRequests = liveTvScrollToTopRequests,
+                        onChannelClick = onLiveTvChannelClick,
+                    )
+                }
+
                 AppScreenTab.Settings -> {
                     SettingsScreen(
                         modifier = Modifier.fillMaxSize(),
@@ -2502,6 +2568,7 @@ private fun AppTabHost(
                         onLicensesAttributionsClick = onLicensesAttributionsSettingsClick,
                         onCheckForUpdatesClick = onCheckForUpdatesClick,
                         onCollectionsClick = onCollectionsSettingsClick,
+                        onTop10CatalogClick = onTop10CatalogSettingsClick,
                     )
                 }
             }
@@ -2580,6 +2647,23 @@ private fun TabletFloatingTopBar(
                             contentDescription = stringResource(Res.string.compose_nav_library),
                             modifier = Modifier.size(18.dp),
                             tint = if (selectedTab == AppScreenTab.Library) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    },
+                )
+                TabletTopPillItem(
+                    label = stringResource(Res.string.compose_nav_live_tv),
+                    selected = selectedTab == AppScreenTab.LiveTv,
+                    onClick = { onTabSelected(AppScreenTab.LiveTv) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.LiveTv,
+                            contentDescription = stringResource(Res.string.compose_nav_live_tv),
+                            modifier = Modifier.size(18.dp),
+                            tint = if (selectedTab == AppScreenTab.LiveTv) {
                                 MaterialTheme.colorScheme.onPrimaryContainer
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant

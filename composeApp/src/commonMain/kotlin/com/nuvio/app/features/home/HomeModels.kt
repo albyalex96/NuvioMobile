@@ -48,6 +48,8 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val heroItems: List<MetaPreview> = emptyList(),
     val sections: List<HomeCatalogSection> = emptyList(),
+    val top10MovieItems: List<MetaPreview> = emptyList(),
+    val top10SeriesItems: List<MetaPreview> = emptyList(),
     val errorMessage: String? = null,
 )
 

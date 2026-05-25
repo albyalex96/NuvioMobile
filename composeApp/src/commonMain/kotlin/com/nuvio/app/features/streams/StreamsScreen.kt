@@ -97,6 +97,21 @@ import kotlin.math.round
 import kotlin.math.roundToInt
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
+import com.nuvio.app.features.streams.StreamsAppearanceSettings
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Storage
+import androidx.compose.material.icons.rounded.VolumeUp
+import androidx.compose.foundation.layout.width
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.animation.core.LinearEasing
+
 
 // ---------------------------------------------------------------------------
 // Streams Screen
@@ -147,6 +162,10 @@ fun StreamsScreen(
         DownloadsRepository.ensureLoaded()
     }
     val isEpisode = seasonNumber != null && episodeNumber != null
+    val streamsAppearance by remember {
+        StreamsAppearanceRepository.ensureLoaded()
+        StreamsAppearanceRepository.uiState
+    }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
     val clipboardManager = LocalClipboardManager.current
     val streamLinkCopiedText = stringResource(Res.string.streams_link_copied)
     val noDirectStreamLinkText = stringResource(Res.string.streams_no_direct_link)
@@ -233,6 +252,7 @@ fun StreamsScreen(
                     onStreamSelected(stream, positionMs, progressFraction)
                 },
                 onStreamLongPress = { stream -> streamActionsTarget = stream },
+                displayMode = streamsAppearance.displayMode,
             )
         } else {
             MobileStreamsLayout(
@@ -252,6 +272,7 @@ fun StreamsScreen(
                     onStreamSelected(stream, positionMs, progressFraction)
                 },
                 onStreamLongPress = { stream -> streamActionsTarget = stream },
+                displayMode = streamsAppearance.displayMode,
             )
         }
 
@@ -399,6 +420,7 @@ private fun MobileStreamsLayout(
     onStreamSelected: (stream: StreamItem, resumePositionMs: Long?, resumeProgressFraction: Float?) -> Unit,
     onStreamLongPress: (StreamItem) -> Unit,
     modifier: Modifier = Modifier,
+    displayMode: DisplayMode,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         if (heroArtwork != null) {
@@ -481,6 +503,7 @@ private fun MobileStreamsLayout(
                         resumePositionMs = resumePositionMs,
                         resumeProgressFraction = resumeProgressFraction,
                         modifier = Modifier.weight(1f),
+                        displayMode = displayMode,
                     )
                 }
             }
@@ -776,6 +799,7 @@ internal fun StreamList(
     resumePositionMs: Long?,
     resumeProgressFraction: Float?,
     modifier: Modifier = Modifier,
+    displayMode: DisplayMode,
 ) {
     val filteredGroups = uiState.filteredGroups
     val hasGroups = filteredGroups.isNotEmpty()
@@ -815,6 +839,7 @@ internal fun StreamList(
                         onStreamLongPress = onStreamLongPress,
                         resumePositionMs = resumePositionMs,
                         resumeProgressFraction = resumeProgressFraction,
+                        displayMode = displayMode,
                     )
                 }
                 if (anyLoading) {
@@ -840,6 +865,7 @@ private fun LazyListScope.streamSection(
     onStreamLongPress: (StreamItem) -> Unit,
     resumePositionMs: Long?,
     resumeProgressFraction: Float?,
+    displayMode: DisplayMode,
 ) {
     if (group.streams.isEmpty() && !group.isLoading) return
 
@@ -867,34 +893,36 @@ private fun LazyListScope.streamSection(
         }
 
         itemsIndexed(
-            items = sourceStreams,
-            key = { index, stream ->
-                streamCardRenderKey(
-                    sectionKey = sectionKey,
-                    sourceIndex = sourceIndex,
-                    itemIndex = index,
-                    stream = stream,
-                )
-            },
-        ) { _, stream ->
-            StreamCard(
+        items = sourceStreams,
+        key = { index, stream ->
+            streamCardRenderKey(
+                sectionKey = sectionKey,
+                sourceIndex = sourceIndex,
+                itemIndex = index,
                 stream = stream,
-                enabled = stream.isSelectableForPlayback(debridEnabled),
-                appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
-                onClick = {
-                    if (stream.isSelectableForPlayback(debridEnabled)) {
-                        onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
-                    }
-                },
-                onLongClick = {
-                    if (stream.playableDirectUrl != null) {
-                        onStreamLongPress(stream)
-                    }
-                },
+            )
+        },
+    ) { _, stream ->
+        val displayMode = remember {
+            StreamsAppearanceRepository.uiState.value.displayMode
+        }
+        StreamCard(
+            stream = stream,
+            displayMode = displayMode,
+            onClick = {
+                if (stream.directPlaybackUrl != null || stream.isTorrentStream || stream.isDirectDebridStream) {
+                    onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
+                }
+            },
+            onLongClick = {
+                if (stream.directPlaybackUrl != null) {
+                    onStreamLongPress(stream)
+                }
+            },
             )
             Spacer(modifier = Modifier.height(10.dp))
+            }
         }
-    }
 }
 
 internal fun streamSectionRenderKey(
@@ -984,12 +1012,12 @@ private fun StreamSourceHeader(
 @Composable
 private fun StreamCard(
     stream: StreamItem,
-    enabled: Boolean,
-    appendInstantServiceToDefaultName: Boolean,
+    displayMode: DisplayMode = DisplayMode.ORIGINAL,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val isEnabled = stream.directPlaybackUrl != null || stream.isTorrentStream || stream.isDirectDebridStream
     val cardShape = RoundedCornerShape(12.dp)
     Row(
         modifier = modifier
@@ -1004,38 +1032,402 @@ private fun StreamCard(
             .clip(cardShape)
             .background(Color.White.copy(alpha = 0.05f))
             .combinedClickable(
-                enabled = enabled,
+                enabled = isEnabled,
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
             .padding(14.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            StreamNameWithInstantService(
-                stream = stream,
-                appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
-            )
-
-            val subtitle = stream.streamSubtitle
-            if (!subtitle.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
+        if (displayMode == DisplayMode.POLISHED) {
+            PolishedStreamCardContent(stream = stream, modifier = Modifier.weight(1f))
+        } else {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp,
+                    text = stream.streamLabel,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.1.sp,
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                StreamFileSizeBadge(stream = stream)
+                val subtitle = stream.streamSubtitle
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    StreamFileSizeBadge(stream = stream)
+                }
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Polished Stream Card
+// ---------------------------------------------------------------------------
+
+private data class StreamBadgeData(
+    val label: String,
+    val color: Color,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+)
+
+private data class ParsedStreamBadges(
+    val quality: StreamBadgeData,
+    val hdr: StreamBadgeData?,
+    val audio: StreamBadgeData,
+    val codec: StreamBadgeData?,
+    val size: StreamBadgeData?,
+    val isCached: Boolean,
+)
+
+@Composable
+private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = Modifier) {
+    val badges = rememberStreamBadges(stream)
+    val sourceName = stream.sourceName?.takeIf { it.isNotBlank() }
+
+    Column(modifier = modifier) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            QualityBadge(badge = badges.quality)
+            Text(
+                text = sourceName ?: stream.streamLabel,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 20.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (badges.isCached) {
+                CachedBadge()
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            badges.hdr?.let { SmallBadgeChip(badge = it) }
+            SmallBadgeChip(badge = badges.audio)
+            badges.codec?.let { SmallBadgeChip(badge = it) }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            badges.size?.let { badge ->
+                Icon(
+                    imageVector = Icons.Rounded.Storage,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = badge.label,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            val lang = rememberParsedLanguage(stream)
+            if (lang != null) {
+                Text(
+                    text = lang,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            val provider = stream.addonName.takeIf { it.isNotBlank() }
+            if (provider != null) {
+                Text(
+                    text = provider,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 11.sp,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QualityBadge(badge: StreamBadgeData) {
+    val gradientColors = when (badge.label) {
+        "4K"    -> listOf(Color(0xFFB8860B), Color(0xFFFFD700))  // oro scuro → oro brillante
+        "1080p" -> listOf(Color(0xFF1565C0), Color(0xFF0288D1))  // blu → azzurro
+        "720p"  -> listOf(Color(0xFF2E7D32), Color(0xFF00897B))  // verde → teal
+        else -> listOf(Color(0xFFB71C1C), Color(0xFFC62828))
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "quality_sweep")
+    val sweepOffset by infiniteTransition.animateFloat(
+        initialValue = -0.4f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "sweep_offset",
+    )
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(brush = Brush.horizontalGradient(colors = gradientColors))
+            .drawWithContent {
+                drawContent()
+                val w = size.width
+                val h = size.height
+                val sweepX = sweepOffset * (w * 1.8f) - w * 0.4f
+                val halfWidth = w * 0.45f  // nastro largo
+                val skew = h * 0.58f       // tan(30°) ≈ 0.577
+
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(sweepX - halfWidth + skew, 0f)
+                    lineTo(sweepX + halfWidth + skew, 0f)
+                    lineTo(sweepX + halfWidth - skew, h)
+                    lineTo(sweepX - halfWidth - skew, h)
+                    close()
+                }
+                drawPath(
+                    path = path,
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.White.copy(alpha = 0.18f),
+                            Color.White.copy(alpha = 0.32f),
+                            Color.White.copy(alpha = 0.32f),
+                            Color.White.copy(alpha = 0.18f),
+                            Color.Transparent,
+                        ),
+                        startX = sweepX - halfWidth,
+                        endX = sweepX + halfWidth,
+                    ),
+                )
+            }
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = badge.label,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.sp,
+            ),
+            color = Color.White,
+        )
+    }
+}
+
+@Composable
+private fun CachedBadge() {
+    val infiniteTransition = rememberInfiniteTransition(label = "cached_pulse")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 750, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
+        ),
+        label = "cached_alpha",
+    )
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF1A6B2F).copy(alpha = alpha))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Bolt,
+                contentDescription = null,
+                tint = Color(0xFF4ADE80),
+                modifier = Modifier.size(13.dp),
+            )
+            Text(
+                text = stringResource(Res.string.stream_parser_cached),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = Color(0xFF4ADE80),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SmallBadgeChip(badge: StreamBadgeData) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(badge.color)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            badge.icon?.let { icon ->
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp),
+                )
+            }
+            Text(
+                text = badge.label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.1.sp,
+                ),
+                color = Color.White,
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberStreamBadges(stream: StreamItem): ParsedStreamBadges =
+    remember(stream.streamLabel, stream.streamSubtitle, stream.behaviorHints.videoSize) {
+        buildParsedBadges(stream)
+    }
+
+@Composable
+private fun rememberParsedLanguage(stream: StreamItem): String? =
+    remember(stream.streamLabel, stream.streamSubtitle) {
+        val combined = "${stream.streamLabel} ${stream.streamSubtitle.orEmpty()}"
+        Regex(
+            "\\b(English|Italian|French|Spanish|German|Japanese|Korean|Portuguese|Chinese|Arabic|Hindi|Russian)\\b",
+            RegexOption.IGNORE_CASE,
+        ).find(combined)?.value
+    }
+
+private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
+    // Usa tutti i campi disponibili per massimizzare le chance di match
+    val combined = listOfNotNull(
+        stream.name,
+        stream.title,
+        stream.description,
+        stream.behaviorHints.filename,
+        stream.clientResolve?.torrentName,
+        stream.clientResolve?.filename,
+        stream.clientResolve?.stream?.raw?.torrentName,
+        stream.clientResolve?.stream?.raw?.filename,
+    ).joinToString(" ")
+
+    val quality = when {
+    Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("4K", Color(0xFFB8860B))     // oro
+    Regex("\\b(1080p|FHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("1080p", Color(0xFF1565C0))  // blu
+    Regex("\\b720p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("720p", Color(0xFF2E7D32))   // verde
+    Regex("\\b480p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+        StreamBadgeData("SD", Color(0xFFB71C1C))
+    else ->
+        StreamBadgeData("SD", Color(0xFFB71C1C))     // giallo
+    }
+
+    val hdr = when {
+        Regex("\\bDolby[ .]Vision\\b|\\bDV\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("DV", Color(0xFF1565C0), Icons.Rounded.AutoAwesome)
+        Regex("\\bHDR10\\+", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("HDR10+", Color(0xFFB7950B))
+        Regex("\\bHDR\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("HDR", Color(0xFF9C6A00))
+        else -> null
+    }
+
+    val audio = when {
+        Regex("\\bAtmos\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("Atmos", Color(0xFF0277BD), Icons.Rounded.VolumeUp)
+        Regex("\\bDTS[-: ]?X\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("DTS:X", Color(0xFF6A1B9A), Icons.Rounded.VolumeUp)
+        Regex("\\bDTS\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("DTS", Color(0xFF4A148C), Icons.Rounded.VolumeUp)
+        Regex("\\bEAC3\\b|\\bDD\\+|\\bDolby Digital\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("DD+", Color(0xFF1565C0), Icons.Rounded.VolumeUp)
+        Regex("\\bAC3\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("AC3", Color(0xFF0D47A1), Icons.Rounded.VolumeUp)
+        Regex("\\bAAC\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("AAC", Color(0xFF37474F), Icons.Rounded.VolumeUp)
+        else ->
+            StreamBadgeData("Stereo", Color(0xFF424242), Icons.Rounded.VolumeUp)
+    }
+
+    val codec = when {
+        Regex("\\bHEVC\\b|\\bx265\\b|\\bH\\.265\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("HEVC", Color(0xFF546E7A))
+        Regex("\\bAVC\\b|\\bx264\\b|\\bH\\.264\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("AVC", Color(0xFF455A64))
+        Regex("\\bAV1\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) ->
+            StreamBadgeData("AV1", Color(0xFF004D40))
+        else -> null
+    }
+
+    val sizeBytes = stream.behaviorHints.videoSize
+        ?: stream.clientResolve?.stream?.raw?.size
+    val size = if (sizeBytes != null) {
+        val gib = sizeBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+        val label = if (gib >= 1.0) "${round(gib * 10.0) / 10.0} GB"
+                    else "${round(sizeBytes / (1024.0 * 1024.0)).toInt()} MB"
+        StreamBadgeData(label, Color(0xFF424242))
+    } else null
+
+    val isCached = stream.isCachedDebridTorrentStream ||
+        stream.clientResolve?.isCached == true ||
+        Regex("\\b(cached|instant|RD\\+|AD\\+|debrid)\\b|⚡", RegexOption.IGNORE_CASE)
+            .containsMatchIn(combined)
+
+    return ParsedStreamBadges(
+        quality = quality,
+        hdr = hdr,
+        audio = audio,
+        codec = codec,
+        size = size,
+        isCached = isCached,
+    )
 }
 
 @Composable
