@@ -1432,6 +1432,15 @@
     </plurals>
     <string name="cw_new_episode">New Episode</string>
     <string name="cw_new_season">New Season</string>
+    <string name="submit_timestamps_title">Submit Timestamps</string>
+    <string name="segment_type_label">SEGMENT TYPE</string>
+    <string name="segment_intro">Intro</string>
+    <string name="segment_recap">Recap</string>
+    <string name="segment_outro">Outro</string>
+    <string name="start_time_label">START TIME (MM:SS)</string>
+    <string name="end_time_label">END TIME (MM:SS)</string>
+    <string name="submit">Submit</string>
+    <string name="capture">Capture</string>
     <string name="compose_settings_page_network">Network</string>
     <string name="dns_section_title">DNS OVER HTTPS (ANDROID ONLY)</string>
     <string name="settings_network_title">Network</string>

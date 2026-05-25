@@ -1188,6 +1188,15 @@
   </plurals>
   <string name="cw_new_episode">Nuovo episodio</string>
   <string name="cw_new_season">Nuova stagione</string>
+  <string name="submit_timestamps_title">Invia Timestamp</string>
+    <string name="segment_type_label">TIPO SEGMENTO</string>
+    <string name="segment_intro">Intro</string>
+    <string name="segment_recap">Recap</string>
+    <string name="segment_outro">Outro</string>
+    <string name="start_time_label">ORA INIZIO (MM:SS)</string>
+    <string name="end_time_label">ORA FINE (MM:SS)</string>
+    <string name="submit">Invia</string>
+    <string name="capture">Cattura</string>
   <string name="settings_debrid_result_management_title">Gestione risultati</string>
   <string name="settings_debrid_max_results_title">Numero massimo di risultati</string>
   <string name="settings_debrid_max_results_description">Limita il numero di risultati visualizzati.</string>

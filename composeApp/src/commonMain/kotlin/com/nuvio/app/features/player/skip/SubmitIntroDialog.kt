@@ -33,7 +33,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,13 +42,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.floor
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.submit_timestamps_title
+import nuvio.composeapp.generated.resources.action_close
+import nuvio.composeapp.generated.resources.segment_type_label
+import nuvio.composeapp.generated.resources.segment_intro
+import nuvio.composeapp.generated.resources.segment_recap
+import nuvio.composeapp.generated.resources.segment_outro
+import nuvio.composeapp.generated.resources.start_time_label
+import nuvio.composeapp.generated.resources.end_time_label
+import nuvio.composeapp.generated.resources.action_cancel
+import nuvio.composeapp.generated.resources.submit
+import nuvio.composeapp.generated.resources.capture
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,20 +102,24 @@ fun SubmitIntroDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Submit Timestamps",
+                        text = stringResource(Res.string.submit_timestamps_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Rounded.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Rounded.Close,
+                            contentDescription = stringResource(Res.string.action_close),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
                 // Segment Type
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "SEGMENT TYPE",
+                        text = stringResource(Res.string.segment_type_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold,
@@ -114,43 +129,45 @@ fun SubmitIntroDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         SegmentTypeButton(
-                            label = "Intro",
+                            label = stringResource(Res.string.segment_intro),
                             icon = Icons.Rounded.PlayCircleOutline,
                             selected = segmentType == "intro",
                             onClick = { onSegmentTypeChange("intro") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                         SegmentTypeButton(
-                            label = "Recap",
+                            label = stringResource(Res.string.segment_recap),
                             icon = Icons.Rounded.Replay,
                             selected = segmentType == "recap",
                             onClick = { onSegmentTypeChange("recap") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                         SegmentTypeButton(
-                            label = "Outro",
+                            label = stringResource(Res.string.segment_outro),
                             icon = Icons.Rounded.StopCircle,
                             selected = segmentType == "outro",
                             onClick = { onSegmentTypeChange("outro") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
 
                 // Start Time
                 TimeInputRow(
-                    label = "START TIME (MM:SS)",
+                    label = stringResource(Res.string.start_time_label),
                     value = startTimeStr,
                     onValueChange = onStartTimeChange,
-                    onCapture = { onStartTimeChange(formatSecondsToMMSS(currentTimeSec)) }
+                    onCapture = { onStartTimeChange(formatSecondsToMMSS(currentTimeSec)) },
+                    captureLabel = stringResource(Res.string.capture),
                 )
 
                 // End Time
                 TimeInputRow(
-                    label = "END TIME (MM:SS)",
+                    label = stringResource(Res.string.end_time_label),
                     value = endTimeStr,
                     onValueChange = onEndTimeChange,
-                    onCapture = { onEndTimeChange(formatSecondsToMMSS(currentTimeSec)) }
+                    onCapture = { onEndTimeChange(formatSecondsToMMSS(currentTimeSec)) },
+                    captureLabel = stringResource(Res.string.capture),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -158,7 +175,7 @@ fun SubmitIntroDialog(
                 // Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Box(
                         modifier = Modifier
@@ -167,12 +184,12 @@ fun SubmitIntroDialog(
                             .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .clickable(enabled = !isSubmitting, onClick = onDismiss),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "Cancel",
+                            text = stringResource(Res.string.action_cancel),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                     Box(
@@ -202,24 +219,29 @@ fun SubmitIntroDialog(
                                     }
                                 }
                             },
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         if (isSubmitting) {
                             CircularProgressIndicator(
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
+                                strokeWidth = 2.dp,
                             )
                         } else {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                Icon(Icons.Rounded.Send, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Rounded.Send,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(18.dp),
+                                )
                                 Text(
-                                    text = "Submit",
+                                    text = stringResource(Res.string.submit),
                                     color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 )
                             }
                         }
@@ -236,7 +258,7 @@ private fun SegmentTypeButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
@@ -244,23 +266,23 @@ private fun SegmentTypeButton(
             .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Text(
                 text = label,
                 color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
@@ -271,16 +293,17 @@ private fun TimeInputRow(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    onCapture: () -> Unit
+    onCapture: () -> Unit,
+    captureLabel: String,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = label,
@@ -315,23 +338,23 @@ private fun TimeInputRow(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable(onClick = onCapture)
                 .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(
                     Icons.Rounded.GpsFixed,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = "Capture",
+                    text = captureLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }
@@ -347,7 +370,6 @@ private fun formatSecondsToMMSS(seconds: Double): String {
 private fun parseTimeToSeconds(input: String): Double? {
     if (input.isBlank()) return null
 
-    // Check for separator (colon or dot)
     val separator = when {
         input.contains(':') -> ":"
         input.contains('.') -> "."
@@ -359,8 +381,6 @@ private fun parseTimeToSeconds(input: String): Double? {
         if (parts.size == 2) {
             val mins = parts[0].toIntOrNull() ?: return null
             val secs = parts[1].toIntOrNull() ?: return null
-            // If the user uses a dot, we assume they mean MM.SS (e.g. 1.24 = 1m 24s)
-            // But we only treat it as minutes if seconds are 0-59.
             if (secs in 0..59) {
                 return (mins * 60 + secs).toDouble()
             }
