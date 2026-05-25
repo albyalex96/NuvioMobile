@@ -17,6 +17,7 @@
   <string name="action_resume">Riprendi</string>
   <string name="action_retry">Riprova</string>
   <string name="action_save">Salva</string>
+  <string name="action_watch_again">Guarda di nuovo</string>
   <string name="addon_installing">Installando</string>
   <string name="addon_title">Addons</string>
   <string name="addons_badge_active">Attivo</string>
@@ -278,7 +279,7 @@
   <string name="hero_mark_watched">Segna come visto</string>
   <string name="hero_remove_from_library">Rimuovi dalla libreria</string>
   <string name="home_view_all">Vedi tutti</string>
-  <string name="play_manually">Riproduci manualmente</string>
+  <string name="play_manually">Scegli stream e riproduci</string>
   <string name="poster_logo_content_description">Logo %1$s</string>
   <string name="settings_account">Account</string>
   <string name="settings_account_delete_account">Elimina account</string>
