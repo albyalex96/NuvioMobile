@@ -3,20 +3,14 @@ name: Build Debug version
 on:
   workflow_dispatch:
     inputs:
-      flavor:
-        description: 'Choose the build flavor'
-        required: true
-        default: 'Debug'
-        type: choice
-        options:
-          - Full
-          - Debug
+      target_branch:
+        description: 'Branch da compilare (es. app-enhanced, main, ecc.)'
+        required: false
+        default: ''
+        type: string
   push:
     branches:
       - app-enhanced
-
-env:
-  BUILD_FLAVOR: ${{ github.event.inputs.flavor || 'Debug' }}
 
 permissions:
   contents: write
@@ -26,10 +20,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout app-enhanced code
+      # 1. Determiniamo dinamicamente il branch da usare
+      - name: Resolve target branch
+        id: resolve_branch
+        run: |
+          # Se l'input è vuoto, usa il branch corrente del workflow_dispatch o del push
+          INPUT_BRANCH="${{ github.event.inputs.target_branch }}"
+          if [ -z "$INPUT_BRANCH" ]; then
+            CHOSEN_BRANCH="${{ github.ref_name }}"
+          else
+            CHOSEN_BRANCH="$INPUT_BRANCH"
+          fi
+          echo "branch=$CHOSEN_BRANCH" >> $GITHUB_OUTPUT
+          echo "Selected branch: $CHOSEN_BRANCH"
+
+      # 2. Checkout usando il branch dinamico
+      - name: Checkout target branch code
         uses: actions/checkout@v4
         with:
-          ref: app-enhanced
+          ref: ${{ steps.resolve_branch.outputs.branch }}
           fetch-depth: 0        # ← IMPORTANTE: serve per avere tutta la history
 
       - name: Set up JDK 17
@@ -69,18 +78,24 @@ jobs:
           printf 'DONATIONS_BASE_URL=%s\n' "https://donate.nuvioapp.space/" >> local.properties
           printf 'DIRECT_DEBRID_API_BASE_URL=%s\n' "https://api.torbox.app/v1/api" >> local.properties
 
+      # 3. Adattato la logica del flavor basandoci sul nome del branch
       - name: Set flavor variables
         id: flavor
         run: |
-          FLAVOR="${{ env.BUILD_FLAVOR }}"
-          FLAVOR_LOWER=$(echo "$FLAVOR" | tr '[:upper:]' '[:lower:]')
-          echo "name=${FLAVOR_LOWER}" >> $GITHUB_OUTPUT
-          if [ "$FLAVOR_LOWER" = "full" ]; then
+          # Trasformiamo il nome del branch in minuscolo per usarlo nei file/tag
+          BRANCH_NAME="${{ steps.resolve_branch.outputs.branch }}"
+          BRANCH_LOWER=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9]/-/g')
+          echo "name=${BRANCH_LOWER}" >> $GITHUB_OUTPUT
+          
+          # Manteniamo una logica di fallback per Gradle se il branch non è 'full'
+          if [ "$BRANCH_LOWER" = "full" ]; then
             echo "plugins_enabled=true" >> $GITHUB_OUTPUT
             echo "trailer_mode=IN_APP" >> $GITHUB_OUTPUT
+            echo "task=assembleFullRelease" >> $GITHUB_OUTPUT
           else
             echo "plugins_enabled=false" >> $GITHUB_OUTPUT
             echo "trailer_mode=EXTERNAL" >> $GITHUB_OUTPUT
+            echo "task=assembleDebug" >> $GITHUB_OUTPUT
           fi
 
       - name: Generate Changelog
@@ -88,12 +103,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Recupera il tag dell'ultima release (escludendo quella corrente)
           PREV_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
 
           if [ -n "$PREV_TAG" ]; then
             echo "Release precedente trovata: $PREV_TAG"
-            # Recupera i commit da quel tag fino ad HEAD
             COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
           else
             echo "Nessuna release precedente, prendo gli ultimi 20 commit"
@@ -104,12 +117,10 @@ jobs:
             COMMITS="- Nessuna modifica rilevata rispetto alla release precedente"
           fi
 
-          # Salva il changelog in un file per evitare problemi con caratteri speciali
           {
-            echo "## 📦 Nuvio Build ${{ env.BUILD_FLAVOR }} #${{ github.run_number }}"
+            echo "## 📦 Nuvio Build #${{ github.run_number }}"
             echo ""
-            echo "**Flavor:** ${{ env.BUILD_FLAVOR }}"
-            echo "**Branch:** \`app-enhanced\`"
+            echo "**Branch target:** \`${{ steps.resolve_branch.outputs.branch }}\`"
             if [ -n "$PREV_TAG" ]; then
               echo "**Previous Version:** \`$PREV_TAG\`"
             fi
@@ -121,18 +132,10 @@ jobs:
             echo "$COMMITS"
           } > release_body.md
 
-          echo "Changelog generato:"
-          cat release_body.md
-
+      # 4. Compilazione dinamica basata sul task deciso nello step 'flavor'
       - name: Build release APK
         run: |
-          FLAVOR="${{ steps.flavor.outputs.name }}"
-          if [ "$FLAVOR" = "full" ]; then
-            TASK="assembleFullRelease"
-          else
-            TASK="assembleDebug"
-          fi
-          ./gradlew :composeApp:$TASK
+          ./gradlew :composeApp:${{ steps.flavor.outputs.task }}
 
       - name: Find Target APK
         id: find_apk
@@ -154,15 +157,16 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      # 5. Creazione Release agganciata al branch dinamico
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}"
-          name: "Nuvio Build ${{ env.BUILD_FLAVOR }} #${{ github.run_number }}"
-          body_path: release_body.md      # ← usa il file generato prima
+          name: "Nuvio Build - ${{ steps.resolve_branch.outputs.branch }} #${{ github.run_number }}"
+          body_path: release_body.md
           draft: false
           prerelease: false
-          target_commitish: app-enhanced
+          target_commitish: ${{ steps.resolve_branch.outputs.branch }}
           files: ${{ steps.find_apk.outputs.path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
