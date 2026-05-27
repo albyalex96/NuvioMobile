@@ -105,8 +105,7 @@ fun AuthScreen(
     var passwordFieldBounds by remember { mutableStateOf<Rect?>(null) }
 
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val focusManager = LocalFocusManager.current
-
+    
     Box(
         modifier = modifier
             .fillMaxSize()
