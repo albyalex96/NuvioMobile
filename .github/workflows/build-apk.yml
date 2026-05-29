@@ -1,0 +1,166 @@
+name: Build Debug version
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Branch da compilare (es. app-enhanced, main, ecc.)'
+        required: false
+        default: ''
+        type: string
+  push:
+    branches:
+      - "app-enhanced"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Determiniamo dinamicamente il branch da usare
+      - name: Resolve target branch
+        id: resolve_branch
+        run: |
+          INPUT_BRANCH="${{ github.event.inputs.target_branch }}"
+          if [ -z "$INPUT_BRANCH" ]; then
+            CHOSEN_BRANCH="${{ github.ref_name }}"
+          else
+            CHOSEN_BRANCH="$INPUT_BRANCH"
+          fi
+          echo "branch=$CHOSEN_BRANCH" >> $GITHUB_OUTPUT
+          echo "Selected branch: $CHOSEN_BRANCH"
+
+      # 2. Checkout usando il branch dinamico
+      - name: Checkout target branch code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve_branch.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Generate self-signed keystore
+        run: |
+          keytool -genkeypair \
+            -alias nuvio-release \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 365 \
+            -keystore ${{ github.workspace }}/nuvio-release.keystore \
+            -storepass nuvio1234 \
+            -keypass nuvio1234 \
+            -dname "CN=Nuvio CI, OU=CI, O=Nuvio, L=Unknown, ST=Unknown, C=US"
+
+      - name: Write local.properties
+        run: |
+          printf 'SUPABASE_URL=%s\n' "${{ secrets.SUPABASE_URL }}" > local.properties
+          printf 'SUPABASE_ANON_KEY=%s\n' "${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+          printf 'TRAKT_CLIENT_ID=%s\n' "${{ secrets.TRAKT_CLIENT_ID }}" >> local.properties
+          printf 'TRAKT_CLIENT_SECRET=%s\n' "${{ secrets.TRAKT_CLIENT_SECRET }}" >> local.properties
+          printf 'TRAKT_REDIRECT_URI=%s\n' "${{ secrets.TRAKT_REDIRECT_URI }}" >> local.properties
+          printf 'INTRODB_API_URL=%s/\n' "${{ secrets.INTRODB_API_URL }}" >> local.properties
+          printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" >> local.properties
+          printf 'NUVIO_RELEASE_STORE_FILE=%s/nuvio-release.keystore\n' "${{ github.workspace }}" >> local.properties
+          printf 'NUVIO_RELEASE_STORE_PASSWORD=%s\n' "nuvio1234" >> local.properties
+          printf 'NUVIO_RELEASE_KEY_ALIAS=%s\n' "nuvio-release" >> local.properties
+          printf 'NUVIO_RELEASE_KEY_PASSWORD=%s\n' "nuvio1234" >> local.properties
+          printf 'DONATIONS_BASE_URL=%s\n' "https://donate.nuvioapp.space/" >> local.properties
+          printf 'DIRECT_DEBRID_API_BASE_URL=%s\n' "https://api.torbox.app/v1/api" >> local.properties
+
+      # 3. Configurazione FORZATA sulla versione FULL
+      - name: Set flavor variables
+        id: flavor
+        run: |
+          BRANCH_NAME="${{ steps.resolve_branch.outputs.branch }}"
+          BRANCH_LOWER=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9]/-/g')
+          
+          # Forziamo il nome a contenere sempre "-full" per i tag/artefatti
+          echo "name=${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
+          
+          # Configurazione fissa per build di tipo FULL (Mai Play Store)
+          echo "plugins_enabled=true" >> $GITHUB_OUTPUT
+          echo "trailer_mode=IN_APP" >> $GITHUB_OUTPUT
+          echo "task=assembleFullRelease" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        id: changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PREV_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Release precedente trovata: $PREV_TAG"
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "Nessuna release precedente, prendo gli ultimi 20 commit"
+            COMMITS=$(git log HEAD --pretty=format:"- %s (%h)" --no-merges -n 20)
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Nessuna modifica rilevata rispetto alla release precedente"
+          fi
+
+          {
+            echo "## 📦 Nuvio Build #${{ github.run_number }}"
+            echo ""
+            echo "**Branch target:** \`${{ steps.resolve_branch.outputs.branch }}\`"
+            if [ -n "$PREV_TAG" ]; then
+              echo "**Previous Version:** \`$PREV_TAG\`"
+            fi
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 🔨 Applied Patches"
+            echo ""
+            echo "$COMMITS"
+          } > release_body.md
+
+      # 4. Compilazione dinamica basata sul task deciso nello step 'flavor' (ora sempre Full)
+      - name: Build release APK
+        run: |
+          ./gradlew :composeApp:${{ steps.flavor.outputs.task }}
+
+      - name: Find Target APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find composeApp/build/outputs/apk/ -name "*.apk" | head -n 1)
+          if [ -f "$APK_PATH" ]; then
+            echo "path=$APK_PATH" >> $GITHUB_OUTPUT
+            echo "Found APK at: $APK_PATH"
+          else
+            echo "Errore: Nessun APK trovato!"
+            exit 1
+          fi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuvio-${{ steps.flavor.outputs.name }}-apk
+          path: ${{ steps.find_apk.outputs.path }}
+          retention-days: 7
+          if-no-files-found: error
+
+      # 5. Creazione Release agganciata al branch dinamico
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}"
+          name: "Nuvio Build - ${{ steps.resolve_branch.outputs.branch }} #${{ github.run_number }}"
+          body_path: release_body.md
+          draft: false
+          prerelease: false
+          target_commitish: ${{ steps.resolve_branch.outputs.branch }}
+          files: ${{ steps.find_apk.outputs.path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
