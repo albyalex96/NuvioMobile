@@ -1076,7 +1076,6 @@ private fun StreamCard(
                     Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     badgeImages.forEach { badge ->
                         StreamImportedBadge(badge = badge)
