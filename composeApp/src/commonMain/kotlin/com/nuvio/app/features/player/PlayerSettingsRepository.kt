@@ -84,6 +84,8 @@ data class PlayerSettingsUiState(
     val iosContrast: Int = 0,
     val iosSaturation: Int = 0,
     val iosGamma: Int = 0,
+    val stillWatchingEnabled: Boolean = false,
+    val stillWatchingEpisodeThreshold: Int = 3,
 )
 
 object PlayerSettingsRepository {
@@ -143,6 +145,8 @@ object PlayerSettingsRepository {
     private var iosContrast = 0
     private var iosSaturation = 0
     private var iosGamma = 0
+    private var stillWatchingEnabled = false
+    private var stillWatchingEpisodeThreshold = 3
 
     fun ensureLoaded() {
         if (hasLoaded) return
@@ -207,6 +211,8 @@ object PlayerSettingsRepository {
         iosContrast = 0
         iosSaturation = 0
         iosGamma = 0
+        stillWatchingEnabled = false
+        stillWatchingEpisodeThreshold = 3
         publish()
     }
 
@@ -217,6 +223,8 @@ object PlayerSettingsRepository {
             ?.let { runCatching { PlayerResizeMode.valueOf(it) }.getOrNull() }
             ?: PlayerResizeMode.Fit
         holdToSpeedEnabled = PlayerSettingsStorage.loadHoldToSpeedEnabled() ?: true
+        stillWatchingEnabled = PlayerSettingsStorage.loadStillWatchingEnabled() ?: false
+        stillWatchingEpisodeThreshold = (PlayerSettingsStorage.loadStillWatchingEpisodeThreshold() ?: 3).coerceIn(2, 5)
         holdToSpeedValue = PlayerSettingsStorage.loadHoldToSpeedValue() ?: 2f
         externalPlayerEnabled = PlayerSettingsStorage.loadExternalPlayerEnabled() ?: false
         externalPlayerForwardSubtitles = PlayerSettingsStorage.loadExternalPlayerForwardSubtitles() ?: false
@@ -332,6 +340,23 @@ object PlayerSettingsRepository {
         iosSaturation = PlayerSettingsStorage.loadIosSaturation() ?: 0
         iosGamma = PlayerSettingsStorage.loadIosGamma() ?: 0
         publish()
+    }
+
+    fun setStillWatchingEnabled(enabled: Boolean) {
+    ensureLoaded()
+    if (stillWatchingEnabled == enabled) return
+        stillWatchingEnabled = enabled
+        publish()
+        PlayerSettingsStorage.saveStillWatchingEnabled(enabled)
+    }
+
+    fun setStillWatchingEpisodeThreshold(threshold: Int) {
+        ensureLoaded()
+        val normalized = threshold.coerceIn(2, 5)
+        if (stillWatchingEpisodeThreshold == normalized) return
+        stillWatchingEpisodeThreshold = normalized
+        publish()
+        PlayerSettingsStorage.saveStillWatchingEpisodeThreshold(normalized)
     }
 
     fun setShowLoadingOverlay(enabled: Boolean) {
@@ -875,6 +900,8 @@ object PlayerSettingsRepository {
             iosContrast = iosContrast,
             iosSaturation = iosSaturation,
             iosGamma = iosGamma,
+            stillWatchingEnabled = stillWatchingEnabled,
+            stillWatchingEpisodeThreshold = stillWatchingEpisodeThreshold,
         )
     }
 

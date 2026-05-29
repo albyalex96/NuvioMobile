@@ -1834,4 +1834,8 @@
     <string name="stream_parser_title">Polished Display</string>
     <string name="stream_parser_description">Show streams with clean badges instead of raw text</string>
     <string name="stream_parser_cached">Cached</string>
+    <string name="still_watching_setting_title">Still Watching</string>
+    <string name="still_watching_setting_sub">Ask for confirmation after a set number of consecutive autoplay episodes</string>
+    <string name="still_watching_threshold_title">Episodes before confirmation</string>
+    <string name="still_watching_threshold_sub">Number of episodes to play before asking if you're still watching</string>
 </resources>

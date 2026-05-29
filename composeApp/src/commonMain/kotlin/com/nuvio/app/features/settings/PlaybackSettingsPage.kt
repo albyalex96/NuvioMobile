@@ -893,6 +893,29 @@ private fun PlaybackSettingsSection(
                     isTablet = isTablet,
                     onCheckedChange = PlayerSettingsRepository::setStreamAutoPlayPreferBingeGroup,
                 )
+                if (autoPlayPlayerSettings.streamAutoPlayNextEpisodeEnabled) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.still_watching_setting_title),
+                        description = stringResource(Res.string.still_watching_setting_sub),
+                        checked = autoPlayPlayerSettings.stillWatchingEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setStillWatchingEnabled,
+                    )
+                if (autoPlayPlayerSettings.stillWatchingEnabled) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    val threshold = autoPlayPlayerSettings.stillWatchingEpisodeThreshold
+                    SettingsSliderRow(
+                        title = stringResource(Res.string.still_watching_threshold_title),
+                        value = threshold,
+                        valueText = "$threshold",
+                        valueRange = 2..5,
+                        step = 1,
+                        isTablet = isTablet,
+                        onValueChange = PlayerSettingsRepository::setStillWatchingEpisodeThreshold,
+                    )
+                    }
+                }
                 if (autoPlayPlayerSettings.streamAutoPlayPreferBingeGroup) {
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsSwitchRow(

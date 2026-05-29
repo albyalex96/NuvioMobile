@@ -1451,4 +1451,8 @@
   <string name="stream_parser_title">Visualizzazione Pulita</string>
   <string name="stream_parser_description">Mostra info stream con badge puliti invece di testo grezzo</string>
   <string name="stream_parser_cached">In Cache</string>
+  <string name="still_watching_setting_title">Stai ancora guardando?</string>
+  <string name="still_watching_setting_sub">Chiede conferma dopo un certo numero di episodi in riproduzione automatica consecutivi</string>
+  <string name="still_watching_threshold_title">Episodi prima della conferma</string>
+  <string name="still_watching_threshold_sub">Numero di episodi da riprodurre prima di chiedere se stai ancora guardando</string>
 </resources>

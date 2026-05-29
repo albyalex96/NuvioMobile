@@ -80,6 +80,8 @@ actual object PlayerSettingsStorage {
     private const val iosContrastKey = "ios_contrast"
     private const val iosSaturationKey = "ios_saturation"
     private const val iosGammaKey = "ios_gamma"
+    private const val stillWatchingEnabledKey = "still_watching_enabled"
+    private const val stillWatchingEpisodeThresholdKey = "still_watching_episode_threshold"
     private val syncKeys = listOf(
         showLoadingOverlayKey,
         resizeModeKey,
@@ -140,6 +142,8 @@ actual object PlayerSettingsStorage {
         iosContrastKey,
         iosSaturationKey,
         iosGammaKey,
+        stillWatchingEnabledKey,
+        stillWatchingEpisodeThresholdKey,
     )
 
     private var preferences: SharedPreferences? = null
@@ -963,6 +967,40 @@ actual object PlayerSettingsStorage {
         saveIosInt(iosGammaKey, value)
     }
 
+    actual fun loadStillWatchingEnabled(): Boolean? =
+    preferences?.let { sharedPreferences ->
+        val key = ProfileScopedKey.of(stillWatchingEnabledKey)
+        if (sharedPreferences.contains(key)) {
+            sharedPreferences.getBoolean(key, false)
+        } else {
+            null
+        }
+    }
+
+actual fun saveStillWatchingEnabled(enabled: Boolean) {
+    preferences
+        ?.edit()
+        ?.putBoolean(ProfileScopedKey.of(stillWatchingEnabledKey), enabled)
+        ?.apply()
+}
+
+actual fun loadStillWatchingEpisodeThreshold(): Int? =
+    preferences?.let { sharedPreferences ->
+        val key = ProfileScopedKey.of(stillWatchingEpisodeThresholdKey)
+        if (sharedPreferences.contains(key)) {
+            sharedPreferences.getInt(key, 3) // DEFAULT_STILL_WATCHING_EPISODE_THRESHOLD
+        } else {
+            null
+        }
+    }
+
+actual fun saveStillWatchingEpisodeThreshold(threshold: Int) {
+    preferences
+        ?.edit()
+        ?.putInt(ProfileScopedKey.of(stillWatchingEpisodeThresholdKey), threshold.coerceIn(2, 5))
+        ?.apply()
+}
+
     actual fun exportToSyncPayload(): JsonObject = buildJsonObject {
         loadShowLoadingOverlay()?.let { put(showLoadingOverlayKey, encodeSyncBoolean(it)) }
         loadResizeMode()?.let { put(resizeModeKey, encodeSyncString(it)) }
@@ -1023,6 +1061,8 @@ actual object PlayerSettingsStorage {
         loadIosContrast()?.let { put(iosContrastKey, encodeSyncInt(it)) }
         loadIosSaturation()?.let { put(iosSaturationKey, encodeSyncInt(it)) }
         loadIosGamma()?.let { put(iosGammaKey, encodeSyncInt(it)) }
+        loadStillWatchingEnabled()?.let { put(stillWatchingEnabledKey, encodeSyncBoolean(it)) }
+        loadStillWatchingEpisodeThreshold()?.let { put(stillWatchingEpisodeThresholdKey, encodeSyncInt(it)) }
     }
 
     actual fun replaceFromSyncPayload(payload: JsonObject) {
@@ -1091,5 +1131,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncInt(iosContrastKey)?.let(::saveIosContrast)
         payload.decodeSyncInt(iosSaturationKey)?.let(::saveIosSaturation)
         payload.decodeSyncInt(iosGammaKey)?.let(::saveIosGamma)
+        payload.decodeSyncBoolean(stillWatchingEnabledKey)?.let(::saveStillWatchingEnabled)
+        payload.decodeSyncInt(stillWatchingEpisodeThresholdKey)?.let(::saveStillWatchingEpisodeThreshold)
     }
 }
