@@ -61,6 +61,15 @@ internal object PlayerPlaybackNetworking {
 
     fun createHttpDataSourceFactory(defaultHeaders: Map<String, String> = emptyMap()): DataSource.Factory {
         val mergedHeaders = DEFAULT_STREAM_HEADERS + defaultHeaders
+        
+        return OkHttpDataSource.Factory(playbackHttpClient).apply {
+            setDefaultRequestProperties(defaultHeaders)
+            if (defaultHeaders.none { it.key.equals("User-Agent", ignoreCase = true) }) {
+                setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+           }
+        }
+        // Original
         return OkHttpDataSource.Factory(playbackHttpClient).apply {
             setDefaultRequestProperties(mergedHeaders)
             setUserAgent(DEFAULT_USER_AGENT)
