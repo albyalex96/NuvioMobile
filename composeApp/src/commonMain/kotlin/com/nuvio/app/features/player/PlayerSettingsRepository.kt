@@ -86,6 +86,7 @@ data class PlayerSettingsUiState(
     val iosGamma: Int = 0,
     val stillWatchingEnabled: Boolean = false,
     val stillWatchingEpisodeThreshold: Int = 3,
+    val stillWatchingPromptVisible: Boolean = false,
 )
 
 object PlayerSettingsRepository {
@@ -147,7 +148,9 @@ object PlayerSettingsRepository {
     private var iosGamma = 0
     private var stillWatchingEnabled = false
     private var stillWatchingEpisodeThreshold = 3
-
+    private var consecutiveAutoPlayCount: Int = 0
+    private var stillWatchingEnabled = false
+    private var stillWatchingEpisodeThreshold = 3
     fun ensureLoaded() {
         if (hasLoaded) return
         loadFromDisk()
@@ -213,6 +216,7 @@ object PlayerSettingsRepository {
         iosGamma = 0
         stillWatchingEnabled = false
         stillWatchingEpisodeThreshold = 3
+        consecutiveAutoPlayCount = 0
         publish()
     }
 
@@ -341,6 +345,16 @@ object PlayerSettingsRepository {
         iosGamma = PlayerSettingsStorage.loadIosGamma() ?: 0
         publish()
     }
+
+    fun incrementConsecutiveAutoPlay() {
+        consecutiveAutoPlayCount++
+    }
+
+    fun resetConsecutiveAutoPlay() {
+        consecutiveAutoPlayCount = 0
+    }
+
+    fun getConsecutiveAutoPlayCount(): Int = consecutiveAutoPlayCount
 
     fun setStillWatchingEnabled(enabled: Boolean) {
     ensureLoaded()

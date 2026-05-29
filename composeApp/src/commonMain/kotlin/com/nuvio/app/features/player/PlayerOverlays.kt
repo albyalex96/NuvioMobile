@@ -457,3 +457,62 @@ internal fun ErrorModal(
         }
     }
 }
+
+@Composable
+internal fun StillWatchingOverlay(
+    onContinue: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.85f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 32.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.still_watching_prompt_title),
+                style = MaterialTheme.nuvioTypeScale.displaySm.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = stringResource(Res.string.still_watching_prompt_sub),
+                style = MaterialTheme.nuvioTypeScale.bodyLg,
+                color = Color.White.copy(alpha = 0.72f),
+                textAlign = TextAlign.Center,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(
+                    modifier = Modifier.clickable(onClick = onStop),
+                    color = Color.White.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.still_watching_prompt_stop),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                        color = Color.White,
+                        style = MaterialTheme.nuvioTypeScale.bodyLg.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                }
+                Surface(
+                    modifier = Modifier.clickable(onClick = onContinue),
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.still_watching_prompt_continue),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                        color = Color.White,
+                        style = MaterialTheme.nuvioTypeScale.bodyLg.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                }
+            }
+        }
+    }
+}

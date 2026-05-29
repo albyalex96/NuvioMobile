@@ -89,7 +89,7 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 import kotlin.math.roundToLong
 import kotlin.math.roundToInt
-
+import com.nuvio.app.features.player.skip.shouldEnterStillWatchingPrompt
 private const val PlaybackProgressPersistIntervalMs = 60_000L
 private const val PlayerDoubleTapSeekStepMs = 10_000L
 private const val PlayerDoubleTapSeekResetDelayMs = 800L
@@ -355,6 +355,8 @@ fun PlayerScreen(
         var nextEpisodeAutoPlaySourceName by remember { mutableStateOf<String?>(null) }
         var nextEpisodeAutoPlayCountdown by remember { mutableStateOf<Int?>(null) }
         var nextEpisodeAutoPlayJob by remember { mutableStateOf<Job?>(null) }
+        var consecutiveAutoPlayCount by rememberSaveable { mutableStateOf(0) }
+        var showStillWatchingPrompt by remember { mutableStateOf(false) }
 
         LaunchedEffect(parentMetaType, parentMetaId) {
             playerMetaVideos = MetaDetailsRepository.peek(parentMetaType, parentMetaId)?.videos ?: emptyList()
@@ -1235,6 +1237,7 @@ fun PlayerScreen(
             nextEpisodeAutoPlaySourceName = null
             nextEpisodeAutoPlayCountdown = null
             PlayerStreamsRepository.clearEpisodeStreams()
+            consecutiveAutoPlayCount = 0
             flushWatchProgress()
             val epVideoId = episode.id
             val epResumeVideoId = buildPlaybackVideoId(
@@ -1302,6 +1305,7 @@ fun PlayerScreen(
             nextEpisodeAutoPlaySourceName = null
             nextEpisodeAutoPlayCountdown = null
             PlayerStreamsRepository.clearEpisodeStreams()
+            consecutiveAutoPlayCount = 0
             flushWatchProgress()
 
             val fallbackVideoId = buildPlaybackVideoId(
@@ -2024,12 +2028,21 @@ fun PlayerScreen(
             )
             if (shouldShow && !showNextEpisodeCard) {
                 showNextEpisodeCard = true
-                // Auto-play if enabled
                 if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                    playNextEpisode()
+                    val shouldAsk = shouldEnterStillWatchingPrompt(
+                        stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
+                        autoPlayNextEpisodeEnabled = true,
+                        nextEpisodeHasAired = true,
+                        consecutiveAutoPlayCount = consecutiveAutoPlayCount,
+                        threshold = playerSettingsUiState.  stillWatchingEpisodeThreshold,
+                    )
+                    if (shouldAsk) {
+                        showStillWatchingPrompt = true
+                    } else {
+                        consecutiveAutoPlayCount++
+                        playNextEpisode()
+                    }
                 }
-            } else if (!shouldShow) {
-                showNextEpisodeCard = false
             }
         }
 
@@ -2038,7 +2051,19 @@ fun PlayerScreen(
             if (playbackSnapshot.isEnded && nextEpisodeInfo != null && !showNextEpisodeCard) {
                 showNextEpisodeCard = true
                 if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                    playNextEpisode()
+                    val shouldAsk = shouldEnterStillWatchingPrompt(
+                        stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
+                        autoPlayNextEpisodeEnabled = true,
+                        nextEpisodeHasAired = true,
+                        consecutiveAutoPlayCount = consecutiveAutoPlayCount,
+                        threshold = playerSettingsUiState.stillWatchingEpisodeThreshold,
+                    )
+                    if (shouldAsk) {
+                        showStillWatchingPrompt = true
+                    } else {
+                        consecutiveAutoPlayCount++
+                        playNextEpisode()
+                    }
                 }
             }
         }
@@ -2458,6 +2483,23 @@ fun PlayerScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = sliderEdgePadding, bottom = overlayBottomPadding),
+                )
+            }
+
+            if (showStillWatchingPrompt) {
+                StillWatchingOverlay(
+                    onContinue = {
+                        showStillWatchingPrompt = false
+                        consecutiveAutoPlayCount = 0
+                        playNextEpisode()
+                    },
+                    onStop = {
+                        showStillWatchingPrompt = false
+                        consecutiveAutoPlayCount = 0
+                        nextEpisodeAutoPlayJob?.cancel()
+                        showNextEpisodeCard = false
+                    },
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
 
