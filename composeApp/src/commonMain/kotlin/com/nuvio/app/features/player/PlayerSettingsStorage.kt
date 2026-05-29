@@ -94,6 +94,8 @@ internal expect object PlayerSettingsStorage {
     fun saveUseLibass(enabled: Boolean)
     fun loadLibassRenderType(): String?
     fun saveLibassRenderType(renderType: String)
+    fun loadSwipeGesturesEnabled(): Boolean?
+    fun saveSwipeGesturesEnabled(enabled: Boolean)
     fun loadIosVideoOutputPreset(): String?
     fun saveIosVideoOutputPreset(preset: String)
     fun loadIosToneMappingMode(): String?
