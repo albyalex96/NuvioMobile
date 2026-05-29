@@ -1794,4 +1794,8 @@
     <string name="still_watching_setting_sub">Ask for confirmation after a set number of consecutive autoplay episodes</string>
     <string name="still_watching_threshold_title">Episodes before confirmation</string>
     <string name="still_watching_threshold_sub">Number of episodes to play before asking if you're still watching</string>
+    <string name="still_watching_prompt_title">Still watching?</string>
+    <string name="still_watching_prompt_sub">You've been watching several episodes in a row.</string>
+    <string name="still_watching_prompt_continue">Continue watching</string>
+    <string name="still_watching_prompt_stop">Stop</string>
 </resources>
