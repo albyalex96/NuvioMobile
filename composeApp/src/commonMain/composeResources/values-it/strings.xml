@@ -1415,4 +1415,8 @@
   </plurals>
   <string name="cw_new_episode">Nuovo episodio</string>
   <string name="cw_new_season">Nuova stagione</string>
+  <string name="still_watching_setting_title">Stai ancora guardando?</string>
+  <string name="still_watching_setting_sub">Chiede conferma dopo un certo numero di episodi in riproduzione automatica consecutivi</string>
+  <string name="still_watching_threshold_title">Episodi prima della conferma</string>
+  <string name="still_watching_threshold_sub">Numero di episodi da riprodurre prima di chiedere se stai ancora guardando</string>
 </resources>
