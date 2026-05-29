@@ -1448,4 +1448,7 @@
   <string name="settings_network_dns_default">Usa il risolutore DNS di sistema.</string>
   <string name="settings_network_dns_custom">Cifra le query DNS tramite %1$s.</string>
    
+  <string name="stream_parser_title">Visualizzazione Pulita</string>
+  <string name="stream_parser_description">Mostra info stream con badge puliti invece di testo grezzo</string>
+  <string name="stream_parser_cached">In Cache</string>
 </resources>

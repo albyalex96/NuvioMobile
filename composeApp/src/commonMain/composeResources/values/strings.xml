@@ -1824,4 +1824,7 @@
     <string name="settings_network_dns_default">Use the system's default DNS resolver.</string>
     <string name="settings_network_dns_custom">Encrypt DNS queries via %1$s.</string>
      
+    <string name="stream_parser_title">Polished Display</string>
+    <string name="stream_parser_description">Show streams with clean badges instead of raw text</string>
+    <string name="stream_parser_cached">Cached</string>
 </resources>
