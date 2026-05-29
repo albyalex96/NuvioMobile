@@ -39,6 +39,7 @@ import com.nuvio.app.features.home.components.HomeHeroReservedSpace
 import com.nuvio.app.features.home.components.HomeHeroSection
 import com.nuvio.app.features.home.components.HomeSkeletonHero
 import com.nuvio.app.features.home.components.HomeSkeletonRow
+import com.nuvio.app.features.home.components.HomeTop10Section
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TRAKT_CONTINUE_WATCHING_DAYS_CAP_ALL
 import com.nuvio.app.features.trakt.TraktSettingsRepository
@@ -106,6 +107,7 @@ fun HomeScreen(
         ContinueWatchingPreferencesRepository.ensureLoaded()
         WatchedRepository.ensureLoaded()
         WatchProgressRepository.ensureLoaded()
+        Top10CatalogRepository.ensureLoaded()
     }
 
     val addonsUiState by AddonRepository.uiState.collectAsStateWithLifecycle()
@@ -130,6 +132,7 @@ fun HomeScreen(
         TraktAuthRepository.isAuthenticated
     }.collectAsStateWithLifecycle()
     var observedOfflineState by remember { mutableStateOf(false) }
+    val top10ChangeEvents = Top10CatalogRepository.localChangeEvents
 
     LaunchedEffect(scrollToTopRequests) {
         scrollToTopRequests.collect {
@@ -137,6 +140,11 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(top10ChangeEvents) {
+        top10ChangeEvents.collect {
+            HomeRepository.applyCurrentSettings()
+        }
+    }
     LaunchedEffect(networkStatusUiState.condition) {
         when (networkStatusUiState.condition) {
             NetworkCondition.NoInternet,
@@ -737,6 +745,32 @@ fun HomeScreen(
                                 layout = continueWatchingLayout,
                                 onItemClick = onContinueWatchingClick,
                                 onItemLongPress = onContinueWatchingLongPress,
+                            )
+                        }
+                    }
+
+                    if (homeUiState.top10MovieItems.isNotEmpty()) {
+                        item(key = "top10_movies") {
+                            HomeTop10Section(
+                                title = "Top 10 Movies",
+                                items = homeUiState.top10MovieItems,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                                sectionPadding = homeSectionPadding,
+                                onPosterClick = onPosterClick,
+                                onPosterLongClick = onPosterLongClick,
+                            )
+                        }
+                    }
+
+                    if (homeUiState.top10SeriesItems.isNotEmpty()) {
+                        item(key = "top10_series") {
+                            HomeTop10Section(
+                                title = "Top 10 TV Shows",
+                                items = homeUiState.top10SeriesItems,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                                sectionPadding = homeSectionPadding,
+                                onPosterClick = onPosterClick,
+                                onPosterLongClick = onPosterLongClick,
                             )
                         }
                     }
