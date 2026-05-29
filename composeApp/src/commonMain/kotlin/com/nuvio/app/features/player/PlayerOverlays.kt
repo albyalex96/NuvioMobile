@@ -66,6 +66,10 @@ import nuvio.composeapp.generated.resources.compose_player_episode_code_full
 import nuvio.composeapp.generated.resources.compose_player_go_back
 import nuvio.composeapp.generated.resources.compose_player_playback_error
 import nuvio.composeapp.generated.resources.compose_player_youre_watching
+import nuvio.composeapp.generated.resources.still_watching_prompt_title
+import nuvio.composeapp.generated.resources.still_watching_prompt_sub
+import nuvio.composeapp.generated.resources.still_watching_prompt_stop
+import nuvio.composeapp.generated.resources.still_watching_prompt_continue
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.max
