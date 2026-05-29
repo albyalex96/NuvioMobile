@@ -247,6 +247,11 @@ fun PlayerScreen(
         var playerController by remember { mutableStateOf<PlayerEngineController?>(null) }
         var playerControllerSourceUrl by remember { mutableStateOf<String?>(null) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        val seekPreviewState = rememberAndroidSeekPreview(
+            sourceUrl = activeSourceUrl,
+            durationMs = playbackSnapshot.durationMs,
+            headers = activeSourceHeaders,
+        )
         val keepScreenAwake = errorMessage == null &&
             (playbackSnapshot.isPlaying || (shouldPlay && playbackSnapshot.isLoading))
         EnterImmersivePlayerMode(keepScreenAwake = keepScreenAwake)
@@ -833,6 +838,7 @@ fun PlayerScreen(
             controlsVisible = false
             lockedOverlayVisible = false
             pausedOverlayVisible = false
+            scrubbingPositionMs?.let { playerController?.seekTo(it) }
             isScrubbingTimeline = false
             scrubbingPositionMs = null
             gestureMessageJob?.cancel()
@@ -1042,6 +1048,7 @@ fun PlayerScreen(
             val centerStart = layoutSize.width * PlayerLeftGestureBoundary
             val centerEnd = layoutSize.width * PlayerRightGestureBoundary
             if (controlsVisible && offset.x in centerStart..centerEnd) {
+                scrubbingPositionMs?.let { playerController?.seekTo(it) }
                 controlsVisible = false
             } else {
                 controlsVisible = !controlsVisible
@@ -1719,6 +1726,7 @@ fun PlayerScreen(
             PlayerStreamsRepository.clearEpisodeStreams()
             SubtitleRepository.clear()
             WatchProgressRepository.ensureLoaded()
+            scrubbingPositionMs?.let { playerController?.seekTo(it) }
         }
 
         LaunchedEffect(playbackSession.videoId) {
@@ -2322,6 +2330,8 @@ fun PlayerScreen(
                         playerController?.seekTo(positionMs)
                         scheduleProgressSyncAfterSeek()
                     },
+                    seekPreviewState = seekPreviewState,
+                    isScrubbingTimeline = isScrubbingTimeline,
                     horizontalSafePadding = horizontalSafePadding,
                     modifier = Modifier.fillMaxSize(),
                 )
