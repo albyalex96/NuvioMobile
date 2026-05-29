@@ -1441,4 +1441,11 @@
   <string name="live_tv_settings_playlist_label">URL playlist M3U</string>
   <string name="live_tv_settings_playlist_placeholder">https://example.com/playlist.m3u8</string>
   <string name="live_tv_settings_description">I canali provenienti da questa playlist appariranno nella scheda Live TV.</string>
+  <string name="compose_settings_page_network">Rete</string>
+  <string name="dns_section_title">DNS OVER HTTPS (SOLO ANDROID)</string>
+  <string name="settings_network_title">Rete</string>
+  <string name="settings_network_description">Configura DNS over HTTPS.</string>
+  <string name="settings_network_dns_default">Usa il risolutore DNS di sistema.</string>
+  <string name="settings_network_dns_custom">Cifra le query DNS tramite %1$s.</string>
+   
 </resources>

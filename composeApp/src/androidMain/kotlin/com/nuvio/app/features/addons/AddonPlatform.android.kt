@@ -78,7 +78,7 @@ private fun parseEnabledStateLine(line: String): Pair<String, Boolean>? {
 }
 
 private val addonHttpClient = OkHttpClient.Builder()
-    .dns(IPv4FirstDns())
+    .dns(com.nuvio.app.core.network.AndroidDnsProvider)
     .connectTimeout(60, TimeUnit.SECONDS)
     .readTimeout(60, TimeUnit.SECONDS)
     .writeTimeout(60, TimeUnit.SECONDS)
