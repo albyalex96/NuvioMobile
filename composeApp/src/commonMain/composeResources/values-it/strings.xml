@@ -1426,4 +1426,19 @@
   <string name="clear_selection">Cancella Selezione</string>
   <string name="settings_playback_enable_swipe_gestures">Swipe Gesture</string>
   <string name="settings_playback_enable_swipe_gestures_description">Permetti lo swipe verticale sulla superficie del player per controllare volume e luminosità.</string>
+  <string name="compose_nav_live_tv">Live TV</string>
+  <string name="compose_player_channels">Canali</string>
+  <string name="compose_settings_page_live_tv">Live TV</string>
+  <string name="settings_integrations_live_tv_description">Add an M3U playlist for live channels.</string>
+  <string name="live_tv_title">Live TV</string>
+  <string name="live_tv_channel_group_default">Canale</string>
+  <string name="live_tv_empty_title">Nessun canale trovato</string>
+  <string name="live_tv_empty_message">Controlla l'URL della tua playlist o prova a aggiornarla.</string>
+  <string name="live_tv_load_failed">La playlist non può essere caricata</string>
+  <string name="live_tv_no_playlist_title">Nessuna playlist configurata</string>
+  <string name="live_tv_no_playlist_message">Aggiungi una playlist M3U in Impostazioni > Integrazioni > Live TV per elencare i canali qui.</string>
+  <string name="live_tv_settings_section_playlist">PLAYLIST</string>
+  <string name="live_tv_settings_playlist_label">URL playlist M3U</string>
+  <string name="live_tv_settings_playlist_placeholder">https://example.com/playlist.m3u8</string>
+  <string name="live_tv_settings_description">I canali provenienti da questa playlist appariranno nella scheda Live TV.</string>
 </resources>
