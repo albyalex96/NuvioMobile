@@ -149,8 +149,6 @@ object PlayerSettingsRepository {
     private var stillWatchingEnabled = false
     private var stillWatchingEpisodeThreshold = 3
     private var consecutiveAutoPlayCount: Int = 0
-    private var stillWatchingEnabled = false
-    private var stillWatchingEpisodeThreshold = 3
     fun ensureLoaded() {
         if (hasLoaded) return
         loadFromDisk()
