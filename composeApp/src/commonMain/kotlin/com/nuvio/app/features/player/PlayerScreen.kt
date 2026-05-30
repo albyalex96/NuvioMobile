@@ -2029,20 +2029,20 @@ fun PlayerScreen(
             if (shouldShow && !showNextEpisodeCard) {
                 showNextEpisodeCard = true
                 if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                    val shouldAsk = shouldEnterStillWatchingPrompt(
-                        stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
-                        autoPlayNextEpisodeEnabled = true,
-                        nextEpisodeHasAired = true,
-                        consecutiveAutoPlayCount = consecutiveAutoPlayCount,
-                        threshold = playerSettingsUiState.  stillWatchingEpisodeThreshold,
-                    )
-                    if (shouldAsk) {
-                        showStillWatchingPrompt = true
-                    } else {
-                        consecutiveAutoPlayCount++
-                        playNextEpisode()
-                    }
-                }
+    				consecutiveAutoPlayCount++
+    				val shouldAsk = shouldEnterStillWatchingPrompt(
+        				stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
+        				autoPlayNextEpisodeEnabled = true,
+        				nextEpisodeHasAired = true,
+        				consecutiveAutoPlayCount = consecutiveAutoPlayCount,
+        				threshold = playerSettingsUiState.stillWatchingEpisodeThreshold,
+    				)
+    				if (shouldAsk) {
+        				showStillWatchingPrompt = true
+    				} else {
+        				playNextEpisode()
+    				}
+				}
             }
         }
 
@@ -2051,20 +2051,20 @@ fun PlayerScreen(
             if (playbackSnapshot.isEnded && nextEpisodeInfo != null && !showNextEpisodeCard) {
                 showNextEpisodeCard = true
                 if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                    val shouldAsk = shouldEnterStillWatchingPrompt(
-                        stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
-                        autoPlayNextEpisodeEnabled = true,
-                        nextEpisodeHasAired = true,
-                        consecutiveAutoPlayCount = consecutiveAutoPlayCount,
-                        threshold = playerSettingsUiState.stillWatchingEpisodeThreshold,
-                    )
-                    if (shouldAsk) {
-                        showStillWatchingPrompt = true
-                    } else {
-                        consecutiveAutoPlayCount++
-                        playNextEpisode()
-                    }
-                }
+    				consecutiveAutoPlayCount++
+    				val shouldAsk = shouldEnterStillWatchingPrompt(
+        				stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
+        				autoPlayNextEpisodeEnabled = true,
+        				nextEpisodeHasAired = true,
+        				consecutiveAutoPlayCount = consecutiveAutoPlayCount,
+        				threshold = playerSettingsUiState.stillWatchingEpisodeThreshold,
+    				)
+    				if (shouldAsk) {
+        				showStillWatchingPrompt = true
+    				} else {
+        				playNextEpisode()
+    				}
+				}
             }
         }
 
