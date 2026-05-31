@@ -99,6 +99,7 @@ import kotlin.math.round
 import kotlin.math.roundToInt
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+
 import com.nuvio.app.features.streams.StreamsAppearanceRepository
 import com.nuvio.app.features.streams.StreamsAppearanceSettings
 import androidx.compose.material.icons.rounded.AutoAwesome
@@ -111,8 +112,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-
-import co.touchlab.kermit.Logger
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.animation.core.LinearEasing
 
 // ---------------------------------------------------------------------------
 // Streams Screen
@@ -895,36 +896,38 @@ private fun LazyListScope.streamSection(
         }
 
         itemsIndexed(
-        items = sourceStreams,
-        key = { index, stream ->
-            streamCardRenderKey(
-                sectionKey = sectionKey,
-                sourceIndex = sourceIndex,
-                itemIndex = index,
-                stream = stream,
-            )
-        },
-    ) { _, stream ->
-        val displayMode = remember {
+            items = sourceStreams,
+            key = { index, stream ->
+                streamCardRenderKey(
+                    sectionKey = sectionKey,
+                    sourceIndex = sourceIndex,
+                    itemIndex = index,
+                    stream = stream,
+                )
+            },
+        ) { _, stream ->
+            val displayMode = remember {
             StreamsAppearanceRepository.uiState.value.displayMode
-        }
-        StreamCard(
-            stream = stream,
-            displayMode = displayMode,
-            onClick = {
-                if (stream.directPlaybackUrl != null || stream.isTorrentStream || stream.isDirectDebridStream) {
-                    onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
-                }
-            },
-            onLongClick = {
-                if (stream.directPlaybackUrl != null) {
-                    onStreamLongPress(stream)
-                }
-            },
+            }
+            StreamCard(
+                stream = stream,
+                displayMode = displayMode,
+                enabled = stream.isSelectableForPlayback(debridEnabled),
+                appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+                onClick = {
+                    if (stream.isSelectableForPlayback(debridEnabled)) {
+                        onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
+                    }
+                },
+                onLongClick = {
+                    if (stream.playableDirectUrl != null) {
+                        onStreamLongPress(stream)
+                    }
+                },
             )
             Spacer(modifier = Modifier.height(10.dp))
-            }
         }
+    }
 }
 
 internal fun streamSectionRenderKey(
@@ -1014,10 +1017,12 @@ private fun StreamSourceHeader(
 @Composable
 private fun StreamCard(
     stream: StreamItem,
-    displayMode: DisplayMode = DisplayMode.ORIGINAL,
+    enabled: Boolean,
+    appendInstantServiceToDefaultName: Boolean,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    displayMode: DisplayMode = DisplayMode.ORIGINAL,
 ) {
     val isEnabled = stream.directPlaybackUrl != null || stream.isTorrentStream || stream.isDirectDebridStream
     val cardShape = RoundedCornerShape(12.dp)
@@ -1034,7 +1039,7 @@ private fun StreamCard(
             .clip(cardShape)
             .background(Color.White.copy(alpha = 0.05f))
             .combinedClickable(
-                enabled = isEnabled,
+                enabled = enabled,
                 onClick = onClick,
                 onLongClick = onLongClick,
             )
@@ -1045,13 +1050,13 @@ private fun StreamCard(
             PolishedStreamCardContent(stream = stream, modifier = Modifier.weight(1f))
         } else {
             Column(modifier = Modifier.weight(1f)) {
-                StreamNameWithInstantService(
+            StreamNameWithInstantService(
                 stream = stream,
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
-                )
+            )
 
-                val subtitle = stream.streamSubtitle
-                if (!subtitle.isNullOrBlank()) {
+            val subtitle = stream.streamSubtitle
+            if (!subtitle.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = subtitle,
@@ -1061,13 +1066,78 @@ private fun StreamCard(
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                }
+            }
 
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                StreamFileSizeBadge(stream = stream)
+            val badgeImages = stream.badges.filter { it.imageURL.isNotBlank() }
+            if (badgeImages.isNotEmpty() || stream.behaviorHints.videoSize != null) {
+                Spacer(modifier = Modifier.height(5.dp))
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    badgeImages.forEach { badge ->
+                        StreamBadgeImage(badge = badge)
+                    }
+                    StreamFileSizeBadge(stream = stream)
                 }
             }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StreamNameWithInstantService(
+    stream: StreamItem,
+    appendInstantServiceToDefaultName: Boolean,
+) {
+    val nameStyle = MaterialTheme.typography.bodyMedium.copy(
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Bold,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp,
+    )
+    val instantLabel = if (appendInstantServiceToDefaultName) {
+        stream.instantServiceLabel()
+    } else {
+        null
+    }
+    val showInstantLabel = instantLabel != null
+    val visibleState = remember(stream.streamLabel) {
+        MutableTransitionState(showInstantLabel)
+    }
+    visibleState.targetState = showInstantLabel
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stream.streamLabel,
+            modifier = Modifier.weight(1f, fill = false),
+            style = nameStyle,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        AnimatedVisibility(
+            visibleState = visibleState,
+            enter = fadeIn(animationSpec = tween(durationMillis = 260)) +
+                expandHorizontally(
+                    animationSpec = tween(durationMillis = 260),
+                    expandFrom = Alignment.Start,
+                ),
+            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                shrinkHorizontally(
+                    animationSpec = tween(durationMillis = 120),
+                    shrinkTowards = Alignment.Start,
+                ),
+            label = "streamNameInstantService",
+        ) {
+            Text(
+                text = " ${instantLabel.orEmpty()}",
+                style = nameStyle,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }
@@ -1426,61 +1496,6 @@ private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
         size = size,
         isCached = isCached,
     )
-}
-
-@Composable
-private fun StreamNameWithInstantService(
-    stream: StreamItem,
-    appendInstantServiceToDefaultName: Boolean,
-) {
-    val nameStyle = MaterialTheme.typography.bodyMedium.copy(
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Bold,
-        lineHeight = 20.sp,
-        letterSpacing = 0.sp,
-    )
-    val instantLabel = if (appendInstantServiceToDefaultName) {
-        stream.instantServiceLabel()
-    } else {
-        null
-    }
-    val showInstantLabel = instantLabel != null
-    val visibleState = remember(stream.streamLabel) {
-        MutableTransitionState(showInstantLabel)
-    }
-    visibleState.targetState = showInstantLabel
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = stream.streamLabel,
-            modifier = Modifier.weight(1f, fill = false),
-            style = nameStyle,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        AnimatedVisibility(
-            visibleState = visibleState,
-            enter = fadeIn(animationSpec = tween(durationMillis = 260)) +
-                expandHorizontally(
-                    animationSpec = tween(durationMillis = 260),
-                    expandFrom = Alignment.Start,
-                ),
-            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                shrinkHorizontally(
-                    animationSpec = tween(durationMillis = 120),
-                    shrinkTowards = Alignment.Start,
-                ),
-            label = "streamNameInstantService",
-        ) {
-            Text(
-                text = " ${instantLabel.orEmpty()}",
-                style = nameStyle,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
