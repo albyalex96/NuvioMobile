@@ -1821,4 +1821,11 @@
     <string name="player_torrent_starting_engine">Starting P2P engine…</string>
     <string name="player_error_failed_start_torrent">Failed to start torrent: %1$s</string>
     <string name="player_error_torrent">Torrent error: %1$s</string>
+    <string name="compose_settings_page_network">Network</string>
+    <string name="dns_section_title">DNS OVER HTTPS (ANDROID ONLY)</string>
+    <string name="settings_network_title">Network</string>
+    <string name="settings_network_description">Configure DNS over HTTPS.</string>
+    <string name="settings_network_dns_default">Use the system's default DNS resolver.</string>
+    <string name="settings_network_dns_custom">Encrypt DNS queries via %1$s.</string>
+     
 </resources>

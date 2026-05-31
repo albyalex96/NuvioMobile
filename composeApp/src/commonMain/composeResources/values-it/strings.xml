@@ -1415,4 +1415,11 @@
   </plurals>
   <string name="cw_new_episode">Nuovo episodio</string>
   <string name="cw_new_season">Nuova stagione</string>
+  <string name="compose_settings_page_network">Rete</string>
+  <string name="dns_section_title">DNS OVER HTTPS (SOLO ANDROID)</string>
+  <string name="settings_network_title">Rete</string>
+  <string name="settings_network_description">Configura DNS over HTTPS.</string>
+  <string name="settings_network_dns_default">Usa il risolutore DNS di sistema.</string>
+  <string name="settings_network_dns_custom">Cifra le query DNS tramite %1$s.</string>
+   
 </resources>
