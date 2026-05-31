@@ -1821,4 +1821,14 @@
     <string name="player_torrent_starting_engine">Starting P2P engine…</string>
     <string name="player_error_failed_start_torrent">Failed to start torrent: %1$s</string>
     <string name="player_error_torrent">Torrent error: %1$s</string>
+    <string name="top10_header">Top 10 Catalogs</string>
+    <string name="top10_description">Choose catalogs to display as Top 10 rows on the home screen</string>
+    <string name="top10_general_header">General</string>
+    <string name="top10_catalogs_header">Catalogs</string>
+    <string name="top10_title_settings">Enable Top 10 Row</string>
+    <string name="top10_title_description">Show a Top 10 section on the home screen</string>
+    <string name="catalog_picker_not_set">Not set — tap to choose</string>
+    <string name="choose_catalog">Choose Catalog</string>
+    <string name="clear_selection">Clear Selection</string>
+
 </resources>
