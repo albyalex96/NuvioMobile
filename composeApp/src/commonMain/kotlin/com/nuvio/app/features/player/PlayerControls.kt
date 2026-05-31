@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Forward10
+import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Replay10
@@ -89,6 +90,7 @@ internal fun PlayerControlsShell(
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
+    onLiveChannelsClick: (() -> Unit)? = null,
     onSubmitIntroClick: (() -> Unit)? = null,
     parentalWarnings: List<ParentalWarning> = emptyList(),
     showParentalGuide: Boolean = false,
@@ -190,6 +192,7 @@ internal fun PlayerControlsShell(
                     onSourcesClick = onSourcesClick,
                     onEpisodesClick = onEpisodesClick,
                     onOpenInExternalPlayer = onOpenInExternalPlayer,
+                    onLiveChannelsClick = onLiveChannelsClick,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
@@ -488,6 +491,7 @@ private fun ProgressControls(
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
+    onLiveChannelsClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val durationMs = playbackSnapshot.durationMs.coerceAtLeast(1L)
@@ -540,34 +544,42 @@ private fun ProgressControls(
                         painter = aspectRatioPainter,
                         onClick = onResizeModeClick,
                     )
-                    PlayerActionPillButton(
-                        label = formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed),
-                        icon = Icons.Rounded.Speed,
-                        onClick = onSpeedClick,
-                    )
-                    PlayerActionPillButton(
-                        label = stringResource(Res.string.compose_player_subs),
-                        painter = subtitlesPainter,
-                        onClick = onSubtitleClick,
-                    )
-                    PlayerActionPillButton(
-                        label = stringResource(Res.string.compose_player_audio),
-                        painter = audioPainter,
-                        onClick = onAudioClick,
-                    )
-                    if (onSourcesClick != null) {
+                    if (onLiveChannelsClick != null) {
                         PlayerActionPillButton(
-                            label = stringResource(Res.string.compose_player_sources),
-                            icon = Icons.Rounded.SwapHoriz,
-                            onClick = onSourcesClick,
+                            label = stringResource(Res.string.compose_player_channels),
+                            icon = Icons.Rounded.LiveTv,
+                            onClick = onLiveChannelsClick,
                         )
-                    }
-                    if (onEpisodesClick != null) {
+                    } else {
                         PlayerActionPillButton(
-                            label = stringResource(Res.string.compose_player_episodes),
-                            icon = Icons.Rounded.VideoLibrary,
-                            onClick = onEpisodesClick,
+                            label = formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed),
+                            icon = Icons.Rounded.Speed,
+                            onClick = onSpeedClick,
                         )
+                        PlayerActionPillButton(
+                            label = stringResource(Res.string.compose_player_subs),
+                            painter = subtitlesPainter,
+                            onClick = onSubtitleClick,
+                        )
+                        PlayerActionPillButton(
+                            label = stringResource(Res.string.compose_player_audio),
+                            painter = audioPainter,
+                            onClick = onAudioClick,
+                        )
+                        if (onSourcesClick != null) {
+                            PlayerActionPillButton(
+                                label = stringResource(Res.string.compose_player_sources),
+                                icon = Icons.Rounded.SwapHoriz,
+                                onClick = onSourcesClick,
+                            )
+                        }
+                        if (onEpisodesClick != null) {
+                            PlayerActionPillButton(
+                                label = stringResource(Res.string.compose_player_episodes),
+                                icon = Icons.Rounded.VideoLibrary,
+                                onClick = onEpisodesClick,
+                            )
+                        }
                     }
                     if (onOpenInExternalPlayer != null) {
                         PlayerActionPillButton(
