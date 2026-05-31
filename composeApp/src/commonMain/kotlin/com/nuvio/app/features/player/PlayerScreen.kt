@@ -153,6 +153,7 @@ fun PlayerScreen(
     title: String,
     sourceUrl: String,
     sourceAudioUrl: String? = null,
+    streamType: String? = null,
     sourceHeaders: Map<String, String> = emptyMap(),
     sourceResponseHeaders: Map<String, String> = emptyMap(),
     providerName: String,
@@ -239,6 +240,7 @@ fun PlayerScreen(
         // Active playback state (mutable to support source/episode switching)
         var activeSourceUrl by rememberSaveable { mutableStateOf(sourceUrl) }
         var activeSourceAudioUrl by rememberSaveable { mutableStateOf(sourceAudioUrl) }
+        var activeStreamType by rememberSaveable { mutableStateOf(streamType) }
         var activeSourceHeaders by remember(sourceUrl, sourceHeaders) {
             mutableStateOf(sanitizePlaybackHeaders(sourceHeaders))
         }
@@ -2477,6 +2479,7 @@ fun PlayerScreen(
                 PlatformPlayerSurface(
                     sourceUrl = playerSurfaceSourceUrl,
                     sourceAudioUrl = activeSourceAudioUrl,
+                streamType = activeStreamType,
                     sourceHeaders = activeSourceHeaders,
                     sourceResponseHeaders = activeSourceResponseHeaders,
                     modifier = Modifier.fillMaxSize(),
