@@ -914,6 +914,7 @@ private fun PluginRuntimeResult.toStreamItem(
         sourceName = scraper.name,
         addonName = addonName,
         addonId = addonId,
+        streamType = type,
         behaviorHints = if (requestHeaders.isEmpty()) {
             StreamBehaviorHints()
         } else {
