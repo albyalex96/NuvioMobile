@@ -1415,4 +1415,7 @@
   </plurals>
   <string name="cw_new_episode">Nuovo episodio</string>
   <string name="cw_new_season">Nuova stagione</string>
+  <string name="stream_parser_title">Visualizzazione Pulita</string>
+  <string name="stream_parser_description">Mostra info stream con badge puliti invece di testo grezzo</string>
+  <string name="stream_parser_cached">In Cache</string>
 </resources>

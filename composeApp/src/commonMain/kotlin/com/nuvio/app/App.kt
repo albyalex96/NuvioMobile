@@ -221,7 +221,8 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
+import com.nuvio.app.features.streams.StreamsAppearanceSettings
 @Serializable
 object TabsRoute
 
@@ -2118,7 +2119,11 @@ private fun MainAppContent(
                             StreamsRepository.setOverlayVisible(false)
                         }
                     }
-
+                    val streamsAppearance by remember {
+                        StreamsAppearanceRepository.ensureLoaded()
+                        StreamsAppearanceRepository.uiState
+                    }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
+                    
                     Box(modifier = Modifier.fillMaxSize()) {
                         StreamsScreen(
                             type = launch.type,
