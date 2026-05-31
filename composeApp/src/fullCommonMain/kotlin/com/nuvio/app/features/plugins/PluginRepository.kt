@@ -328,6 +328,7 @@ actual object PluginRepository {
             tmdbId = tmdbId,
             mediaType = mediaType,
         )
+        val userSettings = PluginStorage.loadConfig(scraper.repositoryUrl)
 
         return runCatching {
             PluginRuntime.executePlugin(
@@ -337,7 +338,7 @@ actual object PluginRepository {
                 season = season,
                 episode = episode,
                 scraperId = scraper.id,
-                scraperSettings = emptyMap(),
+                scraperSettings = userSettings,
             )
         }
     }
@@ -408,6 +409,7 @@ actual object PluginRepository {
             lastUpdated = currentEpochMillis(),
             isRefreshing = false,
             errorMessage = null,
+            settings = manifest.settings,
         )
         repo to scrapers
     }
@@ -471,6 +473,7 @@ actual object PluginRepository {
                     version = repo.version,
                     scraperCount = repo.scraperCount,
                     lastUpdated = repo.lastUpdated,
+                    settings = repo.settings,
                 )
             },
             scrapers = state.scrapers.map { scraper ->
@@ -536,6 +539,7 @@ actual object PluginRepository {
                         lastUpdated = it.lastUpdated,
                         isRefreshing = false,
                         errorMessage = null,
+                        settings = it.settings,
                     )
                 }
                 ?: emptyList(),
