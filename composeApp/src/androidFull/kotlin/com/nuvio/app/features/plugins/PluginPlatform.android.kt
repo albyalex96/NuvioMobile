@@ -6,9 +6,7 @@ import android.content.SharedPreferences
 internal object PluginStorage {
     private const val preferencesName = "nuvio_plugins"
     private const val pluginsStateKey = "plugins_state"
-    private const val pluginConfigKey = "plugin_config"
 
-    private val json = Json { ignoreUnknownKeys = true }
     private var preferences: SharedPreferences? = null
 
     fun initialize(context: Context) {
@@ -24,9 +22,8 @@ internal object PluginStorage {
             ?.putString("${pluginsStateKey}_$profileId", payload)
             ?.apply()
     }
-
-   
 }
 
 internal fun currentPluginPlatform(): String = "android"
 
+internal fun currentEpochMillis(): Long = System.currentTimeMillis()
