@@ -39,6 +39,10 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.text.Cue
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.TransferListener
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -46,6 +50,7 @@ import androidx.media3.exoplayer.ForwardingRenderer
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MergingMediaSource
+import com.nuvio.app.features.trailer.YoutubeChunkedDataSourceFactory
 import androidx.media3.exoplayer.text.TextOutput
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -76,6 +81,7 @@ actual fun PlatformPlayerSurface(
     streamType: String?,
     sourceHeaders: Map<String, String>,
     sourceResponseHeaders: Map<String, String>,
+    externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     useYoutubeChunkedPlayback: Boolean,
     modifier: Modifier,
     playWhenReady: Boolean,
@@ -131,12 +137,14 @@ actual fun PlatformPlayerSurface(
         sanitizedSourceHeaders,
         sanitizedSourceResponseHeaders,
         useYoutubeChunkedPlayback,
+        externalSubtitles,
     ) {
         PlatformPlaybackDataSourceFactory.create(
             context = context,
             defaultRequestHeaders = sanitizedSourceHeaders,
             defaultResponseHeaders = sanitizedSourceResponseHeaders,
             useYoutubeChunkedPlayback = useYoutubeChunkedPlayback,
+            externalSubtitles = externalSubtitles,
         )
     }
 
@@ -980,15 +988,15 @@ private class SubtitleOffsetRenderer(
     }
 }
 
-private fun resolveSubtitleMimeType(url: String): String {
-    probeSubtitleHeaders(url)?.let { (contentType, contentDisposition) ->
+private fun resolveSubtitleMimeType(url: String, headers: Map<String, String>? = null): String {
+    probeSubtitleHeaders(url, headers)?.let { (contentType, contentDisposition) ->
         mapSubtitleMime(contentType)?.let { return it }
         filenameFromContentDisposition(contentDisposition)?.let(::guessSubtitleMime)?.let { return it }
     }
     return guessSubtitleMime(url)
 }
 
-private fun probeSubtitleHeaders(url: String): Pair<String?, String?>? {
+private fun probeSubtitleHeaders(url: String, headers: Map<String, String>? = null): Pair<String?, String?>? {
     val methods = listOf("HEAD", "GET")
     methods.forEach { method ->
         runCatching {
@@ -998,6 +1006,9 @@ private fun probeSubtitleHeaders(url: String): Pair<String?, String?>? {
                 readTimeout = 5_000
                 instanceFollowRedirects = true
                 setRequestProperty("Accept", "*/*")
+                headers?.forEach { (key, value) ->
+                    setRequestProperty(key, value)
+                }
             }
             try {
                 connection.responseCode
@@ -1059,3 +1070,50 @@ private fun String.isHlsUrl(): Boolean =
     contains("/playlist/", ignoreCase = true) ||
     contains("/master/", ignoreCase = true) ||
     contains("/chunklist/", ignoreCase = true)
+
+internal class SubtitleRequestHeaderDataSourceFactory(
+    private val upstreamFactory: DataSource.Factory,
+    private val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
+) : DataSource.Factory {
+    override fun createDataSource(): DataSource =
+        SubtitleRequestHeaderDataSource(
+            upstream = upstreamFactory.createDataSource(),
+            externalSubtitles = externalSubtitles,
+        )
+}
+
+internal class SubtitleRequestHeaderDataSource(
+    private val upstream: DataSource,
+    private val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
+) : DataSource {
+    override fun addTransferListener(transferListener: TransferListener) {
+        upstream.addTransferListener(transferListener)
+    }
+
+    override fun open(dataSpec: DataSpec): Long {
+        val url = dataSpec.uri.toString()
+        val subtitle = externalSubtitles.find { it.url == url }
+        val headers = subtitle?.headers
+        
+        return if (headers.isNullOrEmpty()) {
+            upstream.open(dataSpec)
+        } else {
+            val mergedHeaders = dataSpec.httpRequestHeaders.toMutableMap()
+            headers.forEach { (key, value) ->
+                mergedHeaders[key] = value
+            }
+            upstream.open(dataSpec.buildUpon().setHttpRequestHeaders(mergedHeaders).build())
+        }
+    }
+
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int =
+        upstream.read(buffer, offset, length)
+
+    override fun getUri(): Uri? = upstream.uri
+
+    override fun getResponseHeaders(): Map<String, List<String>> = upstream.responseHeaders
+
+    override fun close() {
+        upstream.close()
+    }
+}
