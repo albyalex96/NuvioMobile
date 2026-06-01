@@ -84,7 +84,8 @@ data class StreamItem(
             .toList()
 
     val isAddonDebridCandidate: Boolean
-        get() = isInstalledAddonStream && (needsLocalDebridResolve || isDirectDebridStream)
+    get() = (isInstalledAddonStream || addonId.startsWith("plugin:") || addonId.startsWith("plugin-repo:")) &&
+            (needsLocalDebridResolve || isDirectDebridStream)
 
     val hasPlayableSource: Boolean
         get() = url != null || infoHash != null || externalUrl != null || clientResolve != null

@@ -284,7 +284,8 @@ object PlayerStreamsRepository {
             }
 
             fun publishStreamGroupAfterCacheCheck(group: AddonStreamGroup) {
-                if (group.addonId !in installedAddonIds || group.streams.isEmpty()) {
+                val isEligible = group.addonId in installedAddonIds || group.addonId.startsWith("plugin:") || group.addonId.startsWith("plugin-repo:")          
+                if (!isEligible || group.streams.isEmpty()) {
                     publishStreamGroup(presentStreamGroup(group))
                     return
                 }
@@ -391,7 +392,7 @@ object PlayerStreamsRepository {
             launch {
                 DirectDebridStreamPreparer.prepare(
                     streams = stateFlow.value.groups
-                        .filter { it.addonId in installedAddonIds }
+                        .filter { it.addonId in installedAddonIds || it.addonId.startsWith("plugin:") || it.addonId.startsWith("plugin-repo:") }
                         .flatMap { it.streams },
                     season = season,
                     episode = episode,

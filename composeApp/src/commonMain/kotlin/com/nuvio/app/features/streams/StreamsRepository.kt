@@ -290,9 +290,12 @@ object StreamsRepository {
             }
 
             fun publishAddonGroupAfterCacheCheck(group: AddonStreamGroup) {
-                if (group.addonId !in installedAddonIds || group.streams.isEmpty()) {
+                val isEligible = group.addonId in installedAddonIds ||
+                                group.addonId.startsWith("plugin:") ||
+                                group.addonId.startsWith("plugin-repo:")
+                if (!isEligible || group.streams.isEmpty()) {
                     publishAddonGroup(presentStreamGroup(group))
-                    return
+                return
                 }
 
                 val eligibleGroupIds = setOf(group.addonId)
