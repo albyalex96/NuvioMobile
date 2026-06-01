@@ -1467,7 +1467,7 @@
 <string name="collections_editor_trakt_no_lists_found">Nessuna lista Trakt trovata</string>
 <string name="collections_editor_trakt_resolved_subtitle">Lista Trakt risolta</string>
 <string name="collections_editor_trakt_fallback_title">Lista Trakt %1$d</string>
-<string name="compose_player_auto_sync">Sincronizzazione automatica</string>
+<string name="compose_player_auto_sync">Sincr. automatica</string>
 <string name="compose_player_bold">Grassetto</string>
 <string name="compose_player_capture_line">Cattura riga</string>
 <string name="compose_player_loading_lines">Caricamento delle righe dei sottotitoli...</string>
@@ -1830,4 +1830,19 @@
 <string name="player_torrent_starting_engine">Avvio del motore P2P…</string>
 <string name="player_error_failed_start_torrent">Impossibile avviare il torrent: %1$s</string>
 <string name="player_error_torrent">Errore torrent: %1$s</string>
+<string name="settings_stream_size_badges_title">Badge dim. file</string>
+<string name="settings_stream_size_badges_description">Mostra i badge della dimensione dei file nei risultati dei flussi e nel pannello sorgenti del player.</string>
+<string name="settings_fusion_badges_summary">%1$d/%2$d URL, %3$d badge Fusion attivi</string>
+<string name="settings_fusion_badges_empty">Nessun URL badge Fusion importato.</string>
+<string name="settings_fusion_badge_url_label">URL JSON Fusion badge</string>
+<string name="settings_fusion_badge_urls_imported">%1$d/%2$d URL Fusion importati</string>
+<string name="settings_fusion_badge_url_active">Attivo</string>
+<string name="settings_fusion_badge_url_inactive">Inattivo</string>
+<string name="settings_fusion_badge_url_status_summary">%1$s, %2$d badge abilitati, %3$d gruppi</string>
+<string name="settings_fusion_badge_preview_action">Anteprima</string>
+<string name="settings_fusion_badge_preview_title">Anteprima badge Fusion</string>
+<string name="settings_fusion_badge_preview_count">%1$d badge in stile Fusion da questo URL</string>
+<string name="settings_fusion_badge_preview_empty">In questo URL non sono presenti immagini di badge in stile Fusion.</string>
+<string name="settings_fusion_badge_group_title">Gruppo %1$d</string>
+<string name="settings_fusion_badge_other_group_title">Altri badge Fusion</string>
 </resources>
