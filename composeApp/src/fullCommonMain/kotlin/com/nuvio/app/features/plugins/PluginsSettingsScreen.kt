@@ -109,8 +109,6 @@ fun PluginsSettingsPageContent(
     var testingScraperId by remember { mutableStateOf<String?>(null) }
     val testResults = remember { mutableStateMapOf<String, List<PluginRuntimeResult>>() }
 
-    var configuringRepo by remember { mutableStateOf<PluginRepositoryItem?>(null) }
-
     val sortedRepos = remember(uiState.repositories) {
         uiState.repositories.sortedBy { it.name.lowercase() }
     }
@@ -132,17 +130,6 @@ fun PluginsSettingsPageContent(
     val testErrorTitle = stringResource(Res.string.plugins_test_error_title)
     val installedTemplate = stringResource(Res.string.plugins_message_installed)
     val enterRepoUrlError = stringResource(Res.string.plugins_error_enter_repo_url)
-
-    configuringRepo?.let { repo ->
-        PluginConfigDialog(
-            repo = repo,
-            onDismiss = { configuringRepo = null },
-            onSave = { values ->
-                PluginStorage.saveConfig(repo.manifestUrl, values)
-                configuringRepo = null
-            },
-        )
-    }
 
     Column(
         modifier = modifier,
@@ -334,14 +321,6 @@ fun PluginsSettingsPageContent(
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (repo.settings.isNotEmpty()) {
-                                NuvioIconActionButton(
-                                    icon = Icons.Rounded.Settings,
-                                    contentDescription = "Configure plugin repository",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    onClick = { configuringRepo = repo },
-                                )
-                            }
                             NuvioIconActionButton(
                                 icon = Icons.Rounded.Refresh,
                                 contentDescription = stringResource(Res.string.plugins_cd_refresh_repo),
@@ -362,9 +341,6 @@ fun PluginsSettingsPageContent(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_providers, repo.scraperCount))
-                        if (repo.settings.isNotEmpty()) {
-                            NuvioInfoBadge(text = "Configurable")
-                        }
                         if (repo.isRefreshing) {
                             NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_refreshing))
                         }
@@ -533,101 +509,6 @@ fun PluginsSettingsPageContent(
             }
         }
     }
-}
-
-@Composable
-private fun PluginConfigDialog(
-    repo: PluginRepositoryItem,
-    onDismiss: () -> Unit,
-    onSave: (Map<String, String>) -> Unit,
-) {
-    val savedValues = remember(repo.manifestUrl) {
-        PluginStorage.loadConfig(repo.manifestUrl)
-    }
-    val fieldValues = remember(repo.manifestUrl) {
-        mutableStateMapOf<String, String>().apply {
-            repo.settings.forEach { field ->
-                put(field.key, savedValues[field.key] ?: field.default.orEmpty())
-            }
-        }
-    }
-    val passwordVisibility = remember(repo.manifestUrl) {
-        mutableStateMapOf<String, Boolean>().apply {
-            repo.settings.forEach { field -> put(field.key, false) }
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "${repo.name} — Settings",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                repo.settings.forEach { field ->
-                    val isPassword = field.type == "password"
-                    val isVisible = passwordVisibility[field.key] == true
-                    Column {
-                        Text(
-                            text = field.label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        field.description?.let { desc ->
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = desc,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        NuvioInputField(
-                            value = fieldValues[field.key].orEmpty(),
-                            onValueChange = { fieldValues[field.key] = it },
-                            placeholder = field.label,
-                            trailingContent = if (isPassword) {
-                                {
-                                    IconButton(onClick = {
-                                        passwordVisibility[field.key] = !isVisible
-                                    }) {
-                                        Icon(
-                                            imageVector = if (isVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                            contentDescription = if (isVisible) "Hide" else "Show",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            } else null,
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(fieldValues.toMap()) }) {
-                Text(
-                    text = "Save",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    text = "Cancel",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-    )
 }
 
 private fun String.fallbackRepositoryLabel(fallback: String): String {
