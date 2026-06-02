@@ -18,20 +18,24 @@ import platform.Security.SecRandomCopyBytes
 import platform.Security.kSecRandomDefault
 
 internal fun pluginGetRandomValues(length: Int): ByteArray {
+    require(length >= 0) { "Random byte length must be non-negative" }
+    if (length == 0) return ByteArray(0)
     val bytes = ByteArray(length)
     @OptIn(ExperimentalForeignApi::class)
-    SecRandomCopyBytes(kSecRandomDefault, length.toULong(), bytes.refTo(0))
+    val status = SecRandomCopyBytes(kSecRandomDefault, length.toULong(), bytes.refTo(0))
+    require(status == 0) { "Failed to generate secure random bytes: status $status" }
     return bytes
 }
 
 @OptIn(ExperimentalForeignApi::class)
 internal fun pluginDigest(algorithm: String, data: ByteArray): ByteArray {
-    val normalized = algorithm.uppercase()
+    val normalized = normalizeDigestAlgorithm(algorithm)
     val output = ByteArray(
         when (normalized) {
             "MD5" -> CC_MD5_DIGEST_LENGTH.toInt()
             "SHA1" -> CC_SHA1_DIGEST_LENGTH.toInt()
             "SHA256" -> CC_SHA256_DIGEST_LENGTH.toInt()
+            "SHA384" -> CC_SHA384_DIGEST_LENGTH.toInt()
             "SHA512" -> CC_SHA512_DIGEST_LENGTH.toInt()
             else -> error("Unsupported digest algorithm: $algorithm")
         },
@@ -46,6 +50,7 @@ internal fun pluginDigest(algorithm: String, data: ByteArray): ByteArray {
                 "MD5" -> CC_MD5(dataPtr, data.size.toUInt(), outputPtr)
                 "SHA1" -> CC_SHA1(dataPtr, data.size.toUInt(), outputPtr)
                 "SHA256" -> CC_SHA256(dataPtr, data.size.toUInt(), outputPtr)
+                "SHA384" -> CC_SHA384(dataPtr, data.size.toUInt(), outputPtr)
                 "SHA512" -> CC_SHA512(dataPtr, data.size.toUInt(), outputPtr)
             }
         }
@@ -62,13 +67,10 @@ internal fun pluginPbkdf2(
     keySizeBits: Int,
     algorithm: String,
 ): ByteArray {
-    val prf = when (algorithm.uppercase()) {
-        "SHA256", "HMACSHA256" -> kCCPRFHmacAlgSHA256
-        "SHA1", "HMACSHA1" -> kCCPRFHmacAlgSHA1
-        "SHA384", "HMACSHA384" -> kCCPRFHmacAlgSHA384
-        "SHA512", "HMACSHA512" -> kCCPRFHmacAlgSHA512
-        else -> kCCPRFHmacAlgSHA256
-    }
+    require(iterations > 0) { "PBKDF2 iterations must be positive" }
+    require(keySizeBits > 0 && keySizeBits % 8 == 0) { "PBKDF2 key size must be a positive byte-aligned bit length" }
+
+    val prf = normalizePbkdf2Prf(algorithm)
     
     val derivedKeyLen = keySizeBits / 8
     val derivedKey = ByteArray(derivedKeyLen)
@@ -107,6 +109,11 @@ internal fun pluginAesEncrypt(
     iv: ByteArray,
     data: ByteArray,
 ): ByteArray {
+    requireValidAesKey(key)
+    if (!mode.uppercase().contains("ECB")) {
+        require(iv.isNotEmpty()) { "AES mode $mode requires an IV" }
+    }
+
     val isGcm = mode.uppercase().contains("GCM")
     if (isGcm) {
         var encryptedData: ByteArray? = null
@@ -241,6 +248,11 @@ internal fun pluginAesDecrypt(
     iv: ByteArray,
     data: ByteArray,
 ): ByteArray {
+    requireValidAesKey(key)
+    if (!mode.uppercase().contains("ECB")) {
+        require(iv.isNotEmpty()) { "AES mode $mode requires an IV" }
+    }
+
     val isGcm = mode.uppercase().contains("GCM")
     if (isGcm) {
         require(data.size >= 16) { "Data too short for GCM decryption" }
@@ -387,13 +399,14 @@ private fun UByteArray.toHex(): String = joinToString(separator = "") { byte ->
 
 @OptIn(ExperimentalForeignApi::class)
 internal fun pluginDigestHex(algorithm: String, data: String): String {
-    val normalized = algorithm.uppercase()
+    val normalized = normalizeDigestAlgorithm(algorithm)
     val input = data.encodeToByteArray()
     val output = UByteArray(
         when (normalized) {
             "MD5" -> CC_MD5_DIGEST_LENGTH.toInt()
             "SHA1" -> CC_SHA1_DIGEST_LENGTH.toInt()
             "SHA256" -> CC_SHA256_DIGEST_LENGTH.toInt()
+            "SHA384" -> CC_SHA384_DIGEST_LENGTH.toInt()
             "SHA512" -> CC_SHA512_DIGEST_LENGTH.toInt()
             else -> error("Unsupported digest algorithm: $algorithm")
         },
@@ -408,6 +421,7 @@ internal fun pluginDigestHex(algorithm: String, data: String): String {
                 "MD5" -> CC_MD5(dataPtr, input.size.toUInt(), outputPtr)
                 "SHA1" -> CC_SHA1(dataPtr, input.size.toUInt(), outputPtr)
                 "SHA256" -> CC_SHA256(dataPtr, input.size.toUInt(), outputPtr)
+                "SHA384" -> CC_SHA384(dataPtr, input.size.toUInt(), outputPtr)
                 "SHA512" -> CC_SHA512(dataPtr, input.size.toUInt(), outputPtr)
             }
         }
@@ -417,42 +431,83 @@ internal fun pluginDigestHex(algorithm: String, data: String): String {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-internal fun pluginHmacHex(algorithm: String, key: String, data: String): String {
-    val normalized = algorithm.uppercase()
-    val keyBytes = key.encodeToByteArray()
-    val input = data.encodeToByteArray()
+internal fun pluginHmac(algorithm: String, key: ByteArray, data: ByteArray): ByteArray {
+    val (alg, outputSize) = normalizeHmacAlgorithm(algorithm)
+    val output = ByteArray(outputSize)
 
-    val (alg, outputSize) = when (normalized) {
-        "MD5" -> kCCHmacAlgMD5 to CC_MD5_DIGEST_LENGTH.toInt()
-        "SHA1" -> kCCHmacAlgSHA1 to CC_SHA1_DIGEST_LENGTH.toInt()
-        "SHA256" -> kCCHmacAlgSHA256 to CC_SHA256_DIGEST_LENGTH.toInt()
-        "SHA512" -> kCCHmacAlgSHA512 to CC_SHA512_DIGEST_LENGTH.toInt()
-        else -> error("Unsupported HMAC algorithm: $algorithm")
-    }
-
-    val output = UByteArray(outputSize)
-    
-    keyBytes.usePinned { pinnedKey ->
-        input.usePinned { pinnedInput ->
+    key.usePinned { pinnedKey ->
+        data.usePinned { pinnedInput ->
             output.usePinned { pinnedOutput ->
-                val keyPtr = if (keyBytes.isNotEmpty()) pinnedKey.addressOf(0) else null
-                val inputPtr = if (input.isNotEmpty()) pinnedInput.addressOf(0) else null
-                val outputPtr = pinnedOutput.addressOf(0)
+                val keyPtr = if (key.isNotEmpty()) pinnedKey.addressOf(0) else null
+                val inputPtr = if (data.isNotEmpty()) pinnedInput.addressOf(0) else null
 
                 CCHmac(
                     alg,
                     keyPtr,
-                    keyBytes.size.toULong(),
+                    key.size.toULong(),
                     inputPtr,
-                    input.size.toULong(),
-                    outputPtr,
+                    data.size.toULong(),
+                    pinnedOutput.addressOf(0).reinterpret<UByteVar>(),
                 )
             }
         }
     }
 
-    return output.toHex()
+    return output
 }
+
+@OptIn(ExperimentalForeignApi::class)
+internal fun pluginHmacHex(algorithm: String, key: String, data: String): String {
+    return pluginHmac(algorithm, key.encodeToByteArray(), data.encodeToByteArray()).toHex()
+}
+
+private fun normalizeDigestAlgorithm(algorithm: String): String {
+    return when (algorithm.normalizedAlgorithmToken()) {
+        "MD5" -> "MD5"
+        "SHA1" -> "SHA1"
+        "SHA256" -> "SHA256"
+        "SHA384" -> "SHA384"
+        "SHA512" -> "SHA512"
+        else -> error("Unsupported digest algorithm: $algorithm")
+    }
+}
+
+private fun normalizePbkdf2Prf(algorithm: String) =
+    when (algorithm.normalizedAlgorithmToken().removePrefix("HMAC")) {
+        "SHA1" -> kCCPRFHmacAlgSHA1
+        "SHA256" -> kCCPRFHmacAlgSHA256
+        "SHA384" -> kCCPRFHmacAlgSHA384
+        "SHA512" -> kCCPRFHmacAlgSHA512
+        else -> error("Unsupported PBKDF2 hash algorithm: $algorithm")
+    }
+
+private fun normalizeHmacAlgorithm(algorithm: String) =
+    when (algorithm.normalizedAlgorithmToken().removePrefix("HMAC")) {
+        "MD5" -> kCCHmacAlgMD5 to CC_MD5_DIGEST_LENGTH.toInt()
+        "SHA1" -> kCCHmacAlgSHA1 to CC_SHA1_DIGEST_LENGTH.toInt()
+        "SHA256" -> kCCHmacAlgSHA256 to CC_SHA256_DIGEST_LENGTH.toInt()
+        "SHA384" -> kCCHmacAlgSHA384 to CC_SHA384_DIGEST_LENGTH.toInt()
+        "SHA512" -> kCCHmacAlgSHA512 to CC_SHA512_DIGEST_LENGTH.toInt()
+        else -> error("Unsupported HMAC algorithm: $algorithm")
+    }
+
+private fun requireValidAesKey(key: ByteArray) {
+    require(key.size == 16 || key.size == 24 || key.size == 32) {
+        "AES key must be 16, 24, or 32 bytes"
+    }
+}
+
+private fun ByteArray.toHex(): String =
+    joinToString(separator = "") { byte ->
+        byte.toUByte().toString(16).padStart(2, '0')
+    }
+
+private fun String.normalizedAlgorithmToken(): String =
+    uppercase()
+        .replace("-", "")
+        .replace("_", "")
+        .replace("/", "")
+        .replace(" ", "")
 
 @OptIn(ExperimentalEncodingApi::class)
 internal fun pluginBase64Encode(data: String): String =
