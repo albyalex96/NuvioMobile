@@ -17,6 +17,7 @@
   <string name="action_resume">Riprendi</string>
   <string name="action_retry">Riprova</string>
   <string name="action_save">Salva</string>
+  <string name="action_watch_again">Guarda Ancora</string>
   <string name="addon_installing">Installando</string>
   <string name="addon_title">Addons</string>
   <string name="addons_badge_active">Attivo</string>
