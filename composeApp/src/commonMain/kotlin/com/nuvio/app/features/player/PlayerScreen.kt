@@ -8,11 +8,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
@@ -444,6 +457,10 @@ fun PlayerScreen(
         var nextEpisodeAutoPlaySourceName by remember { mutableStateOf<String?>(null) }
         var nextEpisodeAutoPlayCountdown by remember { mutableStateOf<Int?>(null) }
         var nextEpisodeAutoPlayJob by remember { mutableStateOf<Job?>(null) }
+        var stillWatchingEpisodeCounter by rememberSaveable { mutableStateOf(0) }
+        var stillWatchingShowDialog by remember { mutableStateOf(false) }
+        var stillWatchingTimeoutRemaining by remember { mutableStateOf(20) }
+        var stillWatchingCountdownJob by remember { mutableStateOf<Job?>(null) }
         var pendingP2pSwitch by remember { mutableStateOf<PendingPlayerP2pSwitch?>(null) }
 
         LaunchedEffect(parentMetaType, parentMetaId) {
@@ -2316,7 +2333,9 @@ fun PlayerScreen(
             playerSettingsUiState.nextEpisodeThresholdMode,
             playerSettingsUiState.nextEpisodeThresholdPercent,
             playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
+            stillWatchingShowDialog,
         ) {
+            if (stillWatchingShowDialog) return@LaunchedEffect
             if (nextEpisodeInfo == null || playbackSnapshot.durationMs <= 0L) {
                 showNextEpisodeCard = false
                 return@LaunchedEffect
@@ -2343,8 +2362,36 @@ fun PlayerScreen(
         // Auto-play on video ended if next episode card isn't already showing
         LaunchedEffect(playbackSnapshot.isEnded, nextEpisodeInfo) {
             if (playbackSnapshot.isEnded && nextEpisodeInfo != null && !showNextEpisodeCard) {
+                val stillWatchingSettings = playerSettingsUiState
+                if (stillWatchingSettings.stillWatchingEnabled && isSeries) {
+                    val newCount = stillWatchingEpisodeCounter + 1
+                    stillWatchingEpisodeCounter = newCount
+                    val isNightTime = if (stillWatchingSettings.stillWatchingNightMode) {
+                        val hour = currentHour()
+                        hour in 22..23 || hour in 0..4
+                    } else true
+                    if (newCount >= stillWatchingSettings.stillWatchingEpisodeCount && isNightTime) {
+                        playerController?.pause()
+                        shouldPlay = false
+                        stillWatchingShowDialog = true
+                        stillWatchingTimeoutRemaining = 20
+                        stillWatchingCountdownJob?.cancel()
+                        stillWatchingCountdownJob = scope.launch {
+                            while (stillWatchingTimeoutRemaining > 0 && stillWatchingShowDialog) {
+                                delay(1000)
+                                stillWatchingTimeoutRemaining--
+                            }
+                            if (stillWatchingShowDialog) {
+                                stillWatchingShowDialog = false
+                                stillWatchingEpisodeCounter = 0
+                                onBackWithProgress()
+                            }
+                        }
+                        return@LaunchedEffect
+                    }
+                }
                 showNextEpisodeCard = true
-                if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
+                if (stillWatchingSettings.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
                     playNextEpisode()
                 }
             }
@@ -2789,6 +2836,29 @@ fun PlayerScreen(
                 )
             }
 
+            if (stillWatchingShowDialog) {
+                StillWatchingDialog(
+                    timeoutRemaining = stillWatchingTimeoutRemaining,
+                    onProceed = {
+                        stillWatchingCountdownJob?.cancel()
+                        stillWatchingShowDialog = false
+                        stillWatchingEpisodeCounter = 0
+                        shouldPlay = true
+                        playerController?.play()
+                        showNextEpisodeCard = true
+                        if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
+                            playNextEpisode()
+                        }
+                    },
+                    onCancel = {
+                        stillWatchingCountdownJob?.cancel()
+                        stillWatchingShowDialog = false
+                        stillWatchingEpisodeCounter = 0
+                        onBackWithProgress()
+                    },
+                )
+            }
+
             if (pendingP2pSwitch != null) {
                 P2pConsentDialog(
                     onEnableP2p = {
@@ -3180,4 +3250,56 @@ private fun findPersistedSubtitleTrackIndex(
         tracks.firstOrNull { it.label.equals(name, ignoreCase = true) }?.let { return it.index }
     }
     return -1
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun StillWatchingDialog(
+    timeoutRemaining: Int,
+    onProceed: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    BasicAlertDialog(
+        onDismissRequest = onCancel,
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.still_watching_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+
+                Text(
+                    text = stringResource(Res.string.still_watching_timeout, timeoutRemaining),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                ) {
+                    TextButton(onClick = onCancel) {
+                        Text(stringResource(Res.string.still_watching_cancel))
+                    }
+                    TextButton(onClick = onProceed) {
+                        Text(
+                            stringResource(Res.string.still_watching_proceed),
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

@@ -1846,4 +1846,15 @@
 <string name="settings_fusion_badge_preview_empty">In questo URL non sono presenti immagini di badge in stile Fusion.</string>
 <string name="settings_fusion_badge_group_title">Gruppo %1$d</string>
 <string name="settings_fusion_badge_other_group_title">Altri badge Fusion</string>
+
+    <string name="settings_playback_still_watching">Ancora qui?</string>
+    <string name="settings_playback_still_watching_description">Metti in pausa dopo un numero di episodi e chiedi conferma</string>
+    <string name="settings_playback_still_watching_episode_count">Episodi prima del prompt</string>
+    <string name="settings_playback_still_watching_night_mode">Solo notturno</string>
+    <string name="settings_playback_still_watching_night_mode_description">Attiva solo tra le 22:00 e le 04:00</string>
+    <string name="still_watching_title">Ancora qui?</string>
+    <string name="still_watching_message">Hai guardato %1$d episodi. Continuare la riproduzione?</string>
+    <string name="still_watching_proceed">Procedi</string>
+    <string name="still_watching_cancel">Annulla</string>
+    <string name="still_watching_timeout">Arresto tra %1$d…</string>
 </resources>

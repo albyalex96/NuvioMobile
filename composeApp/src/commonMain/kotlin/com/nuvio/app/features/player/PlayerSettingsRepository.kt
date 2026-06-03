@@ -70,6 +70,9 @@ data class PlayerSettingsUiState(
     val useLibass: Boolean = false,
     val libassRenderType: String = "CUES",
     val swipeGesturesEnabled: Boolean = true,
+    val stillWatchingEnabled: Boolean = false,
+    val stillWatchingEpisodeCount: Int = 2,
+    val stillWatchingNightMode: Boolean = false,
     val iosVideoOutputPreset: IosVideoOutputPreset = IosVideoOutputPreset.NativeEdr,
     val iosToneMappingMode: IosToneMappingMode = IosToneMappingMode.Auto,
     val iosTargetPrimaries: IosTargetPrimaries = IosTargetPrimaries.Auto,
@@ -129,6 +132,9 @@ object PlayerSettingsRepository {
     private var useLibass = false
     private var libassRenderType = "CUES"
     private var swipeGesturesEnabled = true
+    private var stillWatchingEnabled = false
+    private var stillWatchingEpisodeCount = 2
+    private var stillWatchingNightMode = false
     private var iosVideoOutputPreset = IosVideoOutputPreset.NativeEdr
     private var iosToneMappingMode = IosToneMappingMode.Auto
     private var iosTargetPrimaries = IosTargetPrimaries.Auto
@@ -193,6 +199,9 @@ object PlayerSettingsRepository {
         useLibass = false
         libassRenderType = "CUES"
         swipeGesturesEnabled = true
+        stillWatchingEnabled = false
+        stillWatchingEpisodeCount = 2
+        stillWatchingNightMode = false
         iosVideoOutputPreset = IosVideoOutputPreset.NativeEdr
         iosToneMappingMode = IosToneMappingMode.Auto
         iosTargetPrimaries = IosTargetPrimaries.Auto
@@ -306,6 +315,9 @@ object PlayerSettingsRepository {
         nextEpisodeThresholdMinutesBeforeEnd = PlayerSettingsStorage.loadNextEpisodeThresholdMinutesBeforeEnd() ?: 2f
         useLibass = PlayerSettingsStorage.loadUseLibass() ?: false
         libassRenderType = PlayerSettingsStorage.loadLibassRenderType() ?: "CUES"
+        stillWatchingEnabled = PlayerSettingsStorage.loadStillWatchingEnabled() ?: false
+        stillWatchingEpisodeCount = PlayerSettingsStorage.loadStillWatchingEpisodeCount() ?: 2
+        stillWatchingNightMode = PlayerSettingsStorage.loadStillWatchingNightMode() ?: false
         swipeGesturesEnabled = PlayerSettingsStorage.loadSwipeGesturesEnabled() ?: true
         iosVideoOutputPreset = PlayerSettingsStorage.loadIosVideoOutputPreset()
             ?.let { runCatching { IosVideoOutputPreset.valueOf(it) }.getOrNull() }
@@ -663,6 +675,31 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveSwipeGesturesEnabled(enabled)
     }
 
+    fun setStillWatchingEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (stillWatchingEnabled == enabled) return
+        stillWatchingEnabled = enabled
+        publish()
+        PlayerSettingsStorage.saveStillWatchingEnabled(enabled)
+    }
+
+    fun setStillWatchingEpisodeCount(count: Int) {
+        ensureLoaded()
+        val normalized = count.coerceIn(1, 10)
+        if (stillWatchingEpisodeCount == normalized) return
+        stillWatchingEpisodeCount = normalized
+        publish()
+        PlayerSettingsStorage.saveStillWatchingEpisodeCount(normalized)
+    }
+
+    fun setStillWatchingNightMode(enabled: Boolean) {
+        ensureLoaded()
+        if (stillWatchingNightMode == enabled) return
+        stillWatchingNightMode = enabled
+        publish()
+        PlayerSettingsStorage.saveStillWatchingNightMode(enabled)
+    }
+
     fun setIosVideoOutputPreset(preset: IosVideoOutputPreset) {
         ensureLoaded()
         iosVideoOutputPreset = preset
@@ -861,6 +898,9 @@ object PlayerSettingsRepository {
             useLibass = useLibass,
             libassRenderType = libassRenderType,
             swipeGesturesEnabled = swipeGesturesEnabled,
+            stillWatchingEnabled = stillWatchingEnabled,
+            stillWatchingEpisodeCount = stillWatchingEpisodeCount,
+            stillWatchingNightMode = stillWatchingNightMode,
             iosVideoOutputPreset = iosVideoOutputPreset,
             iosToneMappingMode = iosToneMappingMode,
             iosTargetPrimaries = iosTargetPrimaries,

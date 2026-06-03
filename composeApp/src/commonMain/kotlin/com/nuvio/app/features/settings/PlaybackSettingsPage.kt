@@ -102,6 +102,9 @@ internal fun LazyListScope.playbackSettingsContent(
     useLibass: Boolean,
     libassRenderType: String,
     swipeGesturesEnabled: Boolean,
+    stillWatchingEnabled: Boolean,
+    stillWatchingEpisodeCount: Int,
+    stillWatchingNightMode: Boolean,
 ) {
     item {
         PlaybackSettingsSection(
@@ -121,6 +124,9 @@ internal fun LazyListScope.playbackSettingsContent(
             useLibass = useLibass,
             libassRenderType = libassRenderType,
             swipeGesturesEnabled = swipeGesturesEnabled,
+            stillWatchingEnabled = stillWatchingEnabled,
+            stillWatchingEpisodeCount = stillWatchingEpisodeCount,
+            stillWatchingNightMode = stillWatchingNightMode,
         )
     }
 }
@@ -256,6 +262,9 @@ private fun PlaybackSettingsSection(
     useLibass: Boolean,
     libassRenderType: String,
     swipeGesturesEnabled: Boolean,
+    stillWatchingEnabled: Boolean,
+    stillWatchingEpisodeCount: Int,
+    stillWatchingNightMode: Boolean,
 ) {
     var showPreferredAudioDialog by remember { mutableStateOf(false) }
     var showSecondaryAudioDialog by remember { mutableStateOf(false) }
@@ -1067,6 +1076,41 @@ private fun PlaybackSettingsSection(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        SettingsSection(
+            title = stringResource(Res.string.settings_playback_still_watching),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_playback_still_watching),
+                    description = stringResource(Res.string.settings_playback_still_watching_description),
+                    checked = stillWatchingEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setStillWatchingEnabled,
+                )
+                if (stillWatchingEnabled) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSliderRow(
+                        title = stringResource(Res.string.settings_playback_still_watching_episode_count),
+                        value = stillWatchingEpisodeCount,
+                        valueText = stillWatchingEpisodeCount.toString(),
+                        valueRange = 1..10,
+                        step = 1,
+                        isTablet = isTablet,
+                        onValueChange = PlayerSettingsRepository::setStillWatchingEpisodeCount,
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_still_watching_night_mode),
+                        description = stringResource(Res.string.settings_playback_still_watching_night_mode_description),
+                        checked = stillWatchingNightMode,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setStillWatchingNightMode,
+                    )
                 }
             }
         }

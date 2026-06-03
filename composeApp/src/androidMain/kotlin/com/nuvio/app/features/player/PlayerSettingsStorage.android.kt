@@ -65,6 +65,9 @@ actual object PlayerSettingsStorage {
     private const val nextEpisodeThresholdMinutesBeforeEndKey = "next_episode_threshold_minutes_before_end_v2"
     private const val useLibassKey = "use_libass"
     private const val libassRenderTypeKey = "libass_render_type"
+    private const val stillWatchingEnabledKey = "still_watching_enabled"
+    private const val stillWatchingEpisodeCountKey = "still_watching_episode_count"
+    private const val stillWatchingNightModeKey = "still_watching_night_mode"
     private const val swipeGesturesEnabledKey = "swipe_gestures_enabled"
     private const val iosVideoOutputPresetKey = "ios_video_output_preset"
     private const val iosToneMappingModeKey = "ios_tone_mapping_mode"
@@ -125,6 +128,9 @@ actual object PlayerSettingsStorage {
         nextEpisodeThresholdMinutesBeforeEndKey,
         useLibassKey,
         libassRenderTypeKey,
+        stillWatchingEnabledKey,
+        stillWatchingEpisodeCountKey,
+        stillWatchingNightModeKey,
         swipeGesturesEnabledKey,
         iosVideoOutputPresetKey,
         iosToneMappingModeKey,
@@ -832,6 +838,57 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
+    actual fun loadStillWatchingEnabled(): Boolean? =
+        preferences?.let { sharedPreferences ->
+            val key = ProfileScopedKey.of(stillWatchingEnabledKey)
+            if (sharedPreferences.contains(key)) {
+                sharedPreferences.getBoolean(key, false)
+            } else {
+                null
+            }
+        }
+
+    actual fun saveStillWatchingEnabled(enabled: Boolean) {
+        preferences
+            ?.edit()
+            ?.putBoolean(ProfileScopedKey.of(stillWatchingEnabledKey), enabled)
+            ?.apply()
+    }
+
+    actual fun loadStillWatchingEpisodeCount(): Int? =
+        preferences?.let { sharedPreferences ->
+            val key = ProfileScopedKey.of(stillWatchingEpisodeCountKey)
+            if (sharedPreferences.contains(key)) {
+                sharedPreferences.getInt(key, 2)
+            } else {
+                null
+            }
+        }
+
+    actual fun saveStillWatchingEpisodeCount(count: Int) {
+        preferences
+            ?.edit()
+            ?.putInt(ProfileScopedKey.of(stillWatchingEpisodeCountKey), count)
+            ?.apply()
+    }
+
+    actual fun loadStillWatchingNightMode(): Boolean? =
+        preferences?.let { sharedPreferences ->
+            val key = ProfileScopedKey.of(stillWatchingNightModeKey)
+            if (sharedPreferences.contains(key)) {
+                sharedPreferences.getBoolean(key, false)
+            } else {
+                null
+            }
+        }
+
+    actual fun saveStillWatchingNightMode(enabled: Boolean) {
+        preferences
+            ?.edit()
+            ?.putBoolean(ProfileScopedKey.of(stillWatchingNightModeKey), enabled)
+            ?.apply()
+    }
+
     actual fun loadSwipeGesturesEnabled(): Boolean? =
         preferences?.let { sharedPreferences ->
             val key = ProfileScopedKey.of(swipeGesturesEnabledKey)
@@ -1008,6 +1065,9 @@ actual object PlayerSettingsStorage {
         loadNextEpisodeThresholdMinutesBeforeEnd()?.let { put(nextEpisodeThresholdMinutesBeforeEndKey, encodeSyncFloat(it)) }
         loadUseLibass()?.let { put(useLibassKey, encodeSyncBoolean(it)) }
         loadLibassRenderType()?.let { put(libassRenderTypeKey, encodeSyncString(it)) }
+        loadStillWatchingEnabled()?.let { put(stillWatchingEnabledKey, encodeSyncBoolean(it)) }
+        loadStillWatchingEpisodeCount()?.let { put(stillWatchingEpisodeCountKey, encodeSyncInt(it)) }
+        loadStillWatchingNightMode()?.let { put(stillWatchingNightModeKey, encodeSyncBoolean(it)) }
         loadSwipeGesturesEnabled()?.let { put(swipeGesturesEnabledKey, encodeSyncBoolean(it)) }
         loadIosVideoOutputPreset()?.let { put(iosVideoOutputPresetKey, encodeSyncString(it)) }
         loadIosToneMappingMode()?.let { put(iosToneMappingModeKey, encodeSyncString(it)) }
@@ -1076,6 +1136,9 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncFloat(nextEpisodeThresholdMinutesBeforeEndKey)?.let(::saveNextEpisodeThresholdMinutesBeforeEnd)
         payload.decodeSyncBoolean(useLibassKey)?.let(::saveUseLibass)
         payload.decodeSyncString(libassRenderTypeKey)?.let(::saveLibassRenderType)
+        payload.decodeSyncBoolean(stillWatchingEnabledKey)?.let(::saveStillWatchingEnabled)
+        payload.decodeSyncInt(stillWatchingEpisodeCountKey)?.let(::saveStillWatchingEpisodeCount)
+        payload.decodeSyncBoolean(stillWatchingNightModeKey)?.let(::saveStillWatchingNightMode)
         payload.decodeSyncBoolean(swipeGesturesEnabledKey)?.let(::saveSwipeGesturesEnabled)
         payload.decodeSyncString(iosVideoOutputPresetKey)?.let(::saveIosVideoOutputPreset)
         payload.decodeSyncString(iosToneMappingModeKey)?.let(::saveIosToneMappingMode)
