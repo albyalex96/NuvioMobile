@@ -2361,7 +2361,7 @@ fun PlayerScreen(
 
         // Auto-play on video ended if next episode card isn't already showing
         LaunchedEffect(playbackSnapshot.isEnded, nextEpisodeInfo) {
-            if (playbackSnapshot.isEnded && nextEpisodeInfo != null && !showNextEpisodeCard) {
+            if (playbackSnapshot.isEnded && nextEpisodeInfo != null) {
                 val stillWatchingSettings = playerSettingsUiState
                 if (stillWatchingSettings.stillWatchingEnabled && isSeries) {
                     val newCount = stillWatchingEpisodeCounter + 1
@@ -2390,9 +2390,11 @@ fun PlayerScreen(
                         return@LaunchedEffect
                     }
                 }
-                showNextEpisodeCard = true
-                if (stillWatchingSettings.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                    playNextEpisode()
+                if (!showNextEpisodeCard) {
+                    showNextEpisodeCard = true
+                    if (stillWatchingSettings.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
+                        playNextEpisode()
+                    }
                 }
             }
         }
