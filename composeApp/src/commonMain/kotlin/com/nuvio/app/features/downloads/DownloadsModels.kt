@@ -1,7 +1,7 @@
 package com.nuvio.app.features.downloads
 
 import kotlinx.serialization.Serializable
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.downloads_enqueue_missing_url
 import nuvio.composeapp.generated.resources.downloads_enqueue_replaced
@@ -93,7 +93,7 @@ enum class DownloadEnqueueResult {
     UnsupportedFormat,
     HlsNeedsSelection;
 
-    fun toastMessage(): String = runBlocking {
+    fun toastMessage(): String = platformRunBlocking {
         when (this@DownloadEnqueueResult) {
             Started -> getString(Res.string.downloads_enqueue_started)
             Replaced -> getString(Res.string.downloads_enqueue_replaced)

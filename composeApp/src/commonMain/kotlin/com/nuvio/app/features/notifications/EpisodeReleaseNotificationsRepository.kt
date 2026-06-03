@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
@@ -296,7 +296,7 @@ object EpisodeReleaseNotificationsRepository {
             permissionGranted = granted,
             testTargetTitle = currentTestTarget()?.name,
             errorMessage = when {
-                _uiState.value.isEnabled && !granted -> runBlocking { getString(Res.string.settings_notifications_permission_disabled) }
+                _uiState.value.isEnabled && !granted -> platformRunBlocking { getString(Res.string.settings_notifications_permission_disabled) }
                 else -> _uiState.value.errorMessage
             },
         )
@@ -364,7 +364,7 @@ object EpisodeReleaseNotificationsRepository {
                     scheduledCount = 0,
                     testTargetTitle = currentTestTarget()?.name,
                     errorMessage = if (_uiState.value.isEnabled && !permissionGranted) {
-                        runBlocking { getString(Res.string.settings_notifications_permission_disabled) }
+                        platformRunBlocking { getString(Res.string.settings_notifications_permission_disabled) }
                     } else {
                         null
                     },

@@ -1,7 +1,7 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.serialization.Serializable
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -34,7 +34,7 @@ data class StreamItem(
     val badges: List<StreamBadge> = emptyList(),
 ) {
     val streamLabel: String
-        get() = name ?: runBlocking { getString(Res.string.stream_default_name) }
+        get() = name ?: platformRunBlocking { getString(Res.string.stream_default_name) }
 
     val streamSubtitle: String?
         get() = description

@@ -202,7 +202,7 @@ import nuvio.composeapp.generated.resources.settings_debrid_rule_excluded_releas
 import nuvio.composeapp.generated.resources.settings_debrid_rule_excluded_release_groups_desc
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 
 private const val CLOUD_SERVICES_FAQ_URL = "https://nuvioapp.space/faq#common-cloud-library-and-cloud-services"
 
@@ -573,8 +573,8 @@ private enum class DebridTemplateField {
 }
 
 private fun templatePreview(value: String, defaultValue: String): String {
-    val defaultFormat = runBlocking { getString(Res.string.settings_debrid_template_default_format) }
-    val originalFormat = runBlocking { getString(Res.string.settings_debrid_template_original_format) }
+    val defaultFormat = platformRunBlocking { getString(Res.string.settings_debrid_template_default_format) }
+    val originalFormat = platformRunBlocking { getString(Res.string.settings_debrid_template_original_format) }
     val trimmed = value.trim()
     if (trimmed.isBlank()) return originalFormat
     if (trimmed == defaultValue.trim()) return defaultFormat

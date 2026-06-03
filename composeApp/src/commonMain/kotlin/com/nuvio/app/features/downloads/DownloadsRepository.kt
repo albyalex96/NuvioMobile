@@ -5,7 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -501,7 +501,7 @@ object DownloadsRepository {
                     } else {
                         current.copy(
                             status = DownloadStatus.Failed,
-                            errorMessage = message.ifBlank { runBlocking { getString(Res.string.download_failed) } },
+                            errorMessage = message.ifBlank { platformRunBlocking { getString(Res.string.download_failed) } },
                             updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                         )
                     }
@@ -522,7 +522,7 @@ object DownloadsRepository {
                 headers = item.sourceHeaders,
             )
             if (mediaContent == null) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
+                val errorMsg = platformRunBlocking { getString(Res.string.download_failed) }
                 mutateItem(item.id) { current ->
                     current.copy(
                         status = DownloadStatus.Failed,
@@ -535,7 +535,7 @@ object DownloadsRepository {
 
             val mediaPlaylist = HlsPlaylistParser.parseMediaPlaylist(mediaContent, item.sourceUrl)
             if (mediaPlaylist.segments.isEmpty()) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
+                val errorMsg = platformRunBlocking { getString(Res.string.download_failed) }
                 mutateItem(item.id) { current ->
                     current.copy(
                         status = DownloadStatus.Failed,
@@ -592,7 +592,7 @@ object DownloadsRepository {
                             current.copy(
                                 status = DownloadStatus.Failed,
                                 errorMessage = message.ifBlank {
-                                    runBlocking { getString(Res.string.download_failed) }
+                                    platformRunBlocking { getString(Res.string.download_failed) }
                                 },
                                 updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                             )

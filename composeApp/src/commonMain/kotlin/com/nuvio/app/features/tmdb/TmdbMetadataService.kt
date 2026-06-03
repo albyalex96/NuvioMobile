@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -97,7 +97,7 @@ object TmdbMetadataService {
 
             val detail = PersonDetail(
                 tmdbId = person.id ?: personId,
-                name = person.name ?: runBlocking { getString(Res.string.generic_unknown) },
+                name = person.name ?: platformRunBlocking { getString(Res.string.generic_unknown) },
                 biography = biography,
                 birthday = person.birthday?.takeIf { it.isNotBlank() },
                 deathday = person.deathday?.takeIf { it.isNotBlank() },
@@ -327,7 +327,7 @@ object TmdbMetadataService {
             header = header ?: TmdbEntityHeader(
                 id = entityId,
                 kind = entityKind,
-                name = fallbackName?.takeIf { it.isNotBlank() } ?: runBlocking { getString(Res.string.generic_unknown) },
+                name = fallbackName?.takeIf { it.isNotBlank() } ?: platformRunBlocking { getString(Res.string.generic_unknown) },
                 logo = null,
                 originCountry = null,
                 secondaryLabel = null,
@@ -442,7 +442,7 @@ object TmdbMetadataService {
                             kind = entityKind,
                             name = it.name?.takeIf { n -> n.isNotBlank() }
                                 ?: fallbackName?.takeIf { n -> n.isNotBlank() }
-                                ?: runBlocking { getString(Res.string.generic_unknown) },
+                                ?: platformRunBlocking { getString(Res.string.generic_unknown) },
                             logo = buildImageUrl(it.logoPath, "w500"),
                             originCountry = it.originCountry?.takeIf { c -> c.isNotBlank() },
                             secondaryLabel = it.headquarters?.takeIf { h -> h.isNotBlank() },
@@ -458,7 +458,7 @@ object TmdbMetadataService {
                             kind = entityKind,
                             name = it.name?.takeIf { n -> n.isNotBlank() }
                                 ?: fallbackName?.takeIf { n -> n.isNotBlank() }
-                                ?: runBlocking { getString(Res.string.generic_unknown) },
+                                ?: platformRunBlocking { getString(Res.string.generic_unknown) },
                             logo = buildImageUrl(it.logoPath, "w500"),
                             originCountry = it.originCountry?.takeIf { c -> c.isNotBlank() },
                             secondaryLabel = it.headquarters?.takeIf { h -> h.isNotBlank() },
@@ -1141,7 +1141,7 @@ object TmdbMetadataService {
                     allVideos += videos.map { video ->
                         video.toMetaTrailer(
                             seasonNumber = seasonNumber,
-                            displayName = runBlocking {
+                            displayName = platformRunBlocking {
                                 getString(
                                     Res.string.trailer_season_label,
                                     seasonNumber,
@@ -1162,7 +1162,7 @@ object TmdbMetadataService {
             }
             .forEach { trailer ->
                 byCategory.getOrPut(
-                    trailer.type.ifBlank { runBlocking { getString(Res.string.generic_trailer) } },
+                    trailer.type.ifBlank { platformRunBlocking { getString(Res.string.generic_trailer) } },
                 ) { mutableListOf() }
                     .add(trailer)
             }
@@ -1185,7 +1185,7 @@ object TmdbMetadataService {
             compareBy<String> { category ->
                 when {
                     category.equals(
-                        runBlocking { getString(Res.string.generic_trailer) },
+                        platformRunBlocking { getString(Res.string.generic_trailer) },
                         ignoreCase = true,
                     ) -> 0
                     byCategory[category].orEmpty().any { it.official } -> 1
@@ -1310,7 +1310,7 @@ private fun buildPeople(
             val name = creator.name?.trim()?.takeIf(String::isNotBlank) ?: return@mapNotNull null
             MetaPerson(
                 name = name,
-                role = runBlocking { getString(Res.string.person_role_creator) },
+                role = platformRunBlocking { getString(Res.string.person_role_creator) },
                 photo = buildImageUrl(creator.profilePath, "w500"),
                 tmdbId = creator.id,
             )
@@ -1325,7 +1325,7 @@ private fun buildPeople(
             val name = crew.name?.trim()?.takeIf(String::isNotBlank) ?: return@mapNotNull null
             MetaPerson(
                 name = name,
-                role = runBlocking { getString(Res.string.person_role_director) },
+                role = platformRunBlocking { getString(Res.string.person_role_director) },
                 photo = buildImageUrl(crew.profilePath, "w500"),
                 tmdbId = crew.id,
             )
@@ -1340,7 +1340,7 @@ private fun buildPeople(
             val name = crew.name?.trim()?.takeIf(String::isNotBlank) ?: return@mapNotNull null
             MetaPerson(
                 name = name,
-                role = runBlocking { getString(Res.string.person_role_writer) },
+                role = platformRunBlocking { getString(Res.string.person_role_writer) },
                 photo = buildImageUrl(crew.profilePath, "w500"),
                 tmdbId = crew.id,
             )
@@ -1548,7 +1548,7 @@ private fun TmdbVideoResult.toMetaTrailer(
     displayName: String?,
 ): MetaTrailer {
     val videoKey = key?.trim().orEmpty()
-    val videoName = name?.trim().takeUnless { it.isNullOrBlank() } ?: runBlocking { getString(Res.string.generic_trailer) }
+    val videoName = name?.trim().takeUnless { it.isNullOrBlank() } ?: platformRunBlocking { getString(Res.string.generic_trailer) }
     val trailerId = id?.trim().takeUnless { it.isNullOrBlank() } ?: videoKey
     return MetaTrailer(
         id = trailerId,
@@ -1556,7 +1556,7 @@ private fun TmdbVideoResult.toMetaTrailer(
         name = videoName,
         site = site?.trim().takeUnless { it.isNullOrBlank() } ?: "YouTube",
         size = size,
-        type = type?.trim().takeUnless { it.isNullOrBlank() } ?: runBlocking { getString(Res.string.generic_trailer) },
+        type = type?.trim().takeUnless { it.isNullOrBlank() } ?: platformRunBlocking { getString(Res.string.generic_trailer) },
         official = official == true,
         publishedAt = publishedAt,
         seasonNumber = seasonNumber,

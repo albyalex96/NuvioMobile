@@ -11,7 +11,7 @@
   [![License][license-shield]][license-url]
 
   <p>
-    A modern media hub for Android and iOS built with Kotlin Multiplatform and Compose Multiplatform.
+    A modern media hub for Android, iOS, and Web built with Kotlin Multiplatform and Compose Multiplatform.
     <br />
     Stremio addon ecosystem • Cross-platform
   </p>
@@ -20,9 +20,9 @@
 
 ## About
 
-Nuvio is the current Kotlin Multiplatform rewrite of the original React Native app. It delivers a shared Compose UI for Android and iOS while keeping the playback-focused experience, collection tools, watch progress flows, downloads, and Stremio addon ecosystem integration that shaped the earlier app.
+Nuvio is the current Kotlin Multiplatform rewrite of the original React Native app. It delivers a shared Compose UI for Android, iOS, and Web (Wasm) while keeping the playback-focused experience, collection tools, watch progress flows, downloads, and Stremio addon ecosystem integration that shaped the earlier app.
 
-The mobile app is built from a single shared codebase in [composeApp](./composeApp), with native platform entry points for Android and iOS.
+The mobile app is built from a single shared codebase in [composeApp](./composeApp), with native platform entry points for Android, iOS, and Web.
 
 ## Installation
 
@@ -34,6 +34,14 @@ Download the latest Android build from [GitHub Releases](https://github.com/Nuvi
 
 - [TestFlight](https://testflight.apple.com/join/u4y7MHK9)
 
+### Web (Docker)
+
+```bash
+docker run -p 8080:80 ghcr.io/nuvimedia/nuviomobile:latest
+```
+
+Open http://localhost:8080 in your browser.
+
 ## Development
 
 ```bash
@@ -44,12 +52,34 @@ cd NuvioMobile
 ./scripts/run-mobile.sh ios
 ```
 
+### Web (Wasm)
+
+Build the Wasm production distribution:
+
+```bash
+./gradlew :composeApp:wasmJsBrowserDistribution
+```
+
+Serve the output from `composeApp/build/dist/wasmJs/productionExecutable/` with any HTTP server. The Kotlin/Wasm target requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers for shared memory support.
+
+### Docker (self-hosted)
+
+Build the Docker image locally:
+
+```bash
+docker build -t nuviomobile-web .
+docker run -p 8080:80 nuviomobile-web
+```
+
+A prebuilt image is available at `ghcr.io/nuvimedia/nuviomobile:latest` (built automatically on each push to `main`).
+
 ### Project Structure
 
 - `composeApp/` contains the shared Kotlin Multiplatform and Compose Multiplatform app code.
 - `composeApp/src/commonMain/` contains shared UI, features, repositories, and platform-agnostic logic.
 - `composeApp/src/androidMain/` contains Android-specific integrations.
 - `composeApp/src/iosMain/` contains iOS-specific integrations.
+- `composeApp/src/wasmJsMain/` contains Wasm/Web-specific integrations.
 - `iosApp/` contains the native Xcode project and iOS entry point.
 
 Useful commands:
@@ -57,6 +87,7 @@ Useful commands:
 ```bash
 ./gradlew :composeApp:assembleDebug
 ./gradlew :composeApp:compileKotlinIosSimulatorArm64
+./gradlew :composeApp:wasmJsBrowserDistribution
 ./scripts/build-distribution.sh
 ```
 
@@ -74,7 +105,7 @@ For comprehensive legal information, including our full disclaimer, third-party 
 
 - Kotlin Multiplatform
 - Compose Multiplatform
-- Kotlin
+- Kotlin/Wasm (Web target)
 - AndroidX Media3
 - AVFoundation and native iOS integrations
 

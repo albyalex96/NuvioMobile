@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.collections_folder_addon_not_found
 import nuvio.composeapp.generated.resources.collections_folder_trakt_movie_list
@@ -130,7 +130,7 @@ object FolderDetailRepository {
             if (showAll) {
                 add(
                     FolderTab(
-                        label = runBlocking { getString(Res.string.collections_tab_all) },
+                        label = platformRunBlocking { getString(Res.string.collections_tab_all) },
                         isAllTab = true,
                         isLoading = true,
                     ),
@@ -158,7 +158,7 @@ object FolderDetailRepository {
                 } else if (source.isTrakt) {
                     val mediaType = TmdbCollectionMediaType.fromString(source.mediaType)
                     val type = if (mediaType == TmdbCollectionMediaType.TV) "series" else "movie"
-                    val typeLabel = runBlocking {
+                    val typeLabel = platformRunBlocking {
                         getString(
                             if (mediaType == TmdbCollectionMediaType.TV) {
                                 Res.string.collections_folder_trakt_series_list
@@ -222,7 +222,7 @@ object FolderDetailRepository {
                 updateTab(tabIndex) {
                     it.copy(
                         isLoading = false,
-                        error = runBlocking {
+                        error = platformRunBlocking {
                             getString(Res.string.collections_folder_addon_not_found, catalogSource?.addonId.orEmpty())
                         },
                     )

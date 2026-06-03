@@ -12,7 +12,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import nuvio.composeapp.generated.resources.Res
@@ -192,10 +192,10 @@ sealed class DirectDebridResolveResult {
 fun DirectDebridPlayableResult.toastMessage(): String? =
     when (this) {
         is DirectDebridPlayableResult.Success -> null
-        DirectDebridPlayableResult.MissingApiKey -> runBlocking { getString(Res.string.debrid_missing_api_key) }
-        DirectDebridPlayableResult.NotCached -> runBlocking { getString(Res.string.debrid_not_cached) }
-        DirectDebridPlayableResult.Stale -> runBlocking { getString(Res.string.debrid_stream_stale) }
-        DirectDebridPlayableResult.Error -> runBlocking { getString(Res.string.debrid_resolve_failed) }
+        DirectDebridPlayableResult.MissingApiKey -> platformRunBlocking { getString(Res.string.debrid_missing_api_key) }
+        DirectDebridPlayableResult.NotCached -> platformRunBlocking { getString(Res.string.debrid_not_cached) }
+        DirectDebridPlayableResult.Stale -> platformRunBlocking { getString(Res.string.debrid_stream_stale) }
+        DirectDebridPlayableResult.Error -> platformRunBlocking { getString(Res.string.debrid_resolve_failed) }
     }
 
 private class LocalDebridAddonStreamResolver(

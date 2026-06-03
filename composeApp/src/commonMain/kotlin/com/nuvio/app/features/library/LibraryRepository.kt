@@ -16,7 +16,7 @@ import com.nuvio.app.features.trakt.effectiveLibrarySourceMode as resolveEffecti
 import com.nuvio.app.features.trakt.shouldUseTraktLibrary
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.library_local_tab_title
 import nuvio.composeapp.generated.resources.library_other
@@ -480,7 +480,7 @@ internal const val LOCAL_LIBRARY_LIST_KEY = "local"
 internal fun localLibraryListTab(): TraktListTab =
     TraktListTab(
         key = LOCAL_LIBRARY_LIST_KEY,
-        title = runBlocking { getString(Res.string.library_local_tab_title) },
+        title = platformRunBlocking { getString(Res.string.library_local_tab_title) },
         type = TraktListType.WATCHLIST,
     )
 
@@ -552,7 +552,7 @@ private fun PosterShape.toSyncName(): String =
 
 internal fun String.toLibraryDisplayTitle(): String {
     val normalized = trim()
-    if (normalized.isBlank()) return runBlocking { getString(Res.string.library_other) }
+    if (normalized.isBlank()) return platformRunBlocking { getString(Res.string.library_other) }
 
     return normalized
         .split('-', '_', ' ')
@@ -560,5 +560,5 @@ internal fun String.toLibraryDisplayTitle(): String {
         .joinToString(" ") { token ->
             token.lowercase().replaceFirstChar { char -> char.uppercase() }
         }
-        .ifBlank { runBlocking { getString(Res.string.library_other) } }
+        .ifBlank { platformRunBlocking { getString(Res.string.library_other) } }
 }

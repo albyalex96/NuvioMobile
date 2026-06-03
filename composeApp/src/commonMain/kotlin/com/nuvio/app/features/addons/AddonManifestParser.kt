@@ -1,6 +1,6 @@
 package com.nuvio.app.features.addons
 
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -97,7 +97,7 @@ internal object AddonManifestParser {
     private fun JsonObject.requiredString(name: String): String =
         optionalString(name)?.takeIf { it.isNotBlank() }
             ?: throw IllegalArgumentException(
-                runBlocking { getString(Res.string.addons_manifest_missing_field, name) },
+                platformRunBlocking { getString(Res.string.addons_manifest_missing_field, name) },
             )
 
     private fun JsonObject.optionalString(name: String): String? =

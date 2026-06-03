@@ -1,6 +1,6 @@
 package com.nuvio.app.features.details
 
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.details_runtime_hours_minutes
 import nuvio.composeapp.generated.resources.details_runtime_hours_only
@@ -23,7 +23,7 @@ internal fun formatRuntimeFromMinutes(totalMinutes: Int): String {
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
 
-    return runBlocking {
+    return platformRunBlocking {
         when {
             hours > 0 && minutes > 0 -> getString(Res.string.details_runtime_hours_minutes, hours, minutes)
             hours > 0 -> getString(Res.string.details_runtime_hours_only, hours)

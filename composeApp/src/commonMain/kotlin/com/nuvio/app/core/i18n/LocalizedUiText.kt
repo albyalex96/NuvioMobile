@@ -2,7 +2,7 @@ package com.nuvio.app.core.i18n
 
 import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.core.ui.formatEpisodeCode
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.action_play_episode
@@ -187,5 +187,5 @@ private fun resourceString(
     fallback: String,
     provider: suspend () -> String,
 ): String = runCatching {
-    runBlocking { provider() }
+    platformRunBlocking { provider() }
 }.getOrDefault(fallback)

@@ -206,6 +206,12 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
+
+    wasmJs {
+        browser()
+        binaries.executable()
+
+    }
     
     val iosTargets = listOf(
         iosArm64(),
@@ -245,6 +251,13 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             kotlin.srcDir(generatedRuntimeConfigDir)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+            implementation(libs.kotlinx.datetime)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0") {
+                version { strictly("1.9.0") }
+            }
         }
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)

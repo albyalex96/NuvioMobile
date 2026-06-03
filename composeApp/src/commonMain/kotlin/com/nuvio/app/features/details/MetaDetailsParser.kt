@@ -3,7 +3,7 @@ package com.nuvio.app.features.details
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamProxyHeaders
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -251,10 +251,10 @@ internal object MetaDetailsParser {
             MetaTrailer(
                 id = trailer.string("id")?.takeIf(String::isNotBlank) ?: normalizedKey,
                 key = normalizedKey,
-                name = trailer.string("name")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },
+                name = trailer.string("name")?.takeIf(String::isNotBlank) ?: platformRunBlocking { getString(Res.string.generic_trailer) },
                 site = trailer.string("site")?.takeIf(String::isNotBlank) ?: "YouTube",
                 size = trailer.int("size"),
-                type = trailer.string("type")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },
+                type = trailer.string("type")?.takeIf(String::isNotBlank) ?: platformRunBlocking { getString(Res.string.generic_trailer) },
                 official = trailer.boolean("official") == true,
                 publishedAt = trailer.string("published_at") ?: trailer.string("publishedAt"),
                 seasonNumber = trailer.int("seasonNumber") ?: trailer.int("season_number"),
@@ -278,7 +278,7 @@ internal object MetaDetailsParser {
             val streamData = obj["streamData"] as? JsonObject
             val addonName = streamData?.string("addon")
                 ?: obj.string("name")
-                ?: runBlocking { getString(Res.string.source_embedded) }
+                ?: platformRunBlocking { getString(Res.string.source_embedded) }
             StreamItem(
                 name = obj.string("name"),
                 description = obj.string("description") ?: obj.string("title"),

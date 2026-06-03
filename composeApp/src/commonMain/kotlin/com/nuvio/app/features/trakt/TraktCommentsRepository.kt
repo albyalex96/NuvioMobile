@@ -4,7 +4,7 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.features.addons.httpGetTextWithHeaders
 import com.nuvio.app.features.addons.httpRequestRaw
 import com.nuvio.app.features.details.MetaDetails
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -228,7 +228,7 @@ private fun toReviewModel(dto: TraktCommentDto): TraktCommentReview {
     val authorDisplayName = dto.user?.name
         ?.takeIf { it.isNotBlank() }
         ?: dto.user?.username?.takeIf { it.isNotBlank() }
-        ?: runBlocking { getString(Res.string.trakt_user_fallback) }
+        ?: platformRunBlocking { getString(Res.string.trakt_user_fallback) }
 
     return TraktCommentReview(
         id = dto.id,

@@ -22,7 +22,7 @@ import kotlin.random.Random
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.StringResource
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 
 object TraktAuthRepository {
     private const val BASE_URL = "https://api.trakt.tv"
@@ -494,4 +494,4 @@ private data class TraktUserDto(
 private data class TraktUserIdsDto(
     val slug: String? = null,
 )
-    private fun localizedString(resource: StringResource): String = runBlocking { getString(resource) }
+    private fun localizedString(resource: StringResource): String = platformRunBlocking { getString(resource) }

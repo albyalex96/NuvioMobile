@@ -49,7 +49,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -107,7 +107,7 @@ private val appUpdaterJson = Json {
 }
 
 private class NoChannelReleaseException : IllegalStateException(
-    runBlocking { getString(Res.string.updates_no_channel_release) },
+    platformRunBlocking { getString(Res.string.updates_no_channel_release) },
 )
 
 private object VersionUtils {

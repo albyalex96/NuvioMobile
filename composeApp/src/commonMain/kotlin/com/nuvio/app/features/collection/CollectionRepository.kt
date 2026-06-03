@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -140,7 +140,7 @@ object CollectionRepository {
         if (jsonString.isBlank()) {
             return ValidationResult(
                 valid = false,
-                error = runBlocking { getString(Res.string.collections_import_error_empty_json) },
+                error = platformRunBlocking { getString(Res.string.collections_import_error_empty_json) },
             )
         }
         return try {
@@ -150,7 +150,7 @@ object CollectionRepository {
                 if (c.id.isBlank()) {
                     return ValidationResult(
                         valid = false,
-                        error = runBlocking {
+                        error = platformRunBlocking {
                             getString(Res.string.collections_import_error_collection_blank_id, ci + 1)
                         },
                     )
@@ -158,7 +158,7 @@ object CollectionRepository {
                 if (c.title.isBlank()) {
                     return ValidationResult(
                         valid = false,
-                        error = runBlocking {
+                        error = platformRunBlocking {
                             getString(Res.string.collections_import_error_collection_blank_title, c.id)
                         },
                     )
@@ -167,7 +167,7 @@ object CollectionRepository {
                     if (f.id.isBlank()) {
                         return ValidationResult(
                             valid = false,
-                            error = runBlocking {
+                            error = platformRunBlocking {
                                 getString(
                                     Res.string.collections_import_error_folder_blank_id,
                                     fi + 1,
@@ -179,7 +179,7 @@ object CollectionRepository {
                     if (f.title.isBlank()) {
                         return ValidationResult(
                             valid = false,
-                            error = runBlocking {
+                            error = platformRunBlocking {
                                 getString(
                                     Res.string.collections_import_error_folder_blank_title,
                                     f.id,
@@ -192,7 +192,7 @@ object CollectionRepository {
                         if (s.hasInvalidTraktListId()) {
                             return ValidationResult(
                                 valid = false,
-                                error = runBlocking {
+                                error = platformRunBlocking {
                                     getString(
                                         Res.string.collections_import_error_trakt_list_id,
                                         si + 1,
@@ -209,7 +209,7 @@ object CollectionRepository {
                         if (invalidAddon || invalidTmdb) {
                             return ValidationResult(
                                 valid = false,
-                                error = runBlocking {
+                                error = platformRunBlocking {
                                     getString(
                                         Res.string.collections_import_error_source_blank_fields,
                                         si + 1,
@@ -230,7 +230,7 @@ object CollectionRepository {
         } catch (e: Exception) {
             ValidationResult(
                 valid = false,
-                error = runBlocking {
+                error = platformRunBlocking {
                     getString(Res.string.collections_import_error_invalid_json, e.message.orEmpty())
                 },
             )

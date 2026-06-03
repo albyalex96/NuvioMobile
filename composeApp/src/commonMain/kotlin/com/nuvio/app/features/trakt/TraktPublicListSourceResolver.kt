@@ -12,7 +12,7 @@ import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.PosterShape
 import io.ktor.http.encodeURLParameter
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.platformRunBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -253,7 +253,7 @@ object TraktPublicListSourceResolver {
 
     private fun PublicTraktListSummaryDto.toPublicListResult(likeCount: Int? = null): TraktPublicListSearchResult? {
         val id = ids?.trakt ?: return null
-        return runBlocking {
+        return platformRunBlocking {
             val listTitle = name?.takeIf { it.isNotBlank() }
                 ?: getString(Res.string.collections_editor_trakt_fallback_title, id)
             val owner = user?.username?.takeIf { it.isNotBlank() }
@@ -312,7 +312,7 @@ object TraktPublicListSourceResolver {
             ?.trim()
             ?.toIntOrNull()
 
-    private fun errorMessageFor(code: Int, fallback: String): String = runBlocking {
+    private fun errorMessageFor(code: Int, fallback: String): String = platformRunBlocking {
         when (code) {
             401, 403, 404 -> getString(Res.string.collections_trakt_list_not_found_or_private)
             429 -> getString(Res.string.collections_trakt_rate_limit_reached)
