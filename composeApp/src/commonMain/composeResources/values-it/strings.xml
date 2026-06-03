@@ -1559,6 +1559,12 @@
 <string name="downloads_error_open_partial_failed">Impossibile aprire il file di download parziale</string>
 <string name="downloads_error_partial_not_open">Il file di download parziale non è aperto</string>
 <string name="downloads_error_write_partial_failed">Impossibile scrivere nel file di download parziale</string>
+<string name="downloads_hls_quality">Qualità Video</string>
+<string name="downloads_hls_audio">Traccia Audio</string>
+<string name="downloads_hls_subtitles">Sottotitoli</string>
+<string name="downloads_hls_download">Scarica</string>
+<string name="downloads_hls_fetching">Recupero stream disponibili…</string>
+<string name="downloads_hls_select_variant">Seleziona qualità, audio e sottotitoli</string>
 <string name="player_action_submit_intro">Invia intro</string>
 <string name="player_action_video_settings">Impostazioni video</string>
 <string name="cloud_library_provider_unavailable">La libreria cloud non è disponibile per %1$s.</string>

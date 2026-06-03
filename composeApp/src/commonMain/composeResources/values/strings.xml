@@ -1468,6 +1468,12 @@
     <string name="downloads_error_partial_not_open">Partial download file is not open</string>
     <string name="downloads_error_request_failed">Download request failed</string>
     <string name="downloads_error_write_partial_failed">Failed to write partial download file</string>
+    <string name="downloads_hls_quality">Video Quality</string>
+    <string name="downloads_hls_audio">Audio Track</string>
+    <string name="downloads_hls_subtitles">Subtitles</string>
+    <string name="downloads_hls_download">Download</string>
+    <string name="downloads_hls_fetching">Fetching available streams…</string>
+    <string name="downloads_hls_select_variant">Select quality, audio and subtitles</string>
     <string name="home_catalog_default_title">%1$s - %2$s</string>
     <string name="library_empty_message">Saved titles will appear here after you tap Save on a details screen.</string>
     <string name="library_empty_title">Your library is empty</string>

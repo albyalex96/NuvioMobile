@@ -85,6 +85,7 @@ import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
+import com.nuvio.app.features.downloads.DownloadsHlsSelectionSheet
 import com.nuvio.app.features.downloads.DownloadsRepository
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -173,6 +174,7 @@ fun StreamsScreen(
     val streamLinkCopiedText = stringResource(Res.string.streams_link_copied)
     val noDirectStreamLinkText = stringResource(Res.string.streams_no_direct_link)
     var streamActionsTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
+    var hlsDownloadTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
     var preferredFilterApplied by remember(videoId) { mutableStateOf(false) }
     val storedProgress = if (startFromBeginning) {
         null
@@ -378,7 +380,44 @@ fun StreamsScreen(
                 }
             },
             onDownload = { stream ->
-                val result = DownloadsRepository.enqueueFromStream(
+                val directUrl = stream.playableDirectUrl.orEmpty()
+                if (directUrl.isNotBlank() && (directUrl.endsWith(".m3u8", ignoreCase = true) || directUrl.contains(".m3u8?", ignoreCase = true))) {
+                    hlsDownloadTarget = stream
+                } else {
+                    val result = DownloadsRepository.enqueueFromStream(
+                        contentType = type,
+                        videoId = videoId,
+                        parentMetaId = parentMetaId,
+                        parentMetaType = parentMetaType,
+                        title = title,
+                        logo = logo,
+                        poster = poster,
+                        background = background,
+                        seasonNumber = seasonNumber,
+                        episodeNumber = episodeNumber,
+                        episodeTitle = episodeTitle,
+                        episodeThumbnail = episodeThumbnail,
+                        stream = stream,
+                    )
+                    NuvioToastController.show(result.toastMessage())
+                }
+            },
+            onOpen = { stream, openExternally ->
+                onStreamActionOpen(
+                    stream,
+                    openExternally,
+                    effectiveResumePositionMs,
+                    effectiveResumeProgressFraction,
+                )
+            },
+        )
+
+        DownloadsHlsSelectionSheet(
+            stream = hlsDownloadTarget,
+            onDismiss = { hlsDownloadTarget = null },
+            onDownload = { selection ->
+                val stream = hlsDownloadTarget ?: return@DownloadsHlsSelectionSheet
+                val result = DownloadsRepository.enqueueFromHlsSelection(
                     contentType = type,
                     videoId = videoId,
                     parentMetaId = parentMetaId,
@@ -392,16 +431,10 @@ fun StreamsScreen(
                     episodeTitle = episodeTitle,
                     episodeThumbnail = episodeThumbnail,
                     stream = stream,
+                    selection = selection,
                 )
                 NuvioToastController.show(result.toastMessage())
-            },
-            onOpen = { stream, openExternally ->
-                onStreamActionOpen(
-                    stream,
-                    openExternally,
-                    effectiveResumePositionMs,
-                    effectiveResumeProgressFraction,
-                )
+                hlsDownloadTarget = null
             },
         )
     }

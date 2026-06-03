@@ -35,10 +35,16 @@ import platform.Foundation.NSURLSessionConfiguration
 import platform.Foundation.NSURLSessionDataDelegateProtocol
 import platform.Foundation.NSURLSessionDataTask
 import platform.Foundation.NSURLSessionTask
+import platform.Foundation.NSString
+import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.setHTTPMethod
 import platform.Foundation.setValue
 import platform.Foundation.timeIntervalSince1970
 import platform.darwin.NSObject
+import platform.darwin.dispatch_semaphore_create
+import platform.darwin.dispatch_semaphore_signal
+import platform.darwin.dispatch_semaphore_wait
+import platform.darwin.DISPATCH_TIME_FOREVER
 import platform.posix.FILE
 import platform.posix.fclose
 import platform.posix.fflush
@@ -175,6 +181,118 @@ internal actual object DownloadsPlatformDownloader {
         } else {
             null
         }
+    }
+
+    actual fun fetchUrlAsString(url: String, headers: Map<String, String>): String? {
+        return try {
+            val nativeUrl = NSURL(string = url) ?: return null
+            val request = NSMutableURLRequest(
+                uRL = nativeUrl,
+                cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
+                timeoutInterval = 30.0,
+            )
+            request.setHTTPMethod("GET")
+            headers.forEach { (key, value) ->
+                request.setValue(value, forHTTPHeaderField = key)
+            }
+
+            val semaphore = dispatch_semaphore_create(0)
+            var result: String? = null
+
+            val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, _, error ->
+                if (error == null && data != null) {
+                    result = NSString.create(data, NSUTF8StringEncoding) as? String
+                }
+                dispatch_semaphore_signal(semaphore)
+            }
+            task.resume()
+            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
+            result
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    actual fun downloadHlsSegments(
+        segmentUrls: List<String>,
+        sourceHeaders: Map<String, String>,
+        destinationFileName: String,
+        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+        onFailure: (message: String) -> Unit,
+    ): DownloadsTaskHandle {
+        val job = SupervisorJob()
+        val scope = CoroutineScope(job + Dispatchers.Default)
+        val handle = IosDownloadsTaskHandle(job)
+
+        scope.launch {
+            val downloadsDirectory = downloadsDirectoryPath()
+            val destinationPath = "$downloadsDirectory/$destinationFileName"
+            val tempPath = "$downloadsDirectory/$destinationFileName.hls.part"
+            var totalDownloaded = 0L
+
+            try {
+                removePathIfExists(tempPath)
+
+                for (segmentUrl in segmentUrls) {
+                    ensureActive()
+
+                    val url = NSURL(string = segmentUrl)
+                    val request = NSMutableURLRequest(
+                        uRL = url,
+                        cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
+                        timeoutInterval = 60.0,
+                    )
+                    request.setHTTPMethod("GET")
+                    sourceHeaders.forEach { (key, value) ->
+                        request.setValue(value, forHTTPHeaderField = key)
+                    }
+
+                    val semaphore = dispatch_semaphore_create(0)
+                    var segmentError: Throwable? = null
+
+                    val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, _, error ->
+                        if (error != null) {
+                            segmentError = IllegalStateException(error.localizedDescription)
+                        } else if (data != null) {
+                            val file = fopen(tempPath, "ab")
+                            if (file != null) {
+                                fwrite(data.bytes, 1.convert(), data.length.toLong().convert(), file)
+                                fflush(file)
+                                fclose(file)
+                                totalDownloaded += data.length.toLong()
+                                onProgress(totalDownloaded, null)
+                            }
+                        }
+                        dispatch_semaphore_signal(semaphore)
+                    }
+                    task.resume()
+                    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
+
+                    if (segmentError != null) throw segmentError!!
+                }
+
+                removePathIfExists(destinationPath)
+                val moved = NSFileManager.defaultManager.moveItemAtPath(
+                    srcPath = tempPath,
+                    toPath = destinationPath,
+                    error = null,
+                )
+                if (!moved) {
+                    error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
+                }
+
+                val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
+                val finalSize = fileSizeOrNull(destinationPath)
+                onSuccess(localFileUri, finalSize)
+            } catch (_: CancellationException) {
+                handle.cancelNativeTask()
+            } catch (error: Throwable) {
+                onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
+            }
+        }
+
+        return handle
     }
 }
 

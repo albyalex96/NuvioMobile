@@ -23,4 +23,15 @@ internal expect object DownloadsPlatformDownloader {
     fun removePartialFile(destinationFileName: String): Boolean
 
     fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String?
+
+    fun fetchUrlAsString(url: String, headers: Map<String, String>): String?
+
+    fun downloadHlsSegments(
+        segmentUrls: List<String>,
+        sourceHeaders: Map<String, String>,
+        destinationFileName: String,
+        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+        onFailure: (message: String) -> Unit,
+    ): DownloadsTaskHandle
 }

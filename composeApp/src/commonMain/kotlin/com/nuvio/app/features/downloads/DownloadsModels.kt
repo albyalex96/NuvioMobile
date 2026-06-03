@@ -47,6 +47,9 @@ data class DownloadItem(
     val errorMessage: String? = null,
     val createdAtEpochMs: Long,
     val updatedAtEpochMs: Long,
+    val isHls: Boolean = false,
+    val hlsAudioUrl: String? = null,
+    val hlsSubtitleUrl: String? = null,
 ) {
     val isEpisode: Boolean
         get() = seasonNumber != null && episodeNumber != null
@@ -87,7 +90,8 @@ enum class DownloadEnqueueResult {
     Started,
     Replaced,
     MissingUrl,
-    UnsupportedFormat;
+    UnsupportedFormat,
+    HlsNeedsSelection;
 
     fun toastMessage(): String = runBlocking {
         when (this@DownloadEnqueueResult) {
@@ -95,9 +99,24 @@ enum class DownloadEnqueueResult {
             Replaced -> getString(Res.string.downloads_enqueue_replaced)
             MissingUrl -> getString(Res.string.downloads_enqueue_missing_url)
             UnsupportedFormat -> getString(Res.string.downloads_enqueue_unsupported_format)
+            HlsNeedsSelection -> ""
         }
     }
 }
+
+data class HlsDownloadSelection(
+    val variantUrl: String,
+    val audioUrl: String? = null,
+    val subtitleUrl: String? = null,
+    val displayQuality: String = "",
+    val displayAudio: String = "",
+    val displaySubtitle: String = "",
+)
+
+data class HlsStreamMetadata(
+    val masterPlaylist: HlsMasterPlaylist,
+    val baseUrl: String,
+)
 
 internal fun List<DownloadItem>.sortedForSeriesDownloads(): List<DownloadItem> =
     sortedWith(downloadSeriesEpisodeComparator)
