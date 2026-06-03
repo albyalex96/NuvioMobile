@@ -1847,6 +1847,12 @@
 <string name="settings_fusion_badge_group_title">Gruppo %1$d</string>
 <string name="settings_fusion_badge_other_group_title">Altri badge Fusion</string>
 
+    <string name="settings_playback_episode_code_format">Formato codice episodio</string>
+    <string name="settings_playback_episode_code_format_description">Scegli come visualizzare numeri di stagione ed episodio</string>
+    <string name="settings_playback_episode_code_format_s01e01">S01E01</string>
+    <string name="settings_playback_episode_code_format_s1e1">S1E1</string>
+    <string name="settings_playback_episode_code_format_01x01">01x01</string>
+    <string name="settings_playback_episode_code_format_1x1">1x1</string>
     <string name="settings_playback_still_watching">Ancora qui?</string>
     <string name="settings_playback_still_watching_description">Metti in pausa dopo un numero di episodi e chiedi conferma</string>
     <string name="settings_playback_still_watching_episode_count">Episodi prima del prompt</string>

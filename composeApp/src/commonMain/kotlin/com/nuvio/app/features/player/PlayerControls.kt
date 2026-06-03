@@ -59,7 +59,9 @@ import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.appIconPainter
+import com.nuvio.app.core.ui.formatEpisodeCodeWithTitle
 import com.nuvio.app.core.ui.nuvioTypeScale
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -256,11 +258,11 @@ private fun PlayerHeader(
                     )
                     if (seasonNumber != null && episodeNumber != null && !episodeTitle.isNullOrBlank()) {
                         Text(
-                            text = stringResource(
-                                Res.string.compose_player_episode_title_format,
+                            text = formatEpisodeCodeWithTitle(
                                 seasonNumber,
                                 episodeNumber,
                                 episodeTitle,
+                                rememberEpisodeCodeFormat(),
                             ),
                             style = typeScale.bodyMd.copy(
                                 fontSize = metrics.episodeInfoSize,

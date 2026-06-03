@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.formatEpisodeCode
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.streams.StreamItem
@@ -393,14 +395,11 @@ private fun EpisodeRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                val episodeCodeFormat = rememberEpisodeCodeFormat()
                 val episodeLabel = buildString {
                     if (episode.season != null && episode.episode != null) {
                         append(
-                            stringResource(
-                                Res.string.compose_player_episode_code_full,
-                                episode.season,
-                                episode.episode,
-                            ),
+                            formatEpisodeCode(episode.season, episode.episode, episodeCodeFormat),
                         )
                     } else if (episode.episode != null) {
                         append(stringResource(Res.string.compose_player_episode_code_episode_only, episode.episode))
@@ -468,6 +467,7 @@ private fun EpisodeStreamsSubView(
         DebridSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
 
+    val episodeCodeFormat = rememberEpisodeCodeFormat()
     val episode = state.selectedEpisode ?: return
     val streamsUiState = state.streamsUiState
 
@@ -512,11 +512,7 @@ private fun EpisodeStreamsSubView(
                 text = buildString {
                     if (episode.season != null && episode.episode != null) {
                         append(
-                            stringResource(
-                                Res.string.compose_player_episode_code_full,
-                                episode.season,
-                                episode.episode,
-                            ),
+                            formatEpisodeCode(episode.season, episode.episode, episodeCodeFormat),
                         )
                     }
                     if (episode.title.isNotBlank()) {

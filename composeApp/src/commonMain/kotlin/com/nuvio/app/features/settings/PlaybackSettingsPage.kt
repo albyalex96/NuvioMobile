@@ -102,6 +102,7 @@ internal fun LazyListScope.playbackSettingsContent(
     useLibass: Boolean,
     libassRenderType: String,
     swipeGesturesEnabled: Boolean,
+    episodeCodeFormat: com.nuvio.app.core.ui.EpisodeCodeFormat,
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
@@ -124,6 +125,7 @@ internal fun LazyListScope.playbackSettingsContent(
             useLibass = useLibass,
             libassRenderType = libassRenderType,
             swipeGesturesEnabled = swipeGesturesEnabled,
+            episodeCodeFormat = episodeCodeFormat,
             stillWatchingEnabled = stillWatchingEnabled,
             stillWatchingEpisodeCount = stillWatchingEpisodeCount,
             stillWatchingNightMode = stillWatchingNightMode,
@@ -262,6 +264,7 @@ private fun PlaybackSettingsSection(
     useLibass: Boolean,
     libassRenderType: String,
     swipeGesturesEnabled: Boolean,
+    episodeCodeFormat: com.nuvio.app.core.ui.EpisodeCodeFormat,
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
@@ -1110,6 +1113,38 @@ private fun PlaybackSettingsSection(
                         checked = stillWatchingNightMode,
                         isTablet = isTablet,
                         onCheckedChange = PlayerSettingsRepository::setStillWatchingNightMode,
+                    )
+                }
+            }
+        }
+
+        SettingsSection(
+            title = stringResource(Res.string.settings_playback_episode_code_format),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                var showFormatDialog by remember { mutableStateOf(false) }
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.settings_playback_episode_code_format),
+                    description = stringResource(
+                        when (episodeCodeFormat) {
+                            com.nuvio.app.core.ui.EpisodeCodeFormat.S01E01 -> Res.string.settings_playback_episode_code_format_s01e01
+                            com.nuvio.app.core.ui.EpisodeCodeFormat.S1E1 -> Res.string.settings_playback_episode_code_format_s1e1
+                            com.nuvio.app.core.ui.EpisodeCodeFormat.X01x01 -> Res.string.settings_playback_episode_code_format_01x01
+                            com.nuvio.app.core.ui.EpisodeCodeFormat.X1x1 -> Res.string.settings_playback_episode_code_format_1x1
+                        },
+                    ),
+                    isTablet = isTablet,
+                    onClick = { showFormatDialog = true },
+                )
+                if (showFormatDialog) {
+                    EpisodeCodeFormatDialog(
+                        selected = episodeCodeFormat,
+                        onSelect = {
+                            PlayerSettingsRepository.setEpisodeCodeFormat(it)
+                            showFormatDialog = false
+                        },
+                        onDismiss = { showFormatDialog = false },
                     )
                 }
             }
@@ -3236,3 +3271,103 @@ private fun libassRenderTypeRes(renderType: String): StringResource = when (rend
 
 @Composable
 private fun libassRenderTypeLabel(renderType: String): String = stringResource(libassRenderTypeRes(renderType))
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun EpisodeCodeFormatDialog(
+    selected: com.nuvio.app.core.ui.EpisodeCodeFormat,
+    onSelect: (com.nuvio.app.core.ui.EpisodeCodeFormat) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = com.nuvio.app.core.ui.EpisodeCodeFormat.entries
+
+    BasicAlertDialog(
+        onDismissRequest = onDismiss,
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.settings_playback_episode_code_format),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+
+                Text(
+                    text = stringResource(Res.string.settings_playback_episode_code_format_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    options.forEach { format ->
+                        val isSelected = format == selected
+                        val containerColor = if (isSelected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelect(format) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = containerColor,
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        when (format) {
+                                            com.nuvio.app.core.ui.EpisodeCodeFormat.S01E01 -> Res.string.settings_playback_episode_code_format_s01e01
+                                            com.nuvio.app.core.ui.EpisodeCodeFormat.S1E1 -> Res.string.settings_playback_episode_code_format_s1e1
+                                            com.nuvio.app.core.ui.EpisodeCodeFormat.X01x01 -> Res.string.settings_playback_episode_code_format_01x01
+                                            com.nuvio.app.core.ui.EpisodeCodeFormat.X1x1 -> Res.string.settings_playback_episode_code_format_1x1
+                                        },
+                                    ),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Box(
+                                    modifier = Modifier.size(24.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(Res.string.settings_playback_dialog_close),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}

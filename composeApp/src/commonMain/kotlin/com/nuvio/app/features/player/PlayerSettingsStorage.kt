@@ -96,6 +96,8 @@ internal expect object PlayerSettingsStorage {
     fun saveUseLibass(enabled: Boolean)
     fun loadLibassRenderType(): String?
     fun saveLibassRenderType(renderType: String)
+    fun loadEpisodeCodeFormat(): String?
+    fun saveEpisodeCodeFormat(format: String)
     fun loadStillWatchingEnabled(): Boolean?
     fun saveStillWatchingEnabled(enabled: Boolean)
     fun loadStillWatchingEpisodeCount(): Int?

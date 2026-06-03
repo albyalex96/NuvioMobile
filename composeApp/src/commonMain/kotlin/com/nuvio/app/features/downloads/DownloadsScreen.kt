@@ -28,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import com.nuvio.app.core.ui.formatEpisodeCode
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -425,10 +427,10 @@ private fun downloadDisplaySubtitle(
         return item.displaySubtitle
     }
 
-    val episodeCode = stringResource(
-        Res.string.compose_player_episode_code_full,
+    val episodeCode = formatEpisodeCode(
         seasonNumber,
         episodeNumber,
+        rememberEpisodeCodeFormat(),
     )
     return listOf(
         episodeCode,

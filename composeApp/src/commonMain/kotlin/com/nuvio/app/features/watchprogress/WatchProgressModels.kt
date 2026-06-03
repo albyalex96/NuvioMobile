@@ -1,5 +1,7 @@
 package com.nuvio.app.features.watchprogress
 
+import com.nuvio.app.core.ui.EpisodeCodeFormat
+import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.cloudLibraryProviderPosterUrl
 import com.nuvio.app.features.details.MetaVideo
@@ -301,9 +303,10 @@ internal fun buildContinueWatchingEpisodeSubtitle(
     seasonNumber: Int?,
     episodeNumber: Int?,
     episodeTitle: String?,
+    format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
 ): String {
     val episodeCode = when {
-        seasonNumber != null && episodeNumber != null -> "S${seasonNumber}E${episodeNumber}"
+        seasonNumber != null && episodeNumber != null -> formatEpisodeCode(seasonNumber, episodeNumber, format)
         episodeNumber != null -> "E${episodeNumber}"
         else -> null
     }

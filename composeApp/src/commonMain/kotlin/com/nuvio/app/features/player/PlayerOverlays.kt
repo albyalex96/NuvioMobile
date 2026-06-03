@@ -64,7 +64,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.NuvioBackButton
+import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.core.ui.nuvioTypeScale
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_player_close
 import nuvio.composeapp.generated.resources.compose_player_episode_code_full
@@ -451,7 +453,7 @@ internal fun PauseMetadataOverlay(
             }
 
             val episodeInfo = if (isEpisode && seasonNumber != null && episodeNumber != null) {
-                stringResource(Res.string.compose_player_episode_code_full, seasonNumber, episodeNumber)
+                formatEpisodeCode(seasonNumber, episodeNumber, rememberEpisodeCodeFormat())
             } else {
                 providerName
             }
