@@ -10,6 +10,7 @@ import com.nuvio.app.features.watching.domain.WatchingReleasedEpisode
 import com.nuvio.app.features.watching.domain.WatchingSeriesPrimaryAction
 import com.nuvio.app.features.watching.domain.WatchingWatchedRecord
 import com.nuvio.app.features.watching.domain.buildPlaybackVideoId
+import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.features.watching.domain.decideSeriesPrimaryAction
 import com.nuvio.app.features.watching.domain.isReleasedBy
 import com.nuvio.app.features.watching.domain.latestCompletedSeriesEpisode
@@ -143,6 +144,7 @@ internal fun MetaDetails.seriesPrimaryAction(
     todayIsoDate: String,
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
+    format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
 ): SeriesPrimaryAction? =
     seriesPrimaryAction(
         content = WatchingContentRef(type = type, id = id),
@@ -151,6 +153,7 @@ internal fun MetaDetails.seriesPrimaryAction(
         todayIsoDate = todayIsoDate,
         preferFurthestEpisode = preferFurthestEpisode,
         showUnairedNextUp = showUnairedNextUp,
+        format = format,
     )
 
 internal fun MetaDetails.seriesPrimaryAction(
@@ -160,6 +163,7 @@ internal fun MetaDetails.seriesPrimaryAction(
     todayIsoDate: String,
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
+    format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
 ): SeriesPrimaryAction? =
     decideSeriesPrimaryAction(
         content = content,
@@ -169,6 +173,7 @@ internal fun MetaDetails.seriesPrimaryAction(
         todayIsoDate = todayIsoDate,
         preferFurthestEpisode = preferFurthestEpisode,
         showUnairedNextUp = showUnairedNextUp,
+        format = format,
     )?.toLegacySeriesPrimaryAction()
 
 internal fun MetaVideo.playLabel(): String =

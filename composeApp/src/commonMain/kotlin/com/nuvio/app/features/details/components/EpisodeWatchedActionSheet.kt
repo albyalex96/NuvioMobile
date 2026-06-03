@@ -24,6 +24,7 @@ import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
 import com.nuvio.app.features.details.MetaVideo
 import kotlinx.coroutines.launch
@@ -221,6 +222,7 @@ private fun EpisodeActionSheetHeader(
                 localizedSeasonEpisodeCode(
                     seasonNumber = episode.season,
                     episodeNumber = episode.episode,
+                    format = rememberEpisodeCodeFormat(),
                 )?.let {
                     append(it)
                     append(" • ")

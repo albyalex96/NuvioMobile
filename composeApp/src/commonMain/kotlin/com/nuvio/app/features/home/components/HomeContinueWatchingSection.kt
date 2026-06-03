@@ -49,9 +49,11 @@ import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.NuvioProgressBar
 import com.nuvio.app.core.ui.NuvioShelfSection
 import com.nuvio.app.core.ui.PosterLandscapeAspectRatio
+import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.core.ui.landscapePosterHeightForWidth
 import com.nuvio.app.core.ui.landscapePosterWidth
 import com.nuvio.app.core.ui.posterCardClickable
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.cloudLibraryDisplayArtworkUrl
@@ -82,7 +84,7 @@ private fun continueWatchingProgressPercent(progressFraction: Float): Int =
 private fun localizedContinueWatchingMetaLine(item: ContinueWatchingItem): String =
     when {
         item.seasonNumber != null && item.episodeNumber != null ->
-            stringResource(Res.string.compose_player_episode_code_full, item.seasonNumber, item.episodeNumber)
+            formatEpisodeCode(item.seasonNumber, item.episodeNumber, rememberEpisodeCodeFormat())
         item.isCloudLibraryItem() ->
             stringResource(Res.string.library_source_cloud)
         else ->
@@ -605,7 +607,7 @@ private fun ContinueWatchingCard(
     )
     val shouldBlurArtwork = blurNextUp && useEpisodeThumbnails && item.isNextUp
     val episodeCode = if (item.seasonNumber != null && item.episodeNumber != null) {
-        stringResource(Res.string.streams_episode_badge, item.seasonNumber, item.episodeNumber)
+        formatEpisodeCode(item.seasonNumber, item.episodeNumber, rememberEpisodeCodeFormat())
     } else {
         null
     }
@@ -1008,10 +1010,10 @@ private fun ContinueWatchingPosterCard(
             }
             if (item.seasonNumber != null && item.episodeNumber != null) {
                 Text(
-                    text = stringResource(
-                        Res.string.streams_episode_badge,
+                    text = formatEpisodeCode(
                         item.seasonNumber,
                         item.episodeNumber,
+                        rememberEpisodeCodeFormat(),
                     ),
                     modifier = Modifier.padding(start = 6.dp),
                     style = MaterialTheme.typography.labelSmall.copy(

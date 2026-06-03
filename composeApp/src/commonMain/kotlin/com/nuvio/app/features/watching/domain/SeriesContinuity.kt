@@ -1,5 +1,6 @@
 package com.nuvio.app.features.watching.domain
 
+import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.core.i18n.localizedPlayLabel
 import com.nuvio.app.core.i18n.localizedResumeLabel
 import com.nuvio.app.core.i18n.localizedUpNextLabel
@@ -91,6 +92,7 @@ fun decideSeriesPrimaryAction(
     todayIsoDate: String,
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
+    format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
 ): WatchingSeriesPrimaryAction? {
     val resumeRecord = resumeProgressForSeries(
         content = content,
@@ -104,7 +106,7 @@ fun decideSeriesPrimaryAction(
     )
 
     if (shouldPreferResume(resumeRecord = resumeRecord, latestCompletedEpisode = latestCompletedEpisode)) {
-        return resumeRecord?.toResumeAction()
+        return resumeRecord?.toResumeAction(format)
     }
 
     val nextEpisode = if (latestCompletedEpisode != null) {
@@ -126,9 +128,9 @@ fun decideSeriesPrimaryAction(
     return nextEpisode?.let { episode ->
         WatchingSeriesPrimaryAction(
             label = if (latestCompletedEpisode != null) {
-                upNextLabel(episode.seasonNumber, episode.episodeNumber)
+                upNextLabel(episode.seasonNumber, episode.episodeNumber, format)
             } else {
-                playLabel(episode.seasonNumber, episode.episodeNumber)
+                playLabel(episode.seasonNumber, episode.episodeNumber, format)
             },
             videoId = buildPlaybackVideoId(
                 content = content,
@@ -157,18 +159,18 @@ fun buildPlaybackVideoId(
         fallbackVideoId?.takeIf { it.isNotBlank() } ?: content.id
     }
 
-fun playLabel(seasonNumber: Int?, episodeNumber: Int?): String =
-    localizedPlayLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber)
+fun playLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
+    localizedPlayLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format)
 
-fun upNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
-    localizedUpNextLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber)
+fun upNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
+    localizedUpNextLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format)
 
-fun resumeLabel(seasonNumber: Int?, episodeNumber: Int?): String =
-    localizedResumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber)
+fun resumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
+    localizedResumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format)
 
-private fun WatchingProgressRecord.toResumeAction(): WatchingSeriesPrimaryAction =
+private fun WatchingProgressRecord.toResumeAction(format: EpisodeCodeFormat): WatchingSeriesPrimaryAction =
     WatchingSeriesPrimaryAction(
-        label = resumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber),
+        label = resumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format),
         videoId = videoId,
         seasonNumber = seasonNumber,
         episodeNumber = episodeNumber,

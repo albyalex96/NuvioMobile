@@ -83,6 +83,8 @@ import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
+import com.nuvio.app.core.ui.formatEpisodeCode
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import com.nuvio.app.features.downloads.DownloadsRepository
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -656,7 +658,7 @@ private fun EpisodeHeroBlock(
         ) {
             // Episode label
             Text(
-                text = stringResource(Res.string.streams_episode_badge, seasonNumber, episodeNumber),
+                text = formatEpisodeCode(seasonNumber, episodeNumber, rememberEpisodeCodeFormat()),
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
