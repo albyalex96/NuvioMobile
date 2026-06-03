@@ -1,25 +1,30 @@
 package com.nuvio.app.core.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -29,10 +34,75 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun NuvioNavigationBar(
     modifier: Modifier = Modifier,
+    glassEnabled: Boolean = true,
+    content: @Composable NuvioNavigationBarScope.() -> Unit,
+) {
+    if (glassEnabled) {
+        GlassNavigationBar(
+            modifier = modifier,
+            content = content,
+        )
+    } else {
+        SolidNavigationBar(
+            modifier = modifier,
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun GlassNavigationBar(
+    modifier: Modifier = Modifier,
+    content: @Composable NuvioNavigationBarScope.() -> Unit,
+) {
+    Box(modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .blur(24.dp)
+                .background(
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.45f)
+                )
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f),
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f),
+                            Color.Transparent,
+                        )
+                    )
+                )
+        )
+
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(nuvioBottomNavigationBarInsets().asPaddingValues())
+                    .padding(horizontal = 4.dp, vertical = nuvioBottomNavigationExtraVerticalPadding),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            ) {
+                NuvioNavigationBarScopeImpl(this).content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun SolidNavigationBar(
+    modifier: Modifier = Modifier,
     content: @Composable NuvioNavigationBarScope.() -> Unit,
 ) {
     Column(modifier.fillMaxWidth()) {
-        HorizontalDivider(
+        androidx.compose.material3.HorizontalDivider(
             thickness = 0.5.dp,
             color = MaterialTheme.colorScheme.outlineVariant,
         )
@@ -92,8 +162,12 @@ private class NuvioNavigationBarScopeImpl(
             targetValue = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        val selectedBackground by animateColorAsState(
+            targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            else Color.Transparent,
+        )
         with(rowScope) {
-            Icon(
+            Box(
                 modifier = modifier
                     .widthIn(max = 150.dp)
                     .fillMaxWidth()
@@ -105,12 +179,21 @@ private class NuvioNavigationBarScopeImpl(
                         role = Role.Tab,
                         onClick = onClick,
                     )
-                    .padding(10.dp)
-                    .size(28.dp),
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = iconColor,
-            )
+                    .padding(10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(selectedBackground, RoundedCornerShape(12.dp))
+                )
+                Icon(
+                    modifier = Modifier.size(28.dp),
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = iconColor,
+                )
+            }
         }
     }
 
@@ -126,8 +209,12 @@ private class NuvioNavigationBarScopeImpl(
             targetValue = if (selected) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        val selectedBackground by animateColorAsState(
+            targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            else Color.Transparent,
+        )
         with(rowScope) {
-            Icon(
+            Box(
                 modifier = modifier
                     .widthIn(max = 150.dp)
                     .fillMaxWidth()
@@ -139,12 +226,21 @@ private class NuvioNavigationBarScopeImpl(
                         role = Role.Tab,
                         onClick = onClick,
                     )
-                    .padding(10.dp)
-                    .size(28.dp),
-                painter = painterResource(icon),
-                contentDescription = contentDescription,
-                tint = iconColor,
-            )
+                    .padding(10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(selectedBackground, RoundedCornerShape(12.dp))
+                )
+                Icon(
+                    modifier = Modifier.size(28.dp),
+                    painter = painterResource(icon),
+                    contentDescription = contentDescription,
+                    tint = iconColor,
+                )
+            }
         }
     }
 

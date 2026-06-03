@@ -56,6 +56,8 @@ import nuvio.composeapp.generated.resources.settings_appearance_app_language_she
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_black
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_description
 import nuvio.composeapp.generated.resources.settings_appearance_continue_watching_description
+import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar
+import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar_description
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass_description
 import nuvio.composeapp.generated.resources.settings_appearance_poster_customization_description
@@ -82,6 +84,8 @@ internal fun LazyListScope.appearanceSettingsContent(
     liquidGlassNativeTabBarSupported: Boolean,
     liquidGlassNativeTabBarEnabled: Boolean,
     onLiquidGlassNativeTabBarToggle: (Boolean) -> Unit,
+    glassNavBarEnabled: Boolean,
+    onGlassNavBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
     onContinueWatchingClick: () -> Unit,
@@ -130,6 +134,14 @@ internal fun LazyListScope.appearanceSettingsContent(
                     checked = amoledEnabled,
                     isTablet = isTablet,
                     onCheckedChange = onAmoledToggle,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_appearance_glass_navbar),
+                    description = stringResource(Res.string.settings_appearance_glass_navbar_description),
+                    checked = glassNavBarEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = onGlassNavBarToggle,
                 )
                 if (liquidGlassNativeTabBarSupported) {
                     SettingsGroupDivider(isTablet = isTablet)

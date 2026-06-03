@@ -608,6 +608,7 @@ private fun MainAppContent(
             ThemeSettingsRepository.liquidGlassNativeTabBarEnabled
         }.collectAsStateWithLifecycle()
         val liquidGlassNativeTabBarSupported = remember { isLiquidGlassNativeTabBarSupported() }
+        val glassNavBarEnabled by remember { ThemeSettingsRepository.glassNavBarEnabled }.collectAsStateWithLifecycle()
         var showExitConfirmation by rememberSaveable { mutableStateOf(false) }
         var selectedPosterActionTarget by remember { mutableStateOf<PosterActionTarget?>(null) }
         var selectedContinueWatchingForActions by remember { mutableStateOf<ContinueWatchingItem?>(null) }
@@ -1328,7 +1329,9 @@ private fun MainAppContent(
                             contentWindowInsets = WindowInsets(0),
                             bottomBar = {
                                 if (!isTabletLayout && !useNativeBottomTabs) {
-                                    NuvioNavigationBar {
+                                    NuvioNavigationBar(
+                                        glassEnabled = glassNavBarEnabled,
+                                    ) {
                                         NavItem(
                                             selected = selectedTab == AppScreenTab.Home,
                                             onClick = { handleRootTabClick(AppScreenTab.Home) },
