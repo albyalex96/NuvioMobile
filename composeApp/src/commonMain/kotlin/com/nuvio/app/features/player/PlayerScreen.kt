@@ -2360,40 +2360,43 @@ fun PlayerScreen(
         }
 
         // Auto-play on video ended if next episode card isn't already showing
-        LaunchedEffect(playbackSnapshot.isEnded, nextEpisodeInfo) {
-            if (playbackSnapshot.isEnded && nextEpisodeInfo != null) {
-                val stillWatchingSettings = playerSettingsUiState
-                if (stillWatchingSettings.stillWatchingEnabled && isSeries) {
-                    val newCount = stillWatchingEpisodeCounter + 1
-                    stillWatchingEpisodeCounter = newCount
-                    val isNightTime = if (stillWatchingSettings.stillWatchingNightMode) {
-                        val hour = currentHour()
-                        hour in 22..23 || hour in 0..4
-                    } else true
-                    if (newCount >= stillWatchingSettings.stillWatchingEpisodeCount && isNightTime) {
-                        playerController?.pause()
-                        shouldPlay = false
-                        stillWatchingShowDialog = true
-                        stillWatchingTimeoutRemaining = 20
-                        stillWatchingCountdownJob?.cancel()
-                        stillWatchingCountdownJob = scope.launch {
-                            while (stillWatchingTimeoutRemaining > 0 && stillWatchingShowDialog) {
-                                delay(1000)
-                                stillWatchingTimeoutRemaining--
+        LaunchedEffect(playbackSnapshot.isEnded) {
+            if (playbackSnapshot.isEnded) {
+                val info = nextEpisodeInfo
+                if (info != null) {
+                    val stillWatchingSettings = playerSettingsUiState
+                    if (stillWatchingSettings.stillWatchingEnabled && isSeries) {
+                        val newCount = stillWatchingEpisodeCounter + 1
+                        stillWatchingEpisodeCounter = newCount
+                        val isNightTime = if (stillWatchingSettings.stillWatchingNightMode) {
+                            val hour = currentHour()
+                            hour in 22..23 || hour in 0..4
+                        } else true
+                        if (newCount >= stillWatchingSettings.stillWatchingEpisodeCount && isNightTime) {
+                            playerController?.pause()
+                            shouldPlay = false
+                            stillWatchingShowDialog = true
+                            stillWatchingTimeoutRemaining = 20
+                            stillWatchingCountdownJob?.cancel()
+                            stillWatchingCountdownJob = scope.launch {
+                                while (stillWatchingTimeoutRemaining > 0 && stillWatchingShowDialog) {
+                                    delay(1000)
+                                    stillWatchingTimeoutRemaining--
+                                }
+                                if (stillWatchingShowDialog) {
+                                    stillWatchingShowDialog = false
+                                    stillWatchingEpisodeCounter = 0
+                                    onBackWithProgress()
+                                }
                             }
-                            if (stillWatchingShowDialog) {
-                                stillWatchingShowDialog = false
-                                stillWatchingEpisodeCounter = 0
-                                onBackWithProgress()
-                            }
+                            return@LaunchedEffect
                         }
-                        return@LaunchedEffect
                     }
-                }
-                if (!showNextEpisodeCard) {
-                    showNextEpisodeCard = true
-                    if (stillWatchingSettings.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                        playNextEpisode()
+                    if (!showNextEpisodeCard) {
+                        showNextEpisodeCard = true
+                        if (stillWatchingSettings.streamAutoPlayNextEpisodeEnabled && info.hasAired) {
+                            playNextEpisode()
+                        }
                     }
                 }
             }
