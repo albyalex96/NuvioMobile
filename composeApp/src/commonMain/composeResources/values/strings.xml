@@ -1875,6 +1875,12 @@
     <string name="stream_parser_description">Show streams with clean badges instead of raw text</string>
     <string name="stream_parser_cached">Cached</string>
 
+    <string name="settings_playback_episode_code_format">Episode code format</string>
+    <string name="settings_playback_episode_code_format_description">Choose how season and episode numbers are displayed</string>
+    <string name="settings_playback_episode_code_format_s01e01">S01E01</string>
+    <string name="settings_playback_episode_code_format_s1e1">S1E1</string>
+    <string name="settings_playback_episode_code_format_01x01">01x01</string>
+    <string name="settings_playback_episode_code_format_1x1">1x1</string>
     <string name="settings_playback_still_watching">Still Watching?</string>
     <string name="settings_playback_still_watching_description">Pause playback after a set number of episodes and ask for confirmation</string>
     <string name="settings_playback_still_watching_episode_count">Episodes before prompt</string>

@@ -1,5 +1,7 @@
 package com.nuvio.app.core.i18n
 
+import com.nuvio.app.core.ui.EpisodeCodeFormat
+import com.nuvio.app.core.ui.formatEpisodeCode
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_play
@@ -73,8 +75,28 @@ fun localizedSeasonEpisodeCode(seasonNumber: Int?, episodeNumber: Int?): String?
         else -> null
     }
 
+fun localizedSeasonEpisodeCode(
+    seasonNumber: Int?,
+    episodeNumber: Int?,
+    format: EpisodeCodeFormat,
+): String? = when {
+    seasonNumber != null && episodeNumber != null ->
+        formatEpisodeCode(seasonNumber, episodeNumber, format)
+    episodeNumber != null -> "E${episodeNumber}"
+    else -> null
+}
+
 fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?): String {
     val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber)
+    return if (episodeCode != null) {
+        resourceString("Play $episodeCode") { getString(Res.string.action_play_episode, episodeCode) }
+    } else {
+        resourceString("Play") { getString(Res.string.action_play) }
+    }
+}
+
+fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String {
+    val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber, format)
     return if (episodeCode != null) {
         resourceString("Play $episodeCode") { getString(Res.string.action_play_episode, episodeCode) }
     } else {
@@ -91,9 +113,28 @@ fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?): String {
     }
 }
 
+fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String {
+    val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber, format)
+    return if (episodeCode != null) {
+        resourceString("Resume $episodeCode") { getString(Res.string.action_resume_episode, episodeCode) }
+    } else {
+        resourceString("Resume") { getString(Res.string.action_resume) }
+    }
+}
+
 fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
     if (seasonNumber != null && episodeNumber != null) {
         resourceString("Up Next • S${seasonNumber}E${episodeNumber}") {
+            getString(Res.string.continue_watching_up_next_episode, seasonNumber, episodeNumber)
+        }
+    } else {
+        resourceString("Up Next") { getString(Res.string.continue_watching_up_next) }
+    }
+
+fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String =
+    if (seasonNumber != null && episodeNumber != null) {
+        val code = formatEpisodeCode(seasonNumber, episodeNumber, format)
+        resourceString("Up Next • $code") {
             getString(Res.string.continue_watching_up_next_episode, seasonNumber, episodeNumber)
         }
     } else {

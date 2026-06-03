@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.features.player.skip.NextEpisodeThresholdMode
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamAutoPlaySource
@@ -70,6 +71,7 @@ data class PlayerSettingsUiState(
     val useLibass: Boolean = false,
     val libassRenderType: String = "CUES",
     val swipeGesturesEnabled: Boolean = true,
+    val episodeCodeFormat: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
     val stillWatchingEnabled: Boolean = false,
     val stillWatchingEpisodeCount: Int = 2,
     val stillWatchingNightMode: Boolean = false,
@@ -132,6 +134,7 @@ object PlayerSettingsRepository {
     private var useLibass = false
     private var libassRenderType = "CUES"
     private var swipeGesturesEnabled = true
+    private var episodeCodeFormat = EpisodeCodeFormat.S01E01
     private var stillWatchingEnabled = false
     private var stillWatchingEpisodeCount = 2
     private var stillWatchingNightMode = false
@@ -199,6 +202,7 @@ object PlayerSettingsRepository {
         useLibass = false
         libassRenderType = "CUES"
         swipeGesturesEnabled = true
+        episodeCodeFormat = EpisodeCodeFormat.S01E01
         stillWatchingEnabled = false
         stillWatchingEpisodeCount = 2
         stillWatchingNightMode = false
@@ -315,6 +319,9 @@ object PlayerSettingsRepository {
         nextEpisodeThresholdMinutesBeforeEnd = PlayerSettingsStorage.loadNextEpisodeThresholdMinutesBeforeEnd() ?: 2f
         useLibass = PlayerSettingsStorage.loadUseLibass() ?: false
         libassRenderType = PlayerSettingsStorage.loadLibassRenderType() ?: "CUES"
+        episodeCodeFormat = PlayerSettingsStorage.loadEpisodeCodeFormat()
+            ?.let { runCatching { EpisodeCodeFormat.valueOf(it) }.getOrNull() }
+            ?: EpisodeCodeFormat.S01E01
         stillWatchingEnabled = PlayerSettingsStorage.loadStillWatchingEnabled() ?: false
         stillWatchingEpisodeCount = PlayerSettingsStorage.loadStillWatchingEpisodeCount() ?: 2
         stillWatchingNightMode = PlayerSettingsStorage.loadStillWatchingNightMode() ?: false
@@ -700,6 +707,14 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveStillWatchingNightMode(enabled)
     }
 
+    fun setEpisodeCodeFormat(format: EpisodeCodeFormat) {
+        ensureLoaded()
+        if (episodeCodeFormat == format) return
+        episodeCodeFormat = format
+        publish()
+        PlayerSettingsStorage.saveEpisodeCodeFormat(format.name)
+    }
+
     fun setIosVideoOutputPreset(preset: IosVideoOutputPreset) {
         ensureLoaded()
         iosVideoOutputPreset = preset
@@ -898,6 +913,7 @@ object PlayerSettingsRepository {
             useLibass = useLibass,
             libassRenderType = libassRenderType,
             swipeGesturesEnabled = swipeGesturesEnabled,
+            episodeCodeFormat = episodeCodeFormat,
             stillWatchingEnabled = stillWatchingEnabled,
             stillWatchingEpisodeCount = stillWatchingEpisodeCount,
             stillWatchingNightMode = stillWatchingNightMode,

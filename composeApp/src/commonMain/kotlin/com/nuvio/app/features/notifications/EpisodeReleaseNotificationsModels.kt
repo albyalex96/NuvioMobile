@@ -1,10 +1,11 @@
 package com.nuvio.app.features.notifications
 
+import com.nuvio.app.core.ui.EpisodeCodeFormat
+import com.nuvio.app.core.ui.formatEpisodeCode
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_player_episode_code_episode_only
-import nuvio.composeapp.generated.resources.compose_player_episode_code_full
 import nuvio.composeapp.generated.resources.notifications_episode_release_body_code
 import nuvio.composeapp.generated.resources.notifications_episode_release_body_code_title
 import nuvio.composeapp.generated.resources.notifications_episode_release_body_generic
@@ -85,10 +86,11 @@ internal fun buildEpisodeReleaseNotificationBody(
     seasonNumber: Int?,
     episodeNumber: Int?,
     episodeTitle: String?,
+    format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
 ): String = runBlocking {
     val code = when {
         seasonNumber != null && episodeNumber != null ->
-            getString(Res.string.compose_player_episode_code_full, seasonNumber, episodeNumber)
+            formatEpisodeCode(seasonNumber, episodeNumber, format)
         episodeNumber != null ->
             getString(Res.string.compose_player_episode_code_episode_only, episodeNumber)
         else -> ""
