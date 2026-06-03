@@ -26,6 +26,8 @@ internal expect object DownloadsPlatformDownloader {
 
     fun fetchUrlAsString(url: String, headers: Map<String, String>): String?
 
+    fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean
+
     fun downloadHlsSegments(
         segmentUrls: List<String>,
         sourceHeaders: Map<String, String>,

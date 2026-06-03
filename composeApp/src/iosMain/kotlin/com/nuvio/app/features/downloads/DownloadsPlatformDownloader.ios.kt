@@ -213,6 +213,38 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
+    actual fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean {
+        return try {
+            val nativeUrl = NSURL(string = url) ?: return false
+            val request = NSMutableURLRequest(
+                uRL = nativeUrl,
+                cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
+                timeoutInterval = 15.0,
+            )
+            request.setHTTPMethod("HEAD")
+            headers.forEach { (key, value) ->
+                request.setValue(value, forHTTPHeaderField = key)
+            }
+
+            val semaphore = dispatch_semaphore_create(0)
+            var isHls = false
+
+            val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { _, response, error ->
+                if (error == null) {
+                    val httpResponse = response as? NSHTTPURLResponse
+                    val contentType = httpResponse?.valueForHTTPHeaderField("Content-Type")
+                    isHls = HlsPlaylistParser.isHlsContentType(contentType)
+                }
+                dispatch_semaphore_signal(semaphore)
+            }
+            task.resume()
+            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
+            isHls
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     actual fun downloadHlsSegments(
         segmentUrls: List<String>,
         sourceHeaders: Map<String, String>,

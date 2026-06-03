@@ -134,6 +134,10 @@ object DownloadsRepository {
             return DownloadEnqueueResult.HlsNeedsSelection
         }
 
+        if (DownloadsPlatformDownloader.probeHlsContentType(sourceUrl, sanitizeRequestHeaders(stream.behaviorHints.proxyHeaders?.request))) {
+            return DownloadEnqueueResult.HlsNeedsSelection
+        }
+
         return enqueueDirectStream(
             contentType = contentType,
             videoId = videoId,

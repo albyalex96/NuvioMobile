@@ -205,6 +205,24 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
+    actual fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean {
+        return try {
+            val requestBuilder = Request.Builder().url(url).head()
+            headers.forEach { (key, value) ->
+                requestBuilder.header(key, value)
+            }
+            val response = downloadHttpClient.newCall(requestBuilder.build()).execute()
+            response.use { resp ->
+                if (resp.isSuccessful) {
+                    val contentType = resp.header("Content-Type")
+                    HlsPlaylistParser.isHlsContentType(contentType)
+                } else false
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     actual fun downloadHlsSegments(
         segmentUrls: List<String>,
         sourceHeaders: Map<String, String>,

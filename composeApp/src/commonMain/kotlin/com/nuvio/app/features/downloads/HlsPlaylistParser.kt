@@ -47,6 +47,13 @@ object HlsPlaylistParser {
     fun isHlsStream(streamType: String?): Boolean =
         streamType?.trim().equals("hls", ignoreCase = true)
 
+    fun isHlsContentType(contentType: String?): Boolean {
+        val ct = contentType?.trim().orEmpty().lowercase()
+        return ct.contains("vnd.apple.mpegurl") ||
+            ct.contains("mpegurl") ||
+            ct.contains("x-mpegurl")
+    }
+
     fun parseMasterPlaylist(content: String, baseUrl: String): HlsMasterPlaylist {
         val lines = content.lines()
         val variants = mutableListOf<HlsVariant>()
