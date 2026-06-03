@@ -85,8 +85,10 @@ import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
+import com.nuvio.app.features.downloads.DownloadEnqueueResult
 import com.nuvio.app.features.downloads.DownloadsHlsSelectionSheet
 import com.nuvio.app.features.downloads.DownloadsRepository
+import com.nuvio.app.features.downloads.HlsPlaylistParser
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -381,7 +383,11 @@ fun StreamsScreen(
             },
             onDownload = { stream ->
                 val directUrl = stream.playableDirectUrl.orEmpty()
-                if (directUrl.isNotBlank() && (directUrl.endsWith(".m3u8", ignoreCase = true) || directUrl.contains(".m3u8?", ignoreCase = true))) {
+                val isHls = directUrl.isNotBlank() && (
+                    HlsPlaylistParser.isHlsUrl(directUrl) ||
+                    HlsPlaylistParser.isHlsStream(stream.streamType)
+                )
+                if (isHls) {
                     hlsDownloadTarget = stream
                 } else {
                     val result = DownloadsRepository.enqueueFromStream(
@@ -399,7 +405,11 @@ fun StreamsScreen(
                         episodeThumbnail = episodeThumbnail,
                         stream = stream,
                     )
-                    NuvioToastController.show(result.toastMessage())
+                    if (result == DownloadEnqueueResult.HlsNeedsSelection) {
+                        hlsDownloadTarget = stream
+                    } else {
+                        NuvioToastController.show(result.toastMessage())
+                    }
                 }
             },
             onOpen = { stream, openExternally ->

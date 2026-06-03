@@ -37,8 +37,15 @@ object HlsPlaylistParser {
 
     fun isHlsUrl(url: String): Boolean {
         val lower = url.trim().lowercase()
-        return lower.endsWith(".m3u8") || lower.contains(".m3u8?")
+        return lower.endsWith(".m3u8") ||
+            lower.contains(".m3u8?") ||
+            lower.contains("/playlist/") ||
+            lower.contains("/master/") ||
+            lower.contains("/chunklist/")
     }
+
+    fun isHlsStream(streamType: String?): Boolean =
+        streamType?.trim().equals("hls", ignoreCase = true)
 
     fun parseMasterPlaylist(content: String, baseUrl: String): HlsMasterPlaylist {
         val lines = content.lines()

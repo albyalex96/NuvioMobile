@@ -130,7 +130,7 @@ object DownloadsRepository {
             return DownloadEnqueueResult.UnsupportedFormat
         }
 
-        if (HlsPlaylistParser.isHlsUrl(sourceUrl)) {
+        if (HlsPlaylistParser.isHlsUrl(sourceUrl) || HlsPlaylistParser.isHlsStream(stream.streamType)) {
             return DownloadEnqueueResult.HlsNeedsSelection
         }
 
