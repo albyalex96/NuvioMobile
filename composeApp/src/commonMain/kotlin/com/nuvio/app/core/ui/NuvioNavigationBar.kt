@@ -75,7 +75,7 @@ private fun GlassNavigationBar(
                 }
             )
             .background(
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.08f),
             )
     ) {
         Row(

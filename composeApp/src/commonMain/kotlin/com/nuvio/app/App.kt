@@ -1330,8 +1330,7 @@ private fun MainAppContent(
                         Scaffold(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .alpha(if (initialHomeReady) 1f else 0f)
-                                .hazeSource(state = hazeState),
+                                .alpha(if (initialHomeReady) 1f else 0f),
                             containerColor = Color.Transparent,
                             contentWindowInsets = WindowInsets(0),
                             bottomBar = {
@@ -1380,9 +1379,12 @@ private fun MainAppContent(
                                 }
                             },
                         ) { innerPadding ->
-                            Box(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .hazeSource(state = hazeState)
+                            ) {
                                 CompositionLocalProvider(
-                                    LocalHazeState provides hazeState,
                                     LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else 0.dp,
                                 ) {
                                     AppTabHost(
