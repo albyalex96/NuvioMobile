@@ -29,6 +29,7 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.media.audiofx.LoudnessEnhancer
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
@@ -166,6 +167,8 @@ actual fun PlatformPlayerSurface(
         }
     }
 
+    var loudnessEnhancer by remember { mutableStateOf<LoudnessEnhancer?>(null) }
+
     val exoPlayer = remember(
         sourceUrl,
         sourceAudioUrl,
@@ -277,11 +280,6 @@ actual fun PlatformPlayerSurface(
                 }                
                 prepare()
                 this.playWhenReady = playWhenReady
-                val initialBoostDb = playerSettings.volumeBoostDb
-                if (initialBoostDb > 0) {
-                    val linearGain = Math.pow(10.0, (initialBoostDb.toFloat() / 20f).toDouble()).toFloat()
-                    volume = linearGain.coerceIn(0f, 10f)
-                }
             }
     }
 
@@ -408,6 +406,8 @@ actual fun PlatformPlayerSurface(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            loudnessEnhancer?.release()
+            loudnessEnhancer = null
             exoPlayer.release()
         }
     }
@@ -571,8 +571,21 @@ actual fun PlatformPlayerSurface(
                 }
 
                 override fun setVolumeBoost(boostDb: Float) {
-                    val linearGain = Math.pow(10.0, (boostDb / 20f).toDouble()).toFloat()
-                    exoPlayer.volume = linearGain.coerceIn(0f, 10f)
+                    loudnessEnhancer?.let {
+                        it.release()
+                        loudnessEnhancer = null
+                    }
+                    if (boostDb > 0f) {
+                        try {
+                            LoudnessEnhancer(exoPlayer.audioSessionId).apply {
+                                setTargetGain((boostDb * 100f).toInt())
+                                enabled = true
+                                loudnessEnhancer = this
+                            }
+                        } catch (_: Exception) {
+                            loudnessEnhancer = null
+                        }
+                    }
                 }
             }
         )

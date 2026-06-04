@@ -2071,6 +2071,10 @@ fun PlayerScreen(
             playerController?.applySubtitleStyle(subtitleStyle)
         }
 
+        LaunchedEffect(playerController, playerSettingsUiState.volumeBoostDb) {
+            playerController?.setVolumeBoost(playerSettingsUiState.volumeBoostDb.toFloat())
+        }
+
         LaunchedEffect(activeSourceUrl, addonSubtitleFetchKey, playerSettingsUiState.addonSubtitleStartupMode) {
             val fetchKey = addonSubtitleFetchKey ?: return@LaunchedEffect
             if (playerSettingsUiState.addonSubtitleStartupMode == AddonSubtitleStartupMode.FAST_STARTUP) {
