@@ -49,18 +49,10 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Generate self-signed keystore
+      - name: Decode Keystore
         run: |
-          keytool -genkeypair \
-            -alias nuvio-release \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 365 \
-            -keystore ${{ github.workspace }}/nuvio-release.keystore \
-            -storepass nuvio1234 \
-            -keypass nuvio1234 \
-            -dname "CN=Nuvio CI, OU=CI, O=Nuvio, L=Unknown, ST=Unknown, C=US"
-
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/nuvio-release.keystore
+      
       - name: Write local.properties
         run: |
           printf 'SUPABASE_URL=%s\n' "${{ secrets.SUPABASE_URL }}" > local.properties
