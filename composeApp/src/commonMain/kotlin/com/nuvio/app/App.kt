@@ -1385,7 +1385,11 @@ private fun MainAppContent(
                                     .hazeSource(state = hazeState)
                             ) {
                                 CompositionLocalProvider(
-                                    LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else 0.dp,
+                                    LocalNuvioBottomNavigationOverlayPadding provides when {
+                                        useNativeBottomTabs -> 49.dp
+                                        glassNavBarEnabled && !isTabletLayout -> 72.dp
+                                        else -> 0.dp
+                                    },
                                 ) {
                                     AppTabHost(
                                         modifier = Modifier
