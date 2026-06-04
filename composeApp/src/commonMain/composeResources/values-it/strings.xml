@@ -1421,7 +1421,7 @@
   <string name="compose_nav_live_tv">Live TV</string>
   <string name="compose_player_channels">Canali</string>
   <string name="compose_settings_page_live_tv">Live TV</string>
-  <string name="settings_integrations_live_tv_description">Add an M3U playlist for live channels.</string>
+  <string name="settings_integrations_live_tv_description">Aggiungi playlist M3U per i canali in live.</string>
   <string name="live_tv_title">Live TV</string>
   <string name="live_tv_channel_group_default">Canale</string>
   <string name="live_tv_empty_title">Nessun canale trovato</string>
