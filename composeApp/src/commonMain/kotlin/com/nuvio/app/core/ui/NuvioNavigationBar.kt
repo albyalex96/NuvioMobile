@@ -22,12 +22,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.hazeEffect
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -55,32 +55,37 @@ private fun GlassNavigationBar(
     modifier: Modifier = Modifier,
     content: @Composable NuvioNavigationBarScope.() -> Unit,
 ) {
+    val hazeState = LocalHazeState.current
+
+    val shape = RoundedCornerShape(30.dp)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(bottom = nuvioSafeBottomPadding(extra = 8.dp))
+            .clip(shape)
+            .then(
+                if (hazeState != null) {
+                    Modifier.hazeEffect(state = hazeState)
+                } else {
+                    Modifier.background(
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                    )
+                }
+            )
+            .background(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+            )
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(RoundedCornerShape(30.dp))
-                .blur(24.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                    RoundedCornerShape(30.dp),
-                )
-        )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(30.dp))
                 .background(Color.Transparent)
                 .border(
                     width = 0.5.dp,
                     color = Color.White.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(30.dp),
+                    shape = shape,
                 )
                 .padding(horizontal = 4.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
