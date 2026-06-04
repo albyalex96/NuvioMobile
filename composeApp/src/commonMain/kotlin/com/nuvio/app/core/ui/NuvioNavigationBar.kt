@@ -2,6 +2,7 @@ package com.nuvio.app.core.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -55,43 +55,38 @@ private fun GlassNavigationBar(
     modifier: Modifier = Modifier,
     content: @Composable NuvioNavigationBarScope.() -> Unit,
 ) {
-    Box(modifier.fillMaxWidth()) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = nuvioSafeBottomPadding(extra = 8.dp))
+    ) {
         Box(
             modifier = Modifier
                 .matchParentSize()
+                .clip(RoundedCornerShape(30.dp))
                 .blur(24.dp)
                 .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.45f)
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                    RoundedCornerShape(30.dp),
                 )
         )
 
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(0.5.dp)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f),
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f),
-                            Color.Transparent,
-                        )
-                    )
+                .clip(RoundedCornerShape(30.dp))
+                .background(Color.Transparent)
+                .border(
+                    width = 0.5.dp,
+                    color = Color.White.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(30.dp),
                 )
-        )
-
-        Column(Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(nuvioBottomNavigationBarInsets().asPaddingValues())
-                    .padding(horizontal = 4.dp, vertical = nuvioBottomNavigationExtraVerticalPadding),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-            ) {
-                NuvioNavigationBarScopeImpl(this).content()
-            }
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            NuvioNavigationBarScopeImpl(this).content()
         }
     }
 }
