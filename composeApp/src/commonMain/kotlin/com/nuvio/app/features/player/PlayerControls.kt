@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -92,6 +93,7 @@ internal fun PlayerControlsShell(
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
+    onVolumeBoostClick: (() -> Unit)? = null,
     onLiveChannelsClick: (() -> Unit)? = null,
     onSubmitIntroClick: (() -> Unit)? = null,
     parentalWarnings: List<ParentalWarning> = emptyList(),
@@ -194,6 +196,7 @@ internal fun PlayerControlsShell(
                     onSourcesClick = onSourcesClick,
                     onEpisodesClick = onEpisodesClick,
                     onOpenInExternalPlayer = onOpenInExternalPlayer,
+                    onVolumeBoostClick = onVolumeBoostClick,
                     onLiveChannelsClick = onLiveChannelsClick,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -493,6 +496,7 @@ private fun ProgressControls(
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
+    onVolumeBoostClick: (() -> Unit)? = null,
     onLiveChannelsClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -582,6 +586,13 @@ private fun ProgressControls(
                                 onClick = onEpisodesClick,
                             )
                         }
+                    }
+                    if (onVolumeBoostClick != null) {
+                        PlayerActionPillButton(
+                            label = stringResource(Res.string.player_action_volume_boost),
+                            icon = Icons.Rounded.VolumeUp,
+                            onClick = onVolumeBoostClick,
+                        )
                     }
                     if (onOpenInExternalPlayer != null) {
                         PlayerActionPillButton(

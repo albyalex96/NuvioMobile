@@ -89,6 +89,7 @@ data class PlayerSettingsUiState(
     val iosContrast: Int = 0,
     val iosSaturation: Int = 0,
     val iosGamma: Int = 0,
+    val volumeBoostDb: Int = 0,
 )
 
 object PlayerSettingsRepository {
@@ -152,6 +153,7 @@ object PlayerSettingsRepository {
     private var iosContrast = 0
     private var iosSaturation = 0
     private var iosGamma = 0
+    private var volumeBoostDb = 0
 
     fun ensureLoaded() {
         if (hasLoaded) return
@@ -220,6 +222,7 @@ object PlayerSettingsRepository {
         iosContrast = 0
         iosSaturation = 0
         iosGamma = 0
+        volumeBoostDb = 0
         publish()
     }
 
@@ -350,6 +353,7 @@ object PlayerSettingsRepository {
         iosContrast = PlayerSettingsStorage.loadIosContrast() ?: 0
         iosSaturation = PlayerSettingsStorage.loadIosSaturation() ?: 0
         iosGamma = PlayerSettingsStorage.loadIosGamma() ?: 0
+        volumeBoostDb = PlayerSettingsStorage.loadVolumeBoostDb() ?: 0
         publish()
     }
 
@@ -846,6 +850,15 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveIosGamma(iosGamma)
     }
 
+    fun setVolumeBoostDb(boostDb: Int) {
+        ensureLoaded()
+        val normalized = boostDb.coerceIn(0, 20)
+        if (volumeBoostDb == normalized) return
+        volumeBoostDb = normalized
+        publish()
+        PlayerSettingsStorage.saveVolumeBoostDb(normalized)
+    }
+
     fun resetIosVideoOutputTuning() {
         ensureLoaded()
         iosBrightness = 0
@@ -931,6 +944,7 @@ object PlayerSettingsRepository {
             iosContrast = iosContrast,
             iosSaturation = iosSaturation,
             iosGamma = iosGamma,
+            volumeBoostDb = volumeBoostDb,
         )
     }
 

@@ -670,6 +670,7 @@ fun PlayerScreen(
         var showAudioModal by remember { mutableStateOf(false) }
         var showSubtitleModal by remember { mutableStateOf(false) }
         var showVideoSettingsModal by remember { mutableStateOf(false) }
+        var showVolumeBoostModal by remember { mutableStateOf(false) }
         var audioTracks by remember { mutableStateOf<List<AudioTrack>>(emptyList()) }
         var subtitleTracks by remember { mutableStateOf<List<SubtitleTrack>>(emptyList()) }
         var selectedAudioIndex by remember { mutableStateOf(-1) }
@@ -2662,6 +2663,7 @@ fun PlayerScreen(
                     onSeekForward = { seekBy(10_000L) },
                     onResizeModeClick = ::cycleResizeMode,
                     onSpeedClick = ::cyclePlaybackSpeed,
+                    onVolumeBoostClick = { showVolumeBoostModal = true },
                     onSubtitleClick = {
                         refreshTracks()
                         showSubtitleModal = true
@@ -2958,6 +2960,16 @@ fun PlayerScreen(
                     playerController?.configureIosVideoOutput(PlayerSettingsRepository.uiState.value)
                 },
                 onDismiss = { showVideoSettingsModal = false },
+            )
+
+            VolumeBoostModal(
+                visible = showVolumeBoostModal,
+                currentBoostDb = playerSettingsUiState.volumeBoostDb,
+                onBoostChanged = { boostDb ->
+                    PlayerSettingsRepository.setVolumeBoostDb(boostDb)
+                    playerController?.setVolumeBoost(boostDb.toFloat())
+                },
+                onDismiss = { showVolumeBoostModal = false },
             )
 
             // Sources Panel

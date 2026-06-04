@@ -1550,6 +1550,11 @@
     <!-- PlayerControls a11y -->
     <string name="player_action_submit_intro">Submit Intro</string>
     <string name="player_action_video_settings">Video settings</string>
+    <string name="player_action_volume_boost">Volume Boost</string>
+    <!-- Player volume boost modal -->
+    <string name="player_volume_boost_title">Volume Boost</string>
+    <string name="player_volume_boost_value">%1$d dB</string>
+    <string name="player_volume_boost_off">Off</string>
     <!-- CloudLibrary -->
     <string name="cloud_library_provider_unavailable">Cloud library is not available for %1$s.</string>
     <!-- Player iOS video settings modal -->

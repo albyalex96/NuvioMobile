@@ -277,6 +277,11 @@ actual fun PlatformPlayerSurface(
                 }                
                 prepare()
                 this.playWhenReady = playWhenReady
+                val initialBoostDb = playerSettings.volumeBoostDb
+                if (initialBoostDb > 0) {
+                    val linearGain = Math.pow(10.0, (initialBoostDb.toFloat() / 20f).toDouble()).toFloat()
+                    volume = linearGain.coerceIn(0f, 10f)
+                }
             }
     }
 
@@ -563,6 +568,11 @@ actual fun PlatformPlayerSurface(
 
                 override fun setSubtitleDelayMs(delayMs: Int) {
                     subtitleDelayMs = delayMs.coerceIn(SUBTITLE_DELAY_MIN_MS, SUBTITLE_DELAY_MAX_MS)
+                }
+
+                override fun setVolumeBoost(boostDb: Float) {
+                    val linearGain = Math.pow(10.0, (boostDb / 20f).toDouble()).toFloat()
+                    exoPlayer.volume = linearGain.coerceIn(0f, 10f)
                 }
             }
         )

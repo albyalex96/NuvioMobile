@@ -92,6 +92,10 @@ actual fun PlatformPlayerSurface(
                 bridge.setMuted(muted)
             }
 
+            override fun setVolumeBoost(boostDb: Float) {
+                bridge.setVolumeBoost(boostDb)
+            }
+
             override fun getAudioTracks(): List<AudioTrack> {
                 val count = bridge.getAudioTrackCount()
                 return (0 until count).map { i ->
