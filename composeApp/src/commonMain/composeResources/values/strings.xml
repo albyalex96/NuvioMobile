@@ -1906,4 +1906,7 @@
     <string name="still_watching_proceed">Proceed</string>
     <string name="still_watching_cancel">Cancel</string>
     <string name="still_watching_timeout">Auto-stopping in %1$d…</string>
+
+    <!-- Downloads share -->
+    <string name="downloads_share">Share</string>
 </resources>
