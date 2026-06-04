@@ -300,6 +300,8 @@
   <string name="settings_appearance_app_language_sheet_title">Scegli lingua</string>
   <string name="settings_appearance_continue_watching_description">Mostra, nascondi e personalizza lo stile della riga "Continua a guardare".</string>
   <string name="settings_appearance_poster_customization_description">Regola la larghezza delle locandine e i preset del raggio degli angoli.</string>
+  <string name="settings_appearance_glass_navbar">Barra di navigazione vetrosa</string>
+  <string name="settings_appearance_glass_navbar_description">Applica un effetto vetro satinato alla barra di navigazione inferiore.</string>
   <string name="settings_appearance_section_display">DISPLAY</string>
   <string name="settings_appearance_section_home">HOME</string>
   <string name="settings_appearance_section_theme">TEMA</string>

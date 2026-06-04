@@ -132,6 +132,7 @@ fun SettingsScreen(
             ThemeSettingsRepository.liquidGlassNativeTabBarEnabled
         }.collectAsStateWithLifecycle()
         val liquidGlassNativeTabBarSupported = remember { isLiquidGlassNativeTabBarSupported() }
+        val glassNavBarEnabled by remember { ThemeSettingsRepository.glassNavBarEnabled }.collectAsStateWithLifecycle()
         val selectedAppLanguage by remember { ThemeSettingsRepository.selectedAppLanguage }.collectAsStateWithLifecycle()
         val tmdbSettings by remember {
             TmdbSettingsRepository.ensureLoaded()
@@ -281,6 +282,8 @@ fun SettingsScreen(
                 liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                 liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
                 onLiquidGlassNativeTabBarToggle = ThemeSettingsRepository::setLiquidGlassNativeTabBar,
+                glassNavBarEnabled = glassNavBarEnabled,
+                onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                 selectedAppLanguage = selectedAppLanguage,
                 onAppLanguageSelected = ThemeSettingsRepository::setAppLanguage,
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
@@ -338,6 +341,8 @@ fun SettingsScreen(
                 liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                 liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
                 onLiquidGlassNativeTabBarToggle = ThemeSettingsRepository::setLiquidGlassNativeTabBar,
+                glassNavBarEnabled = glassNavBarEnabled,
+                onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                 selectedAppLanguage = selectedAppLanguage,
                 onAppLanguageSelected = ThemeSettingsRepository::setAppLanguage,
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
@@ -405,6 +410,8 @@ private fun MobileSettingsScreen(
     liquidGlassNativeTabBarSupported: Boolean,
     liquidGlassNativeTabBarEnabled: Boolean,
     onLiquidGlassNativeTabBarToggle: (Boolean) -> Unit,
+    glassNavBarEnabled: Boolean,
+    onGlassNavBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
@@ -587,6 +594,8 @@ private fun MobileSettingsScreen(
                     liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                     liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
                     onLiquidGlassNativeTabBarToggle = onLiquidGlassNativeTabBarToggle,
+                    glassNavBarEnabled = glassNavBarEnabled,
+                    onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                     selectedAppLanguage = selectedAppLanguage,
                     onAppLanguageSelected = onAppLanguageSelected,
                     onContinueWatchingClick = onContinueWatchingClick,
@@ -746,6 +755,8 @@ private fun TabletSettingsScreen(
     liquidGlassNativeTabBarSupported: Boolean,
     liquidGlassNativeTabBarEnabled: Boolean,
     onLiquidGlassNativeTabBarToggle: (Boolean) -> Unit,
+    glassNavBarEnabled: Boolean,
+    onGlassNavBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
@@ -913,6 +924,8 @@ private fun TabletSettingsScreen(
                     liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                     liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
                     onLiquidGlassNativeTabBarToggle = onLiquidGlassNativeTabBarToggle,
+                    glassNavBarEnabled = glassNavBarEnabled,
+                    onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                     selectedAppLanguage = selectedAppLanguage,
                     onAppLanguageSelected = onAppLanguageSelected,
                         streamsAppearance=streamsAppearance,
