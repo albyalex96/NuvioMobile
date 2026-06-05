@@ -316,6 +316,7 @@ fun PlayerScreen(
         var seekProgressSyncJob by remember { mutableStateOf<Job?>(null) }
         var accumulatedSeekState by remember { mutableStateOf<PlayerAccumulatedSeekState?>(null) }
         var autoRefreshAttempt by rememberSaveable(activePlaybackIdentity) { mutableStateOf(0) }
+        var autoRefreshJob by remember { mutableStateOf<Job?>(null) }
         var initialLoadCompleted by remember(activePlaybackIdentity) { mutableStateOf(false) }
         var speedBoostRestoreSpeed by remember(activePlaybackIdentity) { mutableStateOf<Float?>(null) }
         var isHoldToSpeedGestureActive by remember(activePlaybackIdentity) { mutableStateOf(false) }
@@ -2123,6 +2124,56 @@ fun PlayerScreen(
             }
         }
 
+        LaunchedEffect(activeSourceUrl, activeVideoId, activeProviderAddonId) {
+            val url = activeSourceUrl
+            val videoId = activeVideoId
+            val providerId = activeProviderAddonId
+            if (url.isBlank() || videoId == null || providerId == null || activeTorrentInfoHash != null) return@LaunchedEffect
+            val expiryMs = parseStreamUrlExpiry(url) ?: return@LaunchedEffect
+            val now = com.nuvio.app.features.streams.epochMs()
+            val remainingMs = expiryMs - now
+            val refreshLeadMs = 45_000L
+            val delayMs = remainingMs - refreshLeadMs
+
+            if (delayMs in 10_000L..3_600_000L) {
+                delay(delayMs)
+                if (activeSourceUrl != url || activeVideoId != videoId || activeProviderAddonId != providerId) return@LaunchedEffect
+
+                val savedPosition = playbackSnapshot.positionMs.coerceAtLeast(0L)
+
+                PlayerStreamsRepository.loadSources(
+                    type = contentType ?: parentMetaType,
+                    videoId = videoId,
+                    season = activeSeasonNumber,
+                    episode = activeEpisodeNumber,
+                    forceRefresh = true,
+                )
+
+                var attempts = 0
+                while (attempts < 40) {
+                    delay(250)
+                    attempts++
+                    val state = PlayerStreamsRepository.sourceState.value
+                    if (!state.isAnyLoading && (state.hasAnyStreams || state.emptyStateReason != null)) {
+                        val matchingGroup = state.groups.firstOrNull {
+                            it.addonId == providerId && it.streams.isNotEmpty()
+                        }
+                        if (matchingGroup != null) {
+                            activeInitialPositionMs = savedPosition
+                            switchToSource(matchingGroup.streams.first())
+                        } else if (state.hasAnyStreams) {
+                            val firstGroup = state.groups.firstOrNull { it.streams.isNotEmpty() }
+                            if (firstGroup != null) {
+                                activeInitialPositionMs = savedPosition
+                                switchToSource(firstGroup.streams.first())
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
         LaunchedEffect(
             playerController,
             playerControllerSourceUrl,
@@ -2610,8 +2661,8 @@ fun PlayerScreen(
                         if (message != null) {
                             val currentVideoId = activeVideoId
                             val isHlsStream = activeStreamType == "hls" ||
-                                (activeSourceUrl?.contains("m3u8", ignoreCase = true) == true)
-                            val hasBeenPlaying = playbackSnapshot.positionMs > 15_000L
+                                (activeSourceUrl?.contains(".m3u8", ignoreCase = true) == true)
+                            val hasBeenPlaying = playbackSnapshot.positionMs > 5_000L
                             val isP2pActive = activeTorrentInfoHash != null
                             val willAutoRefresh = isHlsStream && hasBeenPlaying &&
                                 autoRefreshAttempt < 3 && currentVideoId != null &&
@@ -2619,6 +2670,7 @@ fun PlayerScreen(
 
                             if (willAutoRefresh) {
                                 autoRefreshAttempt++
+                                autoRefreshJob?.cancel()
                                 val savedPosition = playbackSnapshot.positionMs.coerceAtLeast(0L)
                                 val savedProviderAddonId = activeProviderAddonId
 
@@ -2639,13 +2691,14 @@ fun PlayerScreen(
                                     forceRefresh = true,
                                 )
 
-                                scope.launch {
+                                autoRefreshJob = scope.launch {
+                                    delay(300)
                                     var attempts = 0
-                                    while (attempts < 30) {
+                                    while (attempts < 40) {
                                         delay(250)
                                         attempts++
                                         val state = PlayerStreamsRepository.sourceState.value
-                                        if (!state.isAnyLoading) {
+                                        if (!state.isAnyLoading && (state.hasAnyStreams || state.emptyStateReason != null)) {
                                             val matchingGroup = state.groups.firstOrNull {
                                                 it.addonId == savedProviderAddonId && it.streams.isNotEmpty()
                                             }
@@ -2665,7 +2718,7 @@ fun PlayerScreen(
                                             break
                                         }
                                     }
-                                    if (attempts >= 30 && errorMessage == null) {
+                                    if (attempts >= 40 && errorMessage == null) {
                                         errorMessage = message
                                         controlsVisible = !playerControlsLocked
                                     }
@@ -3396,4 +3449,21 @@ private fun StillWatchingDialog(
             }
         }
     }
+}
+
+private fun parseStreamUrlExpiry(url: String): Long? {
+    val queryStart = url.indexOf('?')
+    if (queryStart < 0) return null
+    val query = url.substring(queryStart + 1)
+    for (param in query.split('&')) {
+        val eqIdx = param.indexOf('=')
+        if (eqIdx < 0) continue
+        val key = param.substring(0, eqIdx)
+        val value = param.substring(eqIdx + 1)
+        if (key == "e" || key == "expires" || key == "expiry" || key == "exp") {
+            val parsed = value.toLongOrNull() ?: continue
+            return if (parsed < 4_000_000_000L) parsed * 1000L else parsed
+        }
+    }
+    return null
 }
