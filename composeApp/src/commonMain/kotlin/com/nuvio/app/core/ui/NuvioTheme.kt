@@ -35,18 +35,20 @@ val MaterialTheme.appTheme: AppTheme
 private fun contentColorFor(background: Color): Color =
     if (background.luminance() > 0.5f) Color(0xFF111111) else Color(0xFFF5F7F8)
 
-private fun buildColorScheme(palette: ThemeColorPalette, amoled: Boolean = false) = darkColorScheme(
+private val pureBlack = Color(0xFF000000)
+
+private fun buildColorScheme(palette: ThemeColorPalette, amoled: Boolean = false, amoledSurfaces: Boolean = false) = darkColorScheme(
     primary = palette.secondary,
     onPrimary = palette.onSecondary,
     primaryContainer = palette.focusBackground,
     onPrimaryContainer = contentColorFor(palette.focusBackground),
     secondary = palette.secondaryVariant,
     onSecondary = palette.onSecondaryVariant,
-    background = if (amoled) Color.Black else palette.background,
+    background = if (amoled) pureBlack else palette.background,
     onBackground = Color(0xFFF5F7F8),
-    surface = palette.backgroundElevated,
+    surface = if (amoled && amoledSurfaces) pureBlack else palette.backgroundElevated,
     onSurface = Color(0xFFF5F7F8),
-    surfaceVariant = palette.backgroundCard,
+    surfaceVariant = if (amoled && amoledSurfaces) pureBlack else palette.backgroundCard,
     onSurfaceVariant = Color(0xFF969CA3),
     outline = Color(0xFF252A2A),
     error = Color(0xFFE36A8A),
@@ -209,9 +211,10 @@ fun NuvioTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     appTheme: AppTheme = AppTheme.WHITE,
     amoled: Boolean = false,
+    amoledSurfaces: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = buildColorScheme(ThemeColors.getColorPalette(appTheme), amoled = amoled)
+    val colorScheme = buildColorScheme(ThemeColors.getColorPalette(appTheme), amoled = amoled, amoledSurfaces = amoledSurfaces)
 
     val density = LocalDensity.current
     CompositionLocalProvider(

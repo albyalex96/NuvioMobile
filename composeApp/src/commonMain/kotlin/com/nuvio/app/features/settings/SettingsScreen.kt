@@ -128,6 +128,7 @@ fun SettingsScreen(
             ThemeSettingsRepository.selectedTheme
         }.collectAsStateWithLifecycle()
         val amoledEnabled by remember { ThemeSettingsRepository.amoledEnabled }.collectAsStateWithLifecycle()
+        val amoledSurfacesEnabled by remember { ThemeSettingsRepository.amoledSurfacesEnabled }.collectAsStateWithLifecycle()
         val liquidGlassNativeTabBarEnabled by remember {
             ThemeSettingsRepository.liquidGlassNativeTabBarEnabled
         }.collectAsStateWithLifecycle()
@@ -309,6 +310,8 @@ fun SettingsScreen(
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
                 onTop10CatalogClick = onTop10CatalogClick,
+                amoledSurfacesEnabled = amoledSurfacesEnabled,
+                onAmoledSurfacesToggle = ThemeSettingsRepository::setAmoledSurfaces,
                 streamsAppearance=streamsAppearance,
             )
         } else {
@@ -375,6 +378,8 @@ fun SettingsScreen(
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
                 onCollectionsClick = onCollectionsClick,
                 onTop10CatalogClick = onTop10CatalogClick,
+                amoledSurfacesEnabled = amoledSurfacesEnabled,
+                onAmoledSurfacesToggle = ThemeSettingsRepository::setAmoledSurfaces,
                 streamsAppearance=streamsAppearance,
             )
         }
@@ -445,6 +450,8 @@ private fun MobileSettingsScreen(
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
     onTop10CatalogClick: () -> Unit = {},
+    amoledSurfacesEnabled: Boolean,
+    onAmoledSurfacesToggle: (Boolean) -> Unit,
     streamsAppearance: StreamsAppearanceSettings,
 ) {
     val saveableStateHolder = rememberSaveableStateHolder()
@@ -595,6 +602,8 @@ private fun MobileSettingsScreen(
                     onThemeSelected = onThemeSelected,
                     amoledEnabled = amoledEnabled,
                     onAmoledToggle = onAmoledToggle,
+                    amoledSurfacesEnabled = amoledSurfacesEnabled,
+                    onAmoledSurfacesToggle = ThemeSettingsRepository::setAmoledSurfaces,
                     liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
                     liquidGlassNativeTabBarEnabled = liquidGlassNativeTabBarEnabled,
                     onLiquidGlassNativeTabBarToggle = onLiquidGlassNativeTabBarToggle,
@@ -786,6 +795,8 @@ private fun TabletSettingsScreen(
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onCollectionsClick: () -> Unit = {},
     onTop10CatalogClick: () -> Unit = {},
+    amoledSurfacesEnabled: Boolean,
+    onAmoledSurfacesToggle: (Boolean) -> Unit,
     streamsAppearance: StreamsAppearanceSettings,
 ) {
     var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.General.name) }
@@ -925,6 +936,8 @@ private fun TabletSettingsScreen(
                     onThemeSelected = onThemeSelected,
                     amoledEnabled = amoledEnabled,
                     onAmoledToggle = onAmoledToggle,
+                    amoledSurfacesEnabled = amoledSurfacesEnabled,
+                    onAmoledSurfacesToggle = ThemeSettingsRepository::setAmoledSurfaces,
                     onContinueWatchingClick = { openInlinePage(SettingsPage.ContinueWatching) },
                     onPosterCustomizationClick = { openInlinePage(SettingsPage.PosterCustomization) },
                     liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,

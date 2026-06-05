@@ -384,7 +384,8 @@ fun App() {
         ThemeSettingsRepository.selectedTheme
     }.collectAsStateWithLifecycle()
     val amoledEnabled by remember { ThemeSettingsRepository.amoledEnabled }.collectAsStateWithLifecycle()
-    NuvioTheme(appTheme = selectedTheme, amoled = amoledEnabled) {
+    val amoledSurfacesEnabled by remember { ThemeSettingsRepository.amoledSurfacesEnabled }.collectAsStateWithLifecycle()
+    NuvioTheme(appTheme = selectedTheme, amoled = amoledEnabled, amoledSurfaces = amoledSurfacesEnabled) {
         LaunchedEffect(Unit) {
             AuthRepository.initialize()
         }
