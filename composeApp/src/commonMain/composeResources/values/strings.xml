@@ -1914,4 +1914,9 @@
 
     <!-- Downloads share -->
     <string name="downloads_share">Share</string>
+
+    <!-- Google Cast -->
+    <string name="player_action_cast">Connect to TV</string>
+    <string name="player_action_cast_connected">Connected to TV</string>
+    <string name="player_action_cast_disconnect">Disconnect</string>
 </resources>

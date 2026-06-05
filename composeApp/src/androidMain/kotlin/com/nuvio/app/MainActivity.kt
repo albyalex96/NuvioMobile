@@ -56,6 +56,7 @@ import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesStorage
 import com.nuvio.app.features.watchprogress.ResumePromptStorage
 import com.nuvio.app.features.watchprogress.WatchProgressStorage
 import com.nuvio.app.features.home.Top10CatalogStorage
+import com.nuvio.app.features.cast.CastController
 import com.nuvio.app.features.streams.StreamsAppearanceStorage
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,6 +115,9 @@ class MainActivity : AppCompatActivity() {
         PlatformLocalAccountDataCleaner.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.initialize(applicationContext)
         StreamsAppearanceStorage.initialize(applicationContext)
+        try {
+            CastController.initialize(applicationContext)
+        } catch (_: Exception) { }
         EpisodeReleaseNotificationPlatform.bindActivity(this)
         handleIncomingAppIntent(intent)
 

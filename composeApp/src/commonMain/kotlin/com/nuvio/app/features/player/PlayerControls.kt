@@ -63,6 +63,7 @@ import com.nuvio.app.core.ui.appIconPainter
 import com.nuvio.app.core.ui.formatEpisodeCodeWithTitle
 import com.nuvio.app.core.ui.nuvioTypeScale
 import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
+import com.nuvio.app.features.cast.CastUiState
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -96,6 +97,8 @@ internal fun PlayerControlsShell(
     onVolumeBoostClick: (() -> Unit)? = null,
     onLiveChannelsClick: (() -> Unit)? = null,
     onSubmitIntroClick: (() -> Unit)? = null,
+    castUiState: CastUiState = CastUiState(),
+    onCastClick: () -> Unit = {},
     parentalWarnings: List<ParentalWarning> = emptyList(),
     showParentalGuide: Boolean = false,
     onParentalGuideAnimationComplete: () -> Unit = {},
@@ -152,6 +155,8 @@ internal fun PlayerControlsShell(
                 isLocked = isLocked,
                 showActions = showPlaybackControls,
                 onSubmitIntroClick = onSubmitIntroClick,
+                castUiState = castUiState,
+                onCastClick = onCastClick,
                 parentalWarnings = parentalWarnings,
                 showParentalGuide = showParentalGuide,
                 onParentalGuideAnimationComplete = onParentalGuideAnimationComplete,
@@ -223,6 +228,8 @@ private fun PlayerHeader(
     isLocked: Boolean,
     showActions: Boolean,
     onSubmitIntroClick: (() -> Unit)?,
+    castUiState: CastUiState = CastUiState(),
+    onCastClick: () -> Unit = {},
     parentalWarnings: List<ParentalWarning>,
     showParentalGuide: Boolean,
     onParentalGuideAnimationComplete: () -> Unit,
@@ -318,6 +325,19 @@ private fun PlayerHeader(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (castUiState.isAvailable) {
+                        PlayerHeaderIconButton(
+                            icon = if (castUiState.isConnected) Icons.Rounded.CastConnected else Icons.Rounded.Cast,
+                            contentDescription = if (castUiState.isConnected) {
+                                stringResource(Res.string.player_action_cast_connected)
+                            } else {
+                                stringResource(Res.string.player_action_cast)
+                            },
+                            buttonSize = metrics.headerIconSize + 16.dp,
+                            iconSize = metrics.headerIconSize,
+                            onClick = onCastClick,
+                        )
+                    }
                     if (onSubmitIntroClick != null) {
                         PlayerHeaderIconButton(
                             icon = Icons.Rounded.Flag,

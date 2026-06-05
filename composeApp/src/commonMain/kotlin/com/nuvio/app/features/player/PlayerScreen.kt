@@ -76,6 +76,8 @@ import com.nuvio.app.features.p2p.formatP2pMegabytes
 import com.nuvio.app.features.p2p.formatP2pSpeed
 import com.nuvio.app.features.livetv.LiveTvChannel
 import com.nuvio.app.features.livetv.LiveTvRepository
+import com.nuvio.app.features.cast.CastController
+import com.nuvio.app.features.cast.rememberInitCastButton
 import com.nuvio.app.features.player.skip.NextEpisodeCard
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
@@ -227,6 +229,9 @@ fun PlayerScreen(
         LiveTvRepository.ensureLoaded()
         LiveTvRepository.uiState
     }.collectAsStateWithLifecycle()
+    val castUiState by CastController.state.collectAsStateWithLifecycle()
+
+    rememberInitCastButton()
 
     BoxWithConstraints(
         modifier = modifier
@@ -2726,6 +2731,8 @@ fun PlayerScreen(
                     } else null,
                     onLiveChannelsClick = if (isLiveTvPlayback) { { showLiveChannelsPanel = true } } else null,
                     onSubmitIntroClick = if (isSeries && playerSettingsUiState.introSubmitEnabled && playerSettingsUiState.introDbApiKey.isNotBlank()) { { showSubmitIntroModal = true } } else null,
+                    castUiState = castUiState,
+                    onCastClick = { CastController.showCastDialog() },
                     parentalWarnings = parentalWarnings,
                     showParentalGuide = showParentalGuide,
                     onParentalGuideAnimationComplete = { showParentalGuide = false },
