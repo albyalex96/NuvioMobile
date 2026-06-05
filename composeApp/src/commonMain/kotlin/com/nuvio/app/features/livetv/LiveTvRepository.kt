@@ -20,6 +20,12 @@ object LiveTvRepository {
 
     private var hasLoaded = false
 
+    fun onProfileChanged() {
+        hasLoaded = false
+        _uiState.value = LiveTvUiState()
+        ensureLoaded()
+    }
+
     fun ensureLoaded() {
         if (hasLoaded) return
         hasLoaded = true

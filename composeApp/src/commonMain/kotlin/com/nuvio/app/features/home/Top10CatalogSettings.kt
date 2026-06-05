@@ -44,6 +44,11 @@ object Top10CatalogRepository {
     internal val localChangeEvents: SharedFlow<Unit> = _localChangeEvents.asSharedFlow()
     private val json = Json { ignoreUnknownKeys = true }
 
+    fun onProfileChanged() {
+        _uiState.value = Top10CatalogUiState()
+        ensureLoaded()
+    }
+
     fun ensureLoaded() {
         val payload = Top10CatalogStorage.loadPayload() ?: return
         val selection = runCatching { json.decodeFromString<Top10CatalogSelection>(payload) }.getOrNull() ?: return
