@@ -315,6 +315,7 @@ fun PlayerScreen(
         var accumulatedSeekResetJob by remember { mutableStateOf<Job?>(null) }
         var seekProgressSyncJob by remember { mutableStateOf<Job?>(null) }
         var accumulatedSeekState by remember { mutableStateOf<PlayerAccumulatedSeekState?>(null) }
+        var autoRefreshAttempt by rememberSaveable(activePlaybackIdentity) { mutableStateOf(0) }
         var initialLoadCompleted by remember(activePlaybackIdentity) { mutableStateOf(false) }
         var speedBoostRestoreSpeed by remember(activePlaybackIdentity) { mutableStateOf<Float?>(null) }
         var isHoldToSpeedGestureActive by remember(activePlaybackIdentity) { mutableStateOf(false) }
@@ -2606,11 +2607,21 @@ fun PlayerScreen(
                         }
                     },
                     onError = { message ->
-                        errorMessage = message
                         if (message != null) {
-                            controlsVisible = !playerControlsLocked
                             val currentVideoId = activeVideoId
-                            if (currentVideoId != null) {
+                            val isHlsStream = activeStreamType == "hls" ||
+                                (activeSourceUrl?.contains("m3u8", ignoreCase = true) == true)
+                            val hasBeenPlaying = playbackSnapshot.positionMs > 15_000L
+                            val isP2pActive = activeTorrentInfoHash != null
+                            val willAutoRefresh = isHlsStream && hasBeenPlaying &&
+                                autoRefreshAttempt < 3 && currentVideoId != null &&
+                                activeProviderAddonId != null && !isP2pActive
+
+                            if (willAutoRefresh) {
+                                autoRefreshAttempt++
+                                val savedPosition = playbackSnapshot.positionMs.coerceAtLeast(0L)
+                                val savedProviderAddonId = activeProviderAddonId
+
                                 val cacheKey = StreamLinkCacheRepository.contentKey(
                                     type = contentType ?: parentMetaType,
                                     videoId = currentVideoId,
@@ -2619,6 +2630,59 @@ fun PlayerScreen(
                                     episode = activeEpisodeNumber,
                                 )
                                 StreamLinkCacheRepository.remove(cacheKey)
+
+                                PlayerStreamsRepository.loadSources(
+                                    type = contentType ?: parentMetaType,
+                                    videoId = currentVideoId,
+                                    season = activeSeasonNumber,
+                                    episode = activeEpisodeNumber,
+                                    forceRefresh = true,
+                                )
+
+                                scope.launch {
+                                    var attempts = 0
+                                    while (attempts < 30) {
+                                        delay(250)
+                                        attempts++
+                                        val state = PlayerStreamsRepository.sourceState.value
+                                        if (!state.isAnyLoading) {
+                                            val matchingGroup = state.groups.firstOrNull {
+                                                it.addonId == savedProviderAddonId && it.streams.isNotEmpty()
+                                            }
+                                            if (matchingGroup != null) {
+                                                activeInitialPositionMs = savedPosition
+                                                switchToSource(matchingGroup.streams.first())
+                                            } else if (state.hasAnyStreams) {
+                                                val firstGroup = state.groups.firstOrNull { it.streams.isNotEmpty() }
+                                                if (firstGroup != null) {
+                                                    activeInitialPositionMs = savedPosition
+                                                    switchToSource(firstGroup.streams.first())
+                                                }
+                                            } else if (errorMessage == null) {
+                                                errorMessage = message
+                                                controlsVisible = !playerControlsLocked
+                                            }
+                                            break
+                                        }
+                                    }
+                                    if (attempts >= 30 && errorMessage == null) {
+                                        errorMessage = message
+                                        controlsVisible = !playerControlsLocked
+                                    }
+                                }
+                            } else {
+                                errorMessage = message
+                                controlsVisible = !playerControlsLocked
+                                if (currentVideoId != null) {
+                                    val cacheKey = StreamLinkCacheRepository.contentKey(
+                                        type = contentType ?: parentMetaType,
+                                        videoId = currentVideoId,
+                                        parentMetaId = parentMetaId,
+                                        season = activeSeasonNumber,
+                                        episode = activeEpisodeNumber,
+                                    )
+                                    StreamLinkCacheRepository.remove(cacheKey)
+                                }
                             }
                         }
                     },
