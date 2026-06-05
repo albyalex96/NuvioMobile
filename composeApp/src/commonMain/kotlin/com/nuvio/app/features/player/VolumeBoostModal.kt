@@ -28,6 +28,7 @@ import nuvio.composeapp.generated.resources.player_action_volume_boost
 import nuvio.composeapp.generated.resources.player_volume_boost_off
 import nuvio.composeapp.generated.resources.player_volume_boost_value
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.material3.ExperimentalMaterial3Api
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
