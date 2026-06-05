@@ -158,3 +158,15 @@ jobs:
           files: ${{ steps.find_apk.outputs.path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Send ntfy Notification
+        run: |
+          curl \
+            -H "Title: 🎉 Build Completata con Successo!" \
+            -H "Priority: high" \
+            -H "Tags: rocket,android" \
+            -H "Click: https://github.com/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}" \
+            -d "La build per **Nuvio** (#${{ github.run_number }}) sul branch *${{ steps.resolve_branch.outputs.branch }}* è pronta! 🚀
+            
+            Flavor: ${{ steps.flavor.outputs.name }}
+            Il file APK è stato caricato correttamente nella Release." \
+            https://ntfy.sh/nuvio_builds
