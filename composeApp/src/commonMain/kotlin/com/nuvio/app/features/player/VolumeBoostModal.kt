@@ -30,6 +30,7 @@ import nuvio.composeapp.generated.resources.player_volume_boost_value
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VolumeBoostModal(
     visible: Boolean,
