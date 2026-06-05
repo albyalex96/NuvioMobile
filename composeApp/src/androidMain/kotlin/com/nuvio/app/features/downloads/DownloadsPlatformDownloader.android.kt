@@ -270,34 +270,53 @@ internal actual object DownloadsPlatformDownloader {
 
             try {
                 if (tsTemp.exists()) tsTemp.delete()
-                tsTemp.createNewFile()
 
                 FileOutputStream(tsTemp, false).use { output ->
                     if (context.mapInitSegment != null) {
                         output.write(context.mapInitSegment)
-                        totalDownloaded += context.mapInitSegment.size
+                        totalDownloaded += context.mapInitSegment.size.toLong()
                         onProgress(totalDownloaded, null)
                     }
 
                     for ((index, spec) in context.segments.withIndex()) {
                         ensureActive()
 
-                        val segData = fetchUrlAsBytes(spec.url, context.sourceHeaders)
-                            ?: error(runBlocking { getString(Res.string.downloads_error_empty_body) })
-
-                        val decrypted = if (spec.keyIndex != null && spec.keyIndex < context.keyDataList.size) {
-                            val key = context.keyDataList[spec.keyIndex]
-                            val iv = context.keyIvList.getOrNull(spec.keyIndex)
-                                ?: deriveIvFromIndex(index)
-                            segData.aes128CbcDecrypt(key, iv)
-                        } else {
-                            segData
+                        val requestBuilder = Request.Builder().url(spec.url)
+                        context.sourceHeaders.forEach { (key, value) ->
+                            requestBuilder.header(key, value)
                         }
 
-                        output.write(decrypted)
-                        output.flush()
-                        totalDownloaded += decrypted.size
-                        onProgress(totalDownloaded, null)
+                        downloadHttpClient.newCall(requestBuilder.get().build()).execute().use { resp ->
+                            if (!resp.isSuccessful) {
+                                error(runBlocking { getString(Res.string.downloads_error_http_failed, resp.code) })
+                            }
+                            val body = resp.body ?: error(
+                                runBlocking { getString(Res.string.downloads_error_empty_body) },
+                            )
+
+                            if (spec.keyIndex != null && spec.keyIndex < context.keyDataList.size && context.keyDataList[spec.keyIndex].size == 16) {
+                                val key = context.keyDataList[spec.keyIndex]
+                                val iv = context.keyIvList.getOrNull(spec.keyIndex)
+                                    ?: deriveIvFromIndex(index)
+                                val encryptedBytes = body.bytes()
+                                val decryptedBytes = encryptedBytes.aes128CbcDecrypt(key, iv)
+                                output.write(decryptedBytes)
+                                totalDownloaded += decryptedBytes.size.toLong()
+                            } else {
+                                body.byteStream().use { input ->
+                                    val buffer = ByteArray(16 * 1024)
+                                    while (true) {
+                                        ensureActive()
+                                        val read = input.read(buffer)
+                                        if (read <= 0) break
+                                        output.write(buffer, 0, read)
+                                        totalDownloaded += read.toLong()
+                                    }
+                                }
+                            }
+                            output.flush()
+                            onProgress(totalDownloaded, null)
+                        }
                     }
                 }
 
@@ -309,13 +328,14 @@ internal actual object DownloadsPlatformDownloader {
                         mp4File
                     } else {
                         val tsName = context.destinationFileName.removeSuffix(".mp4") + ".ts"
-                        val tsFile = File(downloadsDir, tsName)
-                        if (tsFile.exists()) tsFile.delete()
-                        if (!tsTemp.renameTo(tsFile)) {
-                            tsTemp.copyTo(tsFile, overwrite = true)
-                            tsTemp.delete()
+                        File(downloadsDir, tsName).let { tsFile ->
+                            if (tsFile.exists()) tsFile.delete()
+                            if (!tsTemp.renameTo(tsFile)) {
+                                tsTemp.copyTo(tsFile, overwrite = true)
+                                tsTemp.delete()
+                            }
+                            tsFile
                         }
-                        tsFile
                     }
                 } else {
                     if (destination.exists()) destination.delete()
