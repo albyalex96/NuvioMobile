@@ -125,27 +125,6 @@ jobs:
         run: |
           ./gradlew :composeApp:${{ steps.flavor.outputs.task }}
 
-      - name: Find Target APK
-        id: find_apk
-        run: |
-          APK_PATH=$(find composeApp/build/outputs/apk/ -name "*.apk" | head -n 1)
-          if [ -f "$APK_PATH" ]; then
-            echo "path=$APK_PATH" >> $GITHUB_OUTPUT
-            echo "Found APK at: $APK_PATH"
-          else
-            echo "Errore: Nessun APK trovato!"
-            exit 1
-          fi
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuvio-${{ steps.flavor.outputs.name }}-apk
-          path: ${{ steps.find_apk.outputs.path }}
-          retention-days: 7
-          if-no-files-found: error
-
-      # 5. Creazione Release agganciata al branch dinamico
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
@@ -155,9 +134,11 @@ jobs:
           draft: false
           prerelease: false
           target_commitish: ${{ steps.resolve_branch.outputs.branch }}
-          files: ${{ steps.find_apk.outputs.path }}
+          files: |
+            composeApp/build/outputs/apk/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Send ntfy Notification
         run: |
           curl \
