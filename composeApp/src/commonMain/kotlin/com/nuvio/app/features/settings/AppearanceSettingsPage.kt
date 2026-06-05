@@ -227,6 +227,7 @@ private fun AppearanceLanguageBottomSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val options = remember {
         AppLanguage.entries.map { language ->
