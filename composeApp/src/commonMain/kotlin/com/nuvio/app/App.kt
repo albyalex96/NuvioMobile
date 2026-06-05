@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -70,7 +69,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import coil3.ImageLoader
@@ -103,12 +101,9 @@ import com.nuvio.app.core.ui.NuvioTheme
 import com.nuvio.app.core.ui.LocalNuvioBottomNavigationOverlayPadding
 import com.nuvio.app.core.ui.NativeNavigationTab
 import com.nuvio.app.core.ui.NativeTabBridge
-import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.isLiquidGlassNativeTabBarSupported
-import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.localizedContinueWatchingSubtitle
 import com.nuvio.app.core.ui.LocalHazeState
-import com.nuvio.app.core.ui.rememberNuvioBottomSheetState
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.nuvio.app.features.auth.AuthScreen
@@ -821,7 +816,6 @@ private fun MainAppContent(
     var profileSwitchLoading by remember { mutableStateOf(false) }
     var resumePromptItem by remember { mutableStateOf<ContinueWatchingItem?>(null) }
     var lastExternalPlayerLaunch by remember { mutableStateOf<PlayerLaunch?>(null) }
-    val streamLaunchIdsPreservedForPlayerReturn = remember { mutableSetOf<Long>() }
     val launchExternalPlayer = rememberExternalPlayerLauncher { result ->
         if (result != null && result.positionMs > 0L) {
             coroutineScope.launch {
@@ -1647,8 +1641,7 @@ private fun MainAppContent(
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
-                val streamRouteDestination: @Composable (NavBackStackEntry) -> Unit =
-                    streamRouteDestination@{ backStackEntry ->
+                composable<StreamRoute> { backStackEntry ->
                     val route = backStackEntry.toRoute<StreamRoute>()
                     val launch = remember(route.launchId) {
                         StreamLaunchStore.get(route.launchId)
@@ -1658,7 +1651,7 @@ private fun MainAppContent(
                             StreamsRepository.clear()
                             navController.popBackStack()
                         }
-                        return@streamRouteDestination
+                        return@composable
                     }
                     val pauseDescription = launch.pauseDescription
                     val streamRouteScope = rememberCoroutineScope()
@@ -1668,9 +1661,7 @@ private fun MainAppContent(
                     DisposableEffect(lifecycleOwner, route.launchId) {
                         val observer = LifecycleEventObserver { _, event ->
                             if (event == Lifecycle.Event.ON_DESTROY) {
-                                if (route.launchId !in streamLaunchIdsPreservedForPlayerReturn) {
-                                    StreamLaunchStore.remove(route.launchId)
-                                }
+                                StreamLaunchStore.remove(route.launchId)
                             }
                         }
                         lifecycleOwner.lifecycle.addObserver(observer)
@@ -1739,21 +1730,6 @@ private fun MainAppContent(
                     fun p2pSentinelUrl(infoHash: String, fileIdx: Int?): String =
                         "torrent://$infoHash${fileIdx?.let { "?index=$it" }.orEmpty()}"
 
-                    fun navigateToPlayer(
-                        playerLaunch: PlayerLaunch,
-                        replaceStreamRoute: Boolean = false,
-                    ) {
-                        playerLaunch.returnStreamLaunchId?.let { streamLaunchId ->
-                            streamLaunchIdsPreservedForPlayerReturn.add(streamLaunchId)
-                        }
-                        val playerLaunchId = PlayerLaunchStore.put(playerLaunch)
-                        navController.navigate(PlayerRoute(launchId = playerLaunchId)) {
-                            if (replaceStreamRoute) {
-                                popUpTo<StreamRoute> { inclusive = true }
-                            }
-                        }
-                    }
-
                     fun openP2pStream(
                         stream: StreamItem,
                         resolvedResumePositionMs: Long?,
@@ -1761,7 +1737,7 @@ private fun MainAppContent(
                         replaceStreamRoute: Boolean,
                     ) {
                         val infoHash = stream.p2pInfoHash ?: return
-                        val sentinelUrl = p2pSentinelUrl(infoHash, stream.fileIdx)
+                        val sentinelUrl = p2pSentinelUrl(infoHash, stream.p2pFileIdx)
                         if (playerSettings.streamReuseLastLinkEnabled) {
                             val cacheKey = StreamLinkCacheRepository.contentKey(
                                 type = launch.type,
@@ -1778,11 +1754,12 @@ private fun MainAppContent(
                                 addonId = stream.addonId,
                                 requestHeaders = emptyMap(),
                                 responseHeaders = emptyMap(),
-                                filename = stream.behaviorHints.filename,
+                                filename = stream.p2pFilename,
                                 videoSize = stream.behaviorHints.videoSize,
                                 infoHash = infoHash,
-                                fileIdx = stream.fileIdx,
-                                sources = stream.sources,
+                                fileIdx = stream.p2pFileIdx,
+                                magnetUri = stream.torrentMagnetUri,
+                                sources = stream.p2pSourceHints,
                                 bingeGroup = stream.behaviorHints.bingeGroup,
                             )
                         }
@@ -1809,19 +1786,21 @@ private fun MainAppContent(
                             parentMetaId = launch.parentMetaId ?: effectiveVideoId,
                             parentMetaType = launch.parentMetaType ?: launch.type,
                             torrentInfoHash = infoHash,
-                            torrentFileIdx = stream.fileIdx,
-                            torrentFilename = stream.behaviorHints.filename,
+                            torrentFileIdx = stream.p2pFileIdx,
+                            torrentFilename = stream.p2pFilename,
+                            torrentMagnetUri = stream.torrentMagnetUri,
                             torrentTrackers = stream.p2pTrackers,
                             initialPositionMs = resolvedResumePositionMs ?: 0L,
                             initialProgressFraction = resolvedResumeProgressFraction,
-                            returnStreamLaunchId = if (isIos && !replaceStreamRoute) route.launchId else null,
                         )
 
+                        val launchId = PlayerLaunchStore.put(playerLaunch)
                         StreamsRepository.cancelLoading()
-                        navigateToPlayer(
-                            playerLaunch = playerLaunch,
-                            replaceStreamRoute = replaceStreamRoute,
-                        )
+                        navController.navigate(PlayerRoute(launchId = launchId)) {
+                            if (replaceStreamRoute) {
+                                popUpTo<StreamRoute> { inclusive = true }
+                            }
+                        }
                     }
 
                     fun requestOrOpenP2pStream(
@@ -1878,10 +1857,10 @@ private fun MainAppContent(
                         val maxAgeMs = playerSettings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
                         val cached = StreamLinkCacheRepository.getValid(cacheKey, maxAgeMs)
                         if (cached != null) {
-                            if (cached.url.isBlank() && !cached.infoHash.isNullOrBlank()) {
+                            if (cached.url.isBlank() && (!cached.infoHash.isNullOrBlank() || !cached.magnetUri.isNullOrBlank())) {
                                 val cachedStream = StreamItem(
                                     name = cached.streamName,
-                                    url = null,
+                                    url = cached.magnetUri,
                                     infoHash = cached.infoHash,
                                     fileIdx = cached.fileIdx,
                                     sources = cached.sources,
@@ -1938,10 +1917,10 @@ private fun MainAppContent(
                             }
                             StreamsRepository.clear()
                             reuseNavigated = true
-                            navigateToPlayer(
-                                playerLaunch = playerLaunch,
-                                replaceStreamRoute = true,
-                            )
+                            val launchId = PlayerLaunchStore.put(playerLaunch)
+                            navController.navigate(PlayerRoute(launchId = launchId)) {
+                                popUpTo<StreamRoute> { inclusive = true }
+                            }
                         }
                     }
 
@@ -2072,10 +2051,10 @@ private fun MainAppContent(
                         }
                         StreamsRepository.consumeAutoPlay()
                         StreamsRepository.cancelLoading()
-                        navigateToPlayer(
-                            playerLaunch = playerLaunch,
-                            replaceStreamRoute = true,
-                        )
+                        val launchId = PlayerLaunchStore.put(playerLaunch)
+                        navController.navigate(PlayerRoute(launchId = launchId)) {
+                            popUpTo<StreamRoute> { inclusive = true }
+                        }
                     }
 
                     if (!hasResolvedVideoId) {
@@ -2085,7 +2064,7 @@ private fun MainAppContent(
                         ) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
-                        return@streamRouteDestination
+                        return@composable
                     }
 
                     fun openSelectedStream(
@@ -2189,7 +2168,6 @@ private fun MainAppContent(
                             parentMetaType = launch.parentMetaType ?: launch.type,
                             initialPositionMs = resolvedResumePositionMs ?: 0L,
                             initialProgressFraction = resolvedResumeProgressFraction,
-                            returnStreamLaunchId = if (isIos) route.launchId else null,
                         )
 
                         if (!forceInternal && (forceExternal || playerSettings.externalPlayerEnabled)) {
@@ -2198,8 +2176,11 @@ private fun MainAppContent(
                             return
                         }
 
+                        val launchId = PlayerLaunchStore.put(playerLaunch)
                         StreamsRepository.cancelLoading()
-                        navigateToPlayer(playerLaunch)
+                        navController.navigate(
+                            PlayerRoute(launchId = launchId)
+                        )
                     }
 
                     // Hide overlay when reuse navigated to external player (prevents reload from showing it again)
@@ -2213,141 +2194,89 @@ private fun MainAppContent(
                         StreamsAppearanceRepository.uiState
                     }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
                     
-                    val streamSheetState = rememberNuvioBottomSheetState(skipPartiallyExpanded = true)
-
-                    fun closeStreamRoute() {
-                        streamLaunchIdsPreservedForPlayerReturn.remove(route.launchId)
-                        StreamsRepository.clear()
-                        navController.popBackStack()
-                    }
-
-                    fun dismissStreamRoute() {
-                        if (isIos) {
-                            streamRouteScope.launch {
-                                dismissNuvioBottomSheet(
-                                    sheetState = streamSheetState,
-                                    onDismiss = ::closeStreamRoute,
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        StreamsScreen(
+                            type = launch.type,
+                            videoId = effectiveVideoId,
+                            parentMetaId = launch.parentMetaId ?: effectiveVideoId,
+                            parentMetaType = launch.parentMetaType ?: launch.type,
+                            title = launch.title,
+                            logo = launch.logo,
+                            poster = launch.poster,
+                            background = launch.background,
+                            seasonNumber = launch.seasonNumber,
+                            episodeNumber = launch.episodeNumber,
+                            episodeTitle = launch.episodeTitle,
+                            episodeThumbnail = launch.episodeThumbnail,
+                            resumePositionMs = launch.resumePositionMs,
+                            resumeProgressFraction = launch.resumeProgressFraction,
+                            manualSelection = launch.manualSelection,
+                            startFromBeginning = launch.startFromBeginning,
+                            onStreamSelected = { stream, resolvedResumePositionMs, resolvedResumeProgressFraction ->
+                                openSelectedStream(
+                                    stream = stream,
+                                    resolvedResumePositionMs = resolvedResumePositionMs,
+                                    resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                                    forceExternal = false,
+                                    forceInternal = false,
                                 )
-                            }
-                        } else {
-                            closeStreamRoute()
-                        }
-                    }
-
-                    val streamRouteContent: @Composable (Modifier) -> Unit = { contentModifier ->
-                        Box(modifier = contentModifier) {
-                            StreamsScreen(
-                                type = launch.type,
-                                videoId = effectiveVideoId,
-                                parentMetaId = launch.parentMetaId ?: effectiveVideoId,
-                                parentMetaType = launch.parentMetaType ?: launch.type,
-                                title = launch.title,
-                                logo = launch.logo,
-                                poster = launch.poster,
-                                background = launch.background,
-                                seasonNumber = launch.seasonNumber,
-                                episodeNumber = launch.episodeNumber,
-                                episodeTitle = launch.episodeTitle,
-                                episodeThumbnail = launch.episodeThumbnail,
-                                resumePositionMs = launch.resumePositionMs,
-                                resumeProgressFraction = launch.resumeProgressFraction,
-                                manualSelection = launch.manualSelection,
-                                startFromBeginning = launch.startFromBeginning,
-                                onStreamSelected = { stream, resolvedResumePositionMs, resolvedResumeProgressFraction ->
-                                    openSelectedStream(
-                                        stream = stream,
-                                        resolvedResumePositionMs = resolvedResumePositionMs,
-                                        resolvedResumeProgressFraction = resolvedResumeProgressFraction,
-                                        forceExternal = false,
-                                        forceInternal = false,
+                            },
+                            onStreamActionOpen = { stream, openExternally, resolvedResumePositionMs, resolvedResumeProgressFraction ->
+                                openSelectedStream(
+                                    stream = stream,
+                                    resolvedResumePositionMs = resolvedResumePositionMs,
+                                    resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                                    forceExternal = openExternally,
+                                    forceInternal = !openExternally,
+                                )
+                            },
+                            onBack = {
+                                StreamsRepository.clear()
+                                navController.popBackStack()
+                            },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        pendingP2pStreamOpen?.let { pending ->
+                            P2pConsentDialog(
+                                onEnableP2p = {
+                                    P2pSettingsRepository.setP2pEnabled(true)
+                                    pendingP2pStreamOpen = null
+                                    openP2pStream(
+                                        stream = pending.stream,
+                                        resolvedResumePositionMs = pending.resumePositionMs,
+                                        resolvedResumeProgressFraction = pending.resumeProgressFraction,
+                                        replaceStreamRoute = pending.isAutoPlay,
                                     )
                                 },
-                                onStreamActionOpen = { stream, openExternally, resolvedResumePositionMs, resolvedResumeProgressFraction ->
-                                    openSelectedStream(
-                                        stream = stream,
-                                        resolvedResumePositionMs = resolvedResumePositionMs,
-                                        resolvedResumeProgressFraction = resolvedResumeProgressFraction,
-                                        forceExternal = openExternally,
-                                        forceInternal = !openExternally,
-                                    )
-                                },
-                                onBack = { dismissStreamRoute() },
-                                modifier = Modifier.fillMaxSize(),
-                                showBackButton = !isIos,
-                            )
-                            pendingP2pStreamOpen?.let { pending ->
-                                P2pConsentDialog(
-                                    onEnableP2p = {
-                                        P2pSettingsRepository.setP2pEnabled(true)
-                                        pendingP2pStreamOpen = null
-                                        openP2pStream(
-                                            stream = pending.stream,
-                                            resolvedResumePositionMs = pending.resumePositionMs,
-                                            resolvedResumeProgressFraction = pending.resumeProgressFraction,
-                                            replaceStreamRoute = pending.isAutoPlay,
-                                        )
-                                    },
-                                    onDismiss = {
-                                        if (pending.isAutoPlay) {
-                                            StreamsRepository.skipAutoPlayStream(pending.stream)
-                                            StreamsRepository.consumeAutoPlay()
-                                        }
-                                        pendingP2pStreamOpen = null
-                                    },
-                                )
-                            }
-                            if (resolvingDebridStream) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color.Black.copy(alpha = 0.82f)),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                                    ) {
-                                        CircularProgressIndicator(color = Color.White)
-                                        Text(
-                                            text = stringResource(Res.string.streams_finding_source),
-                                            color = Color.White.copy(alpha = 0.82f),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                        )
+                                onDismiss = {
+                                    if (pending.isAutoPlay) {
+                                        StreamsRepository.skipAutoPlayStream(pending.stream)
+                                        StreamsRepository.consumeAutoPlay()
                                     }
+                                    pendingP2pStreamOpen = null
+                                },
+                            )
+                        }
+                        if (resolvingDebridStream) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.82f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    CircularProgressIndicator(color = Color.White)
+                                    Text(
+                                        text = stringResource(Res.string.streams_finding_source),
+                                        color = Color.White.copy(alpha = 0.82f),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
                                 }
                             }
                         }
-                    }
-
-                    if (isIos) {
-                        NuvioModalBottomSheet(
-                            onDismissRequest = { closeStreamRoute() },
-                            sheetState = streamSheetState,
-                            containerColor = MaterialTheme.colorScheme.background,
-                            contentColor = MaterialTheme.colorScheme.onBackground,
-                            iosContentTopPadding = 0.dp,
-                        ) {
-                            streamRouteContent(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                            )
-                        }
-                    } else {
-                        streamRouteContent(Modifier.fillMaxSize())
-                    }
-                    }
-                if (isIos) {
-                    dialog<StreamRoute>(
-                        dialogProperties = DialogProperties(
-                            usePlatformDefaultWidth = false,
-                        ),
-                    ) { backStackEntry ->
-                        streamRouteDestination(backStackEntry)
-                    }
-                } else {
-                    composable<StreamRoute> { backStackEntry ->
-                        streamRouteDestination(backStackEntry)
                     }
                 }
                 composable<PlayerRoute>(
@@ -2404,6 +2333,7 @@ private fun MainAppContent(
                         torrentInfoHash = launch.torrentInfoHash,
                         torrentFileIdx = launch.torrentFileIdx,
                         torrentFilename = launch.torrentFilename,
+                        torrentMagnetUri = launch.torrentMagnetUri,
                         torrentTrackers = launch.torrentTrackers,
                         initialPositionMs = launch.initialPositionMs,
                         initialProgressFraction = launch.initialProgressFraction,
@@ -2411,14 +2341,6 @@ private fun MainAppContent(
                             ResumePromptRepository.markPlayerExitedNormally()
                             PlayerLaunchStore.remove(route.launchId)
                             navController.popBackStack()
-                            launch.returnStreamLaunchId?.let { streamLaunchId ->
-                                if (isIos && StreamLaunchStore.get(streamLaunchId) != null) {
-                                    navController.navigate(StreamRoute(launchId = streamLaunchId)) {
-                                        launchSingleTop = true
-                                    }
-                                }
-                                streamLaunchIdsPreservedForPlayerReturn.remove(streamLaunchId)
-                            }
                         },
                         onOpenInExternalPlayer = { request ->
                             val playerLaunch = PlayerLaunch(

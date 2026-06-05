@@ -47,7 +47,7 @@ data class StreamItem(
             .firstOrNull { !it.isMagnetLink() }
 
     val torrentMagnetUri: String?
-        get() = listOfNotNull(url, externalUrl)
+        get() = listOfNotNull(url, externalUrl, clientResolve?.magnetUri)
             .firstOrNull { it.isMagnetLink() }
 
     val isDirectDebridStream: Boolean
@@ -72,16 +72,27 @@ data class StreamItem(
     val p2pInfoHash: String?
         get() = infoHash.normalizedInfoHash()
             ?: clientResolve?.infoHash.normalizedInfoHash()
+            ?: clientResolve?.magnetUri.extractBtihInfoHash()
             ?: torrentMagnetUri.extractBtihInfoHash()
 
+    val p2pFileIdx: Int?
+        get() = fileIdx ?: clientResolve?.fileIdx
+
+    val p2pFilename: String?
+        get() = behaviorHints.filename ?: clientResolve?.filename
+
     val p2pTrackers: List<String>
-        get() = sources
+        get() = p2pSourceHints
             .asSequence()
             .filter { it.startsWith("tracker:") }
             .map { it.removePrefix("tracker:").trim() }
             .filter { it.isNotEmpty() }
             .distinct()
             .toList()
+
+    val p2pSourceHints: List<String>
+        get() = (sources + clientResolve?.sources.orEmpty())
+            .distinct()
 
     val isAddonDebridCandidate: Boolean
     get() = (isInstalledAddonStream || addonId.startsWith("plugin:") || addonId.startsWith("plugin-repo:")) &&

@@ -69,7 +69,7 @@ import nuvio.composeapp.generated.resources.stream_parser_description
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
-import com.nuvio.app.core.ui.rememberNuvioBottomSheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import com.nuvio.app.features.streams.DisplayMode
 import com.nuvio.app.features.streams.StreamsAppearanceRepository
 import com.nuvio.app.features.streams.StreamsAppearanceSettings
@@ -226,7 +226,7 @@ private fun AppearanceLanguageBottomSheet(
     onLanguageSelected: (AppLanguage) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberNuvioBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val options = remember {
         AppLanguage.entries.map { language ->
