@@ -522,36 +522,62 @@ object DownloadsRepository {
                 headers = item.sourceHeaders,
             )
             if (mediaContent == null) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
-                mutateItem(item.id) { current ->
-                    current.copy(
-                        status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
-                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                    )
-                }
+                failDownload(item.id, "")
                 return@launch
             }
 
             val mediaPlaylist = HlsPlaylistParser.parseMediaPlaylist(mediaContent, item.sourceUrl)
             if (mediaPlaylist.segments.isEmpty()) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
-                mutateItem(item.id) { current ->
-                    current.copy(
-                        status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
-                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                    )
-                }
+                failDownload(item.id, "")
                 return@launch
             }
 
-            val segmentUrls = mediaPlaylist.segments.map { it.url }
+            val keyDataList = mutableListOf<ByteArray>()
+            for (keyInfo in mediaPlaylist.keys) {
+                val keyBytes = DownloadsPlatformDownloader.fetchUrlAsBytes(
+                    url = keyInfo.uri,
+                    headers = item.sourceHeaders,
+                )
+                if (keyBytes == null || keyBytes.size != 16) {
+                    failDownload(item.id, runBlocking { getString(Res.string.download_failed) })
+                    return@launch
+                }
+                keyDataList.add(keyBytes)
+            }
 
-            val handle = DownloadsPlatformDownloader.downloadHlsSegments(
-                segmentUrls = segmentUrls,
+            val mapInitSegment = mediaPlaylist.map?.let { mapInfo ->
+                DownloadsPlatformDownloader.fetchUrlAsBytes(
+                    url = mapInfo.uri,
+                    headers = item.sourceHeaders,
+                )
+            }
+
+            val segmentSpecs = mediaPlaylist.segments.map { seg ->
+                HlsSegmentSpec(url = seg.url, keyIndex = seg.keyIndex)
+            }
+
+            val keyIvList = mediaPlaylist.keys.map { keyInfo ->
+                keyInfo.iv?.let { ivHex ->
+                    val hex = ivHex.trimStart('0', 'x').ifEmpty { "00" }
+                    if (hex.length % 2 != 0) "0$hex" else hex
+                }?.let { hex ->
+                    ByteArray(hex.length / 2) {
+                        hex.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+                    }
+                }
+            }
+
+            val context = HlsDownloadContext(
+                segments = segmentSpecs,
+                keyDataList = keyDataList,
+                keyIvList = keyIvList,
+                mapInitSegment = mapInitSegment,
                 sourceHeaders = item.sourceHeaders,
                 destinationFileName = item.fileName,
+            )
+
+            val handle = DownloadsPlatformDownloader.downloadHlsSegments(
+                context = context,
                 onProgress = { downloadedBytes, totalBytes ->
                     mutateItem(item.id) { current ->
                         if (current.status != DownloadStatus.Downloading) {
@@ -585,23 +611,27 @@ object DownloadsRepository {
                 },
                 onFailure = { message ->
                     activeHandles.remove(item.id)
-                    mutateItem(item.id) { current ->
-                        if (current.status != DownloadStatus.Downloading) {
-                            current
-                        } else {
-                            current.copy(
-                                status = DownloadStatus.Failed,
-                                errorMessage = message.ifBlank {
-                                    runBlocking { getString(Res.string.download_failed) }
-                                },
-                                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                            )
-                        }
-                    }
+                    failDownload(item.id, message)
                 },
             )
 
             activeHandles[item.id] = handle
+        }
+    }
+
+    private fun failDownload(downloadId: String, message: String) {
+        mutateItem(downloadId) { current ->
+            if (current.status != DownloadStatus.Downloading) {
+                current
+            } else {
+                current.copy(
+                    status = DownloadStatus.Failed,
+                    errorMessage = message.ifBlank {
+                        runBlocking { getString(Res.string.download_failed) }
+                    },
+                    updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                )
+            }
         }
     }
 
@@ -814,7 +844,7 @@ private fun buildHlsFileName(
         }
         append('_')
         append(nowEpochMs.toString(36))
-        append(".ts")
+        append(".mp4")
     }
 }
 

@@ -1,8 +1,20 @@
 package com.nuvio.app.features.downloads
 
+import com.nuvio.app.features.plugins.cryptointerop.CCCrypt
+import com.nuvio.app.features.plugins.cryptointerop.kCCAlgorithmAES
+import com.nuvio.app.features.plugins.cryptointerop.kCCDecrypt
+import com.nuvio.app.features.plugins.cryptointerop.kCCOptionPKCS7Padding
+import com.nuvio.app.features.plugins.cryptointerop.kCCSuccess
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.sizeOf
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.value
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -213,6 +225,36 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
+    actual fun fetchUrlAsBytes(url: String, headers: Map<String, String>): ByteArray? {
+        return try {
+            val nativeUrl = NSURL(string = url) ?: return null
+            val request = NSMutableURLRequest(
+                uRL = nativeUrl,
+                cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
+                timeoutInterval = 30.0,
+            )
+            request.setHTTPMethod("GET")
+            headers.forEach { (key, value) ->
+                request.setValue(value, forHTTPHeaderField = key)
+            }
+
+            val semaphore = dispatch_semaphore_create(0)
+            var result: ByteArray? = null
+
+            val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, _, error ->
+                if (error == null && data != null) {
+                    result = data.toByteArray()
+                }
+                dispatch_semaphore_signal(semaphore)
+            }
+            task.resume()
+            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
+            result
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     actual fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean {
         return try {
             val nativeUrl = NSURL(string = url) ?: return false
@@ -246,9 +288,7 @@ internal actual object DownloadsPlatformDownloader {
     }
 
     actual fun downloadHlsSegments(
-        segmentUrls: List<String>,
-        sourceHeaders: Map<String, String>,
-        destinationFileName: String,
+        context: HlsDownloadContext,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
         onFailure: (message: String) -> Unit,
@@ -259,63 +299,90 @@ internal actual object DownloadsPlatformDownloader {
 
         scope.launch {
             val downloadsDirectory = downloadsDirectoryPath()
-            val destinationPath = "$downloadsDirectory/$destinationFileName"
-            val tempPath = "$downloadsDirectory/$destinationFileName.hls.part"
+            val destinationPath = "$downloadsDirectory/${context.destinationFileName}"
+            val tempPath = "$downloadsDirectory/${context.destinationFileName}.hls.part"
             var totalDownloaded = 0L
 
             try {
                 removePathIfExists(tempPath)
 
-                for (segmentUrl in segmentUrls) {
+                var isFirstWrite = true
+                if (context.mapInitSegment != null) {
+                    val file = fopen(tempPath, "wb")
+                    if (file != null) {
+                        context.mapInitSegment.usePinned { pinned ->
+                            fwrite(pinned.addressOf(0), 1.convert(), context.mapInitSegment.size.convert(), file)
+                        }
+                        fflush(file)
+                        fclose(file)
+                        totalDownloaded += context.mapInitSegment.size.toLong()
+                        onProgress(totalDownloaded, null)
+                    }
+                    isFirstWrite = false
+                }
+
+                for ((index, spec) in context.segments.withIndex()) {
                     ensureActive()
 
-                    val url = NSURL(string = segmentUrl)
-                    val request = NSMutableURLRequest(
-                        uRL = url,
-                        cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
-                        timeoutInterval = 60.0,
-                    )
-                    request.setHTTPMethod("GET")
-                    sourceHeaders.forEach { (key, value) ->
-                        request.setValue(value, forHTTPHeaderField = key)
+                    val segBytes = fetchUrlAsBytes(spec.url, context.sourceHeaders)
+                        ?: error(runBlocking { getString(Res.string.downloads_error_empty_body) })
+
+                    val decrypted = if (spec.keyIndex != null && spec.keyIndex < context.keyDataList.size) {
+                        val key = context.keyDataList[spec.keyIndex]
+                        val iv = context.keyIvList.getOrNull(spec.keyIndex)
+                            ?: deriveIvFromIndex(index)
+                        segBytes.aes128CbcDecrypt(key, iv)
+                    } else {
+                        segBytes
                     }
 
-                    val semaphore = dispatch_semaphore_create(0)
-                    var segmentError: Throwable? = null
-
-                    val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, _, error ->
-                        if (error != null) {
-                            segmentError = IllegalStateException(error.localizedDescription)
-                        } else if (data != null) {
-                            val file = fopen(tempPath, "ab")
-                            if (file != null) {
-                                fwrite(data.bytes, 1.convert(), data.length.toLong().convert(), file)
-                                fflush(file)
-                                fclose(file)
-                                totalDownloaded += data.length.toLong()
-                                onProgress(totalDownloaded, null)
-                            }
+                    val file = fopen(tempPath, if (isFirstWrite) "wb" else "ab")
+                    if (file != null) {
+                        decrypted.usePinned { pinned ->
+                            fwrite(pinned.addressOf(0), 1.convert(), decrypted.size.convert(), file)
                         }
-                        dispatch_semaphore_signal(semaphore)
+                        fflush(file)
+                        fclose(file)
+                        totalDownloaded += decrypted.size.toLong()
+                        onProgress(totalDownloaded, null)
                     }
-                    task.resume()
-                    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
-
-                    if (segmentError != null) throw segmentError!!
+                    isFirstWrite = false
                 }
 
-                removePathIfExists(destinationPath)
-                val moved = NSFileManager.defaultManager.moveItemAtPath(
-                    srcPath = tempPath,
-                    toPath = destinationPath,
-                    error = null,
-                )
-                if (!moved) {
-                    error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
+                val isFmp4 = context.mapInitSegment != null
+                val finalPath: String = if (isFmp4) {
+                    removePathIfExists(destinationPath)
+                    val moved = NSFileManager.defaultManager.moveItemAtPath(
+                        srcPath = tempPath,
+                        toPath = destinationPath,
+                        error = null,
+                    )
+                    if (!moved) {
+                        error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
+                    }
+                    destinationPath
+                } else {
+                    val mp4Path = destinationPath.removeSuffix(".mp4") + "_converted.mp4"
+                    if (remuxTsToMp4(tempPath, mp4Path)) {
+                        removePathIfExists(tempPath)
+                        mp4Path
+                    } else {
+                        val tsPath = destinationPath.removeSuffix(".mp4") + ".ts"
+                        removePathIfExists(tsPath)
+                        val moved = NSFileManager.defaultManager.moveItemAtPath(
+                            srcPath = tempPath,
+                            toPath = tsPath,
+                            error = null,
+                        )
+                        if (!moved) {
+                            error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
+                        }
+                        tsPath
+                    }
                 }
 
-                val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
-                val finalSize = fileSizeOrNull(destinationPath)
+                val localFileUri = NSURL.fileURLWithPath(finalPath).absoluteString ?: "file://$finalPath"
+                val finalSize = fileSizeOrNull(finalPath)
                 onSuccess(localFileUri, finalSize)
             } catch (_: CancellationException) {
                 handle.cancelNativeTask()
@@ -326,6 +393,59 @@ internal actual object DownloadsPlatformDownloader {
 
         return handle
     }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+internal actual fun ByteArray.aes128CbcDecrypt(key: ByteArray, iv: ByteArray): ByteArray {
+    val dataOut = ByteArray(size + 16)
+    var dataOutMoved = 0UL
+
+    memScoped {
+        val moved = alloc<kotlinx.cinterop.size_tVar>()
+        key.usePinned { pinnedKey ->
+            iv.usePinned { pinnedIv ->
+                this@aes128CbcDecrypt.usePinned { pinnedData ->
+                    dataOut.usePinned { pinnedDataOut ->
+                        val status = CCCrypt(
+                            op = kCCDecrypt,
+                            alg = kCCAlgorithmAES,
+                            options = kCCOptionPKCS7Padding,
+                            key = pinnedKey.addressOf(0),
+                            keyLength = key.size.toULong(),
+                            iv = pinnedIv.addressOf(0),
+                            dataIn = pinnedData.addressOf(0),
+                            dataInLength = this@aes128CbcDecrypt.size.toULong(),
+                            dataOut = pinnedDataOut.addressOf(0),
+                            dataOutAvailable = dataOut.size.toULong(),
+                            dataOutMoved = moved.ptr,
+                        )
+                        if (status == kCCSuccess) {
+                            dataOutMoved = moved.value
+                        } else {
+                            error("CCCrypt AES-128-CBC decrypt failed with status: $status")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return dataOut.copyOf(dataOutMoved.toInt())
+}
+
+internal actual fun remuxTsToMp4(inputPath: String, outputPath: String): Boolean {
+    return false
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun deriveIvFromIndex(index: Int): ByteArray {
+    val iv = ByteArray(16)
+    var idx = index
+    for (i in 15 downTo 0) {
+        iv[i] = (idx and 0xFF).toByte()
+        idx = idx ushr 8
+    }
+    return iv
 }
 
 private class IosDownloadsTaskHandle(

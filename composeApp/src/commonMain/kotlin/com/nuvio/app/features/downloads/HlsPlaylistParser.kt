@@ -23,14 +23,28 @@ data class HlsMasterPlaylist(
     val subtitleTracks: List<HlsMediaTrack>,
 )
 
+data class HlsKeyInfo(
+    val method: String,
+    val uri: String,
+    val iv: String? = null,
+)
+
+data class HlsMapInfo(
+    val uri: String,
+    val byteRange: String? = null,
+)
+
 data class HlsMediaPlaylist(
     val segments: List<HlsSegment>,
     val targetDuration: Double = 0.0,
+    val keys: List<HlsKeyInfo> = emptyList(),
+    val map: HlsMapInfo? = null,
 )
 
 data class HlsSegment(
     val duration: Double,
     val url: String,
+    val keyIndex: Int? = null,
 )
 
 object HlsPlaylistParser {
@@ -109,12 +123,33 @@ object HlsPlaylistParser {
     fun parseMediaPlaylist(content: String, baseUrl: String): HlsMediaPlaylist {
         val lines = content.lines()
         val segments = mutableListOf<HlsSegment>()
+        val keys = mutableListOf<HlsKeyInfo>()
         var targetDuration = 0.0
         var currentDuration = 0.0
+        var currentKeyIndex: Int? = null
+        var map: HlsMapInfo? = null
 
         for (line in lines) {
             val trimmed = line.trim()
             when {
+                trimmed.startsWith("#EXT-X-KEY:") -> {
+                    val attrs = parseAttributes(trimmed.removePrefix("#EXT-X-KEY:"))
+                    val method = attrs["METHOD"]?.trim()?.uppercase() ?: "NONE"
+                    if (method == "NONE") {
+                        currentKeyIndex = null
+                    } else {
+                        val keyUri = attrs["URI"]?.let { resolveUrl(removeQuotes(it.trim()), baseUrl) }.orEmpty()
+                        val keyIv = attrs["IV"]?.trim()
+                        keys.add(HlsKeyInfo(method, keyUri, keyIv))
+                        currentKeyIndex = keys.size - 1
+                    }
+                }
+                trimmed.startsWith("#EXT-X-MAP:") -> {
+                    val attrs = parseAttributes(trimmed.removePrefix("#EXT-X-MAP:"))
+                    val mapUri = attrs["URI"]?.let { resolveUrl(removeQuotes(it.trim()), baseUrl) }.orEmpty()
+                    val byteRange = attrs["BYTERANGE"]?.trim()
+                    map = HlsMapInfo(mapUri, byteRange)
+                }
                 trimmed.startsWith("#EXT-X-TARGETDURATION:") -> {
                     targetDuration = trimmed.substringAfter(":").trim().toDoubleOrNull() ?: 0.0
                 }
@@ -124,14 +159,38 @@ object HlsPlaylistParser {
                 }
                 !trimmed.startsWith("#") && trimmed.isNotBlank() -> {
                     val segmentUrl = resolveUrl(trimmed, baseUrl)
-                    segments.add(HlsSegment(currentDuration, segmentUrl))
+                    segments.add(HlsSegment(currentDuration, segmentUrl, currentKeyIndex))
                     currentDuration = 0.0
                 }
             }
         }
 
-        return HlsMediaPlaylist(segments, targetDuration)
+        return HlsMediaPlaylist(segments, targetDuration, keys, map)
     }
+
+    fun deriveIv(keyInfo: HlsKeyInfo, sequenceIndex: Int): ByteArray {
+        keyInfo.iv?.let { ivHex ->
+            val hex = ivHex.trimStart('0', 'x')
+            return hexStringToBytes(hex.ifEmpty { "00" })
+        }
+        val iv = ByteArray(16)
+        var idx = sequenceIndex
+        for (i in 15 downTo 0) {
+            iv[i] = (idx and 0xFF).toByte()
+            idx = idx ushr 8
+        }
+        return iv
+    }
+
+    private fun hexStringToBytes(hex: String): ByteArray {
+        val normalized = hex.ifEmpty { "0" }
+        val padded = if (normalized.length % 2 != 0) "0$normalized" else normalized
+        return ByteArray(padded.length / 2) {
+            padded.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+        }
+    }
+
+    val HlsMediaPlaylist.isFmp4: Boolean get() = map != null
 
     private fun parseAttributes(input: String): Map<String, String> {
         val attrs = mutableMapOf<String, String>()
