@@ -27,11 +27,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
-import androidx.compose.material.icons.rounded.Forward10
+import androidx.compose.material.icons.rounded.FastForward
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
-import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.VolumeUp
@@ -103,6 +103,7 @@ internal fun PlayerControlsShell(
     onScrubFinished: (Long) -> Unit,
     horizontalSafePadding: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
+    skipSeekIntervalSeconds: Int = 10,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Box(
@@ -175,6 +176,7 @@ internal fun PlayerControlsShell(
                     onSeekBack = onSeekBack,
                     onSeekForward = onSeekForward,
                     onTogglePlayback = onTogglePlayback,
+                    skipSeekIntervalSeconds = skipSeekIntervalSeconds,
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(bottom = metrics.centerLift),
@@ -391,6 +393,7 @@ private fun CenterControls(
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
     onTogglePlayback: () -> Unit,
+    skipSeekIntervalSeconds: Int,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -399,8 +402,8 @@ private fun CenterControls(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SideControlButton(
-            icon = Icons.Rounded.Replay10,
-            contentDescription = stringResource(Res.string.compose_player_seek_back_10),
+            icon = Icons.Rounded.FastRewind,
+            contentDescription = stringResource(Res.string.compose_player_seek_back_seconds, skipSeekIntervalSeconds),
             metrics = metrics,
             onClick = onSeekBack,
         )
@@ -411,8 +414,8 @@ private fun CenterControls(
             onClick = onTogglePlayback,
         )
         SideControlButton(
-            icon = Icons.Rounded.Forward10,
-            contentDescription = stringResource(Res.string.compose_player_seek_forward_10),
+            icon = Icons.Rounded.FastForward,
+            contentDescription = stringResource(Res.string.compose_player_seek_forward_seconds, skipSeekIntervalSeconds),
             metrics = metrics,
             onClick = onSeekForward,
         )

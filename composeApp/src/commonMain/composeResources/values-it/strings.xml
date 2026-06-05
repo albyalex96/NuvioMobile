@@ -174,11 +174,13 @@
   <string name="compose_player_resize_fit">Adatta</string>
   <string name="compose_player_resize_zoom">Zoom</string>
   <string name="compose_player_seek_back_10">Indietro di 10 secondi</string>
+  <string name="compose_player_seek_back_seconds">Indietro di %1$d secondi</string>
   <string name="compose_player_seek_delta_backward">-%1$ds</string>
   <string name="compose_player_seek_delta_forward">+%1$ds</string>
   <string name="compose_player_seek_feedback_backward">-%1$ds</string>
   <string name="compose_player_seek_feedback_forward">+%1$ds</string>
   <string name="compose_player_seek_forward_10">Avanti di 10 secondi</string>
+  <string name="compose_player_seek_forward_seconds">Avanti di %1$d secondi</string>
   <string name="compose_player_sources">Sorgenti</string>
   <string name="compose_player_style">Stile</string>
   <string name="compose_player_subs">Sub</string>
@@ -1442,6 +1444,7 @@
    
   <string name="settings_playback_enable_swipe_gestures">Swipe Gesture</string>
   <string name="settings_playback_enable_swipe_gestures_description">Permetti lo swipe verticale sulla superficie del player per controllare volume e luminosità.</string>
+  <string name="settings_playback_skip_seek_interval">Intervallo Skip</string>
   <string name="top10_header">Cataloghi Top 10</string>
   <string name="top10_description">Scegli i cataloghi da mostrare come riga Top 10 sulla Home</string>
   <string name="top10_general_header">Generale</string>

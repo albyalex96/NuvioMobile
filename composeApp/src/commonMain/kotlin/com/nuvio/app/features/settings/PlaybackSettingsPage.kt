@@ -106,6 +106,7 @@ internal fun LazyListScope.playbackSettingsContent(
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
+    skipSeekIntervalSeconds: Int = 10,
 ) {
     item {
         PlaybackSettingsSection(
@@ -129,6 +130,7 @@ internal fun LazyListScope.playbackSettingsContent(
             stillWatchingEnabled = stillWatchingEnabled,
             stillWatchingEpisodeCount = stillWatchingEpisodeCount,
             stillWatchingNightMode = stillWatchingNightMode,
+            skipSeekIntervalSeconds = skipSeekIntervalSeconds,
         )
     }
 }
@@ -268,6 +270,7 @@ private fun PlaybackSettingsSection(
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
+    skipSeekIntervalSeconds: Int = 10,
 ) {
     var showPreferredAudioDialog by remember { mutableStateOf(false) }
     var showSecondaryAudioDialog by remember { mutableStateOf(false) }
@@ -388,6 +391,16 @@ private fun PlaybackSettingsSection(
                     checked = swipeGesturesEnabled,
                     isTablet = isTablet,
                     onCheckedChange = PlayerSettingsRepository::setSwipeGesturesEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSliderRow(
+                    title = stringResource(Res.string.settings_playback_skip_seek_interval),
+                    value = skipSeekIntervalSeconds,
+                    valueText = "$skipSeekIntervalSeconds s",
+                    valueRange = 1..20,
+                    step = 1,
+                    isTablet = isTablet,
+                    onValueChange = PlayerSettingsRepository::setSkipSeekIntervalSeconds,
                 )
             }
         }

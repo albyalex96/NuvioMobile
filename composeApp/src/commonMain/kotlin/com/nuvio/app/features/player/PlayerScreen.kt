@@ -114,7 +114,6 @@ import kotlin.math.roundToLong
 import kotlin.math.roundToInt
 
 private const val PlaybackProgressPersistIntervalMs = 60_000L
-private const val PlayerDoubleTapSeekStepMs = 10_000L
 private const val PlayerDoubleTapSeekResetDelayMs = 800L
 private const val PlayerLockedOverlayDurationMs = 2_000L
 private const val PlayerLeftGestureBoundary = 0.4f
@@ -362,6 +361,7 @@ fun PlayerScreen(
         ) { mutableStateOf<TraktScrobbleItem?>(null) }
         val backdropArtwork = background ?: poster
         val displayedPositionMs = scrubbingPositionMs ?: playbackSnapshot.positionMs
+        val skipSeekMs = (playerSettingsUiState.skipSeekIntervalSeconds * 1000L).coerceAtLeast(1000L)
         val isEpisode = activeSeasonNumber != null && activeEpisodeNumber != null
         val currentGestureFeedback = liveGestureFeedback ?: gestureFeedback
         val isP2pPlaybackActive = activeTorrentInfoHash != null
@@ -1068,12 +1068,12 @@ fun PlayerScreen(
         fun handleDoubleTapSeek(direction: PlayerSeekDirection) {
             val currentPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
             val nextState = if (accumulatedSeekState?.direction == direction) {
-                accumulatedSeekState!!.copy(amountMs = accumulatedSeekState!!.amountMs + PlayerDoubleTapSeekStepMs)
+                accumulatedSeekState!!.copy(amountMs = accumulatedSeekState!!.amountMs + skipSeekMs)
             } else {
                 PlayerAccumulatedSeekState(
                     direction = direction,
                     baselinePositionMs = currentPositionMs,
-                    amountMs = PlayerDoubleTapSeekStepMs,
+                    amountMs = skipSeekMs,
                 )
             }
             accumulatedSeekState = nextState
@@ -2663,6 +2663,7 @@ fun PlayerScreen(
                     resizeMode = resizeMode,
                     isLocked = playerControlsLocked,
                     showPlaybackControls = controlsVisible,
+                    skipSeekIntervalSeconds = playerSettingsUiState.skipSeekIntervalSeconds,
                     onLockToggle = {
                         if (playerControlsLocked) {
                             unlockPlayerControls()
@@ -2672,8 +2673,8 @@ fun PlayerScreen(
                     },
                     onBack = onBackWithProgress,
                     onTogglePlayback = ::togglePlayback,
-                    onSeekBack = { seekBy(-10_000L) },
-                    onSeekForward = { seekBy(10_000L) },
+                    onSeekBack = { seekBy(-skipSeekMs) },
+                    onSeekForward = { seekBy(skipSeekMs) },
                     onResizeModeClick = ::cycleResizeMode,
                     onSpeedClick = ::cyclePlaybackSpeed,
                     onVolumeBoostClick = { showVolumeBoostModal = true },

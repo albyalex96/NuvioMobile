@@ -90,6 +90,7 @@ data class PlayerSettingsUiState(
     val iosSaturation: Int = 0,
     val iosGamma: Int = 0,
     val volumeBoostDb: Int = 0,
+    val skipSeekIntervalSeconds: Int = 10,
 )
 
 object PlayerSettingsRepository {
@@ -153,6 +154,7 @@ object PlayerSettingsRepository {
     private var iosContrast = 0
     private var iosSaturation = 0
     private var iosGamma = 0
+    private var skipSeekIntervalSeconds = 10
     private var volumeBoostDb = 0
 
     fun ensureLoaded() {
@@ -222,6 +224,7 @@ object PlayerSettingsRepository {
         iosContrast = 0
         iosSaturation = 0
         iosGamma = 0
+        skipSeekIntervalSeconds = 10
         volumeBoostDb = 0
         publish()
     }
@@ -353,6 +356,7 @@ object PlayerSettingsRepository {
         iosContrast = PlayerSettingsStorage.loadIosContrast() ?: 0
         iosSaturation = PlayerSettingsStorage.loadIosSaturation() ?: 0
         iosGamma = PlayerSettingsStorage.loadIosGamma() ?: 0
+        skipSeekIntervalSeconds = PlayerSettingsStorage.loadSkipSeekIntervalSeconds() ?: 10
         volumeBoostDb = PlayerSettingsStorage.loadVolumeBoostDb() ?: 0
         publish()
     }
@@ -850,6 +854,15 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveIosGamma(iosGamma)
     }
 
+    fun setSkipSeekIntervalSeconds(seconds: Int) {
+        ensureLoaded()
+        val normalized = seconds.coerceIn(1, 20)
+        if (skipSeekIntervalSeconds == normalized) return
+        skipSeekIntervalSeconds = normalized
+        publish()
+        PlayerSettingsStorage.saveSkipSeekIntervalSeconds(normalized)
+    }
+
     fun setVolumeBoostDb(boostDb: Int) {
         ensureLoaded()
         val normalized = boostDb.coerceIn(0, 20)
@@ -945,6 +958,7 @@ object PlayerSettingsRepository {
             iosSaturation = iosSaturation,
             iosGamma = iosGamma,
             volumeBoostDb = volumeBoostDb,
+            skipSeekIntervalSeconds = skipSeekIntervalSeconds,
         )
     }
 

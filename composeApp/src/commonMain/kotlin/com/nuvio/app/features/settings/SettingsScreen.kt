@@ -275,6 +275,7 @@ fun SettingsScreen(
                 stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
                 stillWatchingEpisodeCount = playerSettingsUiState.stillWatchingEpisodeCount,
                 stillWatchingNightMode = playerSettingsUiState.stillWatchingNightMode,
+                skipSeekIntervalSeconds = playerSettingsUiState.skipSeekIntervalSeconds,
                 selectedTheme = selectedTheme,
                 onThemeSelected = ThemeSettingsRepository::setTheme,
                 amoledEnabled = amoledEnabled,
@@ -334,6 +335,7 @@ fun SettingsScreen(
                 stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
                 stillWatchingEpisodeCount = playerSettingsUiState.stillWatchingEpisodeCount,
                 stillWatchingNightMode = playerSettingsUiState.stillWatchingNightMode,
+                skipSeekIntervalSeconds = playerSettingsUiState.skipSeekIntervalSeconds,
                 selectedTheme = selectedTheme,
                 onThemeSelected = ThemeSettingsRepository::setTheme,
                 amoledEnabled = amoledEnabled,
@@ -403,6 +405,7 @@ private fun MobileSettingsScreen(
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
+    skipSeekIntervalSeconds: Int,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
     amoledEnabled: Boolean,
@@ -581,6 +584,7 @@ private fun MobileSettingsScreen(
                     stillWatchingEnabled = stillWatchingEnabled,
                     stillWatchingEpisodeCount = stillWatchingEpisodeCount,
                     stillWatchingNightMode = stillWatchingNightMode,
+                    skipSeekIntervalSeconds = skipSeekIntervalSeconds,
                 )
                 SettingsPage.Streams -> streamsSettingsContent(
                     isTablet = false,
@@ -748,6 +752,7 @@ private fun TabletSettingsScreen(
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
+    skipSeekIntervalSeconds: Int,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
     amoledEnabled: Boolean,
@@ -909,6 +914,7 @@ private fun TabletSettingsScreen(
                     stillWatchingEnabled = stillWatchingEnabled,
                     stillWatchingEpisodeCount = stillWatchingEpisodeCount,
                     stillWatchingNightMode = stillWatchingNightMode,
+                    skipSeekIntervalSeconds = skipSeekIntervalSeconds,
                 )
                     SettingsPage.Streams -> streamsSettingsContent(
                         isTablet = true,

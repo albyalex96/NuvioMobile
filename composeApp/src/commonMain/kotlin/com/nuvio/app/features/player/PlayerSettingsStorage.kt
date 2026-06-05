@@ -134,6 +134,8 @@ internal expect object PlayerSettingsStorage {
     fun saveIosSaturation(value: Int)
     fun loadIosGamma(): Int?
     fun saveIosGamma(value: Int)
+    fun loadSkipSeekIntervalSeconds(): Int?
+    fun saveSkipSeekIntervalSeconds(seconds: Int)
     fun loadVolumeBoostDb(): Int?
     fun saveVolumeBoostDb(boostDb: Int)
     fun exportToSyncPayload(): JsonObject

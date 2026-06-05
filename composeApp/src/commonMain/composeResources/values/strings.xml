@@ -366,11 +366,13 @@
     <string name="compose_player_resize_fit">Fit</string>
     <string name="compose_player_resize_zoom">Zoom</string>
     <string name="compose_player_seek_back_10">Seek backward 10 seconds</string>
+    <string name="compose_player_seek_back_seconds">Seek backward %1$d seconds</string>
     <string name="compose_player_seek_delta_backward">-%1$ds</string>
     <string name="compose_player_seek_delta_forward">+%1$ds</string>
     <string name="compose_player_seek_feedback_backward">-%1$ds</string>
     <string name="compose_player_seek_feedback_forward">+%1$ds</string>
     <string name="compose_player_seek_forward_10">Seek forward 10 seconds</string>
+    <string name="compose_player_seek_forward_seconds">Seek forward %1$d seconds</string>
     <string name="compose_player_channels">Channels</string>
     <string name="compose_player_sources">Sources</string>
     <string name="compose_player_style">Style</string>
@@ -841,6 +843,7 @@
     <string name="settings_playback_hold_to_speed_description">Long-press anywhere on the player surface to temporarily boost playback speed.</string>
     <string name="settings_playback_enable_swipe_gestures">Swipe Gestures</string>
     <string name="settings_playback_enable_swipe_gestures_description">Allow vertical swiping on the player surface to control volume and brightness.</string>
+    <string name="settings_playback_skip_seek_interval">Skip Seek Interval</string>
     <string name="settings_playback_invalid_regex_pattern">Invalid regex pattern</string>
     <string name="settings_playback_last_link_cache_duration">Last Link Cache Duration</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVC Fallback</string>

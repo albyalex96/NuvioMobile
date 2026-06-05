@@ -82,6 +82,7 @@ actual object PlayerSettingsStorage {
     private const val iosContrastKey = "ios_contrast"
     private const val iosSaturationKey = "ios_saturation"
     private const val iosGammaKey = "ios_gamma"
+    private const val skipSeekIntervalSecondsKey = "skip_seek_interval_seconds"
     private const val volumeBoostDbKey = "volume_boost_db"
     private val syncKeys = listOf(
         showLoadingOverlayKey,
@@ -147,6 +148,7 @@ actual object PlayerSettingsStorage {
         iosContrastKey,
         iosSaturationKey,
         iosGammaKey,
+        skipSeekIntervalSecondsKey,
         volumeBoostDbKey,
     )
 
@@ -873,6 +875,12 @@ actual object PlayerSettingsStorage {
         saveInt(iosGammaKey, value)
     }
 
+    actual fun loadSkipSeekIntervalSeconds(): Int? = loadInt(skipSeekIntervalSecondsKey)
+
+    actual fun saveSkipSeekIntervalSeconds(seconds: Int) {
+        saveInt(skipSeekIntervalSecondsKey, seconds)
+    }
+
     actual fun loadVolumeBoostDb(): Int? = loadInt(volumeBoostDbKey)
 
     actual fun saveVolumeBoostDb(boostDb: Int) {
@@ -943,6 +951,7 @@ actual object PlayerSettingsStorage {
         loadIosContrast()?.let { put(iosContrastKey, encodeSyncInt(it)) }
         loadIosSaturation()?.let { put(iosSaturationKey, encodeSyncInt(it)) }
         loadIosGamma()?.let { put(iosGammaKey, encodeSyncInt(it)) }
+        loadSkipSeekIntervalSeconds()?.let { put(skipSeekIntervalSecondsKey, encodeSyncInt(it)) }
         loadVolumeBoostDb()?.let { put(volumeBoostDbKey, encodeSyncInt(it)) }
     }
 
@@ -1015,6 +1024,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncInt(iosContrastKey)?.let(::saveIosContrast)
         payload.decodeSyncInt(iosSaturationKey)?.let(::saveIosSaturation)
         payload.decodeSyncInt(iosGammaKey)?.let(::saveIosGamma)
+        payload.decodeSyncInt(skipSeekIntervalSecondsKey)?.let(::saveSkipSeekIntervalSeconds)
         payload.decodeSyncInt(volumeBoostDbKey)?.let(::saveVolumeBoostDb)
     }
 }
