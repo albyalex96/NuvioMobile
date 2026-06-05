@@ -24,9 +24,12 @@ Nuvio is the current Kotlin Multiplatform rewrite of the original React Native a
 
 The mobile app is built from a single shared codebase in [composeApp](./composeApp), with native platform entry points for Android and iOS.
 
-## Mobile-Specific Features
+## Enhanced Version Specific Features
 
 The following features are unique to this mobile repository and are not present in the original NuvioMobile codebase.
+
+### Stream Parser with Animated Badges
+A polished stream information display that parses and presents video quality tags (4K, 1080p, 720p, etc.), audio codecs, and cached/debrid status with animated badges. Each badge animates on appearance, drawing attention to stream quality indicators and whether the stream is already cached for instant playback.
 
 ### AMOLED Mode
 Two nested toggles that turn backgrounds pure black (`#000000`) for OLED power savings. The main toggle sets the base background to black; a second toggle, visible only when the first is active, also blacks out all surfaces, cards, and elevated elements. When AMOLED mode is turned off, the surfaces sub-option is automatically disabled.
