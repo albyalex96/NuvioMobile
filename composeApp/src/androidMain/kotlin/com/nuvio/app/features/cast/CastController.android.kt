@@ -1,6 +1,7 @@
 package com.nuvio.app.features.cast
 
 import android.content.Context
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.size
@@ -27,17 +28,25 @@ actual object CastController {
         try {
             val cc = CastContext.getSharedInstance(context)
             castContext = cc
+            Log.d("CastController", "CastContext initialized, state=${cc.castState}")
             cc.addCastStateListener { castState ->
+                val available = castState != CastState.NO_DEVICES_AVAILABLE
+                val connected = castState == CastState.CONNECTED
+                Log.d("CastController", "Cast state changed: isAvailable=$available, isConnected=$connected")
                 _state.value = CastUiState(
-                    isAvailable = castState != CastState.NO_DEVICES_AVAILABLE,
-                    isConnected = castState == CastState.CONNECTED,
+                    isAvailable = available,
+                    isConnected = connected,
                 )
             }
+            val isAvailable = cc.castState != CastState.NO_DEVICES_AVAILABLE
+            val isConnected = cc.castState == CastState.CONNECTED
+            Log.d("CastController", "Initial state: isAvailable=$isAvailable, isConnected=$isConnected")
             _state.value = CastUiState(
-                isAvailable = cc.castState != CastState.NO_DEVICES_AVAILABLE,
-                isConnected = cc.castState == CastState.CONNECTED,
+                isAvailable = isAvailable,
+                isConnected = isConnected,
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w("CastController", "Failed to initialize Cast", e)
             _state.value = CastUiState()
         }
     }
