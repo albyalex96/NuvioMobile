@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +32,7 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.ui.NuvioShelfSectionHeader
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.stableKey
 
@@ -46,28 +49,26 @@ fun HomeTop10Section(
 ) {
     if (items.isEmpty()) return
 
-    Text(
-        text = title,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = sectionPadding)
-            .padding(bottom = 8.dp),
-        style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.onBackground,
-        fontWeight = FontWeight.Bold,
-    )
-
-    LazyRow(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = sectionPadding),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        itemsIndexed(items, key = { _, item -> item.stableKey() }) { index, item ->
-            Top10PosterItem(
-                item = item,
-                rank = index + 1,
-                onClick = onPosterClick?.let { { it(item) } },
-                onLongClick = onPosterLongClick?.let { { it(item) } },
-            )
+        NuvioShelfSectionHeader(
+            title = title,
+            modifier = Modifier.padding(horizontal = sectionPadding),
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = sectionPadding),
+        ) {
+            itemsIndexed(items, key = { _, item -> item.stableKey() }) { index, item ->
+                Top10PosterItem(
+                    item = item,
+                    rank = index + 1,
+                    onClick = onPosterClick?.let { { it(item) } },
+                    onLongClick = onPosterLongClick?.let { { it(item) } },
+                )
+            }
         }
     }
 }

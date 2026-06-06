@@ -3,6 +3,7 @@ package com.nuvio.app.features.cast
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp

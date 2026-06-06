@@ -207,7 +207,7 @@ fun NuvioPosterCard(
 }
 
 @Composable
-private fun NuvioShelfSectionHeader(
+fun NuvioShelfSectionHeader(
     title: String,
     modifier: Modifier = Modifier,
     showAccent: Boolean = true,

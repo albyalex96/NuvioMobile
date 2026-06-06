@@ -780,7 +780,7 @@ fun HomeScreen(
                     if (homeUiState.top10MovieItems.isNotEmpty()) {
                         item(key = "top10_movies") {
                             HomeTop10Section(
-                                title = "Top 10 Movies",
+                                title = stringResource(Res.string.top10_movies),
                                 items = homeUiState.top10MovieItems,
                                 modifier = Modifier.padding(bottom = 12.dp),
                                 sectionPadding = homeSectionPadding,
@@ -793,7 +793,7 @@ fun HomeScreen(
                     if (homeUiState.top10SeriesItems.isNotEmpty()) {
                         item(key = "top10_series") {
                             HomeTop10Section(
-                                title = "Top 10 TV Shows",
+                                title = stringResource(Res.string.top10_tv_shows),
                                 items = homeUiState.top10SeriesItems,
                                 modifier = Modifier.padding(bottom = 12.dp),
                                 sectionPadding = homeSectionPadding,
