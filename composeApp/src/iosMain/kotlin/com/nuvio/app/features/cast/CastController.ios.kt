@@ -12,6 +12,18 @@ actual object CastController {
 
     actual fun showCastDialog() {
     }
+
+    actual fun castMedia(
+        url: String,
+        title: String,
+        mimeType: String?,
+        posterUrl: String?,
+        positionMs: Long,
+    ) {
+    }
+
+    actual fun stopCasting() {
+    }
 }
 
 @Composable

@@ -6,11 +6,20 @@ import kotlinx.coroutines.flow.StateFlow
 data class CastUiState(
     val isAvailable: Boolean = false,
     val isConnected: Boolean = false,
+    val isCasting: Boolean = false,
 )
 
 expect object CastController {
     val state: StateFlow<CastUiState>
     fun showCastDialog()
+    fun castMedia(
+        url: String,
+        title: String,
+        mimeType: String? = null,
+        posterUrl: String? = null,
+        positionMs: Long = 0L,
+    )
+    fun stopCasting()
 }
 
 @Composable

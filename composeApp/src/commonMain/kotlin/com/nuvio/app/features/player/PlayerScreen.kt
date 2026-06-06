@@ -305,6 +305,17 @@ fun PlayerScreen(
         var playerController by remember { mutableStateOf<PlayerEngineController?>(null) }
         var playerControllerSourceUrl by remember { mutableStateOf<String?>(null) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
+        val previousIsCasting = remember { mutableStateOf(false) }
+        LaunchedEffect(castUiState.isCasting) {
+            if (!castUiState.isCasting && previousIsCasting.value) {
+                shouldPlay = true
+                playerController?.play()
+            } else if (castUiState.isCasting && !previousIsCasting.value) {
+                shouldPlay = false
+                playerController?.pause()
+            }
+            previousIsCasting.value = castUiState.isCasting
+        }
         val keepScreenAwake = errorMessage == null &&
             (playbackSnapshot.isPlaying || (shouldPlay && playbackSnapshot.isLoading))
         EnterImmersivePlayerMode(keepScreenAwake = keepScreenAwake)
@@ -2732,7 +2743,22 @@ fun PlayerScreen(
                     onLiveChannelsClick = if (isLiveTvPlayback) { { showLiveChannelsPanel = true } } else null,
                     onSubmitIntroClick = if (isSeries && playerSettingsUiState.introSubmitEnabled && playerSettingsUiState.introDbApiKey.isNotBlank()) { { showSubmitIntroModal = true } } else null,
                     castUiState = castUiState,
-                    onCastClick = { CastController.showCastDialog() },
+                    onCastClick = {
+                        if (castUiState.isConnected && !castUiState.isCasting) {
+                            CastController.castMedia(
+                                url = activeSourceUrl,
+                                title = title,
+                                mimeType = when {
+                                    "hls".equals(activeStreamType, ignoreCase = true) -> "application/x-mpegURL"
+                                    else -> null
+                                },
+                                posterUrl = poster,
+                                positionMs = playbackSnapshot.positionMs,
+                            )
+                        } else {
+                            CastController.showCastDialog()
+                        }
+                    },
                     parentalWarnings = parentalWarnings,
                     showParentalGuide = showParentalGuide,
                     onParentalGuideAnimationComplete = { showParentalGuide = false },
