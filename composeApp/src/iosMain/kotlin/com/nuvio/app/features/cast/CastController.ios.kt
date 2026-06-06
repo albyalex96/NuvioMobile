@@ -19,6 +19,7 @@ actual object CastController {
         mimeType: String?,
         posterUrl: String?,
         positionMs: Long,
+        sourceHeaders: Map<String, String>,
     ) {
     }
 

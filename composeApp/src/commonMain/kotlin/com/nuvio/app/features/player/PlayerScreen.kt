@@ -2754,6 +2754,7 @@ fun PlayerScreen(
                                 },
                                 posterUrl = poster,
                                 positionMs = playbackSnapshot.positionMs,
+                                sourceHeaders = activeSourceHeaders,
                             )
                         } else {
                             CastController.showCastDialog()

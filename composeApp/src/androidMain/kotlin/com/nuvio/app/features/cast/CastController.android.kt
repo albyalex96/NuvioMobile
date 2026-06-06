@@ -20,6 +20,7 @@ import com.google.android.gms.cast.framework.CastState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONObject
 
 actual object CastController {
     private val _state = MutableStateFlow(CastUiState())
@@ -79,6 +80,7 @@ actual object CastController {
         mimeType: String?,
         posterUrl: String?,
         positionMs: Long,
+        sourceHeaders: Map<String, String>,
     ) {
         val castSession = castContext?.sessionManager?.currentCastSession
         val remoteMediaClient = castSession?.remoteMediaClient
@@ -99,13 +101,28 @@ actual object CastController {
             mimeType != null -> mimeType
             url.contains(".m3u8", ignoreCase = true) -> "application/x-mpegURL"
             url.contains(".mpd", ignoreCase = true) -> "application/dash+xml"
+            url.contains(".ts", ignoreCase = true) -> "video/MP2T"
+            url.contains(".aac", ignoreCase = true) -> "audio/aac"
+            url.contains(".ac3", ignoreCase = true) || url.contains(".eac3", ignoreCase = true) -> "audio/ac3"
             else -> "video/mp4"
+        }
+
+        val customData = JSONObject()
+        if (sourceHeaders.isNotEmpty()) {
+            try {
+                val headersJson = JSONObject()
+                sourceHeaders.forEach { (k, v) -> headersJson.put(k, v) }
+                customData.put("sourceHeaders", headersJson)
+            } catch (_: Exception) { }
         }
 
         val mediaInfo = MediaInfo.Builder(url)
             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
             .setContentType(contentType)
             .setMetadata(metadata)
+            .apply {
+                if (customData.length() > 0) setCustomData(customData)
+            }
             .build()
 
         val requestData = MediaLoadRequestData.Builder()
@@ -114,6 +131,10 @@ actual object CastController {
             .build()
 
         Log.d("CastController", "Loading media on Cast device: $title ($contentType) at ${positionMs}ms")
+        Log.d("CastController", "Cast URL: $url")
+        if (sourceHeaders.isNotEmpty()) {
+            Log.d("CastController", "Cast sourceHeaders: $sourceHeaders")
+        }
         remoteMediaClient.load(requestData)
             .setResultCallback { result ->
                 if (result.status.isSuccess()) {

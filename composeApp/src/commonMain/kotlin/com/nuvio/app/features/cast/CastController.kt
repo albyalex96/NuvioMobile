@@ -18,6 +18,7 @@ expect object CastController {
         mimeType: String? = null,
         posterUrl: String? = null,
         positionMs: Long = 0L,
+        sourceHeaders: Map<String, String> = emptyMap(),
     )
     fun stopCasting()
 }
