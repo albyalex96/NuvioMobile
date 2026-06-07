@@ -471,6 +471,10 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
             }
         }
     }
+
+    LaunchedEffect(playerController, playerSettingsUiState.volumeBoostDb) {
+        playerController?.setVolumeBoost(playerSettingsUiState.volumeBoostDb.toFloat())
+    }
 }
 
 internal fun PlayerScreenRuntime.removeFailedStreamFromCache() {

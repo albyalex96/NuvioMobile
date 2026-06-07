@@ -514,7 +514,10 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         },
         showVolumeBoostModal = showVolumeBoostModal,
         volumeBoostDb = playerSettingsUiState.volumeBoostDb,
-        onVolumeBoostChanged = { PlayerSettingsRepository.setVolumeBoostDb(it) },
+        onVolumeBoostChanged = {
+            PlayerSettingsRepository.setVolumeBoostDb(it)
+            playerController?.setVolumeBoost(it.toFloat())
+        },
         onVolumeBoostModalDismissed = { showVolumeBoostModal = false },
         stillWatchingShowDialog = stillWatchingShowDialog,
         stillWatchingTimeoutRemaining = stillWatchingTimeoutRemaining,
