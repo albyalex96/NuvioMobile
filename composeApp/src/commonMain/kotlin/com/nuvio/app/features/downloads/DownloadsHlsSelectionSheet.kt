@@ -96,43 +96,39 @@ fun DownloadsHlsSelectionSheet(
     }
 
     val audioOptions = remember(playlist) {
-        playlist?.audioTracks
-            ?.filter { it.uri != null }
-            ?.map { track ->
-                NuvioDropdownOption(
-                    key = track.uri!!,
-                    label = buildString {
-                        append(track.name)
-                        track.language?.let { lang ->
-                            if (lang.isNotBlank()) {
-                                append(" • ")
-                                append(lang)
-                            }
+        playlist?.audioTracks?.mapIndexed { index, track ->
+            NuvioDropdownOption(
+                key = track.uri ?: "audio_$index",
+                label = buildString {
+                    append(track.name)
+                    track.language?.let { lang ->
+                        if (lang.isNotBlank()) {
+                            append(" • ")
+                            append(lang)
                         }
-                    },
-                )
-            }.orEmpty()
+                    }
+                },
+            )
+        }.orEmpty()
     }
 
     val subtitleOptions = remember(playlist) {
         listOf(
             NuvioDropdownOption(key = "none", label = "None"),
-        ) + (playlist?.subtitleTracks
-            ?.filter { it.uri != null }
-            ?.map { track ->
-                NuvioDropdownOption(
-                    key = track.uri!!,
-                    label = buildString {
-                        append(track.name)
-                        track.language?.let { lang ->
-                            if (lang.isNotBlank()) {
-                                append(" • ")
-                                append(lang)
-                            }
+        ) + (playlist?.subtitleTracks?.mapIndexed { index, track ->
+            NuvioDropdownOption(
+                key = track.uri ?: "sub_$index",
+                label = buildString {
+                    append(track.name)
+                    track.language?.let { lang ->
+                        if (lang.isNotBlank()) {
+                            append(" • ")
+                            append(lang)
                         }
-                    },
-                )
-            }.orEmpty())
+                    }
+                },
+            )
+        }.orEmpty())
     }
 
     var selectedQualityKey by remember(qualityOptions) {

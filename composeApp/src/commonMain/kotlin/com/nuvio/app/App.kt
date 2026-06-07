@@ -1097,6 +1097,7 @@ private fun MainAppContent(
                     val playerLaunch = PlayerLaunch(
                             title = title,
                             sourceUrl = localSourceUrl,
+                            sourceAudioUrl = downloadedItem?.hlsAudioLocalFileUri?.takeIf { it.isNotBlank() },
                             sourceHeaders = emptyMap(),
                             sourceResponseHeaders = emptyMap(),
                             externalSubtitles = emptyList(),

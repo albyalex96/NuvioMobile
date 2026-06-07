@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
@@ -284,37 +285,34 @@ internal actual object DownloadsPlatformDownloader {
             try {
                 removePathIfExists(tempPath)
 
-                for (segment in segments) {
-                    ensureActive()
-
-                    val segmentData = fetchUrlAsBytes(segment.url, sourceHeaders) ?: error(
-                        runBlocking { getString(Res.string.download_failed) },
-                    )
-
-                    val processedData = if (segment.key != null) {
-                        val keyBytes = keyCache[segment.key.uri]
-                        val ivBytes = segment.key.toIvBytes()
-                        if (keyBytes != null && ivBytes != null) {
-                            decryptAes128Cbc(segmentData, keyBytes, ivBytes)
-                        } else {
-                            segmentData
+                for (batch in segments.chunked(4)) {
+                    val deferreds = batch.map { segment ->
+                        scope.async(Dispatchers.Default) {
+                            try {
+                                val segmentData = fetchUrlAsBytes(segment.url, sourceHeaders) ?: return@async null
+                                if (segment.key != null) {
+                                    val keyBytes = keyCache[segment.key.uri]
+                                    val ivBytes = segment.key.toIvBytes()
+                                    if (keyBytes != null && ivBytes != null) {
+                                        decryptAes128Cbc(segmentData, keyBytes, ivBytes)
+                                    } else segmentData
+                                } else segmentData
+                            } catch (_: Exception) { null }
                         }
-                    } else {
-                        segmentData
                     }
-
-                    val file = fopen(tempPath, "ab") ?: error(
-                        runBlocking { getString(Res.string.downloads_error_open_partial_file_failed) },
-                    )
-                    try {
-                        processedData.usePinned { pinned ->
-                            fwrite(pinned.addressOf(0), 1.convert(), processedData.size.toLong().convert(), file)
+                    for (deferred in deferreds) {
+                        val processedData = deferred.await() ?: continue
+                        val file = fopen(tempPath, "ab") ?: continue
+                        try {
+                            processedData.usePinned { pinned ->
+                                fwrite(pinned.addressOf(0), 1.convert(), processedData.size.toLong().convert(), file)
+                            }
+                            fflush(file)
+                            totalDownloaded += processedData.size.toLong()
+                            onProgress(totalDownloaded, null)
+                        } finally {
+                            fclose(file)
                         }
-                        fflush(file)
-                        totalDownloaded += processedData.size.toLong()
-                        onProgress(totalDownloaded, null)
-                    } finally {
-                        fclose(file)
                     }
                 }
 
@@ -389,28 +387,35 @@ internal actual object DownloadsPlatformDownloader {
         val tempPath = "$path.track.part"
         return try {
             removePathIfExists(tempPath)
-            val file = fopen(tempPath, "wb") ?: return null
-            try {
-                for (segment in segments) {
-                    try {
-                        val segmentBytes = fetchUrlAsBytes(segment.url, headers) ?: continue
-                        val processedBytes = if (segment.key != null) {
-                            val keyBytes = keyCache[segment.key.uri]
-                            val ivBytes = segment.key.toIvBytes()
-                            if (keyBytes != null && ivBytes != null) {
-                                decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
-                            } else segmentBytes
-                        } else segmentBytes
-                        processedBytes.usePinned { pinned ->
-                            fwrite(pinned.addressOf(0), 1.convert(), processedBytes.size.toLong().convert(), file)
+            runBlocking(Dispatchers.Default) {
+                val file = fopen(tempPath, "wb") ?: return@runBlocking
+                try {
+                    for (batch in segments.chunked(4)) {
+                        val deferreds = batch.map { segment ->
+                            async(Dispatchers.Default) {
+                                try {
+                                    val segmentBytes = fetchUrlAsBytes(segment.url, headers) ?: return@async null
+                                    if (segment.key != null) {
+                                        val keyBytes = keyCache[segment.key.uri]
+                                        val ivBytes = segment.key.toIvBytes()
+                                        if (keyBytes != null && ivBytes != null) {
+                                            decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
+                                        } else segmentBytes
+                                    } else segmentBytes
+                                } catch (_: Exception) { null }
+                            }
                         }
-                        fflush(file)
-                    } catch (_: Exception) {
-                        // skip failed segment
+                        for (deferred in deferreds) {
+                            val bytes = deferred.await() ?: continue
+                            bytes.usePinned { pinned ->
+                                fwrite(pinned.addressOf(0), 1.convert(), bytes.size.toLong().convert(), file)
+                            }
+                            fflush(file)
+                        }
                     }
+                } finally {
+                    fclose(file)
                 }
-            } finally {
-                fclose(file)
             }
             removePathIfExists(path)
             NSFileManager.defaultManager.moveItemAtPath(tempPath, path, null)

@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -255,45 +256,38 @@ internal actual object DownloadsPlatformDownloader {
                 tempFile.createNewFile()
 
                 FileOutputStream(tempFile, true).use { output ->
-                    for (segment in segments) {
-                        ensureActive()
-
-                        val requestBuilder = Request.Builder().url(segment.url)
-                        sourceHeaders.forEach { (key, value) ->
-                            requestBuilder.header(key, value)
+                    for (batch in segments.chunked(4)) {
+                        val deferreds = batch.map { segment ->
+                            scope.async(Dispatchers.IO) {
+                                try {
+                                    val requestBuilder = Request.Builder().url(segment.url)
+                                    sourceHeaders.forEach { (key, value) ->
+                                        requestBuilder.header(key, value)
+                                    }
+                                    val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
+                                    response.use { resp ->
+                                        if (!resp.isSuccessful) return@use null
+                                        val body = resp.body ?: return@use null
+                                        val segmentBytes = body.bytes()
+                                        if (segment.key != null) {
+                                            val keyBytes = keyCache[segment.key.uri]
+                                            val ivBytes = segment.key.toIvBytes()
+                                            if (keyBytes != null && ivBytes != null) {
+                                                decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
+                                            } else segmentBytes
+                                        } else segmentBytes
+                                    }
+                                } catch (_: Exception) { null }
+                            }
                         }
-
-                        val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
-                        response.use { resp ->
-                            if (!resp.isSuccessful) {
-                                error(
-                                    runBlocking {
-                                        getString(Res.string.downloads_error_http_failed, resp.code)
-                                    },
-                                )
+                        for (deferred in deferreds) {
+                            val bytes = deferred.await()
+                            if (bytes != null) {
+                                output.write(bytes)
+                                totalDownloaded += bytes.size.toLong()
+                                onProgress(totalDownloaded, null)
+                                output.flush()
                             }
-
-                            val body = resp.body ?: error(
-                                runBlocking { getString(Res.string.downloads_error_empty_body) },
-                            )
-
-                            val segmentBytes = body.bytes()
-                            val processedBytes = if (segment.key != null) {
-                                val keyBytes = keyCache[segment.key.uri]
-                                val ivBytes = segment.key.toIvBytes()
-                                if (keyBytes != null && ivBytes != null) {
-                                    decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
-                                } else {
-                                    segmentBytes
-                                }
-                            } else {
-                                segmentBytes
-                            }
-
-                            output.write(processedBytes)
-                            totalDownloaded += processedBytes.size.toLong()
-                            onProgress(totalDownloaded, null)
-                            output.flush()
                         }
                     }
                 }
@@ -348,32 +342,38 @@ internal actual object DownloadsPlatformDownloader {
             val tempFile = File(downloadsDir, "$fileName.track.part")
             if (tempFile.exists()) tempFile.delete()
 
-            FileOutputStream(tempFile, false).use { output ->
-                for (segment in segments) {
-                    try {
-                        val requestBuilder = Request.Builder().url(segment.url)
-                        headers.forEach { (key, value) ->
-                            requestBuilder.header(key, value)
+            runBlocking(Dispatchers.IO) {
+                FileOutputStream(tempFile, false).use { output ->
+                    for (batch in segments.chunked(4)) {
+                        val deferreds = batch.map { segment ->
+                            async(Dispatchers.IO) {
+                                try {
+                                    val requestBuilder = Request.Builder().url(segment.url)
+                                    headers.forEach { (key, value) ->
+                                        requestBuilder.header(key, value)
+                                    }
+                                    val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
+                                    response.use { resp ->
+                                        if (!resp.isSuccessful) return@use null
+                                        val body = resp.body ?: return@use null
+                                        val segmentBytes = body.bytes()
+                                        if (segment.key != null) {
+                                            val keyBytes = keyCache[segment.key.uri]
+                                            val ivBytes = segment.key.toIvBytes()
+                                            if (keyBytes != null && ivBytes != null) {
+                                                decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
+                                            } else segmentBytes
+                                        } else segmentBytes
+                                    }
+                                } catch (_: Exception) { null }
+                            }
                         }
-                        val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
-                        response.use { resp ->
-                            if (!resp.isSuccessful) return@use
-                            val body = resp.body ?: return@use
-                            val segmentBytes = body.bytes()
-                            val processedBytes = if (segment.key != null) {
-                                val keyBytes = keyCache[segment.key.uri]
-                                val ivBytes = segment.key.toIvBytes()
-                                if (keyBytes != null && ivBytes != null) {
-                                    decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
-                                } else segmentBytes
-                            } else segmentBytes
-                            output.write(processedBytes)
+                        for (deferred in deferreds) {
+                            deferred.await()?.let { output.write(it) }
                         }
-                    } catch (_: Exception) {
-                        // skip failed segment
+                        output.flush()
                     }
                 }
-                output.flush()
             }
 
             if (file.exists()) file.delete()
