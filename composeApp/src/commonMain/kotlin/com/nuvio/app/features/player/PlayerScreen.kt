@@ -2395,12 +2395,6 @@ fun PlayerScreen(
             )
             if (shouldShow && !showNextEpisodeCard) {
                 showNextEpisodeCard = true
-                // Auto-play if enabled (check still-watching BEFORE autoplay to prevent race condition)
-                if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                    if (!tryShowStillWatchingDialog()) {
-                        playNextEpisode()
-                    }
-                }
             } else if (!shouldShow) {
                 showNextEpisodeCard = false
             }
@@ -2414,9 +2408,9 @@ fun PlayerScreen(
                     if (tryShowStillWatchingDialog()) return@LaunchedEffect
                     if (!showNextEpisodeCard) {
                         showNextEpisodeCard = true
-                        if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && info.hasAired) {
-                            playNextEpisode()
-                        }
+                    }
+                    if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && info.hasAired) {
+                        playNextEpisode()
                     }
                 }
             }
