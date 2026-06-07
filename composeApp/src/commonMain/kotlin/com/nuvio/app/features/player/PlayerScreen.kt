@@ -316,6 +316,24 @@ fun PlayerScreen(
             }
             previousIsCasting.value = castUiState.isCasting
         }
+        val previousIsConnected = remember { mutableStateOf(castUiState.isConnected) }
+        LaunchedEffect(castUiState.isConnected) {
+            val justConnected = castUiState.isConnected && !previousIsConnected.value
+            previousIsConnected.value = castUiState.isConnected
+            if (justConnected && activeSourceUrl != null && !castUiState.isCasting) {
+                CastController.castMedia(
+                    url = activeSourceUrl,
+                    title = title,
+                    mimeType = when {
+                        "hls".equals(activeStreamType, ignoreCase = true) -> "application/x-mpegURL"
+                        else -> null
+                    },
+                    posterUrl = poster,
+                    positionMs = playbackSnapshot.positionMs,
+                    sourceHeaders = activeSourceHeaders,
+                )
+            }
+        }
         val keepScreenAwake = errorMessage == null &&
             (playbackSnapshot.isPlaying || (shouldPlay && playbackSnapshot.isLoading))
         EnterImmersivePlayerMode(keepScreenAwake = keepScreenAwake)
