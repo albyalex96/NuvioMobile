@@ -1,6 +1,10 @@
 package com.nuvio.app.features.downloads
 
 import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -126,6 +130,158 @@ object DownloadsRepository {
             return DownloadEnqueueResult.UnsupportedFormat
         }
 
+        if (HlsPlaylistParser.isHlsUrl(sourceUrl) || HlsPlaylistParser.isHlsStream(stream.streamType)) {
+            return DownloadEnqueueResult.HlsNeedsSelection
+        }
+
+        if (DownloadsPlatformDownloader.probeHlsContentType(sourceUrl, sanitizeRequestHeaders(stream.behaviorHints.proxyHeaders?.request))) {
+            return DownloadEnqueueResult.HlsNeedsSelection
+        }
+
+        return enqueueDirectStream(
+            contentType = contentType,
+            videoId = videoId,
+            parentMetaId = parentMetaId,
+            parentMetaType = parentMetaType,
+            title = title,
+            logo = logo,
+            poster = poster,
+            background = background,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+            episodeTitle = episodeTitle,
+            episodeThumbnail = episodeThumbnail,
+            stream = stream,
+            sourceUrl = sourceUrl,
+        )
+    }
+
+    fun fetchHlsMasterPlaylist(stream: StreamItem): HlsStreamMetadata? {
+        val sourceUrl = stream.playableDirectUrl?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        val headers = sanitizeRequestHeaders(stream.behaviorHints.proxyHeaders?.request)
+        val content = DownloadsPlatformDownloader.fetchUrlAsString(sourceUrl, headers) ?: return null
+        val master = HlsPlaylistParser.parseMasterPlaylist(content, sourceUrl)
+        return HlsStreamMetadata(master, sourceUrl)
+    }
+
+    fun enqueueFromHlsSelection(
+        contentType: String,
+        videoId: String,
+        parentMetaId: String,
+        parentMetaType: String,
+        title: String,
+        logo: String?,
+        poster: String?,
+        background: String?,
+        seasonNumber: Int?,
+        episodeNumber: Int?,
+        episodeTitle: String?,
+        episodeThumbnail: String?,
+        stream: StreamItem,
+        selection: HlsDownloadSelection,
+    ): DownloadEnqueueResult {
+        ensureLoaded()
+
+        val now = DownloadsClock.nowEpochMs()
+        val logicalKey = buildLogicalKey(
+            parentMetaId = parentMetaId,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+        )
+
+        var replacedExisting = false
+        val currentItems = _uiState.value.items.toMutableList()
+        val existing = currentItems.firstOrNull { it.logicalContentKey == logicalKey }
+        if (existing != null) {
+            replacedExisting = true
+            activeHandles.remove(existing.id)?.cancel()
+            DownloadsPlatformDownloader.removeFile(playableLocalFileUri(existing) ?: existing.localFileUri)
+            DownloadsPlatformDownloader.removePartialFile(existing.fileName)
+            currentItems.removeAll { it.id == existing.id }
+        }
+
+        val downloadId = nextDownloadId(now)
+        val displayInfo = buildString {
+            append(title)
+            append(" • ")
+            append(selection.displayQuality)
+            if (selection.displayAudio.isNotBlank()) {
+                append(" • ")
+                append(selection.displayAudio)
+            }
+        }
+        val fileName = buildHlsFileName(
+            title = title,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+            episodeTitle = episodeTitle,
+            fallbackTitle = stream.streamLabel,
+            quality = selection.displayQuality,
+            nowEpochMs = now,
+        )
+
+        val item = DownloadItem(
+            id = downloadId,
+            contentType = contentType,
+            parentMetaId = parentMetaId,
+            parentMetaType = parentMetaType,
+            videoId = videoId,
+            title = title,
+            logo = logo,
+            poster = poster,
+            background = background,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+            episodeTitle = episodeTitle,
+            episodeThumbnail = episodeThumbnail,
+            streamTitle = displayInfo,
+            streamSubtitle = stream.streamSubtitle,
+            providerName = stream.addonName,
+            providerAddonId = stream.addonId,
+            sourceUrl = selection.variantUrl,
+            sourceHeaders = sanitizeRequestHeaders(stream.behaviorHints.proxyHeaders?.request),
+            sourceResponseHeaders = sanitizeResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
+            localFileUri = null,
+            fileName = fileName,
+            status = DownloadStatus.Downloading,
+            downloadedBytes = 0L,
+            totalBytes = null,
+            errorMessage = null,
+            createdAtEpochMs = now,
+            updatedAtEpochMs = now,
+            isHls = true,
+            hlsAudioUrl = selection.audioUrl,
+            hlsSubtitleUrl = selection.subtitleUrl,
+        )
+
+        currentItems.add(0, item)
+        publish(currentItems)
+        persist()
+        startDownload(item)
+
+        return if (replacedExisting) {
+            DownloadEnqueueResult.Replaced
+        } else {
+            DownloadEnqueueResult.Started
+        }
+    }
+
+    private fun enqueueDirectStream(
+        contentType: String,
+        videoId: String,
+        parentMetaId: String,
+        parentMetaType: String,
+        title: String,
+        logo: String?,
+        poster: String?,
+        background: String?,
+        seasonNumber: Int?,
+        episodeNumber: Int?,
+        episodeTitle: String?,
+        episodeThumbnail: String?,
+        stream: StreamItem,
+        sourceUrl: String,
+    ): DownloadEnqueueResult {
         val now = DownloadsClock.nowEpochMs()
         val logicalKey = buildLogicalKey(
             parentMetaId = parentMetaId,
@@ -290,6 +446,14 @@ object DownloadsRepository {
     }
 
     private fun startDownload(item: DownloadItem) {
+        if (item.isHls) {
+            startHlsDownload(item)
+        } else {
+            startDirectDownload(item)
+        }
+    }
+
+    private fun startDirectDownload(item: DownloadItem) {
         val request = DownloadPlatformRequest(
             sourceUrl = item.sourceUrl,
             sourceHeaders = item.sourceHeaders,
@@ -346,6 +510,99 @@ object DownloadsRepository {
         )
 
         activeHandles[item.id] = handle
+    }
+
+    private fun startHlsDownload(item: DownloadItem) {
+        val job = SupervisorJob()
+        val scope = CoroutineScope(job + Dispatchers.Default)
+
+        scope.launch {
+            val mediaContent = DownloadsPlatformDownloader.fetchUrlAsString(
+                url = item.sourceUrl,
+                headers = item.sourceHeaders,
+            )
+            if (mediaContent == null) {
+                val errorMsg = runBlocking { getString(Res.string.download_failed) }
+                mutateItem(item.id) { current ->
+                    current.copy(
+                        status = DownloadStatus.Failed,
+                        errorMessage = errorMsg,
+                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                    )
+                }
+                return@launch
+            }
+
+            val mediaPlaylist = HlsPlaylistParser.parseMediaPlaylist(mediaContent, item.sourceUrl)
+            if (mediaPlaylist.segments.isEmpty()) {
+                val errorMsg = runBlocking { getString(Res.string.download_failed) }
+                mutateItem(item.id) { current ->
+                    current.copy(
+                        status = DownloadStatus.Failed,
+                        errorMessage = errorMsg,
+                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                    )
+                }
+                return@launch
+            }
+
+            val segmentUrls = mediaPlaylist.segments.map { it.url }
+
+            val handle = DownloadsPlatformDownloader.downloadHlsSegments(
+                segmentUrls = segmentUrls,
+                sourceHeaders = item.sourceHeaders,
+                destinationFileName = item.fileName,
+                onProgress = { downloadedBytes, totalBytes ->
+                    mutateItem(item.id) { current ->
+                        if (current.status != DownloadStatus.Downloading) {
+                            current
+                        } else {
+                            current.copy(
+                                downloadedBytes = downloadedBytes.coerceAtLeast(0L),
+                                totalBytes = totalBytes?.takeIf { it > 0L },
+                                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                                errorMessage = null,
+                            )
+                        }
+                    }
+                },
+                onSuccess = { localFileUri, totalBytes ->
+                    activeHandles.remove(item.id)
+                    mutateItem(item.id) { current ->
+                        current.copy(
+                            status = DownloadStatus.Completed,
+                            localFileUri = localFileUri,
+                            downloadedBytes = if (totalBytes != null && totalBytes > 0L) {
+                                totalBytes
+                            } else {
+                                current.downloadedBytes
+                            },
+                            totalBytes = totalBytes?.takeIf { it > 0L } ?: current.totalBytes,
+                            errorMessage = null,
+                            updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                        )
+                    }
+                },
+                onFailure = { message ->
+                    activeHandles.remove(item.id)
+                    mutateItem(item.id) { current ->
+                        if (current.status != DownloadStatus.Downloading) {
+                            current
+                        } else {
+                            current.copy(
+                                status = DownloadStatus.Failed,
+                                errorMessage = message.ifBlank {
+                                    runBlocking { getString(Res.string.download_failed) }
+                                },
+                                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                            )
+                        }
+                    }
+                },
+            )
+
+            activeHandles[item.id] = handle
+        }
     }
 
     private fun mutateItem(downloadId: String, transform: (DownloadItem) -> DownloadItem) {
@@ -523,6 +780,44 @@ private fun buildFileName(
     }
 }
 
+private fun buildHlsFileName(
+    title: String,
+    seasonNumber: Int?,
+    episodeNumber: Int?,
+    episodeTitle: String?,
+    fallbackTitle: String,
+    quality: String,
+    nowEpochMs: Long,
+): String {
+    val baseTitle = if (seasonNumber != null && episodeNumber != null) {
+        buildString {
+            append(title)
+            append(" S")
+            append(seasonNumber.toString().padStart(2, '0'))
+            append('E')
+            append(episodeNumber.toString().padStart(2, '0'))
+            if (!episodeTitle.isNullOrBlank()) {
+                append(' ')
+                append(episodeTitle)
+            }
+        }
+    } else {
+        title.ifBlank { fallbackTitle }
+    }
+
+    val qualitySuffix = quality.sanitizeFileName().take(12)
+    return buildString {
+        append(baseTitle.sanitizeFileName().ifBlank { "download" }.take(80))
+        if (qualitySuffix.isNotBlank()) {
+            append('_')
+            append(qualitySuffix)
+        }
+        append('_')
+        append(nowEpochMs.toString(36))
+        append(".ts")
+    }
+}
+
 private fun String.sanitizeFileName(): String =
     trim().replace(Regex("[^A-Za-z0-9._ -]"), "_")
 
@@ -542,7 +837,6 @@ private fun String.fileExtensionFromUrl(): String {
 private fun String.isSupportedDownloadUrl(): Boolean {
     val normalized = trim().lowercase()
     if (normalized.startsWith("magnet:")) return false
-    if (normalized.endsWith(".m3u8") || normalized.contains(".m3u8?")) return false
     if (normalized.endsWith(".mpd") || normalized.contains(".mpd?")) return false
     if (normalized.endsWith(".torrent") || normalized.contains(".torrent?")) return false
     return normalized.startsWith("http://") || normalized.startsWith("https://")

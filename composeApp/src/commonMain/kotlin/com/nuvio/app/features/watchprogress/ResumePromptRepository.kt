@@ -2,6 +2,7 @@ package com.nuvio.app.features.watchprogress
 
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.details.nextReleasedEpisodeAfter
+import com.nuvio.app.features.player.PlayerSettingsRepository
 
 object ResumePromptRepository {
 
@@ -28,8 +29,10 @@ object ResumePromptRepository {
         WatchProgressRepository.ensureLoaded()
         val entry = WatchProgressRepository.progressForVideo(videoId) ?: return null
 
+        val format = PlayerSettingsRepository.uiState.value.episodeCodeFormat
+
         if (entry.isResumable) {
-            return entry.toContinueWatchingItem()
+            return entry.toContinueWatchingItem(format = format)
         }
 
         if (!entry.isEpisode) return null
@@ -45,6 +48,6 @@ object ResumePromptRepository {
             todayIsoDate = CurrentDateProvider.todayIsoDate(),
         ) ?: return null
 
-        return entry.toUpNextContinueWatchingItem(nextEpisode)
+        return entry.toUpNextContinueWatchingItem(nextEpisode, format = format)
     }
 }

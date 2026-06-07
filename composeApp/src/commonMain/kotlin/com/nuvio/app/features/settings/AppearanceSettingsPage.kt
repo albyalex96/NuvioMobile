@@ -55,17 +55,26 @@ import nuvio.composeapp.generated.resources.settings_appearance_app_language
 import nuvio.composeapp.generated.resources.settings_appearance_app_language_sheet_title
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_black
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_description
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_surfaces
+import nuvio.composeapp.generated.resources.settings_appearance_amoled_surfaces_description
 import nuvio.composeapp.generated.resources.settings_appearance_continue_watching_description
+import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar
+import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar_description
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass_description
 import nuvio.composeapp.generated.resources.settings_appearance_poster_customization_description
 import nuvio.composeapp.generated.resources.settings_appearance_section_display
 import nuvio.composeapp.generated.resources.settings_appearance_section_home
 import nuvio.composeapp.generated.resources.settings_appearance_section_theme
+import nuvio.composeapp.generated.resources.stream_parser_title
+import nuvio.composeapp.generated.resources.stream_parser_description
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.nuvio.app.features.streams.DisplayMode
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
+import com.nuvio.app.features.streams.StreamsAppearanceSettings
 
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.appearanceSettingsContent(
@@ -74,13 +83,18 @@ internal fun LazyListScope.appearanceSettingsContent(
     onThemeSelected: (AppTheme) -> Unit,
     amoledEnabled: Boolean,
     onAmoledToggle: (Boolean) -> Unit,
+    amoledSurfacesEnabled: Boolean,
+    onAmoledSurfacesToggle: (Boolean) -> Unit,
     liquidGlassNativeTabBarSupported: Boolean,
     liquidGlassNativeTabBarEnabled: Boolean,
     onLiquidGlassNativeTabBarToggle: (Boolean) -> Unit,
+    glassNavBarEnabled: Boolean,
+    onGlassNavBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
     onContinueWatchingClick: () -> Unit,
     onPosterCustomizationClick: () -> Unit,
+    streamsAppearance: StreamsAppearanceSettings,
 ) {
     item {
         SettingsSection(
@@ -124,6 +138,24 @@ internal fun LazyListScope.appearanceSettingsContent(
                     checked = amoledEnabled,
                     isTablet = isTablet,
                     onCheckedChange = onAmoledToggle,
+                )
+                if (amoledEnabled) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_appearance_amoled_surfaces),
+                        description = stringResource(Res.string.settings_appearance_amoled_surfaces_description),
+                        checked = amoledSurfacesEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = onAmoledSurfacesToggle,
+                    )
+                }
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_appearance_glass_navbar),
+                    description = stringResource(Res.string.settings_appearance_glass_navbar_description),
+                    checked = glassNavBarEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = onGlassNavBarToggle,
                 )
                 if (liquidGlassNativeTabBarSupported) {
                     SettingsGroupDivider(isTablet = isTablet)
@@ -178,6 +210,18 @@ internal fun LazyListScope.appearanceSettingsContent(
                     icon = Icons.Rounded.Tune,
                     isTablet = isTablet,
                     onClick = onPosterCustomizationClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.stream_parser_title),
+                    description = stringResource(Res.string.stream_parser_description),
+                    isTablet = isTablet,
+                    checked = streamsAppearance.displayMode == DisplayMode.POLISHED,
+                    onCheckedChange = { isPolished ->
+                        StreamsAppearanceRepository.setDisplayMode(
+                            if (isPolished) DisplayMode.POLISHED else DisplayMode.ORIGINAL
+                        )
+                    },
                 )
             }
         }

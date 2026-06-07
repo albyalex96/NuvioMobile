@@ -52,3 +52,7 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# Fix for NoClassDefFoundError in PlayerScreen onDispose lambda classes
+-keep class com.nuvio.app.features.player.PlayerScreenKt** { *; }
+-keep class * implements androidx.compose.runtime.DisposableEffectResult { *; }

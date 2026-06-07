@@ -284,7 +284,8 @@ object PlayerStreamsRepository {
             }
 
             fun publishStreamGroupAfterCacheCheck(group: AddonStreamGroup) {
-                if (group.addonId !in installedAddonIds || group.streams.isEmpty()) {
+                val isEligible = group.addonId in installedAddonIds || group.addonId.startsWith("plugin:") || group.addonId.startsWith("plugin-repo:")          
+                if (!isEligible || group.streams.isEmpty()) {
                     publishStreamGroup(presentStreamGroup(group))
                     return
                 }
@@ -391,7 +392,7 @@ object PlayerStreamsRepository {
             launch {
                 DirectDebridStreamPreparer.prepare(
                     streams = stateFlow.value.groups
-                        .filter { it.addonId in installedAddonIds }
+                        .filter { it.addonId in installedAddonIds || it.addonId.startsWith("plugin:") || it.addonId.startsWith("plugin-repo:") }
                         .flatMap { it.streams },
                     season = season,
                     episode = episode,
@@ -451,6 +452,7 @@ private fun PluginRuntimeResult.toStreamItem(scraper: PluginScraper): StreamItem
         infoHash = infoHash,
         addonName = scraper.name,
         addonId = "plugin:${scraper.id}",
+        streamType = type,
         behaviorHints = if (requestHeaders.isEmpty()) {
             com.nuvio.app.features.streams.StreamBehaviorHints()
         } else {
@@ -459,5 +461,13 @@ private fun PluginRuntimeResult.toStreamItem(scraper: PluginScraper): StreamItem
                 proxyHeaders = com.nuvio.app.features.streams.StreamProxyHeaders(request = requestHeaders),
             )
         },
+        externalSubtitles = subtitles?.map {
+            com.nuvio.app.features.streams.StreamSubtitle(
+                url = it.url,
+                language = it.language,
+                name = it.name,
+                headers = it.headers
+            )
+        } ?: emptyList()
     )
 }

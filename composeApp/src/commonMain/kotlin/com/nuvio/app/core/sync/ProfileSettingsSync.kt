@@ -19,6 +19,10 @@ import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.core.ui.PosterCardStyleRepository
 import com.nuvio.app.core.ui.PosterCardStyleStorage
+import com.nuvio.app.features.home.Top10CatalogRepository
+import com.nuvio.app.features.home.Top10CatalogStorage
+import com.nuvio.app.features.livetv.LiveTvRepository
+import com.nuvio.app.features.livetv.LiveTvStorage
 import com.nuvio.app.features.settings.ThemeSettingsStorage
 import com.nuvio.app.features.settings.ThemeSettingsRepository
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
@@ -171,6 +175,8 @@ object ProfileSettingsSync {
             TraktSettingsRepository.uiState.map { "trakt_settings" },
             TraktCommentsSettings.enabled.map { "trakt_comments" },
             EpisodeReleaseNotificationsRepository.uiState.map { "episode_release_alerts" },
+            Top10CatalogRepository.uiState.map { "top10_catalog" },
+            LiveTvRepository.uiState.map { "live_tv" },
         )
 
         observeJob = scope.launch {
@@ -220,6 +226,8 @@ object ProfileSettingsSync {
                 notificationsSettings = NotificationsSettingsPayload(
                     episodeReleaseAlertsEnabled = EpisodeReleaseNotificationsRepository.uiState.value.isEnabled,
                 ),
+                top10CatalogSettingsPayload = Top10CatalogStorage.loadPayload().orEmpty().trim(),
+                liveTvPlaylistUrl = LiveTvStorage.loadPlaylistUrl().orEmpty().trim(),
             ),
         )
     }
@@ -263,6 +271,12 @@ object ProfileSettingsSync {
         TraktCommentsSettings.onProfileChanged()
 
         EpisodeReleaseNotificationsRepository.applyFromSyncEnabled(blob.features.notificationsSettings.episodeReleaseAlertsEnabled)
+
+        Top10CatalogStorage.savePayload(blob.features.top10CatalogSettingsPayload)
+        Top10CatalogRepository.onProfileChanged()
+
+        LiveTvStorage.savePlaylistUrl(blob.features.liveTvPlaylistUrl)
+        LiveTvRepository.onProfileChanged()
     }
 
     private fun ensureRepositoriesLoaded() {
@@ -279,6 +293,8 @@ object ProfileSettingsSync {
         TraktSettingsRepository.ensureLoaded()
         TraktCommentsSettings.ensureLoaded()
         EpisodeReleaseNotificationsRepository.ensureLoaded()
+        Top10CatalogRepository.ensureLoaded()
+        LiveTvRepository.ensureLoaded()
     }
 
     private fun buildSignature(blob: MobileProfileSettingsBlob): String =
@@ -303,12 +319,14 @@ object ProfileSettingsSync {
         "trakt_settings=${TraktSettingsRepository.uiState.value}",
         "trakt_comments=${TraktCommentsSettings.enabled.value}",
         "episode_release_alerts=${EpisodeReleaseNotificationsRepository.uiState.value.isEnabled}",
+        "top10_catalog=${Top10CatalogRepository.uiState.value}",
+        "live_tv=${LiveTvRepository.uiState.value.playlistUrl}",
     ).joinToString(separator = "||")
 }
 
 @Serializable
 private data class MobileProfileSettingsBlob(
-    val version: Int = 3,
+    val version: Int = 4,
     val features: MobileProfileSettingsFeatures = MobileProfileSettingsFeatures(),
 )
 
@@ -327,6 +345,8 @@ private data class MobileProfileSettingsFeatures(
     @SerialName("trakt_settings_payload") val traktSettingsPayload: String = "",
     @SerialName("trakt_comments_settings") val traktCommentsSettings: JsonObject = JsonObject(emptyMap()),
     @SerialName("notifications_settings") val notificationsSettings: NotificationsSettingsPayload = NotificationsSettingsPayload(),
+    @SerialName("top10_catalog_settings_payload") val top10CatalogSettingsPayload: String = "",
+    @SerialName("live_tv_playlist_url") val liveTvPlaylistUrl: String = "",
 )
 
 @Serializable

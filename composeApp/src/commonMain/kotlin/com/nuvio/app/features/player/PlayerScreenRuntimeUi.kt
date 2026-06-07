@@ -118,8 +118,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             PlatformPlayerSurface(
                 sourceUrl = playerSurfaceSourceUrl,
                 sourceAudioUrl = activeSourceAudioUrl,
+                streamType = activeStreamType,
                 sourceHeaders = activeSourceHeaders,
                 sourceResponseHeaders = activeSourceResponseHeaders,
+                externalSubtitles = externalSubtitles,
                 modifier = Modifier.fillMaxSize(),
                 playWhenReady = shouldPlay,
                 resizeMode = resizeMode,

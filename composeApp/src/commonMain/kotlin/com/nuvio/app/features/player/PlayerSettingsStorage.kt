@@ -96,6 +96,16 @@ internal expect object PlayerSettingsStorage {
     fun saveUseLibass(enabled: Boolean)
     fun loadLibassRenderType(): String?
     fun saveLibassRenderType(renderType: String)
+    fun loadEpisodeCodeFormat(): String?
+    fun saveEpisodeCodeFormat(format: String)
+    fun loadStillWatchingEnabled(): Boolean?
+    fun saveStillWatchingEnabled(enabled: Boolean)
+    fun loadStillWatchingEpisodeCount(): Int?
+    fun saveStillWatchingEpisodeCount(count: Int)
+    fun loadStillWatchingNightMode(): Boolean?
+    fun saveStillWatchingNightMode(enabled: Boolean)
+    fun loadSwipeGesturesEnabled(): Boolean?
+    fun saveSwipeGesturesEnabled(enabled: Boolean)
     fun loadIosVideoOutputPreset(): String?
     fun saveIosVideoOutputPreset(preset: String)
     fun loadIosToneMappingMode(): String?
@@ -126,6 +136,10 @@ internal expect object PlayerSettingsStorage {
     fun saveIosSaturation(value: Int)
     fun loadIosGamma(): Int?
     fun saveIosGamma(value: Int)
+    fun loadSkipSeekIntervalSeconds(): Int?
+    fun saveSkipSeekIntervalSeconds(seconds: Int)
+    fun loadVolumeBoostDb(): Int?
+    fun saveVolumeBoostDb(boostDb: Int)
     fun exportToSyncPayload(): JsonObject
     fun replaceFromSyncPayload(payload: JsonObject)
 }

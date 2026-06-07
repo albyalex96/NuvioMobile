@@ -57,6 +57,8 @@ internal class PlayerScreenRuntime(
     val initialPositionMs: Long get() = args.initialPositionMs
     val initialProgressFraction: Float? get() = args.initialProgressFraction
     val isSeries: Boolean get() = parentMetaType == "series"
+    val streamType: String? get() = args.streamType
+    val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> get() = args.externalSubtitles
 
     lateinit var scope: CoroutineScope
     lateinit var hapticFeedback: HapticFeedback
@@ -104,6 +106,7 @@ internal class PlayerScreenRuntime(
     var p2pResolvedSourceUrl by mutableStateOf<String?>(null)
     var activeStreamTitle by mutableStateOf(streamTitle)
     var activeStreamSubtitle by mutableStateOf(streamSubtitle)
+    var activeStreamType by mutableStateOf(streamType)
     var activeProviderName by mutableStateOf(providerName)
     var activeProviderAddonId by mutableStateOf(providerAddonId)
     var currentStreamBingeGroup by mutableStateOf(initialBingeGroup)
@@ -168,6 +171,11 @@ internal class PlayerScreenRuntime(
     var nextEpisodeAutoPlayCountdown by mutableStateOf<Int?>(null)
     var nextEpisodeAutoPlayJob by mutableStateOf<Job?>(null)
     var pendingP2pSwitch by mutableStateOf<PendingPlayerP2pSwitch?>(null)
+    var stillWatchingEpisodeCounter by mutableStateOf(0)
+    var stillWatchingShowDialog by mutableStateOf(false)
+    var stillWatchingTimeoutRemaining by mutableStateOf(20)
+    var stillWatchingCountdownJob by mutableStateOf<Job?>(null)
+    var stillWatchingHandledForEnded by mutableStateOf(false)
 
     var showAudioModal by mutableStateOf(false)
     var showSubtitleModal by mutableStateOf(false)

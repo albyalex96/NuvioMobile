@@ -1,5 +1,7 @@
 package com.nuvio.app.features.watchprogress
 
+import com.nuvio.app.core.ui.EpisodeCodeFormat
+import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.cloudLibraryProviderPosterUrl
 import com.nuvio.app.features.details.MetaVideo
@@ -202,7 +204,7 @@ internal fun nextUpDismissKey(
     append(episodeNumber ?: -1)
 }
 
-internal fun WatchProgressEntry.toContinueWatchingItem(): ContinueWatchingItem {
+internal fun WatchProgressEntry.toContinueWatchingItem(format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): ContinueWatchingItem {
     val normalizedEntry = normalizedCompletion()
     val cloudPosterUrl = normalizedEntry.cloudLibraryPosterFallbackUrl()
     val explicitResumeProgressFraction = normalizedEntry.normalizedProgressPercent
@@ -218,6 +220,7 @@ internal fun WatchProgressEntry.toContinueWatchingItem(): ContinueWatchingItem {
             seasonNumber = normalizedEntry.seasonNumber,
             episodeNumber = normalizedEntry.episodeNumber,
             episodeTitle = normalizedEntry.episodeTitle,
+            format = format,
         ),
         imageUrl = normalizedEntry.episodeThumbnail ?: normalizedEntry.background ?: normalizedEntry.poster ?: cloudPosterUrl,
         logo = normalizedEntry.logo,
@@ -253,6 +256,7 @@ private fun WatchProgressEntry.cloudLibraryPosterFallbackUrl(): String? {
 
 internal fun WatchProgressEntry.toUpNextContinueWatchingItem(
     nextEpisode: MetaVideo,
+    format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
 ): ContinueWatchingItem {
     val alertState = calculateReleaseAlertState(
         seedLastUpdatedEpochMs = lastUpdatedEpochMs,
@@ -274,6 +278,7 @@ internal fun WatchProgressEntry.toUpNextContinueWatchingItem(
             seasonNumber = nextEpisode.season,
             episodeNumber = nextEpisode.episode,
             episodeTitle = nextEpisode.title,
+            format = format,
         ),
         imageUrl = nextEpisode.thumbnail ?: episodeThumbnail ?: background ?: poster,
         logo = logo,
@@ -301,9 +306,10 @@ internal fun buildContinueWatchingEpisodeSubtitle(
     seasonNumber: Int?,
     episodeNumber: Int?,
     episodeTitle: String?,
+    format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01,
 ): String {
     val episodeCode = when {
-        seasonNumber != null && episodeNumber != null -> "S${seasonNumber}E${episodeNumber}"
+        seasonNumber != null && episodeNumber != null -> formatEpisodeCode(seasonNumber, episodeNumber, format)
         episodeNumber != null -> "E${episodeNumber}"
         else -> null
     }

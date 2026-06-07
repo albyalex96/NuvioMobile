@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -28,6 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import com.nuvio.app.core.ui.formatEpisodeCode
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.i18n.localizedByteUnit
+import com.nuvio.app.core.share.SharePlatform
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import nuvio.composeapp.generated.resources.*
@@ -131,6 +135,7 @@ private fun LazyListScope.downloadsRootContent(
                 onResume = { DownloadsRepository.resumeDownload(item.id) },
                 onRetry = { DownloadsRepository.retryDownload(item.id) },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
+                onShare = shareItem(item),
             )
         }
     }
@@ -150,6 +155,7 @@ private fun LazyListScope.downloadsRootContent(
                 onResume = { DownloadsRepository.resumeDownload(item.id) },
                 onRetry = { DownloadsRepository.retryDownload(item.id) },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
+                onShare = shareItem(item),
             )
         }
     }
@@ -282,6 +288,7 @@ private fun LazyListScope.downloadsShowContent(
                 onResume = { DownloadsRepository.resumeDownload(item.id) },
                 onRetry = { DownloadsRepository.retryDownload(item.id) },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
+                onShare = shareItem(item),
             )
         }
     }
@@ -295,6 +302,7 @@ private fun DownloadRow(
     onResume: () -> Unit,
     onRetry: () -> Unit,
     onDelete: () -> Unit,
+    onShare: () -> Unit,
 ) {
     val displayTitle = item.displayTitle()
     val displaySubtitle = downloadDisplaySubtitle(
@@ -380,6 +388,12 @@ private fun DownloadRow(
                                     contentDescription = stringResource(Res.string.action_play),
                                 )
                             }
+                            IconButton(onClick = onShare) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Share,
+                                    contentDescription = stringResource(Res.string.downloads_share),
+                                )
+                            }
                         }
                     }
                     IconButton(onClick = onDelete) {
@@ -425,16 +439,32 @@ private fun downloadDisplaySubtitle(
         return item.displaySubtitle
     }
 
-    val episodeCode = stringResource(
-        Res.string.compose_player_episode_code_full,
+    val episodeCode = formatEpisodeCode(
         seasonNumber,
         episodeNumber,
+        rememberEpisodeCodeFormat(),
     )
     return listOf(
         episodeCode,
         item.episodeTitle?.trim().orEmpty().takeIf { it.isNotBlank() && it != displayTitle },
         item.title.trim().takeIf { it.isNotBlank() && it != displayTitle },
     ).filterNotNull().joinToString(" • ")
+}
+
+private fun shareItem(item: DownloadItem): () -> Unit {
+    val fileUri = item.localFileUri ?: return {}
+    val mimeType = item.fileName.substringAfterLast('.', "").let { ext ->
+        when (ext.lowercase()) {
+            "mp4" -> "video/mp4"
+            "mkv" -> "video/x-matroska"
+            "avi" -> "video/x-msvideo"
+            "mov" -> "video/quicktime"
+            "webm" -> "video/webm"
+            "ts" -> "video/mp2t"
+            else -> "video/*"
+        }
+    }
+    return { SharePlatform.shareFile(fileUri, item.title, mimeType) }
 }
 
 @Composable

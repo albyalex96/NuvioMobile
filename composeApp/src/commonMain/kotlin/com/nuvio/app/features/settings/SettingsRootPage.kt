@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Style
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -57,6 +58,10 @@ import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.settings_playback_subtitle
 import nuvio.composeapp.generated.resources.about_supporters_contributors_subtitle
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
+import nuvio.composeapp.generated.resources.settings_network_title
+import nuvio.composeapp.generated.resources.settings_network_description
+import nuvio.composeapp.generated.resources.settings_network_dns_default
+import nuvio.composeapp.generated.resources.settings_network_dns_custom
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.settingsRootContent(
@@ -67,6 +72,7 @@ internal fun LazyListScope.settingsRootContent(
     onAdvancedClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onContentDiscoveryClick: () -> Unit,
+    onNetworkClick: () -> Unit,
     onIntegrationsClick: () -> Unit,
     onTraktClick: () -> Unit,
     onSupportersContributorsClick: () -> Unit,
@@ -162,6 +168,16 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onStreamsClick,
                     )
+                    if (com.nuvio.app.features.settings.globalNetworkSettingsRepository != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.settings_network_title),
+                            description = stringResource(Res.string.settings_network_description),
+                            icon = Icons.Rounded.Settings,
+                            isTablet = isTablet,
+                            onClick = onNetworkClick,
+                        )
+                    }
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_integrations),

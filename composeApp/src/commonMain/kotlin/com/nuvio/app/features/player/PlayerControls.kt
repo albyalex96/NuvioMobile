@@ -27,12 +27,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
-import androidx.compose.material.icons.rounded.Forward10
+import androidx.compose.material.icons.rounded.FastForward
+import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
-import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -58,7 +60,9 @@ import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.appIconPainter
+import com.nuvio.app.core.ui.formatEpisodeCodeWithTitle
 import com.nuvio.app.core.ui.nuvioTypeScale
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -89,6 +93,8 @@ internal fun PlayerControlsShell(
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
+    onVolumeBoostClick: (() -> Unit)? = null,
+    onLiveChannelsClick: (() -> Unit)? = null,
     onSubmitIntroClick: (() -> Unit)? = null,
     parentalWarnings: List<ParentalWarning> = emptyList(),
     showParentalGuide: Boolean = false,
@@ -97,6 +103,7 @@ internal fun PlayerControlsShell(
     onScrubFinished: (Long) -> Unit,
     horizontalSafePadding: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
+    skipSeekIntervalSeconds: Int = 10,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Box(
@@ -169,6 +176,7 @@ internal fun PlayerControlsShell(
                     onSeekBack = onSeekBack,
                     onSeekForward = onSeekForward,
                     onTogglePlayback = onTogglePlayback,
+                    skipSeekIntervalSeconds = skipSeekIntervalSeconds,
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(bottom = metrics.centerLift),
@@ -190,6 +198,8 @@ internal fun PlayerControlsShell(
                     onSourcesClick = onSourcesClick,
                     onEpisodesClick = onEpisodesClick,
                     onOpenInExternalPlayer = onOpenInExternalPlayer,
+                    onVolumeBoostClick = onVolumeBoostClick,
+                    onLiveChannelsClick = onLiveChannelsClick,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
@@ -253,11 +263,11 @@ private fun PlayerHeader(
                     )
                     if (seasonNumber != null && episodeNumber != null && !episodeTitle.isNullOrBlank()) {
                         Text(
-                            text = stringResource(
-                                Res.string.compose_player_episode_title_format,
+                            text = formatEpisodeCodeWithTitle(
                                 seasonNumber,
                                 episodeNumber,
                                 episodeTitle,
+                                rememberEpisodeCodeFormat(),
                             ),
                             style = typeScale.bodyMd.copy(
                                 fontSize = metrics.episodeInfoSize,
@@ -383,6 +393,7 @@ private fun CenterControls(
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
     onTogglePlayback: () -> Unit,
+    skipSeekIntervalSeconds: Int,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -391,8 +402,8 @@ private fun CenterControls(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SideControlButton(
-            icon = Icons.Rounded.Replay10,
-            contentDescription = stringResource(Res.string.compose_player_seek_back_10),
+            icon = Icons.Rounded.FastRewind,
+            contentDescription = stringResource(Res.string.compose_player_seek_back_seconds, skipSeekIntervalSeconds),
             metrics = metrics,
             onClick = onSeekBack,
         )
@@ -403,8 +414,8 @@ private fun CenterControls(
             onClick = onTogglePlayback,
         )
         SideControlButton(
-            icon = Icons.Rounded.Forward10,
-            contentDescription = stringResource(Res.string.compose_player_seek_forward_10),
+            icon = Icons.Rounded.FastForward,
+            contentDescription = stringResource(Res.string.compose_player_seek_forward_seconds, skipSeekIntervalSeconds),
             metrics = metrics,
             onClick = onSeekForward,
         )
@@ -488,6 +499,8 @@ private fun ProgressControls(
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
+    onVolumeBoostClick: (() -> Unit)? = null,
+    onLiveChannelsClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val durationMs = playbackSnapshot.durationMs.coerceAtLeast(1L)
@@ -540,33 +553,48 @@ private fun ProgressControls(
                         painter = aspectRatioPainter,
                         onClick = onResizeModeClick,
                     )
-                    PlayerActionPillButton(
-                        label = formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed),
-                        icon = Icons.Rounded.Speed,
-                        onClick = onSpeedClick,
-                    )
-                    PlayerActionPillButton(
-                        label = stringResource(Res.string.compose_player_subs),
-                        painter = subtitlesPainter,
-                        onClick = onSubtitleClick,
-                    )
-                    PlayerActionPillButton(
-                        label = stringResource(Res.string.compose_player_audio),
-                        painter = audioPainter,
-                        onClick = onAudioClick,
-                    )
-                    if (onSourcesClick != null) {
+                    if (onLiveChannelsClick != null) {
                         PlayerActionPillButton(
-                            label = stringResource(Res.string.compose_player_sources),
-                            icon = Icons.Rounded.SwapHoriz,
-                            onClick = onSourcesClick,
+                            label = stringResource(Res.string.compose_player_channels),
+                            icon = Icons.Rounded.LiveTv,
+                            onClick = onLiveChannelsClick,
                         )
-                    }
-                    if (onEpisodesClick != null) {
+                    } else {
                         PlayerActionPillButton(
-                            label = stringResource(Res.string.compose_player_episodes),
-                            icon = Icons.Rounded.VideoLibrary,
-                            onClick = onEpisodesClick,
+                            label = formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed),
+                            icon = Icons.Rounded.Speed,
+                            onClick = onSpeedClick,
+                        )
+                        PlayerActionPillButton(
+                            label = stringResource(Res.string.compose_player_subs),
+                            painter = subtitlesPainter,
+                            onClick = onSubtitleClick,
+                        )
+                        PlayerActionPillButton(
+                            label = stringResource(Res.string.compose_player_audio),
+                            painter = audioPainter,
+                            onClick = onAudioClick,
+                        )
+                        if (onSourcesClick != null) {
+                            PlayerActionPillButton(
+                                label = stringResource(Res.string.compose_player_sources),
+                                icon = Icons.Rounded.SwapHoriz,
+                                onClick = onSourcesClick,
+                            )
+                        }
+                        if (onEpisodesClick != null) {
+                            PlayerActionPillButton(
+                                label = stringResource(Res.string.compose_player_episodes),
+                                icon = Icons.Rounded.VideoLibrary,
+                                onClick = onEpisodesClick,
+                            )
+                        }
+                    }
+                    if (onVolumeBoostClick != null) {
+                        PlayerActionPillButton(
+                            label = stringResource(Res.string.player_action_volume_boost),
+                            icon = Icons.Rounded.VolumeUp,
+                            onClick = onVolumeBoostClick,
                         )
                     }
                     if (onOpenInExternalPlayer != null) {

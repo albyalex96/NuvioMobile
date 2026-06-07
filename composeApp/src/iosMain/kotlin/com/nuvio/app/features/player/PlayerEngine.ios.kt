@@ -29,6 +29,7 @@ actual fun PlatformPlayerSurface(
     sourceAudioUrl: String?,
     sourceHeaders: Map<String, String>,
     sourceResponseHeaders: Map<String, String>,
+    externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     useYoutubeChunkedPlayback: Boolean,
     modifier: Modifier,
     playWhenReady: Boolean,
@@ -89,6 +90,10 @@ actual fun PlatformPlayerSurface(
 
             override fun setMuted(muted: Boolean) {
                 bridge.setMuted(muted)
+            }
+
+            override fun setVolumeBoost(boostDb: Float) {
+                bridge.setVolumeBoost(boostDb)
             }
 
             override fun getAudioTracks(): List<AudioTrack> {
@@ -236,12 +241,13 @@ actual fun PlatformPlayerSurface(
     }
 
     // Load file and set initial state
-    LaunchedEffect(bridge, sourceUrl, sourceAudioUrl, sourceHeaders) {
+    LaunchedEffect(bridge, sourceUrl, sourceAudioUrl, sourceHeaders, externalSubtitles) {
         bridge.applyIosVideoOutputSettings(latestPlayerSettings.value)
         bridge.loadFileWithAudio(
-            sourceUrl,
-            sourceAudioUrl,
-            encodePlaybackHeadersForBridge(sourceHeaders),
+            videoUrl = sourceUrl,
+            audioUrl = sourceAudioUrl,
+            headersJson = encodePlaybackHeadersForBridge(sourceHeaders),
+            subtitlesJson = encodeExternalSubtitlesForBridge(externalSubtitles),
         )
         if (playWhenReady) {
             bridge.play()
@@ -354,6 +360,13 @@ private fun Int.toHexByte(): String {
         append(digits[value / 16])
         append(digits[value % 16])
     }
+}
+
+private fun encodeExternalSubtitlesForBridge(subtitles: List<com.nuvio.app.features.streams.StreamSubtitle>): String? {
+    if (subtitles.isEmpty()) return null
+    return runCatching {
+        Json.encodeToString(subtitles)
+    }.getOrNull()
 }
 
 private fun encodePlaybackHeadersForBridge(headers: Map<String, String>): String? {

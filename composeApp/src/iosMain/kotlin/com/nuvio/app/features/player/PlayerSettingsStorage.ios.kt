@@ -63,6 +63,11 @@ actual object PlayerSettingsStorage {
     private const val nextEpisodeThresholdMinutesBeforeEndKey = "next_episode_threshold_minutes_before_end_v2"
     private const val useLibassKey = "use_libass"
     private const val libassRenderTypeKey = "libass_render_type"
+    private const val episodeCodeFormatKey = "episode_code_format"
+    private const val stillWatchingEnabledKey = "still_watching_enabled"
+    private const val stillWatchingEpisodeCountKey = "still_watching_episode_count"
+    private const val stillWatchingNightModeKey = "still_watching_night_mode"
+    private const val swipeGesturesEnabledKey = "swipe_gestures_enabled"
     private const val iosVideoOutputPresetKey = "ios_video_output_preset"
     private const val iosToneMappingModeKey = "ios_tone_mapping_mode"
     private const val iosTargetPrimariesKey = "ios_target_primaries"
@@ -78,6 +83,8 @@ actual object PlayerSettingsStorage {
     private const val iosContrastKey = "ios_contrast"
     private const val iosSaturationKey = "ios_saturation"
     private const val iosGammaKey = "ios_gamma"
+    private const val skipSeekIntervalSecondsKey = "skip_seek_interval_seconds"
+    private const val volumeBoostDbKey = "volume_boost_db"
     private val syncKeys = listOf(
         showLoadingOverlayKey,
         resizeModeKey,
@@ -123,6 +130,11 @@ actual object PlayerSettingsStorage {
         nextEpisodeThresholdMinutesBeforeEndKey,
         useLibassKey,
         libassRenderTypeKey,
+        episodeCodeFormatKey,
+        stillWatchingEnabledKey,
+        stillWatchingEpisodeCountKey,
+        stillWatchingNightModeKey,
+        swipeGesturesEnabledKey,
         iosVideoOutputPresetKey,
         iosToneMappingModeKey,
         iosTargetPrimariesKey,
@@ -138,6 +150,8 @@ actual object PlayerSettingsStorage {
         iosContrastKey,
         iosSaturationKey,
         iosGammaKey,
+        skipSeekIntervalSecondsKey,
+        volumeBoostDbKey,
     )
 
     private fun loadBoolean(keyBase: String): Boolean? {
@@ -168,6 +182,73 @@ actual object PlayerSettingsStorage {
         } else {
             null
         }
+    }
+
+    actual fun loadEpisodeCodeFormat(): String? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(episodeCodeFormatKey)
+        return defaults.stringForKey(key)
+    }
+
+    actual fun saveEpisodeCodeFormat(format: String) {
+        NSUserDefaults.standardUserDefaults.setObject(format, forKey = ProfileScopedKey.of(episodeCodeFormatKey))
+    }
+
+    actual fun loadStillWatchingEnabled(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(stillWatchingEnabledKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.boolForKey(key)
+        } else {
+            null
+        }
+    }
+
+    actual fun saveStillWatchingEnabled(enabled: Boolean) {
+        NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(stillWatchingEnabledKey))
+    }
+
+    actual fun loadStillWatchingEpisodeCount(): Int? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(stillWatchingEpisodeCountKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.integerForKey(key).toInt()
+        } else {
+            null
+        }
+    }
+
+    actual fun saveStillWatchingEpisodeCount(count: Int) {
+        NSUserDefaults.standardUserDefaults.setInteger(count.toLong(), forKey = ProfileScopedKey.of(stillWatchingEpisodeCountKey))
+    }
+
+    actual fun loadStillWatchingNightMode(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(stillWatchingNightModeKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.boolForKey(key)
+        } else {
+            null
+        }
+    }
+
+    actual fun saveStillWatchingNightMode(enabled: Boolean) {
+        NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(stillWatchingNightModeKey))
+    }
+
+    actual fun loadSwipeGesturesEnabled(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(swipeGesturesEnabledKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.boolForKey(key)
+        } else {
+            null
+        }
+    }
+
+    actual fun saveSwipeGesturesEnabled(enabled: Boolean) {
+        val defaults = NSUserDefaults.standardUserDefaults
+        defaults.setBool(enabled, ProfileScopedKey.of(swipeGesturesEnabledKey))
     }
 
     actual fun saveShowLoadingOverlay(enabled: Boolean) {
@@ -803,6 +884,18 @@ actual object PlayerSettingsStorage {
         saveInt(iosGammaKey, value)
     }
 
+    actual fun loadSkipSeekIntervalSeconds(): Int? = loadInt(skipSeekIntervalSecondsKey)
+
+    actual fun saveSkipSeekIntervalSeconds(seconds: Int) {
+        saveInt(skipSeekIntervalSecondsKey, seconds)
+    }
+
+    actual fun loadVolumeBoostDb(): Int? = loadInt(volumeBoostDbKey)
+
+    actual fun saveVolumeBoostDb(boostDb: Int) {
+        saveInt(volumeBoostDbKey, boostDb)
+    }
+
     actual fun exportToSyncPayload(): JsonObject = buildJsonObject {
         loadShowLoadingOverlay()?.let { put(showLoadingOverlayKey, encodeSyncBoolean(it)) }
         loadResizeMode()?.let { put(resizeModeKey, encodeSyncString(it)) }
@@ -848,6 +941,11 @@ actual object PlayerSettingsStorage {
         loadNextEpisodeThresholdMinutesBeforeEnd()?.let { put(nextEpisodeThresholdMinutesBeforeEndKey, encodeSyncFloat(it)) }
         loadUseLibass()?.let { put(useLibassKey, encodeSyncBoolean(it)) }
         loadLibassRenderType()?.let { put(libassRenderTypeKey, encodeSyncString(it)) }
+        loadEpisodeCodeFormat()?.let { put(episodeCodeFormatKey, encodeSyncString(it)) }
+        loadStillWatchingEnabled()?.let { put(stillWatchingEnabledKey, encodeSyncBoolean(it)) }
+        loadStillWatchingEpisodeCount()?.let { put(stillWatchingEpisodeCountKey, encodeSyncInt(it)) }
+        loadStillWatchingNightMode()?.let { put(stillWatchingNightModeKey, encodeSyncBoolean(it)) }
+        loadSwipeGesturesEnabled()?.let { put(swipeGesturesEnabledKey, encodeSyncBoolean(it)) }
         loadIosVideoOutputPreset()?.let { put(iosVideoOutputPresetKey, encodeSyncString(it)) }
         loadIosToneMappingMode()?.let { put(iosToneMappingModeKey, encodeSyncString(it)) }
         loadIosTargetPrimaries()?.let { put(iosTargetPrimariesKey, encodeSyncString(it)) }
@@ -863,6 +961,8 @@ actual object PlayerSettingsStorage {
         loadIosContrast()?.let { put(iosContrastKey, encodeSyncInt(it)) }
         loadIosSaturation()?.let { put(iosSaturationKey, encodeSyncInt(it)) }
         loadIosGamma()?.let { put(iosGammaKey, encodeSyncInt(it)) }
+        loadSkipSeekIntervalSeconds()?.let { put(skipSeekIntervalSecondsKey, encodeSyncInt(it)) }
+        loadVolumeBoostDb()?.let { put(volumeBoostDbKey, encodeSyncInt(it)) }
     }
 
     actual fun replaceFromSyncPayload(payload: JsonObject) {
@@ -915,6 +1015,11 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncFloat(nextEpisodeThresholdMinutesBeforeEndKey)?.let(::saveNextEpisodeThresholdMinutesBeforeEnd)
         payload.decodeSyncBoolean(useLibassKey)?.let(::saveUseLibass)
         payload.decodeSyncString(libassRenderTypeKey)?.let(::saveLibassRenderType)
+        payload.decodeSyncString(episodeCodeFormatKey)?.let(::saveEpisodeCodeFormat)
+        payload.decodeSyncBoolean(stillWatchingEnabledKey)?.let(::saveStillWatchingEnabled)
+        payload.decodeSyncInt(stillWatchingEpisodeCountKey)?.let(::saveStillWatchingEpisodeCount)
+        payload.decodeSyncBoolean(stillWatchingNightModeKey)?.let(::saveStillWatchingNightMode)
+        payload.decodeSyncBoolean(swipeGesturesEnabledKey)?.let(::saveSwipeGesturesEnabled)
         payload.decodeSyncString(iosVideoOutputPresetKey)?.let(::saveIosVideoOutputPreset)
         payload.decodeSyncString(iosToneMappingModeKey)?.let(::saveIosToneMappingMode)
         payload.decodeSyncString(iosTargetPrimariesKey)?.let(::saveIosTargetPrimaries)
@@ -930,5 +1035,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncInt(iosContrastKey)?.let(::saveIosContrast)
         payload.decodeSyncInt(iosSaturationKey)?.let(::saveIosSaturation)
         payload.decodeSyncInt(iosGammaKey)?.let(::saveIosGamma)
+        payload.decodeSyncInt(skipSeekIntervalSecondsKey)?.let(::saveSkipSeekIntervalSeconds)
+        payload.decodeSyncInt(volumeBoostDbKey)?.let(::saveVolumeBoostDb)
     }
 }

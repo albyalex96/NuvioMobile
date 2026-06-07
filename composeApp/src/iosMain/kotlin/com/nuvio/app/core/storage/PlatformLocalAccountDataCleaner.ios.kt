@@ -23,6 +23,7 @@ internal actual object PlatformLocalAccountDataCleaner {
         "episode_release_notification_scheduled_ids",
         "selected_theme",
         "amoled_enabled",
+        "amoled_surfaces_enabled",
         "show_loading_overlay",
         "preferred_audio_language",
         "secondary_preferred_audio_language",

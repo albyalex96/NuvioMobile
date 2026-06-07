@@ -20,6 +20,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_continue_watch
 import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
 import nuvio.composeapp.generated.resources.compose_settings_page_integrations
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
+import nuvio.composeapp.generated.resources.compose_settings_page_live_tv
 import nuvio.composeapp.generated.resources.compose_settings_page_mdblist_ratings
 import nuvio.composeapp.generated.resources.compose_settings_page_meta_screen
 import nuvio.composeapp.generated.resources.compose_settings_page_notifications
@@ -32,6 +33,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_supporters_con
 import nuvio.composeapp.generated.resources.compose_settings_page_tmdb_enrichment
 import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.settings_account
+import nuvio.composeapp.generated.resources.compose_settings_page_network
 import org.jetbrains.compose.resources.StringResource
 
 internal enum class SettingsCategory(
@@ -57,6 +59,11 @@ internal enum class SettingsPage(
     Account(
         titleRes = Res.string.compose_settings_page_account,
         category = SettingsCategory.Account,
+        parentPage = Root,
+    ),
+    Network(
+        titleRes = Res.string.compose_settings_page_network,
+        category = SettingsCategory.General,
         parentPage = Root,
     ),
     SupportersContributors(
@@ -146,6 +153,11 @@ internal enum class SettingsPage(
     ),
     Debrid(
         titleRes = Res.string.compose_settings_page_debrid,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    LiveTv(
+        titleRes = Res.string.compose_settings_page_live_tv,
         category = SettingsCategory.General,
         parentPage = Integrations,
     ),

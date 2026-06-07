@@ -11,6 +11,7 @@ import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
 import com.nuvio.app.features.collection.findCollectionCatalog
 import com.nuvio.app.features.trakt.TraktPublicListSourceResolver
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
+import com.nuvio.app.features.home.Top10CatalogRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -87,9 +88,22 @@ object HomeRepository {
                 definitions = requests,
                 snapshot = HomeCatalogSettingsRepository.snapshot(),
             )
-            val pendingRequests = prioritizedRequests.filter { definition ->
-                force || cachedSections[definition.key] == null
+            val top10Snapshot = Top10CatalogRepository.uiState.value
+        val top10Keys = buildSet {
+            if (top10Snapshot.enabled && top10Snapshot.hasMovieCatalog) {
+                requests.firstOrNull {
+                    it.manifestUrl == top10Snapshot.movieManifestUrl && it.catalogId == top10Snapshot.movieCatalogId
+                }?.key?.let { add(it) }
             }
+            if (top10Snapshot.enabled && top10Snapshot.hasSeriesCatalog) {
+                requests.firstOrNull {
+                    it.manifestUrl == top10Snapshot.seriesManifestUrl && it.catalogId == top10Snapshot.seriesCatalogId
+                }?.key?.let { add(it) }
+            }
+        }
+        val pendingRequests = prioritizedRequests.filter { definition ->
+            force || cachedSections[definition.key] == null || definition.key in top10Keys
+        }
             if (pendingRequests.isEmpty()) {
                 publishCurrentState(
                     isLoading = false,
@@ -216,10 +230,40 @@ object HomeRepository {
             emptyList()
         }
 
+        val top10Snapshot = Top10CatalogRepository.uiState.value
+        val top10MovieItems = if (top10Snapshot.enabled && top10Snapshot.hasMovieCatalog) {
+            cachedSections.values
+                .firstOrNull {
+                    it.manifestUrl == top10Snapshot.movieManifestUrl &&
+                    it.catalogId == top10Snapshot.movieCatalogId &&
+                    it.type == top10Snapshot.movieCatalogType
+                }
+                ?.items
+                ?.take(10)
+                ?: emptyList()
+        } else {
+            emptyList()
+        }
+        val top10SeriesItems = if (top10Snapshot.enabled && top10Snapshot.hasSeriesCatalog) {
+            cachedSections.values
+                .firstOrNull {
+                    it.manifestUrl == top10Snapshot.seriesManifestUrl &&
+                    it.catalogId == top10Snapshot.seriesCatalogId &&
+                    it.type == top10Snapshot.seriesCatalogType
+                }
+                ?.items
+                ?.take(10)
+                ?: emptyList()
+        } else {
+            emptyList()
+        }
+
         _uiState.value = HomeUiState(
             isLoading = isLoading,
             heroItems = heroItems,
             sections = sections,
+            top10MovieItems = top10MovieItems,
+            top10SeriesItems = top10SeriesItems,
             errorMessage = if (sections.isEmpty()) lastErrorMessage else null,
         )
     }
@@ -424,7 +468,7 @@ object HomeRepository {
             source.sortBy,
             source.sortHow,
         ).joinToString(":") { it.orEmpty() }
-}
+        }
 
 private const val HOME_HERO_ITEM_LIMIT = 8
 private const val HOME_COLLECTION_HERO_SOURCE_LIMIT = 6

@@ -290,9 +290,12 @@ object StreamsRepository {
             }
 
             fun publishAddonGroupAfterCacheCheck(group: AddonStreamGroup) {
-                if (group.addonId !in installedAddonIds || group.streams.isEmpty()) {
+                val isEligible = group.addonId in installedAddonIds ||
+                                group.addonId.startsWith("plugin:") ||
+                                group.addonId.startsWith("plugin-repo:")
+                if (!isEligible || group.streams.isEmpty()) {
                     publishAddonGroup(presentStreamGroup(group))
-                    return
+                return
                 }
 
                 val eligibleGroupIds = setOf(group.addonId)
@@ -914,6 +917,7 @@ private fun PluginRuntimeResult.toStreamItem(
         sourceName = scraper.name,
         addonName = addonName,
         addonId = addonId,
+        streamType = type,
         behaviorHints = if (requestHeaders.isEmpty()) {
             StreamBehaviorHints()
         } else {
@@ -922,6 +926,14 @@ private fun PluginRuntimeResult.toStreamItem(
                 proxyHeaders = StreamProxyHeaders(request = requestHeaders),
             )
         },
+        externalSubtitles = subtitles?.map {
+            StreamSubtitle(
+                url = it.url,
+                language = it.language,
+                name = it.name,
+                headers = it.headers
+            )
+        } ?: emptyList()
     )
 }
 

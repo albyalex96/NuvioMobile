@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Star
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_addons
 import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
@@ -21,7 +22,8 @@ import nuvio.composeapp.generated.resources.settings_content_discovery_plugins_d
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_home
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_sources
 import org.jetbrains.compose.resources.stringResource
-
+import nuvio.composeapp.generated.resources.top10_header
+import nuvio.composeapp.generated.resources.top10_description
 internal fun LazyListScope.contentDiscoveryContent(
     isTablet: Boolean,
     showPluginsEntry: Boolean,
@@ -30,6 +32,7 @@ internal fun LazyListScope.contentDiscoveryContent(
     onHomescreenClick: () -> Unit,
     onMetaScreenClick: () -> Unit,
     onCollectionsClick: () -> Unit = {},
+    onTop10CatalogClick: () -> Unit = {},
 ) {
     item {
         SettingsSection(
@@ -82,6 +85,13 @@ internal fun LazyListScope.contentDiscoveryContent(
                     icon = Icons.Rounded.CollectionsBookmark,
                     isTablet = isTablet,
                     onClick = onCollectionsClick,
+                )
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.top10_header),
+                    description = stringResource(Res.string.top10_description),
+                    icon = Icons.Rounded.Star,
+                    isTablet = isTablet,
+                    onClick = onTop10CatalogClick,
                 )
             }
         }

@@ -38,8 +38,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.formatEpisodeCodeWithTitle
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.compose_player_episode_title_format
 import nuvio.composeapp.generated.resources.detail_btn_play
 import nuvio.composeapp.generated.resources.player_next_episode
 import nuvio.composeapp.generated.resources.player_next_episode_finding_source
@@ -123,11 +124,11 @@ fun NextEpisodeCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = stringResource(
-                        Res.string.compose_player_episode_title_format,
+                    text = formatEpisodeCodeWithTitle(
                         nextEpisode.season,
                         nextEpisode.episode,
                         nextEpisode.title,
+                        rememberEpisodeCodeFormat(),
                     ),
                     color = Color.White,
                     fontSize = 12.sp,

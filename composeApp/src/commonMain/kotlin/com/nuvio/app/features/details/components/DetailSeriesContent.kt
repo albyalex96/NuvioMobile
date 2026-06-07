@@ -65,6 +65,7 @@ import com.nuvio.app.core.format.formatReleaseDateForDisplay
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
 import com.nuvio.app.core.ui.NuvioAnimatedWatchedBadge
 import com.nuvio.app.core.ui.NuvioProgressBar
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaEpisodeCardStyle
 import com.nuvio.app.features.details.MetaVideo
@@ -1343,10 +1344,15 @@ private fun Int.label(): String =
         runBlocking { getString(Res.string.episodes_season, this@label) }
     }
 
+@Composable
 private fun MetaVideo.episodeBadge(): String =
     when {
         episode != null || season != null ->
-            localizedSeasonEpisodeCode(seasonNumber = season, episodeNumber = episode).orEmpty()
+            localizedSeasonEpisodeCode(
+                seasonNumber = season,
+                episodeNumber = episode,
+                format = rememberEpisodeCodeFormat(),
+            ).orEmpty()
         else -> runBlocking { getString(Res.string.details_episode_badge_file) }
     }
 

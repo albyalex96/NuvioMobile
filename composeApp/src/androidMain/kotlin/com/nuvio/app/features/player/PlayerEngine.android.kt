@@ -29,6 +29,7 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import android.media.audiofx.LoudnessEnhancer
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
@@ -39,6 +40,10 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.text.Cue
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.TransferListener
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -46,6 +51,7 @@ import androidx.media3.exoplayer.ForwardingRenderer
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MergingMediaSource
+import com.nuvio.app.features.trailer.YoutubeChunkedDataSourceFactory
 import androidx.media3.exoplayer.text.TextOutput
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -73,8 +79,10 @@ private const val TAG = "NuvioPlayer"
 actual fun PlatformPlayerSurface(
     sourceUrl: String,
     sourceAudioUrl: String?,
+    streamType: String?,
     sourceHeaders: Map<String, String>,
     sourceResponseHeaders: Map<String, String>,
+    externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     useYoutubeChunkedPlayback: Boolean,
     modifier: Modifier,
     playWhenReady: Boolean,
@@ -130,12 +138,14 @@ actual fun PlatformPlayerSurface(
         sanitizedSourceHeaders,
         sanitizedSourceResponseHeaders,
         useYoutubeChunkedPlayback,
+        externalSubtitles,
     ) {
         PlatformPlaybackDataSourceFactory.create(
             context = context,
             defaultRequestHeaders = sanitizedSourceHeaders,
             defaultResponseHeaders = sanitizedSourceResponseHeaders,
             useYoutubeChunkedPlayback = useYoutubeChunkedPlayback,
+            externalSubtitles = externalSubtitles,
         )
     }
 
@@ -156,6 +166,8 @@ actual fun PlatformPlayerSurface(
             setMediaItem(videoMediaItem)
         }
     }
+
+    var loudnessEnhancer by remember { mutableStateOf<LoudnessEnhancer?>(null) }
 
     val exoPlayer = remember(
         sourceUrl,
@@ -222,13 +234,53 @@ actual fun PlatformPlayerSurface(
         }
 
         player.apply {
-            setPlaybackMediaItem(
-                videoMediaItem = MediaItem.fromUri(sourceUrl),
-                startPositionMs = fallbackStartPositionMs,
-            )
-            prepare()
-            this.playWhenReady = playWhenReady
-        }
+                val mediaItemBuilder = MediaItem.Builder()
+                    .setUri(Uri.parse(sourceUrl))
+                    .setMediaId(sourceUrl)
+                    .apply {
+                        if ("hls".equals(streamType, ignoreCase = true) || sourceUrl.isHlsUrl()) {
+                            setMimeType(MimeTypes.APPLICATION_M3U8)
+                        }
+                    }
+                
+                val subtitleConfigs = externalSubtitles.mapNotNull { subtitle ->
+                    val mimeType = resolveSubtitleMimeType(subtitle.url, subtitle.headers)
+                    MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.url))
+                        .setMimeType(mimeType)
+                        .setLanguage(subtitle.language)
+                        .setLabel(subtitle.name ?: subtitle.language)
+                        .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
+                        .build()
+                }
+
+                if (subtitleConfigs.isNotEmpty()) {
+                    mediaItemBuilder.setSubtitleConfigurations(subtitleConfigs)
+                }
+
+                if (!sourceAudioUrl.isNullOrBlank()) {
+                    val msf = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
+                    val videoSource = msf.createMediaSource(mediaItemBuilder.build())
+                    val audioSource = msf.createMediaSource(
+                        MediaItem.Builder()
+                            .setUri(sourceAudioUrl)
+                            .apply {
+                                if ("hls".equals(streamType, ignoreCase = true) || sourceAudioUrl.isHlsUrl()) {
+                                    setMimeType(MimeTypes.APPLICATION_M3U8)
+                                }
+                            }
+                            .build()
+                    )
+                    setMediaSource(MergingMediaSource(videoSource, audioSource))
+                    fallbackStartPositionMs?.let { seekTo(it.coerceAtLeast(0L)) }
+                } else {
+                    setPlaybackMediaItem(
+                        videoMediaItem = mediaItemBuilder.build(),
+                        startPositionMs = fallbackStartPositionMs,
+                    )
+                }                
+                prepare()
+                this.playWhenReady = playWhenReady
+            }
     }
 
     val pendingSubtitleTrackIndex = remember { mutableListOf<Int>() }
@@ -354,6 +406,8 @@ actual fun PlatformPlayerSurface(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            loudnessEnhancer?.release()
+            loudnessEnhancer = null
             exoPlayer.release()
         }
     }
@@ -514,6 +568,24 @@ actual fun PlatformPlayerSurface(
 
                 override fun setSubtitleDelayMs(delayMs: Int) {
                     subtitleDelayMs = delayMs.coerceIn(SUBTITLE_DELAY_MIN_MS, SUBTITLE_DELAY_MAX_MS)
+                }
+
+                override fun setVolumeBoost(boostDb: Float) {
+                    loudnessEnhancer?.let {
+                        it.release()
+                        loudnessEnhancer = null
+                    }
+                    if (boostDb > 0f) {
+                        try {
+                            LoudnessEnhancer(exoPlayer.audioSessionId).apply {
+                                setTargetGain((boostDb * 100f).toInt())
+                                enabled = true
+                                loudnessEnhancer = this
+                            }
+                        } catch (_: Exception) {
+                            loudnessEnhancer = null
+                        }
+                    }
                 }
             }
         )
@@ -974,15 +1046,15 @@ private class SubtitleOffsetRenderer(
     }
 }
 
-private fun resolveSubtitleMimeType(url: String): String {
-    probeSubtitleHeaders(url)?.let { (contentType, contentDisposition) ->
+private fun resolveSubtitleMimeType(url: String, headers: Map<String, String>? = null): String {
+    probeSubtitleHeaders(url, headers)?.let { (contentType, contentDisposition) ->
         mapSubtitleMime(contentType)?.let { return it }
         filenameFromContentDisposition(contentDisposition)?.let(::guessSubtitleMime)?.let { return it }
     }
     return guessSubtitleMime(url)
 }
 
-private fun probeSubtitleHeaders(url: String): Pair<String?, String?>? {
+private fun probeSubtitleHeaders(url: String, headers: Map<String, String>? = null): Pair<String?, String?>? {
     val methods = listOf("HEAD", "GET")
     methods.forEach { method ->
         runCatching {
@@ -992,6 +1064,9 @@ private fun probeSubtitleHeaders(url: String): Pair<String?, String?>? {
                 readTimeout = 5_000
                 instanceFollowRedirects = true
                 setRequestProperty("Accept", "*/*")
+                headers?.forEach { (key, value) ->
+                    setRequestProperty(key, value)
+                }
             }
             try {
                 connection.responseCode
@@ -1044,5 +1119,59 @@ private fun guessSubtitleMime(url: String): String {
         lower.contains(".ass") || lower.contains(".ssa") -> MimeTypes.TEXT_SSA
         lower.contains(".ttml") || lower.contains(".dfxp") || lower.contains(".xml") -> MimeTypes.APPLICATION_TTML
         else -> MimeTypes.TEXT_VTT
+    }
+}
+
+private fun String.isHlsUrl(): Boolean =
+    endsWith(".m3u8", ignoreCase = true) ||
+    contains(".m3u8?", ignoreCase = true) ||
+    contains("/playlist/", ignoreCase = true) ||
+    contains("/master/", ignoreCase = true) ||
+    contains("/chunklist/", ignoreCase = true)
+
+internal class SubtitleRequestHeaderDataSourceFactory(
+    private val upstreamFactory: DataSource.Factory,
+    private val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
+) : DataSource.Factory {
+    override fun createDataSource(): DataSource =
+        SubtitleRequestHeaderDataSource(
+            upstream = upstreamFactory.createDataSource(),
+            externalSubtitles = externalSubtitles,
+        )
+}
+
+internal class SubtitleRequestHeaderDataSource(
+    private val upstream: DataSource,
+    private val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
+) : DataSource {
+    override fun addTransferListener(transferListener: TransferListener) {
+        upstream.addTransferListener(transferListener)
+    }
+
+    override fun open(dataSpec: DataSpec): Long {
+        val url = dataSpec.uri.toString()
+        val subtitle = externalSubtitles.find { it.url == url }
+        val headers = subtitle?.headers
+        
+        return if (headers.isNullOrEmpty()) {
+            upstream.open(dataSpec)
+        } else {
+            val mergedHeaders = dataSpec.httpRequestHeaders.toMutableMap()
+            headers.forEach { (key, value) ->
+                mergedHeaders[key] = value
+            }
+            upstream.open(dataSpec.buildUpon().setHttpRequestHeaders(mergedHeaders).build())
+        }
+    }
+
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int =
+        upstream.read(buffer, offset, length)
+
+    override fun getUri(): Uri? = upstream.uri
+
+    override fun getResponseHeaders(): Map<String, List<String>> = upstream.responseHeaders
+
+    override fun close() {
+        upstream.close()
     }
 }

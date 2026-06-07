@@ -7,6 +7,7 @@ import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.library.LibraryUiState
+import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.trakt.TraktPlatformClock
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
@@ -460,6 +461,7 @@ object EpisodeReleaseNotificationsRepository {
                     seasonNumber = episode.season,
                     episodeNumber = episode.episode,
                     episodeTitle = episode.title,
+                    format = PlayerSettingsRepository.uiState.value.episodeCodeFormat,
                 ),
                 releaseDateIso = releaseDate,
                 deepLinkUrl = buildMetaDeepLinkUrl(
