@@ -96,39 +96,43 @@ fun DownloadsHlsSelectionSheet(
     }
 
     val audioOptions = remember(playlist) {
-        playlist?.audioTracks?.map { track ->
-            NuvioDropdownOption(
-                key = track.uri ?: "none",
-                label = buildString {
-                    append(track.name)
-                    track.language?.let { lang ->
-                        if (lang.isNotBlank()) {
-                            append(" • ")
-                            append(lang)
+        playlist?.audioTracks
+            ?.filter { it.uri != null }
+            ?.map { track ->
+                NuvioDropdownOption(
+                    key = track.uri!!,
+                    label = buildString {
+                        append(track.name)
+                        track.language?.let { lang ->
+                            if (lang.isNotBlank()) {
+                                append(" • ")
+                                append(lang)
+                            }
                         }
-                    }
-                },
-            )
-        }.orEmpty()
+                    },
+                )
+            }.orEmpty()
     }
 
     val subtitleOptions = remember(playlist) {
         listOf(
             NuvioDropdownOption(key = "none", label = "None"),
-        ) + (playlist?.subtitleTracks?.map { track ->
-            NuvioDropdownOption(
-                key = track.uri ?: "none",
-                label = buildString {
-                    append(track.name)
-                    track.language?.let { lang ->
-                        if (lang.isNotBlank()) {
-                            append(" • ")
-                            append(lang)
+        ) + (playlist?.subtitleTracks
+            ?.filter { it.uri != null }
+            ?.map { track ->
+                NuvioDropdownOption(
+                    key = track.uri!!,
+                    label = buildString {
+                        append(track.name)
+                        track.language?.let { lang ->
+                            if (lang.isNotBlank()) {
+                                append(" • ")
+                                append(lang)
+                            }
                         }
-                    }
-                },
-            )
-        }.orEmpty())
+                    },
+                )
+            }.orEmpty())
     }
 
     var selectedQualityKey by remember(qualityOptions) {
