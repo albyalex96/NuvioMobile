@@ -1608,6 +1608,37 @@ fun PlayerScreen(
             controlsVisible = true
         }
 
+        suspend fun tryShowStillWatchingDialog(): Boolean {
+            val swSettings = playerSettingsUiState
+            if (!swSettings.stillWatchingEnabled || !isSeries) return false
+            val newCount = stillWatchingEpisodeCounter + 1
+            stillWatchingEpisodeCounter = newCount
+            val isNightTime = if (swSettings.stillWatchingNightMode) {
+                val hour = currentHour()
+                hour in 22..23 || hour in 0..4
+            } else true
+            if (newCount >= swSettings.stillWatchingEpisodeCount && isNightTime) {
+                playerController?.pause()
+                shouldPlay = false
+                stillWatchingShowDialog = true
+                stillWatchingTimeoutRemaining = 20
+                stillWatchingCountdownJob?.cancel()
+                stillWatchingCountdownJob = scope.launch {
+                    while (stillWatchingTimeoutRemaining > 0 && stillWatchingShowDialog) {
+                        delay(1000)
+                        stillWatchingTimeoutRemaining--
+                    }
+                    if (stillWatchingShowDialog) {
+                        stillWatchingShowDialog = false
+                        stillWatchingEpisodeCounter = 0
+                        onBackWithProgress()
+                    }
+                }
+                return true
+            }
+            return false
+        }
+
         fun playNextEpisode() {
             val nextVideoId = nextEpisodeInfo?.videoId ?: return
             val nextVideo = allEpisodes.firstOrNull { video -> video.id == nextVideoId } ?: return
@@ -2364,9 +2395,11 @@ fun PlayerScreen(
             )
             if (shouldShow && !showNextEpisodeCard) {
                 showNextEpisodeCard = true
-                // Auto-play if enabled
+                // Auto-play if enabled (check still-watching BEFORE autoplay to prevent race condition)
                 if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                    playNextEpisode()
+                    if (!tryShowStillWatchingDialog()) {
+                        playNextEpisode()
+                    }
                 }
             } else if (!shouldShow) {
                 showNextEpisodeCard = false
@@ -2378,37 +2411,10 @@ fun PlayerScreen(
             if (playbackSnapshot.isEnded) {
                 val info = nextEpisodeInfo
                 if (info != null) {
-                    val stillWatchingSettings = playerSettingsUiState
-                    if (stillWatchingSettings.stillWatchingEnabled && isSeries) {
-                        val newCount = stillWatchingEpisodeCounter + 1
-                        stillWatchingEpisodeCounter = newCount
-                        val isNightTime = if (stillWatchingSettings.stillWatchingNightMode) {
-                            val hour = currentHour()
-                            hour in 22..23 || hour in 0..4
-                        } else true
-                        if (newCount >= stillWatchingSettings.stillWatchingEpisodeCount && isNightTime) {
-                            playerController?.pause()
-                            shouldPlay = false
-                            stillWatchingShowDialog = true
-                            stillWatchingTimeoutRemaining = 20
-                            stillWatchingCountdownJob?.cancel()
-                            stillWatchingCountdownJob = scope.launch {
-                                while (stillWatchingTimeoutRemaining > 0 && stillWatchingShowDialog) {
-                                    delay(1000)
-                                    stillWatchingTimeoutRemaining--
-                                }
-                                if (stillWatchingShowDialog) {
-                                    stillWatchingShowDialog = false
-                                    stillWatchingEpisodeCounter = 0
-                                    onBackWithProgress()
-                                }
-                            }
-                            return@LaunchedEffect
-                        }
-                    }
+                    if (tryShowStillWatchingDialog()) return@LaunchedEffect
                     if (!showNextEpisodeCard) {
                         showNextEpisodeCard = true
-                        if (stillWatchingSettings.streamAutoPlayNextEpisodeEnabled && info.hasAired) {
+                        if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && info.hasAired) {
                             playNextEpisode()
                         }
                     }
