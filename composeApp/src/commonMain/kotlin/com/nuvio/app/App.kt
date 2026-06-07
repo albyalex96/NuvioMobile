@@ -122,6 +122,7 @@ import com.nuvio.app.features.cloud.providerPosterUrl
 import com.nuvio.app.features.debrid.DirectDebridPlayableResult
 import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.debrid.toastMessage
+import com.nuvio.app.features.downloads.DownloadItem
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.downloads.DownloadsScreen
 import com.nuvio.app.features.details.MetaDetailsRepository
@@ -229,6 +230,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.features.streams.StreamSubtitle
 import com.nuvio.app.features.streams.StreamsAppearanceRepository
 import com.nuvio.app.features.streams.StreamsAppearanceSettings
 @Serializable
@@ -1100,7 +1102,7 @@ private fun MainAppContent(
                             sourceAudioUrl = downloadedItem?.hlsAudioLocalFileUri?.takeIf { it.isNotBlank() },
                             sourceHeaders = emptyMap(),
                             sourceResponseHeaders = emptyMap(),
-                            externalSubtitles = emptyList(),
+                            externalSubtitles = buildExternalSubtitlesFromDownload(downloadedItem),
                             logo = logo,
                             poster = poster,
                             background = background,
@@ -2514,9 +2516,10 @@ private fun MainAppContent(
                             val playerLaunch = PlayerLaunch(
                                     title = item.title,
                                     sourceUrl = sourceUrl,
+                                    sourceAudioUrl = item.hlsAudioLocalFileUri?.takeIf { it.isNotBlank() },
                                     sourceHeaders = emptyMap(),
                                     sourceResponseHeaders = emptyMap(),
-                                    externalSubtitles = emptyList(),
+                                    externalSubtitles = buildExternalSubtitlesFromDownload(item),
                                     logo = item.logo,
                                     poster = item.poster,
                                     background = item.background,
@@ -3189,4 +3192,15 @@ private fun AppLaunchOverlay(
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
     }
+}
+
+private fun buildExternalSubtitlesFromDownload(item: DownloadItem?): List<StreamSubtitle> {
+    val uri = item?.hlsSubtitleLocalFileUri?.takeIf { it.isNotBlank() } ?: return emptyList()
+    return listOf(
+        StreamSubtitle(
+            url = uri,
+            language = "",
+            name = "Downloaded",
+        ),
+    )
 }

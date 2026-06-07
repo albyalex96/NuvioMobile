@@ -26,6 +26,8 @@ data class HlsMasterPlaylist(
 data class HlsMediaPlaylist(
     val segments: List<HlsSegment>,
     val targetDuration: Double = 0.0,
+    val initSegmentUrl: String? = null,
+    val segmentFormat: String = "ts",
 )
 
 data class HlsKey(
@@ -249,11 +251,11 @@ object HlsPlaylistParser {
 }
 
 fun HlsKey.toIvBytes(): ByteArray? =
-    ivHex?.let { hexToByteArray(it) }
+    ivHex?.let { hexToByteArray(it) }?.takeIf { it.size == 16 }
 
-fun hexToByteArray(hex: String): ByteArray {
+fun hexToByteArray(hex: String): ByteArray? {
     val normalized = hex.filter { it != ' ' }
-    require(normalized.length % 2 == 0) { "Hex string must have even length" }
+    if (normalized.isEmpty() || normalized.length % 2 != 0) return null
     return ByteArray(normalized.length / 2) {
         normalized.substring(it * 2, it * 2 + 2).toInt(16).toByte()
     }
