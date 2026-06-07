@@ -88,8 +88,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import com.nuvio.app.features.streams.StreamsAppearanceRepository
-import com.nuvio.app.features.streams.StreamsAppearanceSettings
+
 
 private val SettingsSearchRevealThreshold = 28.dp
 private const val SettingsSearchRevealAnimationMillis = 240L
@@ -205,10 +204,6 @@ fun SettingsScreen(
             LiveTvRepository.ensureLoaded()
             LiveTvRepository.uiState
         }.collectAsStateWithLifecycle()
-        val streamsAppearance by remember {
-            StreamsAppearanceRepository.ensureLoaded()
-            StreamsAppearanceRepository.uiState
-        }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
         val profileSettingsState by remember {
             ProfileRepository.state
         }.collectAsStateWithLifecycle()
@@ -317,7 +312,6 @@ fun SettingsScreen(
                 onTop10CatalogClick = onTop10CatalogClick,
                 amoledSurfacesEnabled = amoledSurfacesEnabled,
                 onAmoledSurfacesToggle = ThemeSettingsRepository::setAmoledSurfaces,
-                streamsAppearance=streamsAppearance,
             )
         } else {
             MobileSettingsScreen(
@@ -386,7 +380,6 @@ fun SettingsScreen(
                 onTop10CatalogClick = onTop10CatalogClick,
                 amoledSurfacesEnabled = amoledSurfacesEnabled,
                 onAmoledSurfacesToggle = ThemeSettingsRepository::setAmoledSurfaces,
-                streamsAppearance=streamsAppearance,
             )
         }
     }
@@ -459,7 +452,6 @@ private fun MobileSettingsScreen(
     onTop10CatalogClick: () -> Unit = {},
     amoledSurfacesEnabled: Boolean,
     onAmoledSurfacesToggle: (Boolean) -> Unit,
-    streamsAppearance: StreamsAppearanceSettings,
 ) {
     val saveableStateHolder = rememberSaveableStateHolder()
     saveableStateHolder.SaveableStateProvider(page.name) {
@@ -621,7 +613,6 @@ private fun MobileSettingsScreen(
                     onAppLanguageSelected = onAppLanguageSelected,
                     onContinueWatchingClick = onContinueWatchingClick,
                     onPosterCustomizationClick = { onPageChange(SettingsPage.PosterCustomization) },
-                    streamsAppearance=streamsAppearance,
                 )
                 SettingsPage.Advanced -> advancedSettingsContent(
                     isTablet = false,
@@ -810,7 +801,6 @@ private fun TabletSettingsScreen(
     onTop10CatalogClick: () -> Unit = {},
     amoledSurfacesEnabled: Boolean,
     onAmoledSurfacesToggle: (Boolean) -> Unit,
-    streamsAppearance: StreamsAppearanceSettings,
 ) {
     var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.General.name) }
     val activeCategory = SettingsCategory.valueOf(selectedCategory)
@@ -965,7 +955,6 @@ private fun TabletSettingsScreen(
                     onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                     selectedAppLanguage = selectedAppLanguage,
                     onAppLanguageSelected = onAppLanguageSelected,
-                        streamsAppearance=streamsAppearance,
                 )
                 SettingsPage.Advanced -> advancedSettingsContent(
                     isTablet = true,

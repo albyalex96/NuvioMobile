@@ -66,15 +66,13 @@ import nuvio.composeapp.generated.resources.settings_appearance_poster_customiza
 import nuvio.composeapp.generated.resources.settings_appearance_section_display
 import nuvio.composeapp.generated.resources.settings_appearance_section_home
 import nuvio.composeapp.generated.resources.settings_appearance_section_theme
-import nuvio.composeapp.generated.resources.stream_parser_title
-import nuvio.composeapp.generated.resources.stream_parser_description
+
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
-import com.nuvio.app.features.streams.DisplayMode
-import com.nuvio.app.features.streams.StreamsAppearanceRepository
-import com.nuvio.app.features.streams.StreamsAppearanceSettings
+
+
 
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.appearanceSettingsContent(
@@ -94,7 +92,6 @@ internal fun LazyListScope.appearanceSettingsContent(
     onAppLanguageSelected: (AppLanguage) -> Unit,
     onContinueWatchingClick: () -> Unit,
     onPosterCustomizationClick: () -> Unit,
-    streamsAppearance: StreamsAppearanceSettings,
 ) {
     item {
         SettingsSection(
@@ -211,18 +208,7 @@ internal fun LazyListScope.appearanceSettingsContent(
                     isTablet = isTablet,
                     onClick = onPosterCustomizationClick,
                 )
-                SettingsGroupDivider(isTablet = isTablet)
-                SettingsSwitchRow(
-                    title = stringResource(Res.string.stream_parser_title),
-                    description = stringResource(Res.string.stream_parser_description),
-                    isTablet = isTablet,
-                    checked = streamsAppearance.displayMode == DisplayMode.POLISHED,
-                    onCheckedChange = { isPolished ->
-                        StreamsAppearanceRepository.setDisplayMode(
-                            if (isPolished) DisplayMode.POLISHED else DisplayMode.ORIGINAL
-                        )
-                    },
-                )
+
             }
         }
     }

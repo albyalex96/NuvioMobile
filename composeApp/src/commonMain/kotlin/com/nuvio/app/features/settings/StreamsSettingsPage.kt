@@ -55,7 +55,9 @@ import com.nuvio.app.features.streams.StreamBadgeImport
 import com.nuvio.app.features.streams.StreamBadgeImportResult
 import com.nuvio.app.features.streams.StreamBadgePlacement
 import com.nuvio.app.features.streams.StreamBadgeRules
+import com.nuvio.app.features.streams.DisplayMode
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_cancel
@@ -86,9 +88,37 @@ import nuvio.composeapp.generated.resources.settings_stream_badge_urls_title
 import nuvio.composeapp.generated.resources.settings_stream_badges_section
 import nuvio.composeapp.generated.resources.settings_stream_size_badges_description
 import nuvio.composeapp.generated.resources.settings_stream_size_badges_title
+import nuvio.composeapp.generated.resources.stream_parser_description
+import nuvio.composeapp.generated.resources.stream_parser_title
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
+    item {
+        val streamsAppearance by remember {
+            StreamsAppearanceRepository.ensureLoaded()
+            StreamsAppearanceRepository.uiState
+        }.collectAsStateWithLifecycle()
+
+        SettingsSection(
+            title = stringResource(Res.string.stream_parser_title),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.stream_parser_title),
+                    description = stringResource(Res.string.stream_parser_description),
+                    isTablet = isTablet,
+                    checked = streamsAppearance.displayMode == DisplayMode.POLISHED,
+                    onCheckedChange = { isPolished ->
+                        StreamsAppearanceRepository.setDisplayMode(
+                            if (isPolished) DisplayMode.POLISHED else DisplayMode.ORIGINAL
+                        )
+                    },
+                )
+            }
+        }
+    }
+
     item {
         val currentSettings by remember {
             StreamBadgeSettingsRepository.ensureLoaded()
