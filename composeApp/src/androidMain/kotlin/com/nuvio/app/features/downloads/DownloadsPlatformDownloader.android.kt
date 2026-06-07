@@ -334,6 +334,58 @@ internal actual object DownloadsPlatformDownloader {
             null
         }
     }
+
+    actual fun downloadSegmentsToFile(
+        segments: List<HlsSegment>,
+        keyCache: Map<String, ByteArray>,
+        headers: Map<String, String>,
+        fileName: String,
+    ): String? {
+        val context = appContext ?: return null
+        return try {
+            val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+            val file = File(downloadsDir, fileName)
+            val tempFile = File(downloadsDir, "$fileName.track.part")
+            if (tempFile.exists()) tempFile.delete()
+
+            FileOutputStream(tempFile, false).use { output ->
+                for (segment in segments) {
+                    try {
+                        val requestBuilder = Request.Builder().url(segment.url)
+                        headers.forEach { (key, value) ->
+                            requestBuilder.header(key, value)
+                        }
+                        val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
+                        response.use { resp ->
+                            if (!resp.isSuccessful) return@use
+                            val body = resp.body ?: return@use
+                            val segmentBytes = body.bytes()
+                            val processedBytes = if (segment.key != null) {
+                                val keyBytes = keyCache[segment.key.uri]
+                                val ivBytes = segment.key.toIvBytes()
+                                if (keyBytes != null && ivBytes != null) {
+                                    decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
+                                } else segmentBytes
+                            } else segmentBytes
+                            output.write(processedBytes)
+                        }
+                    } catch (_: Exception) {
+                        // skip failed segment
+                    }
+                }
+                output.flush()
+            }
+
+            if (file.exists()) file.delete()
+            if (!tempFile.renameTo(file)) {
+                tempFile.copyTo(file, overwrite = true)
+                tempFile.delete()
+            }
+            file.toURI().toString()
+        } catch (_: Exception) {
+            null
+        }
+    }
 }
 
 private class AndroidDownloadsTaskHandle(

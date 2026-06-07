@@ -39,4 +39,11 @@ internal expect object DownloadsPlatformDownloader {
     ): DownloadsTaskHandle
 
     fun fetchUrlAsBytes(url: String, headers: Map<String, String>): ByteArray?
+
+    fun downloadSegmentsToFile(
+        segments: List<HlsSegment>,
+        keyCache: Map<String, ByteArray>,
+        headers: Map<String, String>,
+        fileName: String,
+    ): String?
 }

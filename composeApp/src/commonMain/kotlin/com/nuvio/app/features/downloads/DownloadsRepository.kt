@@ -517,60 +517,37 @@ object DownloadsRepository {
         val scope = CoroutineScope(job + Dispatchers.Default)
 
         scope.launch {
-            val allSegments = mutableListOf<HlsSegment>()
+            val fetchKeyCache = buildKeyCache(item)
 
             val videoContent = DownloadsPlatformDownloader.fetchUrlAsString(
                 url = item.sourceUrl,
                 headers = item.sourceHeaders,
-            )
-            if (videoContent == null) {
-                failDownload(item)
-                return@launch
-            }
+            ) ?: return@launch failDownload(item)
             val videoPlaylist = HlsPlaylistParser.parseMediaPlaylist(videoContent, item.sourceUrl)
-            if (videoPlaylist.segments.isEmpty()) {
-                failDownload(item)
-                return@launch
-            }
-            allSegments.addAll(videoPlaylist.segments)
+            if (videoPlaylist.segments.isEmpty()) return@launch failDownload(item)
 
-            item.hlsAudioUrl?.let { audioUrl ->
-                val audioContent = DownloadsPlatformDownloader.fetchUrlAsString(
-                    url = audioUrl,
-                    headers = item.sourceHeaders,
-                )
-                if (audioContent != null) {
-                    val audioPlaylist = HlsPlaylistParser.parseMediaPlaylist(audioContent, audioUrl)
-                    allSegments.addAll(audioPlaylist.segments)
-                }
+            val audioPlaylist = item.hlsAudioUrl?.let { url ->
+                DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
+                    ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
+                    ?.takeIf { it.segments.isNotEmpty() }
             }
 
-            item.hlsSubtitleUrl?.let { subtitleUrl ->
-                val subContent = DownloadsPlatformDownloader.fetchUrlAsString(
-                    url = subtitleUrl,
-                    headers = item.sourceHeaders,
-                )
-                if (subContent != null) {
-                    val subPlaylist = HlsPlaylistParser.parseMediaPlaylist(subContent, subtitleUrl)
-                    allSegments.addAll(subPlaylist.segments)
-                }
+            val subtitlePlaylist = item.hlsSubtitleUrl?.let { url ->
+                DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
+                    ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
+                    ?.takeIf { it.segments.isNotEmpty() }
             }
 
-            val uniqueKeyUris = allSegments.mapNotNull { it.key?.uri }.distinct()
-            val keyCache = mutableMapOf<String, ByteArray>()
-            for (keyUri in uniqueKeyUris) {
-                val keyBytes = DownloadsPlatformDownloader.fetchUrlAsBytes(
-                    url = keyUri,
-                    headers = item.sourceHeaders,
-                )
-                if (keyBytes != null) {
-                    keyCache[keyUri] = keyBytes
-                }
-            }
+            val audioFileName = item.fileName.replace(".ts", "_audio.aac")
+            val subtitleFileName = item.fileName.replace(".ts", "_subs.vtt")
 
-            val handle = DownloadsPlatformDownloader.downloadHlsSegments(
-                segments = allSegments,
-                keyCache = keyCache,
+            var videoUri: String? = null
+            var audioUri: String? = null
+            var subtitleUri: String? = null
+
+            val videoHandle = DownloadsPlatformDownloader.downloadHlsSegments(
+                segments = videoPlaylist.segments,
+                keyCache = fetchKeyCache,
                 sourceHeaders = item.sourceHeaders,
                 destinationFileName = item.fileName,
                 onProgress = { downloadedBytes, totalBytes ->
@@ -587,21 +564,52 @@ object DownloadsRepository {
                         }
                     }
                 },
-                onSuccess = { localFileUri, totalBytes ->
+                onSuccess = { localFileUri, _ ->
+                    videoUri = localFileUri
                     activeHandles.remove(item.id)
-                    mutateItem(item.id) { current ->
-                        current.copy(
-                            status = DownloadStatus.Completed,
-                            localFileUri = localFileUri,
-                            downloadedBytes = if (totalBytes != null && totalBytes > 0L) {
-                                totalBytes
+
+                    if (audioPlaylist != null) {
+                        val audioHandle = downloadTrack(
+                            segments = audioPlaylist.segments,
+                            keyCache = fetchKeyCache,
+                            headers = item.sourceHeaders,
+                            fileName = audioFileName,
+                            itemId = item.id,
+                        ) { uri ->
+                            audioUri = uri
+                            activeHandles.remove(item.id)
+
+                            if (subtitlePlaylist != null) {
+                                val subHandle = downloadTrack(
+                                    segments = subtitlePlaylist.segments,
+                                    keyCache = fetchKeyCache,
+                                    headers = item.sourceHeaders,
+                                    fileName = subtitleFileName,
+                                    itemId = item.id,
+                                ) { uri ->
+                                    subtitleUri = uri
+                                    finalizeHlsDownload(item.id, videoUri, audioUri, subtitleUri)
+                                }
+                                activeHandles[item.id] = subHandle
                             } else {
-                                current.downloadedBytes
-                            },
-                            totalBytes = totalBytes?.takeIf { it > 0L } ?: current.totalBytes,
-                            errorMessage = null,
-                            updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                        )
+                                finalizeHlsDownload(item.id, videoUri, audioUri, null)
+                            }
+                        }
+                        activeHandles[item.id] = audioHandle
+                    } else if (subtitlePlaylist != null) {
+                        val subHandle = downloadTrack(
+                            segments = subtitlePlaylist.segments,
+                            keyCache = fetchKeyCache,
+                            headers = item.sourceHeaders,
+                            fileName = subtitleFileName,
+                            itemId = item.id,
+                        ) { uri ->
+                            subtitleUri = uri
+                            finalizeHlsDownload(item.id, videoUri, null, subtitleUri)
+                        }
+                        activeHandles[item.id] = subHandle
+                    } else {
+                        finalizeHlsDownload(item.id, videoUri, null, null)
                     }
                 },
                 onFailure = { message ->
@@ -622,7 +630,56 @@ object DownloadsRepository {
                 },
             )
 
-            activeHandles[item.id] = handle
+            activeHandles[item.id] = videoHandle
+        }
+    }
+
+    private fun downloadTrack(
+        segments: List<HlsSegment>,
+        keyCache: Map<String, ByteArray>,
+        headers: Map<String, String>,
+        fileName: String,
+        itemId: String,
+        onComplete: (String) -> Unit,
+    ): DownloadsTaskHandle {
+        val job = SupervisorJob()
+        val scope = CoroutineScope(job + Dispatchers.Default)
+
+        scope.launch {
+            val uri = DownloadsPlatformDownloader.downloadSegmentsToFile(
+                segments = segments,
+                keyCache = keyCache,
+                headers = headers,
+                fileName = fileName,
+            )
+            if (uri != null) {
+                onComplete(uri)
+            }
+        }
+
+        return object : DownloadsTaskHandle {
+            override fun cancel() {
+                job.cancel()
+            }
+        }
+    }
+
+    private fun finalizeHlsDownload(
+        downloadId: String,
+        videoUri: String?,
+        audioUri: String?,
+        subtitleUri: String?,
+    ) {
+        val now = DownloadsClock.nowEpochMs()
+        mutateItem(downloadId) { current ->
+            current.copy(
+                status = DownloadStatus.Completed,
+                localFileUri = videoUri,
+                hlsAudioLocalFileUri = audioUri,
+                hlsSubtitleLocalFileUri = subtitleUri,
+                errorMessage = null,
+                updatedAtEpochMs = now,
+            )
         }
     }
 
@@ -635,6 +692,34 @@ object DownloadsRepository {
                 updatedAtEpochMs = DownloadsClock.nowEpochMs(),
             )
         }
+    }
+
+    private suspend fun buildKeyCache(item: DownloadItem): Map<String, ByteArray> {
+        val keyUris = mutableSetOf<String>()
+        val videoContent = DownloadsPlatformDownloader.fetchUrlAsString(
+            url = item.sourceUrl,
+            headers = item.sourceHeaders,
+        )
+        if (videoContent != null) {
+            val playlist = HlsPlaylistParser.parseMediaPlaylist(videoContent, item.sourceUrl)
+            playlist.segments.mapNotNull { it.key?.uri }.let(keyUris::addAll)
+        }
+        item.hlsAudioUrl?.let { url ->
+            DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
+                ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
+                ?.segments?.mapNotNull { it.key?.uri }?.let(keyUris::addAll)
+        }
+        item.hlsSubtitleUrl?.let { url ->
+            DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
+                ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
+                ?.segments?.mapNotNull { it.key?.uri }?.let(keyUris::addAll)
+        }
+        val cache = mutableMapOf<String, ByteArray>()
+        for (uri in keyUris) {
+            DownloadsPlatformDownloader.fetchUrlAsBytes(uri, item.sourceHeaders)
+                ?.let { cache[uri] = it }
+        }
+        return cache
     }
 
     private fun mutateItem(downloadId: String, transform: (DownloadItem) -> DownloadItem) {

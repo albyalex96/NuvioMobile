@@ -50,6 +50,8 @@ data class DownloadItem(
     val isHls: Boolean = false,
     val hlsAudioUrl: String? = null,
     val hlsSubtitleUrl: String? = null,
+    val hlsAudioLocalFileUri: String? = null,
+    val hlsSubtitleLocalFileUri: String? = null,
 ) {
     val isEpisode: Boolean
         get() = seasonNumber != null && episodeNumber != null

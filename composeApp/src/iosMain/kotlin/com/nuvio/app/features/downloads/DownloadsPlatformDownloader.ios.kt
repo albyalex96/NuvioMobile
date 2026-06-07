@@ -378,6 +378,48 @@ internal actual object DownloadsPlatformDownloader {
             null
         }
     }
+
+    actual fun downloadSegmentsToFile(
+        segments: List<HlsSegment>,
+        keyCache: Map<String, ByteArray>,
+        headers: Map<String, String>,
+        fileName: String,
+    ): String? {
+        val path = "${downloadsDirectoryPath()}/$fileName"
+        val tempPath = "$path.track.part"
+        return try {
+            removePathIfExists(tempPath)
+            val file = fopen(tempPath, "wb") ?: return null
+            try {
+                for (segment in segments) {
+                    try {
+                        val segmentBytes = fetchUrlAsBytes(segment.url, headers) ?: continue
+                        val processedBytes = if (segment.key != null) {
+                            val keyBytes = keyCache[segment.key.uri]
+                            val ivBytes = segment.key.toIvBytes()
+                            if (keyBytes != null && ivBytes != null) {
+                                decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
+                            } else segmentBytes
+                        } else segmentBytes
+                        processedBytes.usePinned { pinned ->
+                            fwrite(pinned.addressOf(0), 1.convert(), processedBytes.size.toLong().convert(), file)
+                        }
+                        fflush(file)
+                    } catch (_: Exception) {
+                        // skip failed segment
+                    }
+                }
+            } finally {
+                fclose(file)
+            }
+            removePathIfExists(path)
+            NSFileManager.defaultManager.moveItemAtPath(tempPath, path, null)
+            NSURL.fileURLWithPath(path).absoluteString ?: "file://$path"
+        } catch (_: Exception) {
+            removePathIfExists(tempPath)
+            null
+        }
+    }
 }
 
 private class IosDownloadsTaskHandle(
