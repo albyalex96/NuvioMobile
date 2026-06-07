@@ -46,4 +46,6 @@ internal expect object DownloadsPlatformDownloader {
         headers: Map<String, String>,
         fileName: String,
     ): String?
+
+    fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String?
 }

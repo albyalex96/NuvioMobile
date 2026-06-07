@@ -671,11 +671,30 @@ object DownloadsRepository {
         subtitleUri: String?,
     ) {
         val now = DownloadsClock.nowEpochMs()
+        val item = _uiState.value.items.firstOrNull { it.id == downloadId }
+
+        var finalVideoUri = videoUri
+        var finalAudioUri = audioUri
+        var finalFileName = item?.fileName
+
+        if (videoUri != null && audioUri != null && item != null) {
+            val mp4FileName = item.fileName.replace(".ts", ".mp4")
+            val remuxedUri = DownloadsPlatformDownloader.remuxToMp4(videoUri, audioUri, mp4FileName)
+            if (remuxedUri != null) {
+                finalVideoUri = remuxedUri
+                finalAudioUri = null
+                finalFileName = mp4FileName
+                DownloadsPlatformDownloader.removeFile(videoUri)
+                DownloadsPlatformDownloader.removeFile(audioUri)
+            }
+        }
+
         mutateItem(downloadId) { current ->
             current.copy(
                 status = DownloadStatus.Completed,
-                localFileUri = videoUri,
-                hlsAudioLocalFileUri = audioUri,
+                localFileUri = finalVideoUri,
+                fileName = finalFileName ?: current.fileName,
+                hlsAudioLocalFileUri = finalAudioUri,
                 hlsSubtitleLocalFileUri = subtitleUri,
                 errorMessage = null,
                 updatedAtEpochMs = now,

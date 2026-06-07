@@ -15,9 +15,15 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
+import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
+import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -382,6 +388,100 @@ internal actual object DownloadsPlatformDownloader {
                 tempFile.delete()
             }
             file.toURI().toString()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    actual fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String? {
+        val context = appContext ?: return null
+        if (audioUri == null) return videoUri
+
+        return try {
+            val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+            val outputFile = File(downloadsDir, outputFileName)
+            if (outputFile.exists()) outputFile.delete()
+
+            val videoExtractor = MediaExtractor()
+            videoExtractor.setDataSource(context, Uri.parse(videoUri), null)
+
+            val audioExtractor = MediaExtractor()
+            audioExtractor.setDataSource(context, Uri.parse(audioUri), null)
+
+            var videoTrackIndex = -1
+            var videoTrackFormat: MediaFormat? = null
+            for (i in 0 until videoExtractor.trackCount) {
+                val format = videoExtractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("video/")) {
+                    videoTrackIndex = i
+                    videoTrackFormat = format
+                    break
+                }
+            }
+
+            var audioTrackIndex = -1
+            var audioTrackFormat: MediaFormat? = null
+            for (i in 0 until audioExtractor.trackCount) {
+                val format = audioExtractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
+                if (mime.startsWith("audio/")) {
+                    audioTrackIndex = i
+                    audioTrackFormat = format
+                    break
+                }
+            }
+
+            if (videoTrackIndex < 0) {
+                videoExtractor.release()
+                audioExtractor.release()
+                return null
+            }
+
+            if (audioTrackIndex < 0) {
+                videoExtractor.release()
+                audioExtractor.release()
+                return null
+            }
+
+            videoExtractor.selectTrack(videoTrackIndex)
+            audioExtractor.selectTrack(audioTrackIndex)
+
+            val muxer = MediaMuxer(
+                outputFile.absolutePath,
+                MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4,
+            )
+
+            val muxedVideoTrack = muxer.addTrack(videoTrackFormat!!)
+            val muxedAudioTrack = muxer.addTrack(audioTrackFormat!!)
+
+            muxer.start()
+
+            val buffer = ByteBuffer.allocate(1_048_576)
+            val info = MediaCodec.BufferInfo()
+
+            while (true) {
+                val readSize = videoExtractor.readSampleData(buffer, 0)
+                if (readSize < 0) break
+                info.set(0, readSize, videoExtractor.sampleTime, videoExtractor.sampleFlags)
+                muxer.writeSampleData(muxedVideoTrack, buffer, info)
+                videoExtractor.advance()
+            }
+
+            while (true) {
+                val readSize = audioExtractor.readSampleData(buffer, 0)
+                if (readSize < 0) break
+                info.set(0, readSize, audioExtractor.sampleTime, audioExtractor.sampleFlags)
+                muxer.writeSampleData(muxedAudioTrack, buffer, info)
+                audioExtractor.advance()
+            }
+
+            muxer.stop()
+            muxer.release()
+            videoExtractor.release()
+            audioExtractor.release()
+
+            outputFile.toURI().toString()
         } catch (_: Exception) {
             null
         }

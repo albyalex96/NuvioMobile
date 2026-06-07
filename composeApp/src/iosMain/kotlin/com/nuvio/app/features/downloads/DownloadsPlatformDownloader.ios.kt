@@ -425,6 +425,10 @@ internal actual object DownloadsPlatformDownloader {
             null
         }
     }
+
+    actual fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String? {
+        return videoUri
+    }
 }
 
 private class IosDownloadsTaskHandle(
