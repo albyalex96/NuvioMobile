@@ -538,7 +538,7 @@ object DownloadsRepository {
                     ?.takeIf { it.segments.isNotEmpty() }
             }
 
-            val audioFileName = item.fileName.replace(".ts", "_audio.aac")
+            val audioFileName = item.fileName.replace(".ts", "_audio.ts")
             val subtitleFileName = item.fileName.replace(".ts", "_subs.vtt")
 
             var videoUri: String? = null

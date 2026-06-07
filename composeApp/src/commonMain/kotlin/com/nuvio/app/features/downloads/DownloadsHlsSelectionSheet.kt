@@ -280,9 +280,12 @@ fun DownloadsHlsSelectionSheet(
                                 val selectedVariant = playlist?.variants?.firstOrNull {
                                     it.url == selectedQualityKey
                                 }
+                                val selectedAudioTrack = playlist?.audioTracks?.firstOrNull { track ->
+                                    (track.uri ?: "audio_${playlist.audioTracks.indexOf(track)}") == selectedAudioKey
+                                }
                                 val selection = HlsDownloadSelection(
                                     variantUrl = selectedQualityKey.orEmpty(),
-                                    audioUrl = selectedAudioKey?.takeIf { it != "none" },
+                                    audioUrl = selectedAudioTrack?.uri,
                                     subtitleUrl = selectedSubtitleKey?.takeIf { it != "none" },
                                     displayQuality = selectedVariant?.resolution
                                         ?: formatBandwidth(selectedVariant?.bandwidth ?: 0L),
