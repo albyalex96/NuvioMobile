@@ -59,6 +59,7 @@ import com.nuvio.app.features.player.AudioLanguageOption
 import com.nuvio.app.features.player.AvailableLanguageOptions
 import com.nuvio.app.features.player.ExternalPlayerApp
 import com.nuvio.app.features.player.ExternalPlayerPlatform
+import com.nuvio.app.features.player.IosAudioOutputMode
 import com.nuvio.app.features.player.IosHardwareDecoderMode
 import com.nuvio.app.features.player.localizedLabel
 import com.nuvio.app.features.player.IosTargetPrimaries
@@ -285,6 +286,7 @@ private fun PlaybackSettingsSection(
     var showReuseCacheDurationDialog by remember { mutableStateOf(false) }
     var showDecoderPriorityDialog by remember { mutableStateOf(false) }
     var showHoldToSpeedValueDialog by remember { mutableStateOf(false) }
+    var showIosAudioOutputDialog by remember { mutableStateOf(false) }
     var showIosHardwareDecoderDialog by remember { mutableStateOf(false) }
     var showIosTargetPrimariesDialog by remember { mutableStateOf(false) }
     var showIosTargetTransferDialog by remember { mutableStateOf(false) }
@@ -818,6 +820,20 @@ private fun PlaybackSettingsSection(
         }
 
         if (isIos) {
+            SettingsSection(
+                title = stringResource(Res.string.settings_playback_ios_audio_output_section),
+                isTablet = isTablet,
+            ) {
+                SettingsGroup(isTablet = isTablet) {
+                    SettingsNavigationRow(
+                        title = stringResource(Res.string.settings_playback_ios_audio_output),
+                        description = autoPlayPlayerSettings.iosAudioOutputMode.label,
+                        isTablet = isTablet,
+                        onClick = { showIosAudioOutputDialog = true },
+                    )
+                }
+            }
+
             SettingsSection(
                 title = stringResource(Res.string.settings_playback_ios_video_output),
                 isTablet = isTablet,
@@ -1363,6 +1379,27 @@ private fun PlaybackSettingsSection(
                 showIosHardwareDecoderDialog = false
             },
             onDismiss = { showIosHardwareDecoderDialog = false },
+        )
+    }
+
+    if (showIosAudioOutputDialog) {
+        IosEnumSelectionDialog(
+            title = stringResource(Res.string.settings_playback_ios_audio_output_dialog),
+            options = IosAudioOutputMode.entries,
+            selected = autoPlayPlayerSettings.iosAudioOutputMode,
+            label = { it.label },
+            description = {
+                when (it) {
+                    IosAudioOutputMode.Auto -> stringResource(Res.string.settings_playback_ios_audio_output_auto_desc)
+                    IosAudioOutputMode.AvFoundation -> stringResource(Res.string.settings_playback_ios_audio_output_avfoundation_desc)
+                    IosAudioOutputMode.AudioUnit -> stringResource(Res.string.settings_playback_ios_audio_output_audiounit_desc)
+                }
+            },
+            onSelect = {
+                PlayerSettingsRepository.setIosAudioOutputMode(it)
+                showIosAudioOutputDialog = false
+            },
+            onDismiss = { showIosAudioOutputDialog = false },
         )
     }
 
@@ -1993,6 +2030,7 @@ private fun <T> IosEnumSelectionDialog(
     options: List<T>,
     selected: T,
     label: (T) -> String,
+    description: @Composable (T) -> String? = { null },
     onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -2021,6 +2059,7 @@ private fun <T> IosEnumSelectionDialog(
                 ) {
                     options.forEach { option ->
                         val isSelected = option == selected
+                        val optionDescription = description(option)
                         val containerColor = if (isSelected) {
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                         } else {
@@ -2040,12 +2079,23 @@ private fun <T> IosEnumSelectionDialog(
                                     .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(
-                                    text = label(option),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                Column(
                                     modifier = Modifier.weight(1f),
-                                )
+                                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                                ) {
+                                    Text(
+                                        text = label(option),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    if (optionDescription != null) {
+                                        Text(
+                                            text = optionDescription,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
                                 Box(
                                     modifier = Modifier.size(24.dp),
                                     contentAlignment = Alignment.Center,

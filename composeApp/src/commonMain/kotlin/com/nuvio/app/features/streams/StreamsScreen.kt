@@ -903,6 +903,7 @@ internal fun StreamList(
                         debridEnabled = debridEnabled,
                         appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
                         showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
+                        badgePlacement = streamBadgeSettings.badgePlacement,
                         onStreamSelected = onStreamSelected,
                         onStreamLongPress = onStreamLongPress,
                         resumePositionMs = resumePositionMs,
@@ -930,6 +931,7 @@ private fun LazyListScope.streamSection(
     debridEnabled: Boolean,
     appendInstantServiceToDefaultName: Boolean,
     showFileSizeBadges: Boolean,
+    badgePlacement: StreamBadgePlacement,
     onStreamSelected: (stream: StreamItem, resumePositionMs: Long?, resumeProgressFraction: Float?) -> Unit,
     onStreamLongPress: (StreamItem) -> Unit,
     resumePositionMs: Long?,
@@ -981,6 +983,7 @@ private fun LazyListScope.streamSection(
                 enabled = stream.isSelectableForPlayback(debridEnabled),
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
                 showFileSizeBadges = showFileSizeBadges,
+                badgePlacement = badgePlacement,
                 onClick = {
                     if (stream.isSelectableForPlayback(debridEnabled)) {
                         onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
@@ -1087,6 +1090,7 @@ private fun StreamCard(
     enabled: Boolean,
     appendInstantServiceToDefaultName: Boolean,
     showFileSizeBadges: Boolean,
+    badgePlacement: StreamBadgePlacement,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -1094,6 +1098,8 @@ private fun StreamCard(
 ) {
     val isEnabled = stream.directPlaybackUrl != null || stream.isTorrentStream || stream.isDirectDebridStream
     val cardShape = RoundedCornerShape(12.dp)
+    val badgeImages = stream.badges.filter { it.imageURL.isNotBlank() }
+    val hasBadges = badgeImages.isNotEmpty() || (showFileSizeBadges && stream.behaviorHints.videoSize != null)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -1118,7 +1124,16 @@ private fun StreamCard(
             PolishedStreamCardContent(stream = stream, modifier = Modifier.weight(1f))
         } else {
             Column(modifier = Modifier.weight(1f)) {
-            StreamNameWithInstantService(
+                if (hasBadges && badgePlacement == StreamBadgePlacement.TOP) {
+                    StreamCardBadgeRow(
+                        badgeImages = badgeImages,
+                        stream = stream,
+                        showFileSizeBadges = showFileSizeBadges,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                StreamNameWithInstantService(
                 stream = stream,
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
             )
@@ -1136,23 +1151,36 @@ private fun StreamCard(
                 )
             }
 
-            val badgeImages = stream.badges.filter { it.imageURL.isNotBlank() }
-            if (badgeImages.isNotEmpty() || (showFileSizeBadges && stream.behaviorHints.videoSize != null)) {
+            if (hasBadges && badgePlacement == StreamBadgePlacement.BOTTOM) {
                 Spacer(modifier = Modifier.height(5.dp))
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    badgeImages.forEach { badge ->
-                        StreamBadgeImage(badge = badge)
-                    }
-                    if (showFileSizeBadges) {
-                        StreamFileSizeBadge(stream = stream)
-                    }
-                }
+                StreamCardBadgeRow(
+                    badgeImages = badgeImages,
+                    stream = stream,
+                    showFileSizeBadges = showFileSizeBadges,
+                )
             }
             }
+        }
+    }
+}
+
+@Composable
+private fun StreamCardBadgeRow(
+    badgeImages: List<StreamBadge>,
+    stream: StreamItem,
+    showFileSizeBadges: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        badgeImages.forEach { badge ->
+            StreamBadgeImage(badge = badge)
+        }
+        if (showFileSizeBadges) {
+            StreamFileSizeBadge(stream = stream)
         }
     }
 }

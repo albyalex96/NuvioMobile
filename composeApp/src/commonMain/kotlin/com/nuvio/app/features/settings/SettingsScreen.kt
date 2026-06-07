@@ -70,6 +70,7 @@ import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsUiState
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.trakt.TraktAuthUiState
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktCommentsSettings
@@ -208,6 +209,9 @@ fun SettingsScreen(
             StreamsAppearanceRepository.ensureLoaded()
             StreamsAppearanceRepository.uiState
         }.collectAsStateWithLifecycle(initialValue = StreamsAppearanceSettings())
+        val profileSettingsState by remember {
+            ProfileRepository.state
+        }.collectAsStateWithLifecycle()
         LaunchedEffect(homescreenCatalogRefreshKey) {
             if (homescreenCatalogRefreshKey.isEmpty()) return@LaunchedEffect
             HomeCatalogSettingsRepository.syncCatalogs(addonsUiState.addons.enabledAddons())
@@ -277,6 +281,7 @@ fun SettingsScreen(
                 stillWatchingEpisodeCount = playerSettingsUiState.stillWatchingEpisodeCount,
                 stillWatchingNightMode = playerSettingsUiState.stillWatchingNightMode,
                 skipSeekIntervalSeconds = playerSettingsUiState.skipSeekIntervalSeconds,
+                rememberLastProfileEnabled = profileSettingsState.rememberLastProfileEnabled,
                 selectedTheme = selectedTheme,
                 onThemeSelected = ThemeSettingsRepository::setTheme,
                 amoledEnabled = amoledEnabled,
@@ -339,6 +344,7 @@ fun SettingsScreen(
                 stillWatchingEpisodeCount = playerSettingsUiState.stillWatchingEpisodeCount,
                 stillWatchingNightMode = playerSettingsUiState.stillWatchingNightMode,
                 skipSeekIntervalSeconds = playerSettingsUiState.skipSeekIntervalSeconds,
+                rememberLastProfileEnabled = profileSettingsState.rememberLastProfileEnabled,
                 selectedTheme = selectedTheme,
                 onThemeSelected = ThemeSettingsRepository::setTheme,
                 amoledEnabled = amoledEnabled,
@@ -411,6 +417,7 @@ private fun MobileSettingsScreen(
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
     skipSeekIntervalSeconds: Int,
+    rememberLastProfileEnabled: Boolean,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
     amoledEnabled: Boolean,
@@ -547,6 +554,7 @@ private fun MobileSettingsScreen(
                             onPlaybackClick = { onPageChange(SettingsPage.Playback) },
                             onStreamsClick = { onPageChange(SettingsPage.Streams) },
                             onAppearanceClick = { onPageChange(SettingsPage.Appearance) },
+                            onAdvancedClick = { onPageChange(SettingsPage.Advanced) },
                             onNotificationsClick = { onPageChange(SettingsPage.Notifications) },
                             onContentDiscoveryClick = { onPageChange(SettingsPage.ContentDiscovery) },
                 onNetworkClick = { onPageChange(SettingsPage.Network) },
@@ -614,6 +622,10 @@ private fun MobileSettingsScreen(
                     onContinueWatchingClick = onContinueWatchingClick,
                     onPosterCustomizationClick = { onPageChange(SettingsPage.PosterCustomization) },
                     streamsAppearance=streamsAppearance,
+                )
+                SettingsPage.Advanced -> advancedSettingsContent(
+                    isTablet = false,
+                    rememberLastProfileEnabled = rememberLastProfileEnabled,
                 )
                 SettingsPage.Notifications -> notificationsSettingsContent(
                     isTablet = false,
@@ -762,6 +774,7 @@ private fun TabletSettingsScreen(
     stillWatchingEpisodeCount: Int,
     stillWatchingNightMode: Boolean,
     skipSeekIntervalSeconds: Int,
+    rememberLastProfileEnabled: Boolean,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
     amoledEnabled: Boolean,
@@ -883,12 +896,14 @@ private fun TabletSettingsScreen(
                     onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
                                 onStreamsClick = { openInlinePage(SettingsPage.Streams) },
                     onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
+                    onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
                     onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
                     onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
                     onNetworkClick = { openInlinePage(SettingsPage.Network) },
                     onIntegrationsClick = { openInlinePage(SettingsPage.Integrations) },
                     onTraktClick = { openInlinePage(SettingsPage.TraktAuthentication) },
                     onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
+                    onLicensesAttributionsClick = { openInlinePage(SettingsPage.LicensesAttributions) },
                     onCheckForUpdatesClick = onCheckForUpdatesClick,
                     onDownloadsClick = onDownloadsClick,
                     onAccountClick = { openInlinePage(SettingsPage.Account) },
@@ -896,12 +911,15 @@ private fun TabletSettingsScreen(
                     showAccountSection = activeCategory == SettingsCategory.Account,
                     showGeneralSection = activeCategory == SettingsCategory.General,
                     showAboutSection = activeCategory == SettingsCategory.About,
-                    onLicensesAttributionsClick = onLicensesAttributionsClick
+                    showAdvancedSection = activeCategory == SettingsCategory.Advanced,
                 )
                 SettingsPage.Account -> accountSettingsContent(
                     isTablet = true,
                 )
                 SettingsPage.SupportersContributors -> supportersContributorsContent(
+                    isTablet = true,
+                )
+                SettingsPage.LicensesAttributions -> licensesAttributionsContent(
                     isTablet = true,
                 )
                 SettingsPage.Playback -> playbackSettingsContent(
@@ -1010,6 +1028,10 @@ private fun TabletSettingsScreen(
                         isTablet = true,
                         uiState = liveTvUiState,
                     )
+                SettingsPage.Advanced -> advancedSettingsContent(
+                    isTablet = true,
+                    rememberLastProfileEnabled = rememberLastProfileEnabled,
+                )
                 SettingsPage.TraktAuthentication -> traktSettingsContent(
                     isTablet = true,
                     uiState = traktAuthUiState,
@@ -1021,7 +1043,7 @@ private fun TabletSettingsScreen(
                     isTablet = true,
                 )
                 SettingsPage.LicensesAttributions -> licensesAttributionsContent(isTablet = true)
-SettingsPage.Debrid -> debridSettingsContent(isTablet = true, settings = debridSettings)
+                SettingsPage.Debrid -> debridSettingsContent(isTablet = true, settings = debridSettings)
             }
         }
     }
