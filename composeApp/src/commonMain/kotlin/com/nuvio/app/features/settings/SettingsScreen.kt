@@ -1042,7 +1042,6 @@ private fun TabletSettingsScreen(
                 SettingsPage.Network -> networkSettingsContent(
                     isTablet = true,
                 )
-                SettingsPage.LicensesAttributions -> licensesAttributionsContent(isTablet = true)
                 SettingsPage.Debrid -> debridSettingsContent(isTablet = true, settings = debridSettings)
             }
         }
