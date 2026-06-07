@@ -17,6 +17,7 @@ import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
@@ -425,7 +426,9 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         playerSettingsUiState.nextEpisodeThresholdMode,
         playerSettingsUiState.nextEpisodeThresholdPercent,
         playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
+        stillWatchingShowDialog,
     ) {
+        if (stillWatchingShowDialog) return@LaunchedEffect
         if (nextEpisodeInfo == null || playbackSnapshot.durationMs <= 0L) {
             showNextEpisodeCard = false
             return@LaunchedEffect
@@ -441,7 +444,10 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         if (shouldShow && !showNextEpisodeCard) {
             showNextEpisodeCard = true
             if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                playNextEpisode()
+                stillWatchingHandledForEnded = true
+                if (!tryShowStillWatchingDialog()) {
+                    playNextEpisode()
+                }
             }
         } else if (!shouldShow) {
             showNextEpisodeCard = false
@@ -449,10 +455,19 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
     }
 
     LaunchedEffect(playbackSnapshot.isEnded, nextEpisodeInfo) {
-        if (playbackSnapshot.isEnded && nextEpisodeInfo != null && !showNextEpisodeCard) {
-            showNextEpisodeCard = true
-            if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                playNextEpisode()
+        if (playbackSnapshot.isEnded && nextEpisodeInfo != null) {
+            val info = nextEpisodeInfo
+            if (info != null) {
+                if (!stillWatchingHandledForEnded) {
+                    if (tryShowStillWatchingDialog()) return@LaunchedEffect
+                }
+                stillWatchingHandledForEnded = false
+                if (!showNextEpisodeCard) {
+                    showNextEpisodeCard = true
+                }
+                if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && info.hasAired) {
+                    playNextEpisode()
+                }
             }
         }
     }

@@ -1,7 +1,29 @@
 package com.nuvio.app.features.player
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.details.MetaDetailsUiState
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.still_watching_cancel
+import nuvio.composeapp.generated.resources.still_watching_proceed
+import nuvio.composeapp.generated.resources.still_watching_timeout
+import nuvio.composeapp.generated.resources.still_watching_title
+import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.p2p.P2pConsentDialog
@@ -77,6 +99,14 @@ internal fun PlayerScreenModalHosts(
     onBackToEpisodes: () -> Unit,
     onReloadEpisodeStreams: () -> Unit,
     onEpisodesPanelDismissed: () -> Unit,
+    showVolumeBoostModal: Boolean,
+    volumeBoostDb: Int,
+    onVolumeBoostChanged: (Int) -> Unit,
+    onVolumeBoostModalDismissed: () -> Unit,
+    stillWatchingShowDialog: Boolean,
+    stillWatchingTimeoutRemaining: Int,
+    onStillWatchingProceed: () -> Unit,
+    onStillWatchingCancel: () -> Unit,
     showSubmitIntroModal: Boolean,
     activeVideoId: String?,
     metaUiState: MetaDetailsUiState,
@@ -113,6 +143,21 @@ internal fun PlayerScreenModalHosts(
             },
         )
     }
+
+    if (stillWatchingShowDialog) {
+        StillWatchingDialog(
+            timeoutRemaining = stillWatchingTimeoutRemaining,
+            onProceed = onStillWatchingProceed,
+            onCancel = onStillWatchingCancel,
+        )
+    }
+
+    VolumeBoostModal(
+        visible = showVolumeBoostModal,
+        currentBoostDb = volumeBoostDb,
+        onBoostChanged = onVolumeBoostChanged,
+        onDismiss = onVolumeBoostModalDismissed,
+    )
 
     AudioTrackModal(
         visible = showAudioModal,
@@ -214,6 +259,58 @@ internal fun PlayerScreenModalHosts(
             onDismiss = onSubmitIntroDismissed,
             onSuccess = onSubmitIntroSuccess,
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun StillWatchingDialog(
+    timeoutRemaining: Int,
+    onProceed: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    BasicAlertDialog(
+        onDismissRequest = onCancel,
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.still_watching_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+
+                Text(
+                    text = stringResource(Res.string.still_watching_timeout, timeoutRemaining),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                ) {
+                    TextButton(onClick = onCancel) {
+                        Text(stringResource(Res.string.still_watching_cancel))
+                    }
+                    TextButton(onClick = onProceed) {
+                        Text(
+                            stringResource(Res.string.still_watching_proceed),
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -96,22 +96,28 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 deactivateHoldToSpeedState = gestureCallbacks.deactivateHoldToSpeed,
                 revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
             )
-            .playerSurfaceDragGestures(
-                gestureController = gestureController,
-                layoutSize = layoutSize,
-                sideGestureSystemEdgeExclusionPx = sideGestureSystemEdgeExclusionPx,
-                playerControlsLockedState = gestureCallbacks.playerControlsLocked,
-                isHoldToSpeedGestureActiveState = gestureCallbacks.isHoldToSpeedGestureActive,
-                currentPositionMsState = gestureCallbacks.currentPositionMs,
-                currentDurationMsState = gestureCallbacks.currentDurationMs,
-                deactivateHoldToSpeedState = gestureCallbacks.deactivateHoldToSpeed,
-                showHorizontalSeekPreviewState = gestureCallbacks.showHorizontalSeekPreview,
-                showBrightnessFeedbackState = gestureCallbacks.showBrightnessFeedback,
-                showVolumeFeedbackState = gestureCallbacks.showVolumeFeedback,
-                clearLiveGestureFeedbackState = gestureCallbacks.clearLiveGestureFeedback,
-                revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
-                commitHorizontalSeekState = gestureCallbacks.commitHorizontalSeek,
-            ),
+            .let { modifier ->
+                if (playerSettingsUiState.swipeGesturesEnabled) {
+                    modifier.playerSurfaceDragGestures(
+                        gestureController = gestureController,
+                        layoutSize = layoutSize,
+                        sideGestureSystemEdgeExclusionPx = sideGestureSystemEdgeExclusionPx,
+                        playerControlsLockedState = gestureCallbacks.playerControlsLocked,
+                        isHoldToSpeedGestureActiveState = gestureCallbacks.isHoldToSpeedGestureActive,
+                        currentPositionMsState = gestureCallbacks.currentPositionMs,
+                        currentDurationMsState = gestureCallbacks.currentDurationMs,
+                        deactivateHoldToSpeedState = gestureCallbacks.deactivateHoldToSpeed,
+                        showHorizontalSeekPreviewState = gestureCallbacks.showHorizontalSeekPreview,
+                        showBrightnessFeedbackState = gestureCallbacks.showBrightnessFeedback,
+                        showVolumeFeedbackState = gestureCallbacks.showVolumeFeedback,
+                        clearLiveGestureFeedbackState = gestureCallbacks.clearLiveGestureFeedback,
+                        revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
+                        commitHorizontalSeekState = gestureCallbacks.commitHorizontalSeek,
+                    )
+                } else {
+                    modifier
+                }
+            },
     ) {
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
         if (playerSurfaceSourceUrl != null) {
@@ -209,9 +215,10 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 flushWatchProgress()
                 args.onBack()
             },
+            skipSeekIntervalSeconds = playerSettingsUiState.skipSeekIntervalSeconds,
             onTogglePlayback = { togglePlayback() },
-            onSeekBack = { seekBy(-10_000L) },
-            onSeekForward = { seekBy(10_000L) },
+            onSeekBack = { seekBy(-playerSettingsUiState.skipSeekIntervalSeconds * 1000L) },
+            onSeekForward = { seekBy(playerSettingsUiState.skipSeekIntervalSeconds * 1000L) },
             onResizeModeClick = { cycleResizeMode() },
             onSpeedClick = { cyclePlaybackSpeed() },
             onSubtitleClick = {
@@ -258,6 +265,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                     )
                 }
             },
+            onVolumeBoostClick = { showVolumeBoostModal = true },
             onSubmitIntroClick = if (
                 isSeries &&
                 playerSettingsUiState.introSubmitEnabled &&
@@ -503,6 +511,30 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             episodeStreamsPanelState = EpisodeStreamsPanelState()
             PlayerStreamsRepository.clearEpisodeStreams()
             controlsVisible = true
+        },
+        showVolumeBoostModal = showVolumeBoostModal,
+        volumeBoostDb = playerSettingsUiState.volumeBoostDb,
+        onVolumeBoostChanged = { PlayerSettingsRepository.setVolumeBoostDb(it) },
+        onVolumeBoostModalDismissed = { showVolumeBoostModal = false },
+        stillWatchingShowDialog = stillWatchingShowDialog,
+        stillWatchingTimeoutRemaining = stillWatchingTimeoutRemaining,
+        onStillWatchingProceed = {
+            stillWatchingCountdownJob?.cancel()
+            stillWatchingShowDialog = false
+            stillWatchingEpisodeCounter = 0
+            shouldPlay = true
+            playerController?.play()
+            showNextEpisodeCard = true
+            if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
+                playNextEpisode()
+            }
+        },
+        onStillWatchingCancel = {
+            stillWatchingCountdownJob?.cancel()
+            stillWatchingShowDialog = false
+            stillWatchingEpisodeCounter = 0
+            flushWatchProgress()
+            args.onBack()
         },
         showSubmitIntroModal = showSubmitIntroModal,
         activeVideoId = activeVideoId,

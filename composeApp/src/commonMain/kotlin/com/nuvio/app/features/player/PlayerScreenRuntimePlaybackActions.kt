@@ -9,6 +9,7 @@ import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 
 internal val PlayerScreenRuntime.activePlaybackIdentity: String
     get() = activeTorrentInfoHash
@@ -143,6 +144,38 @@ internal fun PlayerScreenRuntime.emitStopScrobbleForCurrentProgress() {
         hasSentCompletionScrobbleForCurrentItem = true
         emitTraktScrobbleStop(progressPercent)
     }
+}
+
+internal suspend fun PlayerScreenRuntime.tryShowStillWatchingDialog(): Boolean {
+    val swSettings = playerSettingsUiState
+    if (!swSettings.stillWatchingEnabled || !isSeries) return false
+    val newCount = stillWatchingEpisodeCounter + 1
+    stillWatchingEpisodeCounter = newCount
+    val isNightTime = if (swSettings.stillWatchingNightMode) {
+        val hour = currentHour()
+        hour in 22..23 || hour in 0..4
+    } else true
+    if (newCount >= swSettings.stillWatchingEpisodeCount && isNightTime) {
+        playerController?.pause()
+        shouldPlay = false
+        stillWatchingShowDialog = true
+        stillWatchingTimeoutRemaining = 20
+        stillWatchingCountdownJob?.cancel()
+        stillWatchingCountdownJob = scope.launch {
+            while (stillWatchingTimeoutRemaining > 0 && stillWatchingShowDialog) {
+                delay(1000)
+                stillWatchingTimeoutRemaining--
+            }
+            if (stillWatchingShowDialog) {
+                stillWatchingShowDialog = false
+                stillWatchingEpisodeCounter = 0
+                flushWatchProgress()
+                args.onBack()
+            }
+        }
+        return true
+    }
+    return false
 }
 
 internal fun PlayerScreenRuntime.tryShowParentalGuide() {

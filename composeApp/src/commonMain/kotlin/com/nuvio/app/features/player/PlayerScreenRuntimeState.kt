@@ -177,6 +177,7 @@ internal class PlayerScreenRuntime(
     var stillWatchingCountdownJob by mutableStateOf<Job?>(null)
     var stillWatchingHandledForEnded by mutableStateOf(false)
 
+    var showVolumeBoostModal by mutableStateOf(false)
     var showAudioModal by mutableStateOf(false)
     var showSubtitleModal by mutableStateOf(false)
     var showVideoSettingsModal by mutableStateOf(false)
