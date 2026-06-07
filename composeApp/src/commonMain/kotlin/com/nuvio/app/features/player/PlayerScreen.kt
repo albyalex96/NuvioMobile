@@ -464,6 +464,7 @@ fun PlayerScreen(
         var stillWatchingTimeoutRemaining by remember { mutableStateOf(20) }
         var stillWatchingCountdownJob by remember { mutableStateOf<Job?>(null) }
         var pendingP2pSwitch by remember { mutableStateOf<PendingPlayerP2pSwitch?>(null) }
+        var stillWatchingHandledForEnded by remember { mutableStateOf(false) }
 
         LaunchedEffect(parentMetaType, parentMetaId) {
             playerMetaVideos = MetaDetailsRepository.peek(parentMetaType, parentMetaId)?.videos ?: emptyList()
@@ -2395,6 +2396,12 @@ fun PlayerScreen(
             )
             if (shouldShow && !showNextEpisodeCard) {
                 showNextEpisodeCard = true
+                if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
+                    stillWatchingHandledForEnded = true
+                    if (!tryShowStillWatchingDialog()) {
+                        playNextEpisode()
+                    }
+                }
             } else if (!shouldShow) {
                 showNextEpisodeCard = false
             }
@@ -2405,7 +2412,10 @@ fun PlayerScreen(
             if (playbackSnapshot.isEnded) {
                 val info = nextEpisodeInfo
                 if (info != null) {
-                    if (tryShowStillWatchingDialog()) return@LaunchedEffect
+                    if (!stillWatchingHandledForEnded) {
+                        if (tryShowStillWatchingDialog()) return@LaunchedEffect
+                    }
+                    stillWatchingHandledForEnded = false
                     if (!showNextEpisodeCard) {
                         showNextEpisodeCard = true
                     }
