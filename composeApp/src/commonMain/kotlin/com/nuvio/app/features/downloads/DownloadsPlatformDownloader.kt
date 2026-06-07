@@ -29,11 +29,14 @@ internal expect object DownloadsPlatformDownloader {
     fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean
 
     fun downloadHlsSegments(
-        segmentUrls: List<String>,
+        segments: List<HlsSegment>,
+        keyCache: Map<String, ByteArray>,
         sourceHeaders: Map<String, String>,
         destinationFileName: String,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
         onFailure: (message: String) -> Unit,
     ): DownloadsTaskHandle
+
+    fun fetchUrlAsBytes(url: String, headers: Map<String, String>): ByteArray?
 }

@@ -1,8 +1,21 @@
 package com.nuvio.app.features.downloads
 
+import com.nuvio.app.features.plugins.cryptointerop.CCAlgorithm
+import com.nuvio.app.features.plugins.cryptointerop.CCOperation
+import com.nuvio.app.features.plugins.cryptointerop.CCOptions
+import com.nuvio.app.features.plugins.cryptointerop.CCCrypt
+import com.nuvio.app.features.plugins.cryptointerop.kCCAlgorithmAES128
+import com.nuvio.app.features.plugins.cryptointerop.kCCDecrypt
+import com.nuvio.app.features.plugins.cryptointerop.kCCOptionPKCS7Padding
+import com.nuvio.app.features.plugins.cryptointerop.kCCSuccess
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.convert
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.sizeOf
+import kotlinx.cinterop.value
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +50,7 @@ import platform.Foundation.NSURLSessionDataTask
 import platform.Foundation.NSURLSessionTask
 import platform.Foundation.NSString
 import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.create
 import platform.Foundation.setHTTPMethod
 import platform.Foundation.setValue
 import platform.Foundation.timeIntervalSince1970
@@ -50,6 +64,9 @@ import platform.posix.fclose
 import platform.posix.fflush
 import platform.posix.fopen
 import platform.posix.fwrite
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.memcpy
+import kotlinx.cinterop.usePinned
 
 private const val DOWNLOAD_REQUEST_TIMEOUT_SECONDS = 60.0
 private const val DOWNLOAD_RESOURCE_TIMEOUT_SECONDS = 24.0 * 60.0 * 60.0
@@ -246,7 +263,8 @@ internal actual object DownloadsPlatformDownloader {
     }
 
     actual fun downloadHlsSegments(
-        segmentUrls: List<String>,
+        segments: List<HlsSegment>,
+        keyCache: Map<String, ByteArray>,
         sourceHeaders: Map<String, String>,
         destinationFileName: String,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
@@ -266,42 +284,38 @@ internal actual object DownloadsPlatformDownloader {
             try {
                 removePathIfExists(tempPath)
 
-                for (segmentUrl in segmentUrls) {
+                for (segment in segments) {
                     ensureActive()
 
-                    val url = NSURL(string = segmentUrl)
-                    val request = NSMutableURLRequest(
-                        uRL = url,
-                        cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
-                        timeoutInterval = 60.0,
+                    val segmentData = fetchUrlAsBytes(segment.url, sourceHeaders) ?: error(
+                        runBlocking { getString(Res.string.download_failed) },
                     )
-                    request.setHTTPMethod("GET")
-                    sourceHeaders.forEach { (key, value) ->
-                        request.setValue(value, forHTTPHeaderField = key)
-                    }
 
-                    val semaphore = dispatch_semaphore_create(0)
-                    var segmentError: Throwable? = null
-
-                    val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, _, error ->
-                        if (error != null) {
-                            segmentError = IllegalStateException(error.localizedDescription)
-                        } else if (data != null) {
-                            val file = fopen(tempPath, "ab")
-                            if (file != null) {
-                                fwrite(data.bytes, 1.convert(), data.length.toLong().convert(), file)
-                                fflush(file)
-                                fclose(file)
-                                totalDownloaded += data.length.toLong()
-                                onProgress(totalDownloaded, null)
-                            }
+                    val processedData = if (segment.key != null) {
+                        val keyBytes = keyCache[segment.key.uri]
+                        val ivBytes = segment.key.toIvBytes()
+                        if (keyBytes != null && ivBytes != null) {
+                            decryptAes128Cbc(segmentData, keyBytes, ivBytes)
+                        } else {
+                            segmentData
                         }
-                        dispatch_semaphore_signal(semaphore)
+                    } else {
+                        segmentData
                     }
-                    task.resume()
-                    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
 
-                    if (segmentError != null) throw segmentError!!
+                    val file = fopen(tempPath, "ab") ?: error(
+                        runBlocking { getString(Res.string.downloads_error_open_partial_file_failed) },
+                    )
+                    try {
+                        processedData.usePinned { pinned ->
+                            fwrite(pinned.addressOf(0), 1.convert(), processedData.size.toLong().convert(), file)
+                        }
+                        fflush(file)
+                        totalDownloaded += processedData.size.toLong()
+                        onProgress(totalDownloaded, null)
+                    } finally {
+                        fclose(file)
+                    }
                 }
 
                 removePathIfExists(destinationPath)
@@ -325,6 +339,44 @@ internal actual object DownloadsPlatformDownloader {
         }
 
         return handle
+    }
+
+    actual fun fetchUrlAsBytes(url: String, headers: Map<String, String>): ByteArray? {
+        return try {
+            val nativeUrl = NSURL(string = url) ?: return null
+            val request = NSMutableURLRequest(
+                uRL = nativeUrl,
+                cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
+                timeoutInterval = 30.0,
+            )
+            request.setHTTPMethod("GET")
+            headers.forEach { (key, value) ->
+                request.setValue(value, forHTTPHeaderField = key)
+            }
+
+            val semaphore = dispatch_semaphore_create(0)
+            var result: ByteArray? = null
+
+            val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, _, error ->
+                if (error == null && data != null) {
+                    val bytes = data.bytes
+                    val length = data.length.toInt()
+                    if (bytes != null && length > 0) {
+                        result = ByteArray(length).apply {
+                            usePinned { pinned ->
+                                kotlinx.cinterop.memcpy(pinned.addressOf(0), bytes, length.convert())
+                            }
+                        }
+                    }
+                }
+                dispatch_semaphore_signal(semaphore)
+            }
+            task.resume()
+            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
+            result
+        } catch (_: Exception) {
+            null
+        }
     }
 }
 
@@ -643,4 +695,39 @@ private fun parseContentRangeTotal(headerValue: String?): Long? {
     val totalPart = value.substring(slashIndex + 1).trim()
     if (totalPart == "*") return null
     return totalPart.toLongOrNull()?.takeIf { it > 0L }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun decryptAes128Cbc(data: ByteArray, keyBytes: ByteArray, ivBytes: ByteArray): ByteArray {
+    val outLen = data.size + 16L
+    return memScoped {
+        val dataOut = allocArray<ByteVar>(outLen.toInt())
+        val dataOutMoved = alloc<LongVar>()
+
+        val status = keyBytes.usePinned { keyPinned ->
+            ivBytes.usePinned { ivPinned ->
+                data.usePinned { dataPinned ->
+                    CCCrypt(
+                        kCCDecrypt,
+                        kCCAlgorithmAES128,
+                        kCCOptionPKCS7Padding,
+                        keyPinned.addressOf(0),
+                        keyBytes.size.toLong(),
+                        ivPinned.addressOf(0),
+                        dataPinned.addressOf(0),
+                        data.size.toLong(),
+                        dataOut,
+                        outLen,
+                        dataOutMoved.ptr,
+                    )
+                }
+            }
+        }
+
+        if (status != kCCSuccess) {
+            throw IllegalStateException("AES-128-CBC decryption failed with status $status")
+        }
+
+        dataOut.readBytes(dataOutMoved.value.toInt())
+    }
 }

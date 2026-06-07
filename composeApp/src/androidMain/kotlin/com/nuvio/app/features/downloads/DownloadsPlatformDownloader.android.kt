@@ -18,6 +18,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 private val downloadHttpClient = OkHttpClient.Builder()
     .dns(com.nuvio.app.core.network.AndroidDnsProvider)
@@ -224,7 +227,8 @@ internal actual object DownloadsPlatformDownloader {
     }
 
     actual fun downloadHlsSegments(
-        segmentUrls: List<String>,
+        segments: List<HlsSegment>,
+        keyCache: Map<String, ByteArray>,
         sourceHeaders: Map<String, String>,
         destinationFileName: String,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
@@ -245,18 +249,16 @@ internal actual object DownloadsPlatformDownloader {
             val destination = File(downloadsDir, destinationFileName)
             val tempFile = File(downloadsDir, "${destinationFileName}.hls.part")
             var totalDownloaded = 0L
-            var segmentIndex = 0
 
             try {
                 if (tempFile.exists()) tempFile.delete()
                 tempFile.createNewFile()
 
                 FileOutputStream(tempFile, true).use { output ->
-                    for (segmentUrl in segmentUrls) {
+                    for (segment in segments) {
                         ensureActive()
-                        segmentIndex++
 
-                        val requestBuilder = Request.Builder().url(segmentUrl)
+                        val requestBuilder = Request.Builder().url(segment.url)
                         sourceHeaders.forEach { (key, value) ->
                             requestBuilder.header(key, value)
                         }
@@ -275,18 +277,23 @@ internal actual object DownloadsPlatformDownloader {
                                 runBlocking { getString(Res.string.downloads_error_empty_body) },
                             )
 
-                            body.byteStream().use { input ->
-                                val buffer = ByteArray(16 * 1024)
-                                while (true) {
-                                    ensureActive()
-                                    val read = input.read(buffer)
-                                    if (read <= 0) break
-                                    output.write(buffer, 0, read)
-                                    totalDownloaded += read.toLong()
-                                    onProgress(totalDownloaded, null)
+                            val segmentBytes = body.bytes()
+                            val processedBytes = if (segment.key != null) {
+                                val keyBytes = keyCache[segment.key.uri]
+                                val ivBytes = segment.key.toIvBytes()
+                                if (keyBytes != null && ivBytes != null) {
+                                    decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
+                                } else {
+                                    segmentBytes
                                 }
-                                output.flush()
+                            } else {
+                                segmentBytes
                             }
+
+                            output.write(processedBytes)
+                            totalDownloaded += processedBytes.size.toLong()
+                            onProgress(totalDownloaded, null)
+                            output.flush()
                         }
                     }
                 }
@@ -309,6 +316,23 @@ internal actual object DownloadsPlatformDownloader {
         }
 
         return AndroidDownloadsTaskHandle(job)
+    }
+
+    actual fun fetchUrlAsBytes(url: String, headers: Map<String, String>): ByteArray? {
+        return try {
+            val requestBuilder = Request.Builder().url(url)
+            headers.forEach { (key, value) ->
+                requestBuilder.header(key, value)
+            }
+            val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
+            response.use { resp ->
+                if (resp.isSuccessful) {
+                    resp.body?.bytes()
+                } else null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 }
 
@@ -353,4 +377,12 @@ private fun parseContentRangeTotal(headerValue: String?): Long? {
     val totalPart = value.substring(slashIndex + 1).trim()
     if (totalPart == "*") return null
     return totalPart.toLongOrNull()?.takeIf { it > 0L }
+}
+
+private fun decryptAes128Cbc(data: ByteArray, keyBytes: ByteArray, ivBytes: ByteArray): ByteArray {
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    val keySpec = SecretKeySpec(keyBytes, "AES")
+    val ivSpec = IvParameterSpec(ivBytes)
+    cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
+    return cipher.doFinal(data)
 }

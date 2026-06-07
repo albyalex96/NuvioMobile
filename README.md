@@ -28,7 +28,7 @@ The mobile app is built from a single shared codebase in [composeApp](./composeA
 
 The following features are unique to this mobile repository and are not present in the original NuvioMobile codebase.
 
-### Stream Parser with Animated Badges
+### Dedicated Stream Parser with Animated Badges
 A polished stream information display that parses and presents video quality tags (4K, 1080p, 720p, etc.), audio codecs, and cached/debrid status with animated badges. Each badge animates on appearance, drawing attention to stream quality indicators and whether the stream is already cached for instant playback.
 
 ### AMOLED Mode
@@ -60,6 +60,14 @@ Extended plugin infrastructure with per-plugin scraper configuration, enabling f
 
 ### Episode Code Formatter
 Choose your preferred episode display format from options like `01x01`, `1x1`, `S01E01`, and more, ensuring episode labels match your personal preference.
+
+### HLS Downloader [NOT WORKING]
+
+Support for downloading hls videos. The feature is still in progress and it's not working at the moment.
+
+### Sharable downloaded files
+
+Downlaoded files can be exported allowing offline saving or sharing on platforms 
 
 ## Installation
 

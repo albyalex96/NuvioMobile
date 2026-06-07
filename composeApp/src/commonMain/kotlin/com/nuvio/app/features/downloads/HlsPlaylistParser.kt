@@ -28,9 +28,21 @@ data class HlsMediaPlaylist(
     val targetDuration: Double = 0.0,
 )
 
+data class HlsKey(
+    val uri: String,
+    val ivHex: String? = null,
+)
+
+data class ByteRange(
+    val length: Long,
+    val offset: Long? = null,
+)
+
 data class HlsSegment(
     val duration: Double,
     val url: String,
+    val key: HlsKey? = null,
+    val byteRange: ByteRange? = null,
 )
 
 object HlsPlaylistParser {
@@ -111,10 +123,27 @@ object HlsPlaylistParser {
         val segments = mutableListOf<HlsSegment>()
         var targetDuration = 0.0
         var currentDuration = 0.0
+        var currentKey: HlsKey? = null
+        var currentByteRange: ByteRange? = null
+        var mediaSequence = 0L
+        var segmentIndex = 0L
 
         for (line in lines) {
             val trimmed = line.trim()
             when {
+                trimmed.startsWith("#EXT-X-KEY:") -> {
+                    val attrs = parseAttributes(trimmed.removePrefix("#EXT-X-KEY:"))
+                    val method = attrs["METHOD"]?.trim()?.uppercase()
+                    currentKey = if (method == "AES-128") {
+                        val keyUri = resolveUrl(removeQuotes(attrs["URI"].orEmpty()), baseUrl)
+                        val rawIv = attrs["IV"]?.trim()?.removePrefix("0x")?.removePrefix("0X")
+                        HlsKey(keyUri, rawIv)
+                    } else null
+                }
+                trimmed.startsWith("#EXT-X-MEDIA-SEQUENCE:") -> {
+                    mediaSequence = trimmed.substringAfter(":").trim().toLongOrNull() ?: 0L
+                    segmentIndex = mediaSequence
+                }
                 trimmed.startsWith("#EXT-X-TARGETDURATION:") -> {
                     targetDuration = trimmed.substringAfter(":").trim().toDoubleOrNull() ?: 0.0
                 }
@@ -122,16 +151,39 @@ object HlsPlaylistParser {
                     val durationStr = trimmed.substringAfter(":").substringBefore(",").trim()
                     currentDuration = durationStr.toDoubleOrNull() ?: 0.0
                 }
+                trimmed.startsWith("#EXT-X-BYTERANGE:") -> {
+                    val br = trimmed.removePrefix("#EXT-X-BYTERANGE:").trim()
+                    val atIdx = br.indexOf('@')
+                    val length = br.substringBefore("@").toLongOrNull() ?: 0L
+                    val offset = if (atIdx >= 0) br.substringAfter("@").toLongOrNull() else null
+                    currentByteRange = ByteRange(length, offset)
+                }
+                trimmed.startsWith("#EXT-X-DISCONTINUITY") -> {
+                    currentKey = null
+                }
                 !trimmed.startsWith("#") && trimmed.isNotBlank() -> {
                     val segmentUrl = resolveUrl(trimmed, baseUrl)
-                    segments.add(HlsSegment(currentDuration, segmentUrl))
+                    val key = currentKey?.let {
+                        if (it.ivHex != null) it
+                        else it.copy(ivHex = segmentIndexToIvHex(segmentIndex))
+                    }
+                    segments.add(HlsSegment(currentDuration, segmentUrl, key, currentByteRange))
                     currentDuration = 0.0
+                    currentByteRange = null
+                    segmentIndex++
                 }
             }
         }
 
         return HlsMediaPlaylist(segments, targetDuration)
     }
+
+    private fun segmentIndexToIvHex(index: Long): String =
+        ByteArray(16).apply {
+            for (i in 0..7) {
+                this[15 - i] = ((index shr (8 * i)) and 0xFF).toByte()
+            }
+        }.joinToString("") { it.toUByte().toString(16).padStart(2, '0') }
 
     private fun parseAttributes(input: String): Map<String, String> {
         val attrs = mutableMapOf<String, String>()
@@ -180,6 +232,12 @@ object HlsPlaylistParser {
         val trimmed = relative.trim()
         if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
         if (trimmed.isBlank()) return trimmed
+        if (trimmed.startsWith("/")) {
+            val scheme = baseUrl.substringBefore("://")
+            val afterScheme = baseUrl.substringAfter("://")
+            val host = afterScheme.substringBefore("/")
+            return "$scheme://$host$trimmed"
+        }
         val base = baseUrl.trimEnd('/')
         val basePath = if (base.contains('/')) {
             base.substringBeforeLast('/')
@@ -187,5 +245,16 @@ object HlsPlaylistParser {
             base
         }
         return "$basePath/$trimmed"
+    }
+}
+
+fun HlsKey.toIvBytes(): ByteArray? =
+    ivHex?.let { hexToByteArray(it) }
+
+fun hexToByteArray(hex: String): ByteArray {
+    val normalized = hex.filter { it != ' ' }
+    require(normalized.length % 2 == 0) { "Hex string must have even length" }
+    return ByteArray(normalized.length / 2) {
+        normalized.substring(it * 2, it * 2 + 2).toInt(16).toByte()
     }
 }

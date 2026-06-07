@@ -517,39 +517,60 @@ object DownloadsRepository {
         val scope = CoroutineScope(job + Dispatchers.Default)
 
         scope.launch {
-            val mediaContent = DownloadsPlatformDownloader.fetchUrlAsString(
+            val allSegments = mutableListOf<HlsSegment>()
+
+            val videoContent = DownloadsPlatformDownloader.fetchUrlAsString(
                 url = item.sourceUrl,
                 headers = item.sourceHeaders,
             )
-            if (mediaContent == null) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
-                mutateItem(item.id) { current ->
-                    current.copy(
-                        status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
-                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                    )
-                }
+            if (videoContent == null) {
+                failDownload(item)
                 return@launch
             }
-
-            val mediaPlaylist = HlsPlaylistParser.parseMediaPlaylist(mediaContent, item.sourceUrl)
-            if (mediaPlaylist.segments.isEmpty()) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
-                mutateItem(item.id) { current ->
-                    current.copy(
-                        status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
-                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                    )
-                }
+            val videoPlaylist = HlsPlaylistParser.parseMediaPlaylist(videoContent, item.sourceUrl)
+            if (videoPlaylist.segments.isEmpty()) {
+                failDownload(item)
                 return@launch
             }
+            allSegments.addAll(videoPlaylist.segments)
 
-            val segmentUrls = mediaPlaylist.segments.map { it.url }
+            item.hlsAudioUrl?.let { audioUrl ->
+                val audioContent = DownloadsPlatformDownloader.fetchUrlAsString(
+                    url = audioUrl,
+                    headers = item.sourceHeaders,
+                )
+                if (audioContent != null) {
+                    val audioPlaylist = HlsPlaylistParser.parseMediaPlaylist(audioContent, audioUrl)
+                    allSegments.addAll(audioPlaylist.segments)
+                }
+            }
+
+            item.hlsSubtitleUrl?.let { subtitleUrl ->
+                val subContent = DownloadsPlatformDownloader.fetchUrlAsString(
+                    url = subtitleUrl,
+                    headers = item.sourceHeaders,
+                )
+                if (subContent != null) {
+                    val subPlaylist = HlsPlaylistParser.parseMediaPlaylist(subContent, subtitleUrl)
+                    allSegments.addAll(subPlaylist.segments)
+                }
+            }
+
+            val uniqueKeyUris = allSegments.mapNotNull { it.key?.uri }.distinct()
+            val keyCache = mutableMapOf<String, ByteArray>()
+            for (keyUri in uniqueKeyUris) {
+                val keyBytes = DownloadsPlatformDownloader.fetchUrlAsBytes(
+                    url = keyUri,
+                    headers = item.sourceHeaders,
+                )
+                if (keyBytes != null) {
+                    keyCache[keyUri] = keyBytes
+                }
+            }
 
             val handle = DownloadsPlatformDownloader.downloadHlsSegments(
-                segmentUrls = segmentUrls,
+                segments = allSegments,
+                keyCache = keyCache,
                 sourceHeaders = item.sourceHeaders,
                 destinationFileName = item.fileName,
                 onProgress = { downloadedBytes, totalBytes ->
@@ -602,6 +623,17 @@ object DownloadsRepository {
             )
 
             activeHandles[item.id] = handle
+        }
+    }
+
+    private suspend fun failDownload(item: DownloadItem) {
+        val errorMsg = runBlocking { getString(Res.string.download_failed) }
+        mutateItem(item.id) { current ->
+            current.copy(
+                status = DownloadStatus.Failed,
+                errorMessage = errorMsg,
+                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+            )
         }
     }
 
