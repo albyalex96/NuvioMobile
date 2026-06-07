@@ -640,7 +640,7 @@ object DownloadsRepository {
         headers: Map<String, String>,
         fileName: String,
         itemId: String,
-        onComplete: (String) -> Unit,
+        onComplete: (String?) -> Unit,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.Default)
@@ -652,9 +652,7 @@ object DownloadsRepository {
                 headers = headers,
                 fileName = fileName,
             )
-            if (uri != null) {
-                onComplete(uri)
-            }
+            onComplete(uri)
         }
 
         return object : DownloadsTaskHandle {
