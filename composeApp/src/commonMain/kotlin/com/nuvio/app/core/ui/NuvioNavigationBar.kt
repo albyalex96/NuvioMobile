@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -101,17 +102,18 @@ private fun SolidNavigationBar(
     modifier: Modifier = Modifier,
     content: @Composable NuvioNavigationBarScope.() -> Unit,
 ) {
+    val tokens = MaterialTheme.nuvio
     Column(modifier.fillMaxWidth()) {
-        androidx.compose.material3.HorizontalDivider(
-            thickness = 0.5.dp,
-            color = MaterialTheme.colorScheme.outlineVariant,
+        HorizontalDivider(
+            thickness = tokens.borders.hairline,
+            color = tokens.colors.borderDefault,
         )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(nuvioBottomNavigationBarInsets().asPaddingValues())
-                .padding(horizontal = 4.dp, vertical = nuvioBottomNavigationExtraVerticalPadding),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                .padding(horizontal = NuvioTokens.Space.s4, vertical = nuvioBottomNavigationExtraVerticalPadding),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap, Alignment.CenterHorizontally),
         ) {
             NuvioNavigationBarScopeImpl(this).content()
         }
@@ -158,9 +160,9 @@ private class NuvioNavigationBarScopeImpl(
         contentDescription: String?,
         modifier: Modifier,
     ) {
+        val tokens = MaterialTheme.nuvio
         val iconColor by animateColorAsState(
-            targetValue = if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
+            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
         )
         val selectedBackground by animateColorAsState(
             targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -169,10 +171,10 @@ private class NuvioNavigationBarScopeImpl(
         with(rowScope) {
             Box(
                 modifier = modifier
-                    .widthIn(max = 150.dp)
+                    .widthIn(max = tokens.components.navItemMaxWidth)
                     .fillMaxWidth()
                     .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(tokens.components.navItemShape)
                     .selectable(
                         selected = selected,
                         enabled = true,
@@ -205,9 +207,9 @@ private class NuvioNavigationBarScopeImpl(
         contentDescription: String?,
         modifier: Modifier,
     ) {
+        val tokens = MaterialTheme.nuvio
         val iconColor by animateColorAsState(
-            targetValue = if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
+            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
         )
         val selectedBackground by animateColorAsState(
             targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -216,10 +218,10 @@ private class NuvioNavigationBarScopeImpl(
         with(rowScope) {
             Box(
                 modifier = modifier
-                    .widthIn(max = 150.dp)
+                    .widthIn(max = tokens.components.navItemMaxWidth)
                     .fillMaxWidth()
                     .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(tokens.components.navItemShape)
                     .selectable(
                         selected = selected,
                         enabled = true,
@@ -251,20 +253,21 @@ private class NuvioNavigationBarScopeImpl(
         modifier: Modifier,
         content: @Composable () -> Unit,
     ) {
+        val tokens = MaterialTheme.nuvio
         with(rowScope) {
             Box(
                 modifier = modifier
-                    .widthIn(max = 150.dp)
+                    .widthIn(max = tokens.components.navItemMaxWidth)
                     .fillMaxWidth()
                     .weight(1f, fill = false)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(tokens.components.navItemShape)
                     .selectable(
                         selected = selected,
                         enabled = true,
                         role = Role.Tab,
                         onClick = onClick,
                     )
-                    .padding(10.dp),
+                    .padding(NuvioTokens.Space.s10),
                 contentAlignment = Alignment.Center,
             ) {
                 content()
