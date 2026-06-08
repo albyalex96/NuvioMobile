@@ -16,7 +16,10 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegSession
+import com.arthenica.ffmpegkit.Log
 import com.arthenica.ffmpegkit.ReturnCode
+import com.arthenica.ffmpegkit.SessionState
+import com.arthenica.ffmpegkit.Statistics
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
@@ -286,25 +289,52 @@ internal actual object DownloadsPlatformDownloader {
 
                 val command = cmdArgs.joinToString(" ")
 
-                var lastReportedBytes = 0L
-                val session = FFmpegKit.executeAsync(command) { session: FFmpegSession ->
-                    if (ReturnCode.isSuccess(session.returnCode)) {
-                        val finalSize = outputFile.length()
-                        onSuccess(outputFile.toURI().toString(), finalSize)
-                    } else {
-                        val failCause = session.failStackTrace
-                            ?: session.command
-                            ?: runBlocking { getString(Res.string.download_failed) }
-                        onFailure(failCause)
-                    }
-                }
+                FFmpegKit.executeAsync(
+                    command,
+                    { session: FFmpegSession ->
+                        val state = session.state
+                        if (state == SessionState.FAILED) {
+                            val logs = session.allLogsAsString?.trim()
+                            val failCause = if (!logs.isNullOrBlank()) {
+                                logs
+                            } else {
+                                session.failStackTrace
+                                    ?: session.command
+                                    ?: runBlocking { getString(Res.string.download_failed) }
+                            }
+                            onFailure(failCause)
+                        } else if (ReturnCode.isSuccess(session.returnCode)) {
+                            val finalSize = outputFile.length()
+                            onSuccess(outputFile.toURI().toString(), finalSize)
+                        } else if (ReturnCode.isCancel(session.returnCode)) {
+                            // cancelled, do nothing
+                        } else {
+                            val logs = session.allLogsAsString?.trim()
+                            val failCause = if (!logs.isNullOrBlank()) {
+                                logs
+                            } else {
+                                session.failStackTrace
+                                    ?: session.command
+                                    ?: runBlocking { getString(Res.string.download_failed) }
+                            }
+                            onFailure(failCause)
+                        }
+                    },
+                    { _: Log -> },
+                    { stats: Statistics ->
+                        val bytes = stats.size
+                        if (bytes > 0L) {
+                            onProgress(bytes, null)
+                        }
+                    },
+                )
             } catch (e: Exception) {
                 onFailure(e.message ?: runBlocking { getString(Res.string.download_failed) })
             }
         }
 
         job.invokeOnCompletion {
-            // cleanup handled by the coroutine
+            FFmpegKit.cancel()
         }
 
         return AndroidDownloadsTaskHandle(job)
