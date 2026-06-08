@@ -28,10 +28,11 @@ internal expect object DownloadsPlatformDownloader {
 
     fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean
 
-    fun downloadHlsSegments(
-        segments: List<HlsSegment>,
-        keyCache: Map<String, ByteArray>,
+    fun downloadHlsStream(
+        videoUrl: String,
         sourceHeaders: Map<String, String>,
+        audioUrl: String?,
+        subtitleUrl: String?,
         destinationFileName: String,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
@@ -39,13 +40,4 @@ internal expect object DownloadsPlatformDownloader {
     ): DownloadsTaskHandle
 
     fun fetchUrlAsBytes(url: String, headers: Map<String, String>): ByteArray?
-
-    fun downloadSegmentsToFile(
-        segments: List<HlsSegment>,
-        keyCache: Map<String, ByteArray>,
-        headers: Map<String, String>,
-        fileName: String,
-    ): String?
-
-    fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String?
 }

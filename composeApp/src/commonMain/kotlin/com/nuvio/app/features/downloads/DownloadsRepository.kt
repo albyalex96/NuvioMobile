@@ -517,40 +517,12 @@ object DownloadsRepository {
         val scope = CoroutineScope(job + Dispatchers.Default)
 
         scope.launch {
-            val fetchKeyCache = buildKeyCache(item)
-
-            val videoContent = DownloadsPlatformDownloader.fetchUrlAsString(
-                url = item.sourceUrl,
-                headers = item.sourceHeaders,
-            ) ?: return@launch failDownload(item)
-            val videoPlaylist = HlsPlaylistParser.parseMediaPlaylist(videoContent, item.sourceUrl)
-            if (videoPlaylist.segments.isEmpty()) return@launch failDownload(item)
-
-            val audioPlaylist = item.hlsAudioUrl?.let { url ->
-                DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
-                    ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
-                    ?.takeIf { it.segments.isNotEmpty() }
-            }
-
-            val subtitlePlaylist = item.hlsSubtitleUrl?.let { url ->
-                DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
-                    ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
-                    ?.takeIf { it.segments.isNotEmpty() }
-            }
-
-            val baseName = item.fileName.removeSuffix(".mp4")
-            val audioFileName = "${baseName}_audio.ts"
-            val subtitleFileName = "${baseName}_subs.vtt"
-
-            var videoUri: String? = null
-            var audioUri: String? = null
-            var subtitleUri: String? = null
-
-            val videoHandle = DownloadsPlatformDownloader.downloadHlsSegments(
-                segments = videoPlaylist.segments,
-                keyCache = fetchKeyCache,
+            val handle = DownloadsPlatformDownloader.downloadHlsStream(
+                videoUrl = item.sourceUrl,
                 sourceHeaders = item.sourceHeaders,
-                destinationFileName = "${item.fileName}.vpart",
+                audioUrl = item.hlsAudioUrl,
+                subtitleUrl = item.hlsSubtitleUrl,
+                destinationFileName = item.fileName,
                 onProgress = { downloadedBytes, totalBytes ->
                     mutateItem(item.id) { current ->
                         if (current.status != DownloadStatus.Downloading) {
@@ -565,52 +537,23 @@ object DownloadsRepository {
                         }
                     }
                 },
-                onSuccess = { localFileUri, _ ->
-                    videoUri = localFileUri
+                onSuccess = { localFileUri, totalBytes ->
                     activeHandles.remove(item.id)
-
-                    if (audioPlaylist != null) {
-                        val audioHandle = downloadTrack(
-                            segments = audioPlaylist.segments,
-                            keyCache = fetchKeyCache,
-                            headers = item.sourceHeaders,
-                            fileName = audioFileName,
-                            itemId = item.id,
-                        ) { uri ->
-                            audioUri = uri
-                            activeHandles.remove(item.id)
-
-                            if (subtitlePlaylist != null) {
-                                val subHandle = downloadTrack(
-                                    segments = subtitlePlaylist.segments,
-                                    keyCache = fetchKeyCache,
-                                    headers = item.sourceHeaders,
-                                    fileName = subtitleFileName,
-                                    itemId = item.id,
-                                ) { uri ->
-                                    subtitleUri = uri
-                                    finalizeHlsDownload(item.id, videoUri, audioUri, subtitleUri)
-                                }
-                                activeHandles[item.id] = subHandle
+                    mutateItem(item.id) { current ->
+                        current.copy(
+                            status = DownloadStatus.Completed,
+                            localFileUri = localFileUri,
+                            downloadedBytes = if (totalBytes != null && totalBytes > 0L) {
+                                totalBytes
                             } else {
-                                finalizeHlsDownload(item.id, videoUri, audioUri, null)
-                            }
-                        }
-                        activeHandles[item.id] = audioHandle
-                    } else if (subtitlePlaylist != null) {
-                        val subHandle = downloadTrack(
-                            segments = subtitlePlaylist.segments,
-                            keyCache = fetchKeyCache,
-                            headers = item.sourceHeaders,
-                            fileName = subtitleFileName,
-                            itemId = item.id,
-                        ) { uri ->
-                            subtitleUri = uri
-                            finalizeHlsDownload(item.id, videoUri, null, subtitleUri)
-                        }
-                        activeHandles[item.id] = subHandle
-                    } else {
-                        finalizeHlsDownload(item.id, videoUri, null, null)
+                                current.downloadedBytes
+                            },
+                            totalBytes = totalBytes?.takeIf { it > 0L } ?: current.totalBytes,
+                            errorMessage = null,
+                            updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                            hlsAudioLocalFileUri = null,
+                            hlsSubtitleLocalFileUri = null,
+                        )
                     }
                 },
                 onFailure = { message ->
@@ -631,117 +574,8 @@ object DownloadsRepository {
                 },
             )
 
-            activeHandles[item.id] = videoHandle
+            activeHandles[item.id] = handle
         }
-    }
-
-    private fun downloadTrack(
-        segments: List<HlsSegment>,
-        keyCache: Map<String, ByteArray>,
-        headers: Map<String, String>,
-        fileName: String,
-        itemId: String,
-        onComplete: (String?) -> Unit,
-    ): DownloadsTaskHandle {
-        val job = SupervisorJob()
-        val scope = CoroutineScope(job + Dispatchers.Default)
-
-        scope.launch {
-            val uri = DownloadsPlatformDownloader.downloadSegmentsToFile(
-                segments = segments,
-                keyCache = keyCache,
-                headers = headers,
-                fileName = fileName,
-            )
-            onComplete(uri)
-        }
-
-        return object : DownloadsTaskHandle {
-            override fun cancel() {
-                job.cancel()
-            }
-        }
-    }
-
-    private fun finalizeHlsDownload(
-        downloadId: String,
-        videoUri: String?,
-        audioUri: String?,
-        subtitleUri: String?,
-    ) {
-        val now = DownloadsClock.nowEpochMs()
-        val item = _uiState.value.items.firstOrNull { it.id == downloadId }
-
-        var finalVideoUri = videoUri
-        var finalAudioUri = audioUri
-        var finalFileName = item?.fileName
-
-        if (item != null && videoUri != null) {
-            val mp4FileName = item.fileName
-            val remuxedUri = DownloadsPlatformDownloader.remuxToMp4(videoUri, audioUri, mp4FileName)
-            if (remuxedUri != null) {
-                finalVideoUri = remuxedUri
-                finalFileName = mp4FileName
-                if (audioUri != null) {
-                    finalAudioUri = null
-                    DownloadsPlatformDownloader.removeFile(audioUri)
-                }
-                if (videoUri != remuxedUri) {
-                    DownloadsPlatformDownloader.removeFile(videoUri)
-                }
-            }
-        }
-
-        mutateItem(downloadId) { current ->
-            current.copy(
-                status = DownloadStatus.Completed,
-                localFileUri = finalVideoUri,
-                fileName = finalFileName ?: current.fileName,
-                hlsAudioLocalFileUri = finalAudioUri,
-                hlsSubtitleLocalFileUri = subtitleUri,
-                errorMessage = null,
-                updatedAtEpochMs = now,
-            )
-        }
-    }
-
-    private suspend fun failDownload(item: DownloadItem) {
-        val errorMsg = runBlocking { getString(Res.string.download_failed) }
-        mutateItem(item.id) { current ->
-            current.copy(
-                status = DownloadStatus.Failed,
-                errorMessage = errorMsg,
-                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-            )
-        }
-    }
-
-    private suspend fun buildKeyCache(item: DownloadItem): Map<String, ByteArray> {
-        val keyUris = mutableSetOf<String>()
-        val videoContent = DownloadsPlatformDownloader.fetchUrlAsString(
-            url = item.sourceUrl,
-            headers = item.sourceHeaders,
-        )
-        if (videoContent != null) {
-            val playlist = HlsPlaylistParser.parseMediaPlaylist(videoContent, item.sourceUrl)
-            playlist.segments.mapNotNull { it.key?.uri }.let(keyUris::addAll)
-        }
-        item.hlsAudioUrl?.let { url ->
-            DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
-                ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
-                ?.segments?.mapNotNull { it.key?.uri }?.let(keyUris::addAll)
-        }
-        item.hlsSubtitleUrl?.let { url ->
-            DownloadsPlatformDownloader.fetchUrlAsString(url, item.sourceHeaders)
-                ?.let { HlsPlaylistParser.parseMediaPlaylist(it, url) }
-                ?.segments?.mapNotNull { it.key?.uri }?.let(keyUris::addAll)
-        }
-        val cache = mutableMapOf<String, ByteArray>()
-        for (uri in keyUris) {
-            DownloadsPlatformDownloader.fetchUrlAsBytes(uri, item.sourceHeaders)
-                ?.let { cache[uri] = it }
-        }
-        return cache
     }
 
     private fun mutateItem(downloadId: String, transform: (DownloadItem) -> DownloadItem) {

@@ -269,6 +269,8 @@ kotlin {
             implementation(libs.androidx.media3.common)
             implementation(libs.androidx.media3.container)
             implementation(libs.androidx.media3.extractor)
+            implementation("io.github.jamaismagic.ffmpeg:ffmpeg-kit-lts-16kb:6.1.7")
+            implementation("com.arthenica:smart-exception-java:0.2.1")
             implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
         }
         commonMain.dependencies {

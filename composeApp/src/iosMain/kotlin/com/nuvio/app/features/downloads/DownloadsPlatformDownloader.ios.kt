@@ -266,10 +266,11 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
-    actual fun downloadHlsSegments(
-        segments: List<HlsSegment>,
-        keyCache: Map<String, ByteArray>,
+    actual fun downloadHlsStream(
+        videoUrl: String,
         sourceHeaders: Map<String, String>,
+        audioUrl: String?,
+        subtitleUrl: String?,
         destinationFileName: String,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
@@ -282,17 +283,33 @@ internal actual object DownloadsPlatformDownloader {
         scope.launch {
             val downloadsDirectory = downloadsDirectoryPath()
             val destinationPath = "$downloadsDirectory/$destinationFileName"
-            val tempPath = "$downloadsDirectory/$destinationFileName.hls.part"
-            var totalDownloaded = 0L
 
             try {
-                removePathIfExists(tempPath)
+                val videoContent = fetchUrlAsString(videoUrl, sourceHeaders)
+                    ?: run { onFailure("Failed to fetch video playlist"); return@launch }
+                val videoPlaylist = HlsPlaylistParser.parseMediaPlaylist(videoContent, videoUrl)
+                if (videoPlaylist.segments.isEmpty()) {
+                    onFailure("No video segments"); return@launch
+                }
 
-                for (batch in segments.chunked(4)) {
+                val keyCache = mutableMapOf<String, ByteArray>()
+                videoPlaylist.segments
+                    .mapNotNull { it.key?.uri }
+                    .distinct()
+                    .forEach { uri ->
+                        fetchUrlAsBytes(uri, sourceHeaders)?.let { keyCache[uri] = it }
+                    }
+
+                val tempVideoPath = "$downloadsDirectory/$destinationFileName.vpart"
+                removePathIfExists(tempVideoPath)
+                var totalDownloaded = 0L
+
+                for (batch in videoPlaylist.segments.chunked(4)) {
                     val deferreds = batch.map { segment ->
                         scope.async(Dispatchers.Default) {
                             try {
-                                val segmentData = fetchUrlAsBytes(segment.url, sourceHeaders) ?: return@async null
+                                val segmentData = fetchUrlAsBytes(segment.url, sourceHeaders)
+                                    ?: return@async null
                                 if (segment.key != null) {
                                     val keyBytes = keyCache[segment.key.uri]
                                     val ivBytes = segment.key.toIvBytes()
@@ -305,7 +322,7 @@ internal actual object DownloadsPlatformDownloader {
                     }
                     for (deferred in deferreds) {
                         val processedData = deferred.await() ?: continue
-                        val file = fopen(tempPath, "ab") ?: continue
+                        val file = fopen(tempVideoPath, "ab") ?: continue
                         try {
                             processedData.usePinned { pinned ->
                                 fwrite(pinned.addressOf(0), 1.convert(), processedData.size.toLong().convert(), file)
@@ -321,15 +338,17 @@ internal actual object DownloadsPlatformDownloader {
 
                 removePathIfExists(destinationPath)
                 val moved = NSFileManager.defaultManager.moveItemAtPath(
-                    srcPath = tempPath,
+                    srcPath = tempVideoPath,
                     toPath = destinationPath,
                     error = null,
                 )
                 if (!moved) {
-                    error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
+                    onFailure(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
+                    return@launch
                 }
 
-                val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
+                val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString
+                    ?: "file://$destinationPath"
                 val finalSize = fileSizeOrNull(destinationPath)
                 onSuccess(localFileUri, finalSize)
             } catch (_: CancellationException) {
@@ -380,73 +399,6 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
-    actual fun downloadSegmentsToFile(
-        segments: List<HlsSegment>,
-        keyCache: Map<String, ByteArray>,
-        headers: Map<String, String>,
-        fileName: String,
-    ): String? {
-        val path = "${downloadsDirectoryPath()}/$fileName"
-        val tempPath = "$path.track.part"
-        return try {
-            removePathIfExists(tempPath)
-            runBlocking(Dispatchers.Default) {
-                val file = fopen(tempPath, "wb") ?: return@runBlocking
-                try {
-                    for (batch in segments.chunked(4)) {
-                        val deferreds = batch.map { segment ->
-                            async(Dispatchers.Default) {
-                                try {
-                                    val segmentBytes = fetchUrlAsBytes(segment.url, headers) ?: return@async null
-                                    if (segment.key != null) {
-                                        val keyBytes = keyCache[segment.key.uri]
-                                        val ivBytes = segment.key.toIvBytes()
-                                        if (keyBytes != null && ivBytes != null) {
-                                            decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
-                                        } else segmentBytes
-                                    } else segmentBytes
-                                } catch (_: Exception) { null }
-                            }
-                        }
-                        for (deferred in deferreds) {
-                            val bytes = deferred.await() ?: continue
-                            bytes.usePinned { pinned ->
-                                fwrite(pinned.addressOf(0), 1.convert(), bytes.size.toLong().convert(), file)
-                            }
-                            fflush(file)
-                        }
-                    }
-                } finally {
-                    fclose(file)
-                }
-            }
-            removePathIfExists(path)
-            NSFileManager.defaultManager.moveItemAtPath(tempPath, path, null)
-            NSURL.fileURLWithPath(path).absoluteString ?: "file://$path"
-        } catch (_: Exception) {
-            removePathIfExists(tempPath)
-            null
-        }
-    }
-
-    actual fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String? {
-        if (audioUri == null) {
-            val sourcePath = videoUri.toLocalPath() ?: return null
-            val destinationPath = "${downloadsDirectoryPath()}/$outputFileName"
-            if (!NSFileManager.defaultManager.fileExistsAtPath(sourcePath)) return null
-            removePathIfExists(destinationPath)
-            val moved = NSFileManager.defaultManager.moveItemAtPath(
-                srcPath = sourcePath,
-                toPath = destinationPath,
-                error = null,
-            )
-            if (moved) {
-                return NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
-            }
-            return null
-        }
-        return videoUri
-    }
 }
 
 private class IosDownloadsTaskHandle(

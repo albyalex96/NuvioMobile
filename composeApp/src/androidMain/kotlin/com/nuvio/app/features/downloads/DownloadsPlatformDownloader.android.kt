@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -15,19 +14,13 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
-import android.media.MediaCodec
-import android.media.MediaExtractor
-import android.media.MediaFormat
-import android.media.MediaMuxer
-import android.net.Uri
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegSession
+import com.arthenica.ffmpegkit.ReturnCode
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
-import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 private val downloadHttpClient = OkHttpClient.Builder()
     .dns(com.nuvio.app.core.network.AndroidDnsProvider)
@@ -238,10 +231,11 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
-    actual fun downloadHlsSegments(
-        segments: List<HlsSegment>,
-        keyCache: Map<String, ByteArray>,
+    actual fun downloadHlsStream(
+        videoUrl: String,
         sourceHeaders: Map<String, String>,
+        audioUrl: String?,
+        subtitleUrl: String?,
         destinationFileName: String,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
@@ -251,68 +245,61 @@ internal actual object DownloadsPlatformDownloader {
         val scope = CoroutineScope(job + Dispatchers.IO)
 
         scope.launch {
-            val context = appContext
-            if (context == null) {
+            val context = appContext ?: run {
                 onFailure(runBlocking { getString(Res.string.downloads_error_not_initialized) })
                 return@launch
             }
-
             val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-            val destination = File(downloadsDir, destinationFileName)
-            val tempFile = File(downloadsDir, "${destinationFileName}.hls.part")
-            var totalDownloaded = 0L
+            val outputFile = File(downloadsDir, destinationFileName)
+            if (outputFile.exists()) outputFile.delete()
 
             try {
-                if (tempFile.exists()) tempFile.delete()
-                tempFile.createNewFile()
+                val cmdArgs = mutableListOf("-y")
 
-                FileOutputStream(tempFile, true).use { output ->
-                    for (batch in segments.chunked(4)) {
-                        val deferreds = batch.map { segment ->
-                            scope.async(Dispatchers.IO) {
-                                try {
-                                    val requestBuilder = Request.Builder().url(segment.url)
-                                    sourceHeaders.forEach { (key, value) ->
-                                        requestBuilder.header(key, value)
-                                    }
-                                    val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
-                                    response.use { resp ->
-                                        if (!resp.isSuccessful) return@use null
-                                        val body = resp.body ?: return@use null
-                                        val segmentBytes = body.bytes()
-                                        if (segment.key != null) {
-                                            val keyBytes = keyCache[segment.key.uri]
-                                            val ivBytes = segment.key.toIvBytes()
-                                            if (keyBytes != null && ivBytes != null) {
-                                                decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
-                                            } else segmentBytes
-                                        } else segmentBytes
-                                    }
-                                } catch (_: Exception) { null }
-                            }
-                        }
-                        for (deferred in deferreds) {
-                            val bytes = deferred.await()
-                            if (bytes != null) {
-                                output.write(bytes)
-                                totalDownloaded += bytes.size.toLong()
-                                onProgress(totalDownloaded, null)
-                                output.flush()
-                            }
-                        }
+                if (sourceHeaders.isNotEmpty()) {
+                    val headerStr = sourceHeaders.entries.joinToString("\r\n") { (k, v) -> "$k: $v" }
+                    cmdArgs.add("-headers"); cmdArgs.add("$headerStr\r\n")
+                }
+
+                var inputCount = 0
+                cmdArgs.add("-i"); cmdArgs.add(videoUrl); inputCount++
+                if (!audioUrl.isNullOrBlank()) {
+                    cmdArgs.add("-i"); cmdArgs.add(audioUrl); inputCount++
+                }
+                if (!subtitleUrl.isNullOrBlank()) {
+                    cmdArgs.add("-i"); cmdArgs.add(subtitleUrl); inputCount++
+                }
+
+                cmdArgs.add("-map"); cmdArgs.add("0:v:0?")
+                cmdArgs.add("-map"); cmdArgs.add("0:a:0?")
+                if (audioUrl != null) {
+                    cmdArgs.add("-map"); cmdArgs.add("1:a:0?")
+                }
+                if (subtitleUrl != null) {
+                    val subIdx = if (audioUrl != null) 2 else 1
+                    cmdArgs.add("-map"); cmdArgs.add("${subIdx}:s:0?")
+                }
+
+                cmdArgs.add("-c"); cmdArgs.add("copy")
+                cmdArgs.add("-progress"); cmdArgs.add("pipe:1")
+                cmdArgs.add(outputFile.absolutePath)
+
+                val command = cmdArgs.joinToString(" ")
+
+                var lastReportedBytes = 0L
+                val session = FFmpegKit.executeAsync(command) { session: FFmpegSession ->
+                    if (ReturnCode.isSuccess(session.returnCode)) {
+                        val finalSize = outputFile.length()
+                        onSuccess(outputFile.toURI().toString(), finalSize)
+                    } else {
+                        val failCause = session.failStackTrace
+                            ?: session.command
+                            ?: runBlocking { getString(Res.string.download_failed) }
+                        onFailure(failCause)
                     }
                 }
-
-                if (destination.exists()) destination.delete()
-                if (!tempFile.renameTo(destination)) {
-                    tempFile.copyTo(destination, overwrite = true)
-                    tempFile.delete()
-                }
-
-                val finalSize = destination.length()
-                onSuccess(destination.toURI().toString(), finalSize)
-            } catch (error: Throwable) {
-                onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
+            } catch (e: Exception) {
+                onFailure(e.message ?: runBlocking { getString(Res.string.download_failed) })
             }
         }
 
@@ -340,172 +327,6 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
-    actual fun downloadSegmentsToFile(
-        segments: List<HlsSegment>,
-        keyCache: Map<String, ByteArray>,
-        headers: Map<String, String>,
-        fileName: String,
-    ): String? {
-        val context = appContext ?: return null
-        return try {
-            val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-            val file = File(downloadsDir, fileName)
-            val tempFile = File(downloadsDir, "$fileName.track.part")
-            if (tempFile.exists()) tempFile.delete()
-
-            runBlocking(Dispatchers.IO) {
-                FileOutputStream(tempFile, false).use { output ->
-                    for (batch in segments.chunked(4)) {
-                        val deferreds = batch.map { segment ->
-                            async(Dispatchers.IO) {
-                                try {
-                                    val requestBuilder = Request.Builder().url(segment.url)
-                                    headers.forEach { (key, value) ->
-                                        requestBuilder.header(key, value)
-                                    }
-                                    val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
-                                    response.use { resp ->
-                                        if (!resp.isSuccessful) return@use null
-                                        val body = resp.body ?: return@use null
-                                        val segmentBytes = body.bytes()
-                                        if (segment.key != null) {
-                                            val keyBytes = keyCache[segment.key.uri]
-                                            val ivBytes = segment.key.toIvBytes()
-                                            if (keyBytes != null && ivBytes != null) {
-                                                decryptAes128Cbc(segmentBytes, keyBytes, ivBytes)
-                                            } else segmentBytes
-                                        } else segmentBytes
-                                    }
-                                } catch (_: Exception) { null }
-                            }
-                        }
-                        for (deferred in deferreds) {
-                            deferred.await()?.let { output.write(it) }
-                        }
-                        output.flush()
-                    }
-                }
-            }
-
-            if (file.exists()) file.delete()
-            if (!tempFile.renameTo(file)) {
-                tempFile.copyTo(file, overwrite = true)
-                tempFile.delete()
-            }
-            file.toURI().toString()
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    actual fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String? {
-        val context = appContext ?: return null
-        val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-        val outputFile = File(downloadsDir, outputFileName)
-
-        if (audioUri == null) {
-            val inputFile = videoUri.toLocalFileOrNull() ?: return null
-            return try {
-                if (outputFile.exists()) outputFile.delete()
-                if (inputFile.renameTo(outputFile)) {
-                    outputFile.toURI().toString()
-                } else {
-                    inputFile.copyTo(outputFile, overwrite = true)
-                    inputFile.delete()
-                    outputFile.toURI().toString()
-                }
-            } catch (_: Exception) {
-                null
-            }
-        }
-
-        return try {
-            if (outputFile.exists()) outputFile.delete()
-
-            val videoExtractor = MediaExtractor()
-            videoExtractor.setDataSource(context, Uri.parse(videoUri), null)
-
-            val audioExtractor = MediaExtractor()
-            audioExtractor.setDataSource(context, Uri.parse(audioUri), null)
-
-            var videoTrackIndex = -1
-            var videoTrackFormat: MediaFormat? = null
-            for (i in 0 until videoExtractor.trackCount) {
-                val format = videoExtractor.getTrackFormat(i)
-                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
-                if (mime.startsWith("video/")) {
-                    videoTrackIndex = i
-                    videoTrackFormat = format
-                    break
-                }
-            }
-
-            var audioTrackIndex = -1
-            var audioTrackFormat: MediaFormat? = null
-            for (i in 0 until audioExtractor.trackCount) {
-                val format = audioExtractor.getTrackFormat(i)
-                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
-                if (mime.startsWith("audio/")) {
-                    audioTrackIndex = i
-                    audioTrackFormat = format
-                    break
-                }
-            }
-
-            if (videoTrackIndex < 0) {
-                videoExtractor.release()
-                audioExtractor.release()
-                return null
-            }
-
-            if (audioTrackIndex < 0) {
-                videoExtractor.release()
-                audioExtractor.release()
-                return null
-            }
-
-            videoExtractor.selectTrack(videoTrackIndex)
-            audioExtractor.selectTrack(audioTrackIndex)
-
-            val muxer = MediaMuxer(
-                outputFile.absolutePath,
-                MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4,
-            )
-
-            val muxedVideoTrack = muxer.addTrack(videoTrackFormat!!)
-            val muxedAudioTrack = muxer.addTrack(audioTrackFormat!!)
-
-            muxer.start()
-
-            val buffer = ByteBuffer.allocate(1_048_576)
-            val info = MediaCodec.BufferInfo()
-
-            while (true) {
-                val readSize = videoExtractor.readSampleData(buffer, 0)
-                if (readSize < 0) break
-                info.set(0, readSize, videoExtractor.sampleTime, videoExtractor.sampleFlags)
-                muxer.writeSampleData(muxedVideoTrack, buffer, info)
-                videoExtractor.advance()
-            }
-
-            while (true) {
-                val readSize = audioExtractor.readSampleData(buffer, 0)
-                if (readSize < 0) break
-                info.set(0, readSize, audioExtractor.sampleTime, audioExtractor.sampleFlags)
-                muxer.writeSampleData(muxedAudioTrack, buffer, info)
-                audioExtractor.advance()
-            }
-
-            muxer.stop()
-            muxer.release()
-            videoExtractor.release()
-            audioExtractor.release()
-
-            outputFile.toURI().toString()
-        } catch (_: Exception) {
-            null
-        }
-    }
 }
 
 private class AndroidDownloadsTaskHandle(
@@ -551,10 +372,4 @@ private fun parseContentRangeTotal(headerValue: String?): Long? {
     return totalPart.toLongOrNull()?.takeIf { it > 0L }
 }
 
-private fun decryptAes128Cbc(data: ByteArray, keyBytes: ByteArray, ivBytes: ByteArray): ByteArray {
-    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    val keySpec = SecretKeySpec(keyBytes, "AES")
-    val ivSpec = IvParameterSpec(ivBytes)
-    cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
-    return cipher.doFinal(data)
-}
+
