@@ -269,17 +269,19 @@ internal actual object DownloadsPlatformDownloader {
                 if (!audioUrl.isNullOrBlank()) {
                     cmdArgs.add("-i"); cmdArgs.add(audioUrl); inputCount++
                 }
-                if (!subtitleUrl.isNullOrBlank()) {
-                    cmdArgs.add("-i"); cmdArgs.add(subtitleUrl); inputCount++
+                val validSubtitleUrl = subtitleUrl?.takeIf { it.startsWith("http") }
+                if (validSubtitleUrl != null) {
+                    cmdArgs.add("-i"); cmdArgs.add(validSubtitleUrl); inputCount++
                 }
 
                 cmdArgs.add("-map"); cmdArgs.add("0:v:0?")
                 cmdArgs.add("-map"); cmdArgs.add("0:a:0?")
-                if (audioUrl != null) {
+                cmdArgs.add("-map"); cmdArgs.add("0:s:0?")
+                if (!audioUrl.isNullOrBlank()) {
                     cmdArgs.add("-map"); cmdArgs.add("1:a:0?")
                 }
-                if (subtitleUrl != null) {
-                    val subIdx = if (audioUrl != null) 2 else 1
+                if (validSubtitleUrl != null) {
+                    val subIdx = if (!audioUrl.isNullOrBlank()) 2 else 1
                     cmdArgs.add("-map"); cmdArgs.add("${subIdx}:s:0?")
                 }
 

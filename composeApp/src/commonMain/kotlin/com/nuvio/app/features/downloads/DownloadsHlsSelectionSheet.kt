@@ -115,9 +115,11 @@ fun DownloadsHlsSelectionSheet(
     val subtitleOptions = remember(playlist) {
         listOf(
             NuvioDropdownOption(key = "none", label = "None"),
-        ) + (playlist?.subtitleTracks?.mapIndexed { index, track ->
+        ) + (playlist?.subtitleTracks?.mapIndexedNotNull { index, track ->
+            val uri = track.uri
+            if (uri.isNullOrBlank()) return@mapIndexedNotNull null
             NuvioDropdownOption(
-                key = track.uri ?: "sub_$index",
+                key = uri,
                 label = buildString {
                     append(track.name)
                     track.language?.let { lang ->
