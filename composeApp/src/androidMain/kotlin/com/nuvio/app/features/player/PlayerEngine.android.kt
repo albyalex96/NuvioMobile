@@ -153,7 +153,7 @@ actual fun PlatformPlayerSurface(
         if (!sourceAudioUrl.isNullOrBlank()) {
             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
             val videoSource = mediaSourceFactory.createMediaSource(videoMediaItem)
-            val audioSource = mediaSourceFactory.createMediaSource(MediaItem.fromUri(sourceAudioUrl))
+            val audioSource = mediaSourceFactory.createMediaSource(playbackMediaItemFromUrl(sourceAudioUrl))
             val mergedSource = MergingMediaSource(videoSource, audioSource)
             if (startPositionMs != null) {
                 setMediaSource(mergedSource, startPositionMs.coerceAtLeast(0L))
@@ -234,53 +234,53 @@ actual fun PlatformPlayerSurface(
         }
 
         player.apply {
-                val mediaItemBuilder = MediaItem.Builder()
-                    .setUri(Uri.parse(sourceUrl))
-                    .setMediaId(sourceUrl)
-                    .apply {
-                        if ("hls".equals(streamType, ignoreCase = true) || sourceUrl.isHlsUrl()) {
-                            setMimeType(MimeTypes.APPLICATION_M3U8)
-                        }
+            val mediaItemBuilder = MediaItem.Builder()
+                .setUri(Uri.parse(sourceUrl))
+                .setMediaId(sourceUrl)
+                .apply {
+                    if ("hls".equals(streamType, ignoreCase = true) || sourceUrl.isHlsUrl()) {
+                        setMimeType(MimeTypes.APPLICATION_M3U8)
                     }
-                
-                val subtitleConfigs = externalSubtitles.mapNotNull { subtitle ->
-                    val mimeType = resolveSubtitleMimeType(subtitle.url, subtitle.headers)
-                    MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.url))
-                        .setMimeType(mimeType)
-                        .setLanguage(subtitle.language)
-                        .setLabel(subtitle.name ?: subtitle.language)
-                        .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
-                        .build()
                 }
-
-                if (subtitleConfigs.isNotEmpty()) {
-                    mediaItemBuilder.setSubtitleConfigurations(subtitleConfigs)
-                }
-
-                if (!sourceAudioUrl.isNullOrBlank()) {
-                    val msf = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
-                    val videoSource = msf.createMediaSource(mediaItemBuilder.build())
-                    val audioSource = msf.createMediaSource(
-                        MediaItem.Builder()
-                            .setUri(sourceAudioUrl)
-                            .apply {
-                                if ("hls".equals(streamType, ignoreCase = true) || sourceAudioUrl.isHlsUrl()) {
-                                    setMimeType(MimeTypes.APPLICATION_M3U8)
-                                }
-                            }
-                            .build()
-                    )
-                    setMediaSource(MergingMediaSource(videoSource, audioSource))
-                    fallbackStartPositionMs?.let { seekTo(it.coerceAtLeast(0L)) }
-                } else {
-                    setPlaybackMediaItem(
-                        videoMediaItem = mediaItemBuilder.build(),
-                        startPositionMs = fallbackStartPositionMs,
-                    )
-                }                
-                prepare()
-                this.playWhenReady = playWhenReady
+            
+            val subtitleConfigs = externalSubtitles.mapNotNull { subtitle ->
+                val mimeType = resolveSubtitleMimeType(subtitle.url, subtitle.headers)
+                MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.url))
+                    .setMimeType(mimeType)
+                    .setLanguage(subtitle.language)
+                    .setLabel(subtitle.name ?: subtitle.language)
+                    .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
+                    .build()
             }
+
+            if (subtitleConfigs.isNotEmpty()) {
+                mediaItemBuilder.setSubtitleConfigurations(subtitleConfigs)
+            }
+
+            if (!sourceAudioUrl.isNullOrBlank()) {
+                val msf = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
+                val videoSource = msf.createMediaSource(mediaItemBuilder.build())
+                val audioSource = msf.createMediaSource(
+                    MediaItem.Builder()
+                        .setUri(sourceAudioUrl)
+                        .apply {
+                            if ("hls".equals(streamType, ignoreCase = true) || sourceAudioUrl.isHlsUrl()) {
+                                setMimeType(MimeTypes.APPLICATION_M3U8)
+                            }
+                        }
+                        .build()
+                )
+                setMediaSource(MergingMediaSource(videoSource, audioSource))
+                fallbackStartPositionMs?.let { seekTo(it.coerceAtLeast(0L)) }
+            } else {
+                setPlaybackMediaItem(
+                    videoMediaItem = mediaItemBuilder.build(),
+                    startPositionMs = fallbackStartPositionMs,
+                )
+            }                
+            prepare()
+            this.playWhenReady = playWhenReady
+        }
     }
 
     val pendingSubtitleTrackIndex = remember { mutableListOf<Int>() }
