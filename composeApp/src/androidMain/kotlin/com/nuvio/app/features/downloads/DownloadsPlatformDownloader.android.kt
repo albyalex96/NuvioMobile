@@ -175,9 +175,14 @@ internal actual object DownloadsPlatformDownloader {
     actual fun removePartialFile(destinationFileName: String): Boolean {
         val context = appContext ?: return false
         val downloadsDir = File(context.filesDir, "downloads")
-        val tempFile = File(downloadsDir, "$destinationFileName.part")
-        if (!tempFile.exists()) return true
-        return runCatching { tempFile.delete() }.getOrDefault(false)
+        var allOk = true
+        // Standard .part file from direct downloads
+        File(downloadsDir, "$destinationFileName.part").let { if (it.exists()) allOk = allOk and it.delete() }
+        // HLS .vpart file from video track
+        File(downloadsDir, "$destinationFileName.vpart").let { if (it.exists()) allOk = allOk and it.delete() }
+        // Internal HLS temp
+        File(downloadsDir, "$destinationFileName.vpart.hls.part").let { if (it.exists()) allOk = allOk and it.delete() }
+        return allOk
     }
 
     actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? {
@@ -395,11 +400,26 @@ internal actual object DownloadsPlatformDownloader {
 
     actual fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String? {
         val context = appContext ?: return null
-        if (audioUri == null) return videoUri
+        val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+        val outputFile = File(downloadsDir, outputFileName)
+
+        if (audioUri == null) {
+            val inputFile = videoUri.toLocalFileOrNull() ?: return null
+            return try {
+                if (outputFile.exists()) outputFile.delete()
+                if (inputFile.renameTo(outputFile)) {
+                    outputFile.toURI().toString()
+                } else {
+                    inputFile.copyTo(outputFile, overwrite = true)
+                    inputFile.delete()
+                    outputFile.toURI().toString()
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
 
         return try {
-            val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-            val outputFile = File(downloadsDir, outputFileName)
             if (outputFile.exists()) outputFile.delete()
 
             val videoExtractor = MediaExtractor()

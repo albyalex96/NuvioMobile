@@ -179,8 +179,11 @@ internal actual object DownloadsPlatformDownloader {
     }
 
     actual fun removePartialFile(destinationFileName: String): Boolean {
-        val tempPath = "${downloadsDirectoryPath()}/$destinationFileName.part"
-        return removePathIfExists(tempPath)
+        val dir = downloadsDirectoryPath()
+        val partOk = removePathIfExists("$dir/$destinationFileName.part")
+        val vpartOk = removePathIfExists("$dir/$destinationFileName.vpart")
+        val hlsPartOk = removePathIfExists("$dir/$destinationFileName.vpart.hls.part")
+        return partOk && vpartOk && hlsPartOk
     }
 
     actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? {
@@ -427,6 +430,21 @@ internal actual object DownloadsPlatformDownloader {
     }
 
     actual fun remuxToMp4(videoUri: String, audioUri: String?, outputFileName: String): String? {
+        if (audioUri == null) {
+            val sourcePath = videoUri.toLocalPath() ?: return null
+            val destinationPath = "${downloadsDirectoryPath()}/$outputFileName"
+            if (!NSFileManager.defaultManager.fileExistsAtPath(sourcePath)) return null
+            removePathIfExists(destinationPath)
+            val moved = NSFileManager.defaultManager.moveItemAtPath(
+                srcPath = sourcePath,
+                toPath = destinationPath,
+                error = null,
+            )
+            if (moved) {
+                return NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
+            }
+            return null
+        }
         return videoUri
     }
 }

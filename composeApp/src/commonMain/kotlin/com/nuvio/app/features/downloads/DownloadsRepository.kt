@@ -538,8 +538,9 @@ object DownloadsRepository {
                     ?.takeIf { it.segments.isNotEmpty() }
             }
 
-            val audioFileName = item.fileName.replace(".ts", "_audio.ts")
-            val subtitleFileName = item.fileName.replace(".ts", "_subs.vtt")
+            val baseName = item.fileName.removeSuffix(".mp4")
+            val audioFileName = "${baseName}_audio.ts"
+            val subtitleFileName = "${baseName}_subs.vtt"
 
             var videoUri: String? = null
             var audioUri: String? = null
@@ -549,7 +550,7 @@ object DownloadsRepository {
                 segments = videoPlaylist.segments,
                 keyCache = fetchKeyCache,
                 sourceHeaders = item.sourceHeaders,
-                destinationFileName = item.fileName,
+                destinationFileName = "${item.fileName}.vpart",
                 onProgress = { downloadedBytes, totalBytes ->
                     mutateItem(item.id) { current ->
                         if (current.status != DownloadStatus.Downloading) {
@@ -675,15 +676,19 @@ object DownloadsRepository {
         var finalAudioUri = audioUri
         var finalFileName = item?.fileName
 
-        if (videoUri != null && audioUri != null && item != null) {
-            val mp4FileName = item.fileName.replace(".ts", ".mp4")
+        if (item != null && videoUri != null) {
+            val mp4FileName = item.fileName
             val remuxedUri = DownloadsPlatformDownloader.remuxToMp4(videoUri, audioUri, mp4FileName)
             if (remuxedUri != null) {
                 finalVideoUri = remuxedUri
-                finalAudioUri = null
                 finalFileName = mp4FileName
-                DownloadsPlatformDownloader.removeFile(videoUri)
-                DownloadsPlatformDownloader.removeFile(audioUri)
+                if (audioUri != null) {
+                    finalAudioUri = null
+                    DownloadsPlatformDownloader.removeFile(audioUri)
+                }
+                if (videoUri != remuxedUri) {
+                    DownloadsPlatformDownloader.removeFile(videoUri)
+                }
             }
         }
 
@@ -948,7 +953,7 @@ private fun buildHlsFileName(
         }
         append('_')
         append(nowEpochMs.toString(36))
-        append(".ts")
+        append(".mp4")
     }
 }
 
