@@ -63,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
@@ -121,6 +122,8 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Shield
 
 // ---------------------------------------------------------------------------
 // Streams Screen
@@ -1256,10 +1259,18 @@ private data class ParsedStreamBadges(
     val codec: StreamBadgeData?,
     val size: StreamBadgeData?,
     val isCached: Boolean,
+    val isTorrent: Boolean,
+    val isProxied: Boolean,
 )
 
 @Composable
-private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = Modifier) {
+private fun PolishedStreamCardContent(
+    stream: StreamItem,
+    modifier: Modifier = Modifier,
+    animationsEnabled: Boolean = remember {
+        StreamsAppearanceRepository.uiState.value.badgeAnimationsEnabled
+    },
+) {
     val badges = rememberStreamBadges(stream)
     val sourceName = stream.sourceName?.takeIf { it.isNotBlank() }
 
@@ -1269,7 +1280,7 @@ private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = M
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            QualityBadge(badge = badges.quality)
+            QualityBadge(badge = badges.quality, animated = animationsEnabled)
             Text(
                 text = sourceName ?: stream.streamLabel,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -1282,8 +1293,16 @@ private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = M
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            if (badges.isCached) {
-                CachedBadge()
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (badges.isCached) {
+                    CachedBadge(animated = animationsEnabled)
+                }
+                if (badges.isTorrent) {
+                    TorrentBadge(animated = animationsEnabled)
+                }
+                if (badges.isProxied) {
+                    ProxiedBadge()
+                }
             }
         }
 
@@ -1349,60 +1368,70 @@ private fun PolishedStreamCardContent(stream: StreamItem, modifier: Modifier = M
 }
 
 @Composable
-private fun QualityBadge(badge: StreamBadgeData) {
+private fun QualityBadge(badge: StreamBadgeData, animated: Boolean = true) {
     val gradientColors = when (badge.label) {
-        "4K"    -> listOf(Color(0xFFB8860B), Color(0xFFFFD700))  // oro scuro → oro brillante
-        "1080p" -> listOf(Color(0xFF1565C0), Color(0xFF0288D1))  // blu → azzurro
-        "720p"  -> listOf(Color(0xFF2E7D32), Color(0xFF00897B))  // verde → teal
+        "4K"    -> listOf(Color(0xFFB8860B), Color(0xFFFFD700))
+        "1080p" -> listOf(Color(0xFF1565C0), Color(0xFF0288D1))
+        "720p"  -> listOf(Color(0xFF2E7D32), Color(0xFF00897B))
         else -> listOf(Color(0xFFB71C1C), Color(0xFFC62828))
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "quality_sweep")
-    val sweepOffset by infiniteTransition.animateFloat(
-        initialValue = -0.4f,
-        targetValue = 1.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "sweep_offset",
-    )
+    val sweepOffset by if (animated) {
+        val infiniteTransition = rememberInfiniteTransition(label = "quality_sweep")
+        infiniteTransition.animateFloat(
+            initialValue = -0.4f,
+            targetValue = 1.4f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 3500, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "sweep_offset",
+        )
+    } else {
+        remember { mutableStateOf(-0.4f) }
+    }
 
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(brush = Brush.horizontalGradient(colors = gradientColors))
-            .drawWithContent {
-                drawContent()
-                val w = size.width
-                val h = size.height
-                val sweepX = sweepOffset * (w * 1.8f) - w * 0.4f
-                val halfWidth = w * 0.45f  // nastro largo
-                val skew = h * 0.58f       // tan(30°) ≈ 0.577
+            .then(
+                if (animated) {
+                    Modifier.drawWithContent {
+                        drawContent()
+                        val w = size.width
+                        val h = size.height
+                        val sweepX = sweepOffset * (w * 1.8f) - w * 0.4f
+                        val halfWidth = w * 0.45f
+                        val skew = h * 0.58f
 
-                val path = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(sweepX - halfWidth + skew, 0f)
-                    lineTo(sweepX + halfWidth + skew, 0f)
-                    lineTo(sweepX + halfWidth - skew, h)
-                    lineTo(sweepX - halfWidth - skew, h)
-                    close()
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(sweepX - halfWidth + skew, 0f)
+                            lineTo(sweepX + halfWidth + skew, 0f)
+                            lineTo(sweepX + halfWidth - skew, h)
+                            lineTo(sweepX - halfWidth - skew, h)
+                            close()
+                        }
+                        drawPath(
+                            path = path,
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.18f),
+                                    Color.White.copy(alpha = 0.32f),
+                                    Color.White.copy(alpha = 0.32f),
+                                    Color.White.copy(alpha = 0.18f),
+                                    Color.Transparent,
+                                ),
+                                startX = sweepX - halfWidth,
+                                endX = sweepX + halfWidth,
+                            ),
+                        )
+                    }
+                } else {
+                    Modifier
                 }
-                drawPath(
-                    path = path,
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.18f),
-                            Color.White.copy(alpha = 0.32f),
-                            Color.White.copy(alpha = 0.32f),
-                            Color.White.copy(alpha = 0.18f),
-                            Color.Transparent,
-                        ),
-                        startX = sweepX - halfWidth,
-                        endX = sweepX + halfWidth,
-                    ),
-                )
-            }
+            )
             .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -1419,17 +1448,21 @@ private fun QualityBadge(badge: StreamBadgeData) {
 }
 
 @Composable
-private fun CachedBadge() {
-    val infiniteTransition = rememberInfiniteTransition(label = "cached_pulse")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 750, easing = androidx.compose.animation.core.FastOutSlowInEasing),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
-        ),
-        label = "cached_alpha",
-    )
+private fun CachedBadge(animated: Boolean = true) {
+    val alpha by if (animated) {
+        val infiniteTransition = rememberInfiniteTransition(label = "cached_pulse")
+        infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 0.4f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 750, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "cached_alpha",
+        )
+    } else {
+        remember { mutableStateOf(1f) }
+    }
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
@@ -1454,6 +1487,84 @@ private fun CachedBadge() {
                     fontWeight = FontWeight.Bold,
                 ),
                 color = Color(0xFF4ADE80),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TorrentBadge(animated: Boolean = true) {
+    val rotation by if (animated) {
+        val infiniteTransition = rememberInfiniteTransition(label = "torrent_rotate")
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 3000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "torrent_rotation",
+        )
+    } else {
+        remember { mutableStateOf(0f) }
+    }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF7B1FA2))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Link,
+                contentDescription = null,
+                tint = Color(0xFFCE93D8),
+                modifier = Modifier
+                    .size(13.dp)
+                    .rotate(if (animated) rotation else 0f),
+            )
+            Text(
+                text = stringResource(Res.string.stream_parser_torrent),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = Color(0xFFCE93D8),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProxiedBadge() {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFFE65100))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Shield,
+                contentDescription = null,
+                tint = Color(0xFFFFB74D),
+                modifier = Modifier.size(13.dp),
+            )
+            Text(
+                text = stringResource(Res.string.stream_parser_proxied),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = Color(0xFFFFB74D),
             )
         }
     }
@@ -1585,6 +1696,12 @@ private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
         Regex("\\b(cached|instant|RD\\+|AD\\+|debrid)\\b|⚡", RegexOption.IGNORE_CASE)
             .containsMatchIn(combined)
 
+    val isTorrent = stream.isTorrentStream
+
+    val isProxied = stream.behaviorHints.proxyHeaders != null ||
+            Regex("\\bPROXY\\s*\\(?\\s*ON\\s*\\)?\\b|\\bPROXIED\\b", RegexOption.IGNORE_CASE)
+                .containsMatchIn(combined)
+
     return ParsedStreamBadges(
         quality = quality,
         hdr = hdr,
@@ -1592,6 +1709,8 @@ private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
         codec = codec,
         size = size,
         isCached = isCached,
+        isTorrent = isTorrent,
+        isProxied = isProxied,
     )
 }
 

@@ -89,6 +89,8 @@ import nuvio.composeapp.generated.resources.settings_stream_badge_urls_title
 import nuvio.composeapp.generated.resources.settings_stream_badges_section
 import nuvio.composeapp.generated.resources.settings_stream_size_badges_description
 import nuvio.composeapp.generated.resources.settings_stream_size_badges_title
+import nuvio.composeapp.generated.resources.stream_parser_animations_description
+import nuvio.composeapp.generated.resources.stream_parser_animations_title
 import nuvio.composeapp.generated.resources.stream_parser_description
 import nuvio.composeapp.generated.resources.stream_parser_title
 import org.jetbrains.compose.resources.stringResource
@@ -116,6 +118,13 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
                         )
                     },
                 )
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.stream_parser_animations_title),
+                    description = stringResource(Res.string.stream_parser_animations_description),
+                    checked = streamsAppearance.badgeAnimationsEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = StreamsAppearanceRepository::setBadgeAnimationsEnabled,
+                )
             }
         }
     }
@@ -136,12 +145,12 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
         ) {
             SettingsGroup(isTablet = isTablet) {
                 SettingsSwitchRow(
-                    title = stringResource(Res.string.settings_stream_size_badges_title),
-                    description = stringResource(Res.string.settings_stream_size_badges_description),
-                    checked = currentSettings.showFileSizeBadges,
-                    isTablet = isTablet,
-                    onCheckedChange = StreamBadgeSettingsRepository::setShowFileSizeBadges,
-                )
+                            title = stringResource(Res.string.settings_stream_size_badges_title),
+                            description = stringResource(Res.string.settings_stream_size_badges_description),
+                            checked = currentSettings.showFileSizeBadges,
+                            isTablet = isTablet,
+                            onCheckedChange = StreamBadgeSettingsRepository::setShowFileSizeBadges,
+                        )
                 SettingsNavigationRow(
                     title = stringResource(Res.string.settings_stream_badge_position_title),
                     description = badgePlacementLabel,

@@ -1925,6 +1925,10 @@
     <string name="stream_parser_title">Polished Display</string>
     <string name="stream_parser_description">Show streams with clean badges instead of raw text</string>
     <string name="stream_parser_cached">Cached</string>
+    <string name="stream_parser_torrent">Torrent</string>
+    <string name="stream_parser_proxied">Proxied</string>
+    <string name="stream_parser_animations_title">Badge animations</string>
+    <string name="stream_parser_animations_description">Show animated effects on polished badges</string>
 
     <string name="settings_playback_episode_code_format">Episode code format</string>
     <string name="settings_playback_episode_code_format_description">Choose how season and episode numbers are displayed</string>

@@ -1459,6 +1459,10 @@
   <string name="stream_parser_title">Visualizzazione Pulita</string>
   <string name="stream_parser_description">Mostra info stream con badge puliti invece di testo grezzo</string>
   <string name="stream_parser_cached">In Cache</string>
+  <string name="stream_parser_torrent">Torrent</string>
+  <string name="stream_parser_proxied">Proxy</string>
+  <string name="stream_parser_animations_title">Animazioni badge</string>
+  <string name="stream_parser_animations_description">Mostra effetti animati sui badge puliti</string>
   <string name="collections_editor_tmdb_genres_movie_placeholder">28,12</string>
   <string name="collections_editor_tmdb_genres_series_placeholder">18,35</string>
   <string name="collections_editor_tmdb_date_from_placeholder">2020-01-01</string>
