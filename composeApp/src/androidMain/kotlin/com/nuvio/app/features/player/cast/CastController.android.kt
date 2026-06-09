@@ -182,13 +182,23 @@ internal class AndroidCastController(
             .setContentType(request.contentType ?: guessCastContentType(request.url))
             .setMetadata(metadata)
             .build()
-        val loadRequest = MediaLoadRequestData.Builder()
+        val loadRequestBuilder = MediaLoadRequestData.Builder()
             .setMediaInfo(mediaInfo)
             .setAutoplay(true)
             .setCurrentTime(request.startPositionMs)
-            .build()
+        if (request.headers.isNotEmpty()) {
+            val authValue = request.headers["Authorization"]
+                ?: request.headers["authorization"]
+                ?: request.headers["X-Auth-Token"]
+            if (authValue != null) {
+                loadRequestBuilder.setCredentials(authValue.removePrefix("Bearer ").trim())
+            } else {
+                Log.w(TAG, "loadMedia: ${request.headers.size} header(s) present but not passed to " +
+                    "Default Media Receiver (no Authorization header found). Stream may fail.")
+            }
+        }
         isMediaLoading = true
-        client.load(loadRequest)
+        client.load(loadRequestBuilder.build())
         isCasting = true
     }
 
