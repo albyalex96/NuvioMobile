@@ -12,6 +12,7 @@ import android.webkit.WebViewClient
 import android.net.http.SslError
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.net.URI
@@ -43,6 +44,7 @@ actual object CloudflareSolver {
         Log.d("CloudflareKiller", "solve() called for URL: $url")
         val deferred = CompletableDeferred<Boolean>()
         var webView: WebView? = null
+        val originalHost = URI(url).host ?: ""
 
         try {
             webView = WebView(ctx.applicationContext).apply {
@@ -57,8 +59,9 @@ actual object CloudflareSolver {
 
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
-                        url?.let { checkAndExtractCookies(it) }?.let { solved ->
-                            if (solved) deferred.complete(true)
+                        val pageUrl = url ?: return
+                        if (tryExtractCookie(pageUrl) || tryExtractCookie(originalHost)) {
+                            deferred.complete(true)
                         }
                     }
 
@@ -86,27 +89,36 @@ actual object CloudflareSolver {
             }
 
             withTimeout(60_000L) {
+                while (!deferred.isCompleted) {
+                    if (tryExtractCookie(url) || tryExtractCookie(originalHost)) {
+                        deferred.complete(true)
+                    } else {
+                        delay(500)
+                    }
+                }
                 deferred.await()
             }
         } catch (_: Exception) {
-            deferred.complete(false)
+            if (!deferred.isCompleted) deferred.complete(false)
         } finally {
             webView?.stopLoading()
             webView?.destroy()
         }
     }
 
-    private fun checkAndExtractCookies(url: String): Boolean {
-        val host = URI(url).host ?: return false
-        val cookie = CookieManager.getInstance().getCookie(url) ?: return false
+    private fun tryExtractCookie(urlOrHost: String): Boolean {
+        val host = if (urlOrHost.startsWith("http")) URI(urlOrHost).host ?: return false
+            else urlOrHost
+
+        val cookie = CookieManager.getInstance().getCookie(
+            if (urlOrHost.startsWith("http")) urlOrHost else "https://$urlOrHost/"
+        ) ?: return false
+
         return if (cookie.contains("cf_clearance")) {
             savedCookies[host] = parseCookieMap(cookie)
             Log.d("CloudflareKiller", "cf_clearance found for host: $host")
             true
-        } else {
-            Log.d("CloudflareKiller", "No cf_clearance yet for host: $host")
-            false
-        }
+        } else false
     }
 
     private fun shouldBlockResource(url: String): Boolean {
