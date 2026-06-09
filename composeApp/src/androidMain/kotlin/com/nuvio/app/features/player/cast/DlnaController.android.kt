@@ -61,6 +61,9 @@ internal class DlnaController(context: Context) : CastController {
     override var isCasting by mutableStateOf(false)
         private set
 
+    override var isMediaLoading by mutableStateOf(false)
+        private set
+
     override var playbackSnapshot by mutableStateOf(CastPlaybackSnapshot())
         private set
 
@@ -114,6 +117,7 @@ internal class DlnaController(context: Context) : CastController {
         connectedDeviceName = null
         connectionState = CastConnectionState.NotConnected
         isCasting = false
+        isMediaLoading = false
         playbackSnapshot = CastPlaybackSnapshot()
         pollJob?.cancel()
         if (renderer != null) {
@@ -123,6 +127,7 @@ internal class DlnaController(context: Context) : CastController {
 
     override fun loadMedia(request: CastMediaRequest) {
         val renderer = connected ?: return
+        isMediaLoading = true
         scope.launch {
             val didl = buildDidl(request)
             val uri = xmlEscape(request.url)
@@ -143,9 +148,15 @@ internal class DlnaController(context: Context) : CastController {
                             "<Target>${formatTime(request.startPositionMs)}</Target>",
                     )
                 }
-                withContext(Dispatchers.Main) { isCasting = true }
+                withContext(Dispatchers.Main) {
+                    isCasting = true
+                    isMediaLoading = false
+                }
                 startPolling(renderer)
-            }.onFailure { Log.w(TAG, "loadMedia failed: ${it.message}") }
+            }.onFailure {
+                withContext(Dispatchers.Main) { isMediaLoading = false }
+                Log.w(TAG, "loadMedia failed: ${it.message}")
+            }
         }
     }
 

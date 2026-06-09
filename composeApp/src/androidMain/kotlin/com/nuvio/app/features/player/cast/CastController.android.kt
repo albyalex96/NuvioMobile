@@ -51,6 +51,9 @@ internal class AndroidCastController(
     override var isCasting by mutableStateOf(false)
         private set
 
+    override var isMediaLoading by mutableStateOf(false)
+        private set
+
     override var playbackSnapshot by mutableStateOf(CastPlaybackSnapshot())
         private set
 
@@ -76,6 +79,7 @@ internal class AndroidCastController(
                 isBuffering = client.isBuffering,
             )
             isCasting = client.hasMediaSession()
+            isMediaLoading = false
         }
     }
 
@@ -183,6 +187,7 @@ internal class AndroidCastController(
             .setAutoplay(true)
             .setCurrentTime(request.startPositionMs)
             .build()
+        isMediaLoading = true
         client.load(loadRequest)
         isCasting = true
     }
@@ -215,6 +220,7 @@ internal class AndroidCastController(
         remoteMediaClient = null
         connectedDeviceName = null
         isCasting = false
+        isMediaLoading = false
         playbackSnapshot = CastPlaybackSnapshot()
     }
 
@@ -276,6 +282,9 @@ internal class CombinedAndroidCastController(
 
     override val isCasting: Boolean
         get() = cast?.isCasting == true || dlna.isCasting
+
+    override val isMediaLoading: Boolean
+        get() = cast?.isMediaLoading == true || dlna.isMediaLoading
 
     override val playbackSnapshot: CastPlaybackSnapshot
         get() = when {

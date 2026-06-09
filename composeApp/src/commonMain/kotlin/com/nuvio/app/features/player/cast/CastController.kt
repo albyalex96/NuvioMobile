@@ -25,6 +25,9 @@ interface CastController {
     /** True once media has been handed to the receiver and remote playback is the source of truth. */
     val isCasting: Boolean
 
+    /** True while a [loadMedia] request is in flight but not yet acknowledged by the receiver. */
+    val isMediaLoading: Boolean
+
     /** Latest remote playback snapshot, used to mirror progress into the local controls. */
     val playbackSnapshot: CastPlaybackSnapshot
 

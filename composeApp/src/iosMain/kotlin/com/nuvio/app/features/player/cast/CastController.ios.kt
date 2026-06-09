@@ -109,6 +109,9 @@ private class IosCastController(private val bridge: NuvioCastBridge) : CastContr
     override var isCasting by mutableStateOf(false)
         private set
 
+    override var isMediaLoading by mutableStateOf(false)
+        private set
+
     override var playbackSnapshot by mutableStateOf(CastPlaybackSnapshot())
         private set
 
@@ -143,6 +146,7 @@ private class IosCastController(private val bridge: NuvioCastBridge) : CastContr
     }
 
     override fun loadMedia(request: CastMediaRequest) {
+        isMediaLoading = true
         bridge.loadMedia(
             url = request.url,
             title = request.title,
@@ -161,6 +165,7 @@ private class IosCastController(private val bridge: NuvioCastBridge) : CastContr
         connectionState = mapState(bridge.getConnectionState())
         connectedDeviceName = bridge.getConnectedDeviceName().ifBlank { null }
         isCasting = bridge.isCasting()
+        isMediaLoading = false
         playbackSnapshot = CastPlaybackSnapshot(
             isPlaying = bridge.getIsPlaying(),
             isBuffering = bridge.getIsBuffering(),
@@ -226,6 +231,9 @@ private class CombinedIosCastController(
 
     override val isCasting: Boolean
         get() = cast?.isCasting == true || dlna?.isCasting == true
+
+    override val isMediaLoading: Boolean
+        get() = cast?.isMediaLoading == true || dlna?.isMediaLoading == true
 
     override val playbackSnapshot: CastPlaybackSnapshot
         get() = when {

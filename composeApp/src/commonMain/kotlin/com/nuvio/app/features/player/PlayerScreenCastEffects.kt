@@ -11,9 +11,14 @@ internal fun PlayerScreenRuntime.BindCastEffects() {
     val cast = castController ?: return
 
     LaunchedEffect(cast) {
+        var hasLoadedOnce = false
         snapshotFlow { cast.connectionState to cast.isCasting }
             .collect { (state, casting) ->
-                if (state == CastConnectionState.Connected && !casting) {
+                if (state != CastConnectionState.Connected) {
+                    hasLoadedOnce = false
+                }
+                if (state == CastConnectionState.Connected && !casting && !hasLoadedOnce) {
+                    hasLoadedOnce = true
                     cast.loadMedia(
                         CastMediaRequest(
                             url = activeSourceUrl,

@@ -1915,4 +1915,12 @@
     <string name="trakt_more_like_this_source_trakt">Trakt</string>
     <string name="downloads_foreground_title">Download in corso</string>
     <string name="downloads_foreground_subtitle">Download in esecuzione in background</string>
+    <!-- Cast -->
+    <string name="player_action_cast">Trasmetti su TV</string>
+    <string name="cast_picker_title">Trasmetti a</string>
+    <string name="cast_picker_searching">Ricerca dispositivi in corso…</string>
+    <string name="cast_picker_no_devices">Nessun dispositivo trovato. Assicurati che la TV sia sulla stessa rete Wi-Fi.</string>
+    <string name="cast_picker_disconnect">Interrompi casting</string>
+    <string name="cast_status_connecting">Connessione in corso…</string>
+    <string name="cast_status_casting_to">Streaming su %1$s</string>
 </resources>
