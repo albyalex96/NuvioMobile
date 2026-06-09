@@ -3,7 +3,10 @@ package com.nuvio.app.features.addons
 import android.content.Context
 import android.content.SharedPreferences
 import com.nuvio.app.core.network.IPv4FirstDns
+import com.nuvio.app.core.network.CloudflareSolver
+import com.nuvio.app.core.network.isCloudflareChallenge
 import kotlinx.coroutines.Dispatchers
+import java.net.URI
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import nuvio.composeapp.generated.resources.Res
@@ -12,6 +15,7 @@ import nuvio.composeapp.generated.resources.network_request_failed_http
 import org.jetbrains.compose.resources.getString
 import okhttp3.ResponseBody
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -85,11 +89,31 @@ private val addonHttpClient = OkHttpClient.Builder()
     .followRedirects(true)
     .followSslRedirects(true)
     .proxy(Proxy.NO_PROXY)
+    .addInterceptor(CloudflareKillerInterceptor())
     .build()
 
 private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 private const val maxRawResponseBodyBytes = 1024 * 1024
 private const val truncationSuffix = "\n...[truncated]"
+
+private class CloudflareKillerInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val host = request.url.host
+        val savedCookies = CloudflareSolver.getCookies(host)
+
+        if (savedCookies.isNotEmpty()) {
+            val webViewUA = CloudflareSolver.getWebViewUserAgent()
+            val newRequest = request.newBuilder()
+                .header("Cookie", savedCookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
+                .apply { webViewUA?.let { header("User-Agent", it) } }
+                .build()
+            return chain.proceed(newRequest)
+        }
+
+        return chain.proceed(request)
+    }
+}
 
 private fun requestAllowsBody(method: String): Boolean =
     when (method.uppercase()) {
@@ -247,42 +271,73 @@ actual suspend fun httpRequestRaw(
     followRedirects: Boolean,
 ): RawHttpResponse =
     withContext(Dispatchers.IO) {
-        val normalizedMethod = method.uppercase()
-        val sanitizedHeaders = headers.withoutAcceptEncoding()
-        val builder = Request.Builder().url(url)
-        sanitizedHeaders.forEach { (key, value) ->
-            builder.header(key, value)
-        }
+        httpRequestRawWithCloudflare(method, url, headers, body, followRedirects)
+    }
 
-        val request = if (requestAllowsBody(normalizedMethod)) {
-            val contentType = sanitizedHeaders.getHeaderIgnoreCase("Content-Type")
-                ?: if (normalizedMethod == "POST") "application/x-www-form-urlencoded" else "application/json"
-            val requestBody = body.toByteArray(Charsets.UTF_8).toRequestBody(contentType.toMediaType())
-            builder.method(normalizedMethod, requestBody)
-        } else {
-            builder.method(normalizedMethod, null)
-        }.build()
+private suspend fun httpRequestRawWithCloudflare(
+    method: String,
+    url: String,
+    headers: Map<String, String>,
+    body: String,
+    followRedirects: Boolean,
+    isRetry: Boolean = false,
+): RawHttpResponse {
+    val normalizedMethod = method.uppercase()
+    val sanitizedHeaders = headers.withoutAcceptEncoding()
+    val host = URI(url).host ?: ""
 
-        val client = if (followRedirects) {
-            addonHttpClient
-        } else {
-            addonHttpClient.newBuilder()
-                .followRedirects(false)
-                .followSslRedirects(false)
-                .build()
-        }
+    val cfCookies = CloudflareSolver.getCookies(host)
+    val webViewUA = CloudflareSolver.getWebViewUserAgent()
 
-        client.newCall(request).execute().use { response ->
-            RawHttpResponse(
-                status = response.code,
-                statusText = response.message,
-                url = response.request.url.toString(),
-                body = readResponseBodyLimited(response.body),
-                headers = response.headers.toMultimap().mapValues { (_, values) ->
-                    values.joinToString(",")
-                }.mapKeys { (name, _) ->
-                    name.lowercase()
-                },
-            )
+    val builder = Request.Builder().url(url)
+    (sanitizedHeaders + cfCookies.let { cookies ->
+        if (cookies.isNotEmpty()) mapOf("Cookie" to cookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
+        else emptyMap()
+    }).forEach { (key, value) ->
+        builder.header(key, value)
+    }
+    if (webViewUA != null && cfCookies.isNotEmpty()) {
+        builder.header("User-Agent", webViewUA)
+    }
+
+    val request = if (requestAllowsBody(normalizedMethod)) {
+        val contentType = sanitizedHeaders.getHeaderIgnoreCase("Content-Type")
+            ?: if (normalizedMethod == "POST") "application/x-www-form-urlencoded" else "application/json"
+        val requestBody = body.toByteArray(Charsets.UTF_8).toRequestBody(contentType.toMediaType())
+        builder.method(normalizedMethod, requestBody)
+    } else {
+        builder.method(normalizedMethod, null)
+    }.build()
+
+    val client = if (followRedirects) {
+        addonHttpClient
+    } else {
+        addonHttpClient.newBuilder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .build()
+    }
+
+    val rawResponse = client.newCall(request).execute().use { response ->
+        RawHttpResponse(
+            status = response.code,
+            statusText = response.message,
+            url = response.request.url.toString(),
+            body = readResponseBodyLimited(response.body),
+            headers = response.headers.toMultimap().mapValues { (_, values) ->
+                values.joinToString(",")
+            }.mapKeys { (name, _) ->
+                name.lowercase()
+            },
+        )
+    }
+
+    if (!isRetry && isCloudflareChallenge(rawResponse)) {
+        val solved = CloudflareSolver.solve(url)
+        if (solved) {
+            return httpRequestRawWithCloudflare(method, url, headers, body, followRedirects, isRetry = true)
         }
     }
+
+    return rawResponse
+}
