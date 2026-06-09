@@ -368,14 +368,16 @@ val MaterialTheme.nuvio: NuvioThemeTokens
 internal fun defaultNuvioThemeTokens(
     palette: ThemeColorPalette,
     amoled: Boolean,
+    amoledSurfaces: Boolean = false,
     colorScheme: ColorScheme?,
 ): NuvioThemeTokens {
-    val background = if (amoled) Color.Black else palette.background
+    val pureBlack = Color.Black
+    val background = if (amoled) pureBlack else palette.background
     val textPrimary = Color(0xFFF5F7F8)
     val textSecondary = Color(0xFFB8BEC5)
     val textMuted = Color(0xFF969CA3)
-    val surface = palette.backgroundElevated
-    val surfaceCard = palette.backgroundCard
+    val surface = if (amoled && amoledSurfaces) pureBlack else palette.backgroundElevated
+    val surfaceCard = if (amoled && amoledSurfaces) pureBlack else palette.backgroundCard
     val accent = palette.secondary
     val accentStrong = palette.secondaryVariant
     val borderSubtle = Color(0xFF252A2A).copy(alpha = 0.55f)

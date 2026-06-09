@@ -197,7 +197,7 @@ fun NuvioTheme(
 ) {
     val palette = ThemeColors.getColorPalette(appTheme)
     val colorScheme = buildColorScheme(palette, amoled = amoled, amoledSurfaces = amoledSurfaces)
-    val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, colorScheme = colorScheme)
+    val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, amoledSurfaces = amoledSurfaces, colorScheme = colorScheme)
 
     val density = LocalDensity.current
     CompositionLocalProvider(
