@@ -1261,7 +1261,7 @@ private data class ParsedStreamBadges(
     val size: StreamBadgeData?,
     val isCached: Boolean,
     val isTorrent: Boolean,
-    val isProxied: Boolean,
+    val proxied: StreamBadgeData?,
 )
 
 @Composable
@@ -1313,9 +1313,7 @@ private fun PolishedStreamCardContent(
             badges.hdr?.let { SmallBadgeChip(badge = it) }
             SmallBadgeChip(badge = badges.audio)
             badges.codec?.let { SmallBadgeChip(badge = it) }
-            if (badges.isProxied) {
-                ProxiedBadge()
-            }
+            badges.proxied?.let { SmallBadgeChip(badge = it) }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -1541,37 +1539,6 @@ private fun TorrentBadge(animated: Boolean = true) {
 }
 
 @Composable
-private fun ProxiedBadge() {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFE65100))
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Shield,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(13.dp),
-            )
-            Text(
-                text = stringResource(Res.string.stream_parser_proxied),
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
-                color = Color.White,
-            )
-        }
-    }
-}
-
-@Composable
 private fun SmallBadgeChip(badge: StreamBadgeData) {
     Box(
         modifier = Modifier
@@ -1729,6 +1696,7 @@ private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
     val isProxied = stream.behaviorHints.proxyHeaders != null ||
             Regex("\\bPROXY\\s*\\(?\\s*ON\\s*\\)?\\b|\\bPROXIED\\b", RegexOption.IGNORE_CASE)
                 .containsMatchIn(cleanText)
+    val proxied = if (isProxied) StreamBadgeData("Proxied", Color(0xFFE65100), Icons.Rounded.Shield) else null
 
     return ParsedStreamBadges(
         quality = quality,
@@ -1738,7 +1706,7 @@ private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
         size = size,
         isCached = isCached,
         isTorrent = isTorrent,
-        isProxied = isProxied,
+        proxied = proxied,
     )
 }
 
