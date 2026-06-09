@@ -2,6 +2,7 @@ package com.nuvio.app.core.network
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceRequest
@@ -39,6 +40,7 @@ actual object CloudflareSolver {
 
     actual suspend fun solve(url: String): Boolean = withContext(Dispatchers.Main) {
         val ctx = context ?: return@withContext false
+        Log.d("CloudflareKiller", "solve() called for URL: $url")
         val deferred = CompletableDeferred<Boolean>()
         var webView: WebView? = null
 
@@ -99,8 +101,12 @@ actual object CloudflareSolver {
         val cookie = CookieManager.getInstance().getCookie(url) ?: return false
         return if (cookie.contains("cf_clearance")) {
             savedCookies[host] = parseCookieMap(cookie)
+            Log.d("CloudflareKiller", "cf_clearance found for host: $host")
             true
-        } else false
+        } else {
+            Log.d("CloudflareKiller", "No cf_clearance yet for host: $host")
+            false
+        }
     }
 
     private fun shouldBlockResource(url: String): Boolean {

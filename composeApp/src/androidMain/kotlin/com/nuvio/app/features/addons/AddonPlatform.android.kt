@@ -2,6 +2,7 @@ package com.nuvio.app.features.addons
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.nuvio.app.core.network.IPv4FirstDns
 import com.nuvio.app.core.network.CloudflareSolver
 import com.nuvio.app.core.network.isCloudflareChallenge
@@ -105,6 +106,7 @@ private class CloudflareKillerInterceptor : Interceptor {
 
         if (savedCookies.isNotEmpty()) {
             val webViewUA = CloudflareSolver.getWebViewUserAgent()
+            Log.d("CloudflareKiller", "Injecting ${savedCookies.size} cookies for host: $host")
             val newRequest = request.newBuilder()
                 .header("Cookie", savedCookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
                 .apply { webViewUA?.let { header("User-Agent", it) } }
@@ -334,7 +336,9 @@ private suspend fun httpRequestRawWithCloudflare(
     }
 
     if (!isRetry && isCloudflareChallenge(rawResponse)) {
+        Log.d("CloudflareKiller", "Cloudflare challenge detected, attempting solve...")
         val solved = CloudflareSolver.solve(url)
+        Log.d("CloudflareKiller", "Solve result: $solved")
         if (solved) {
             return httpRequestRawWithCloudflare(method, url, headers, body, followRedirects, isRetry = true)
         }
