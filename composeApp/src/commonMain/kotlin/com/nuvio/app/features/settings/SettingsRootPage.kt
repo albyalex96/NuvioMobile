@@ -168,16 +168,6 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onStreamsClick,
                     )
-                    if (com.nuvio.app.features.settings.globalNetworkSettingsRepository != null) {
-                        SettingsGroupDivider(isTablet = isTablet)
-                        SettingsNavigationRow(
-                            title = stringResource(Res.string.settings_network_title),
-                            description = stringResource(Res.string.settings_network_description),
-                            icon = Icons.Rounded.Settings,
-                            isTablet = isTablet,
-                            onClick = onNetworkClick,
-                        )
-                    }
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_integrations),
@@ -248,6 +238,16 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onAdvancedClick,
                     )
+                    if (com.nuvio.app.features.settings.globalNetworkSettingsRepository != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.settings_network_title),
+                            description = stringResource(Res.string.settings_network_description),
+                            icon = Icons.Rounded.Settings,
+                            isTablet = isTablet,
+                            onClick = onNetworkClick,
+                        )
+                    }
                 }
             }
         }

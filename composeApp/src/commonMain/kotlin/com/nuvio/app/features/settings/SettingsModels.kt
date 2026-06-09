@@ -63,7 +63,7 @@ internal enum class SettingsPage(
     ),
     Network(
         titleRes = Res.string.compose_settings_page_network,
-        category = SettingsCategory.General,
+        category = SettingsCategory.Advanced,
         parentPage = Root,
     ),
     SupportersContributors(

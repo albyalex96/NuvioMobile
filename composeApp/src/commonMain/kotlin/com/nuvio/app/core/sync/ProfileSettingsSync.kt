@@ -25,8 +25,10 @@ import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.livetv.LiveTvStorage
 import com.nuvio.app.features.settings.ThemeSettingsStorage
 import com.nuvio.app.features.settings.ThemeSettingsRepository
+import com.nuvio.app.features.streams.DisplayMode
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 import com.nuvio.app.features.streams.StreamBadgeSettingsStorage
+import com.nuvio.app.features.streams.StreamsAppearanceRepository
 import com.nuvio.app.features.tmdb.TmdbSettingsStorage
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.trakt.TraktCommentsStorage
@@ -163,6 +165,8 @@ object ProfileSettingsSync {
             ThemeSettingsRepository.selectedTheme.map { "theme" },
             ThemeSettingsRepository.amoledEnabled.map { "amoled" },
             ThemeSettingsRepository.liquidGlassNativeTabBarEnabled.map { "liquid_glass_tab_bar" },
+            ThemeSettingsRepository.amoledSurfacesEnabled.map { "amoled_surfaces" },
+            StreamsAppearanceRepository.uiState.map { "streams_appearance" },
             PosterCardStyleRepository.uiState.map { "poster_card_style" },
             PlayerSettingsRepository.uiState.map { "player" },
             StreamBadgeSettingsRepository.uiState.map { "stream_badges" },
@@ -228,6 +232,7 @@ object ProfileSettingsSync {
                 ),
                 top10CatalogSettingsPayload = Top10CatalogStorage.loadPayload().orEmpty().trim(),
                 liveTvPlaylistUrl = LiveTvStorage.loadPlaylistUrl().orEmpty().trim(),
+                streamsAppearanceDisplayMode = StreamsAppearanceRepository.uiState.value.displayMode.name,
             ),
         )
     }
@@ -277,6 +282,8 @@ object ProfileSettingsSync {
 
         LiveTvStorage.savePlaylistUrl(blob.features.liveTvPlaylistUrl)
         LiveTvRepository.onProfileChanged()
+
+        StreamsAppearanceRepository.setDisplayMode(DisplayMode.fromString(blob.features.streamsAppearanceDisplayMode))
     }
 
     private fun ensureRepositoriesLoaded() {
@@ -284,6 +291,7 @@ object ProfileSettingsSync {
         PosterCardStyleRepository.ensureLoaded()
         PlayerSettingsRepository.ensureLoaded()
         StreamBadgeSettingsRepository.ensureLoaded()
+        StreamsAppearanceRepository.ensureLoaded()
         DebridSettingsRepository.ensureLoaded()
         TmdbSettingsRepository.ensureLoaded()
         MdbListSettingsRepository.ensureLoaded()
@@ -306,6 +314,8 @@ object ProfileSettingsSync {
     private fun currentObservedStateSignature(): String = listOf(
         "theme=${ThemeSettingsRepository.selectedTheme.value.name}",
         "amoled=${ThemeSettingsRepository.amoledEnabled.value}",
+        "amoled_surfaces=${ThemeSettingsRepository.amoledSurfacesEnabled.value}",
+        "streams_appearance=${StreamsAppearanceRepository.uiState.value.displayMode.name}",
         "liquid_glass_tab_bar=${ThemeSettingsRepository.liquidGlassNativeTabBarEnabled.value}",
         "poster_card_style=${PosterCardStyleRepository.uiState.value}",
         "player=${PlayerSettingsRepository.uiState.value}",
@@ -347,6 +357,7 @@ private data class MobileProfileSettingsFeatures(
     @SerialName("notifications_settings") val notificationsSettings: NotificationsSettingsPayload = NotificationsSettingsPayload(),
     @SerialName("top10_catalog_settings_payload") val top10CatalogSettingsPayload: String = "",
     @SerialName("live_tv_playlist_url") val liveTvPlaylistUrl: String = "",
+    @SerialName("streams_appearance_display_mode") val streamsAppearanceDisplayMode: String = "",
 )
 
 @Serializable
