@@ -1300,9 +1300,6 @@ private fun PolishedStreamCardContent(
                 if (badges.isTorrent) {
                     TorrentBadge(animated = animationsEnabled)
                 }
-                if (badges.isProxied) {
-                    ProxiedBadge()
-                }
             }
         }
 
@@ -1315,6 +1312,9 @@ private fun PolishedStreamCardContent(
             badges.hdr?.let { SmallBadgeChip(badge = it) }
             SmallBadgeChip(badge = badges.audio)
             badges.codec?.let { SmallBadgeChip(badge = it) }
+            if (badges.isProxied) {
+                ProxiedBadge()
+            }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -1522,7 +1522,7 @@ private fun TorrentBadge(animated: Boolean = true) {
             Icon(
                 imageVector = Icons.Rounded.Link,
                 contentDescription = null,
-                tint = Color(0xFFCE93D8),
+                tint = Color.White,
                 modifier = Modifier
                     .size(13.dp)
                     .rotate(if (animated) rotation else 0f),
@@ -1533,7 +1533,7 @@ private fun TorrentBadge(animated: Boolean = true) {
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                 ),
-                color = Color(0xFFCE93D8),
+                color = Color.White,
             )
         }
     }
@@ -1555,7 +1555,7 @@ private fun ProxiedBadge() {
             Icon(
                 imageVector = Icons.Rounded.Shield,
                 contentDescription = null,
-                tint = Color(0xFFFFB74D),
+                tint = Color.White,
                 modifier = Modifier.size(13.dp),
             )
             Text(
@@ -1564,7 +1564,7 @@ private fun ProxiedBadge() {
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                 ),
-                color = Color(0xFFFFB74D),
+                color = Color.White,
             )
         }
     }
