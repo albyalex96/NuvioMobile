@@ -16,7 +16,6 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.sync.Mutex
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -45,7 +44,6 @@ internal actual object DownloadsPlatformDownloader {
     private var currentActivity: ComponentActivity? = null
     @Volatile private var pendingPermissionContinuation: Continuation<Boolean>? = null
     private val permissionScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val permissionMutex = Mutex()
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -53,6 +51,7 @@ internal actual object DownloadsPlatformDownloader {
 
     fun bindActivity(activity: ComponentActivity) {
         currentActivity = activity
+        requestPostNotificationsIfNeeded(activity)
     }
 
     fun unbindActivity(activity: ComponentActivity) {
@@ -69,13 +68,32 @@ internal actual object DownloadsPlatformDownloader {
         return true
     }
 
+    private fun requestPostNotificationsIfNeeded(activity: ComponentActivity) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ContextCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+        ) return
+        permissionScope.launch {
+            suspendCancellableCoroutine<Boolean> { continuation ->
+                pendingPermissionContinuation = continuation
+                ActivityCompat.requestPermissions(
+                    activity,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    notificationPermissionRequestCode,
+                )
+            }
+        }
+    }
+
     actual fun start(
         request: DownloadPlatformRequest,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
         onFailure: (message: String) -> Unit,
     ): DownloadsTaskHandle {
-        requestPostNotificationsPermissionAsync()
+        requestPostNotificationsIfAvailable()
 
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
@@ -205,44 +223,24 @@ internal actual object DownloadsPlatformDownloader {
         return AndroidDownloadsTaskHandle(job)
     }
 
-    private fun requestPostNotificationsPermissionAsync() {
+    private fun requestPostNotificationsIfAvailable() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         val context = appContext ?: return
-        val alreadyGranted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
-        if (alreadyGranted) return
-
-        permissionScope.launch {
-            if (!permissionMutex.tryLock()) return@launch
-            try {
-                requestPostNotificationsPermission()
-            } finally {
-                permissionMutex.unlock()
-            }
-        }
-    }
-
-    private suspend fun requestPostNotificationsPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
-        val context = appContext ?: return false
-        if (
-            ContextCompat.checkSelfPermission(
+        if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS,
             ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            return true
-        }
-        val activity = currentActivity ?: return false
-        return suspendCancellableCoroutine { continuation ->
-            pendingPermissionContinuation = continuation
-            ActivityCompat.requestPermissions(
-                activity,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                notificationPermissionRequestCode,
-            )
+        ) return
+        val activity = currentActivity ?: return
+        permissionScope.launch {
+            suspendCancellableCoroutine<Boolean> { continuation ->
+                pendingPermissionContinuation = continuation
+                ActivityCompat.requestPermissions(
+                    activity,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    notificationPermissionRequestCode,
+                )
+            }
         }
     }
 
