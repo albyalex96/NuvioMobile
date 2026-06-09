@@ -1913,4 +1913,6 @@
     <string name="trakt_more_like_this_source_title">Fonte Più Simili</string>
     <string name="trakt_more_like_this_source_tmdb">TMDB</string>
     <string name="trakt_more_like_this_source_trakt">Trakt</string>
+    <string name="downloads_foreground_title">Download in corso</string>
+    <string name="downloads_foreground_subtitle">Download in esecuzione in background</string>
 </resources>
