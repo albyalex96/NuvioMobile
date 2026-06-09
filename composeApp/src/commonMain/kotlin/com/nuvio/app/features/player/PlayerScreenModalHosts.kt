@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.details.MetaDetailsUiState
+import com.nuvio.app.features.player.cast.CastController
+import com.nuvio.app.features.player.cast.CastDevicePicker
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.still_watching_cancel
 import nuvio.composeapp.generated.resources.still_watching_proceed
@@ -107,6 +109,9 @@ internal fun PlayerScreenModalHosts(
     stillWatchingTimeoutRemaining: Int,
     onStillWatchingProceed: () -> Unit,
     onStillWatchingCancel: () -> Unit,
+    showCastPicker: Boolean,
+    castController: CastController?,
+    onCastPickerDismissed: () -> Unit,
     showSubmitIntroModal: Boolean,
     activeVideoId: String?,
     metaUiState: MetaDetailsUiState,
@@ -235,6 +240,13 @@ internal fun PlayerScreenModalHosts(
             onBackToEpisodes = onBackToEpisodes,
             onReloadEpisodeStreams = onReloadEpisodeStreams,
             onDismiss = onEpisodesPanelDismissed,
+        )
+    }
+
+    if (showCastPicker && castController != null) {
+        CastDevicePicker(
+            controller = castController,
+            onDismiss = onCastPickerDismissed,
         )
     }
 

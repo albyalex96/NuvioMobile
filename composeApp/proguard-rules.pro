@@ -56,3 +56,8 @@
 # Fix for NoClassDefFoundError in PlayerScreen onDispose lambda classes
 -keep class com.nuvio.app.features.player.PlayerScreenKt** { *; }
 -keep class * implements androidx.compose.runtime.DisposableEffectResult { *; }
+
+# Google Cast SDK
+-keep class com.google.android.gms.cast.** { *; }
+-keep class com.nuvio.app.features.player.cast.** { *; }
+-dontwarn com.google.android.gms.cast.**

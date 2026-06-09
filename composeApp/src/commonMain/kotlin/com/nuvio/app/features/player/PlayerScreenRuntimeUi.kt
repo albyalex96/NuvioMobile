@@ -269,6 +269,12 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 }
             },
             onVolumeBoostClick = { showVolumeBoostModal = true },
+            onCastClick = if (castController != null) {
+                { showCastPicker = true }
+            } else {
+                null
+            },
+            isCasting = castController?.isCasting == true,
             onSubmitIntroClick = if (
                 isSeries &&
                 playerSettingsUiState.introSubmitEnabled &&
@@ -542,6 +548,9 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             flushWatchProgress()
             args.onBack()
         },
+        showCastPicker = showCastPicker,
+        castController = castController,
+        onCastPickerDismissed = { showCastPicker = false },
         showSubmitIntroModal = showSubmitIntroModal,
         activeVideoId = activeVideoId,
         metaUiState = metaUiState,

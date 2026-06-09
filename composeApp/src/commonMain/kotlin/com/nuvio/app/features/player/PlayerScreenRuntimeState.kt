@@ -13,6 +13,7 @@ import com.nuvio.app.features.details.MetaScreenSettingsUiState
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.p2p.P2pSettingsUiState
 import com.nuvio.app.features.p2p.P2pStreamingState
+import com.nuvio.app.features.player.cast.CastController
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.player.skip.SkipInterval
 import com.nuvio.app.features.streams.StreamsUiState
@@ -178,6 +179,9 @@ internal class PlayerScreenRuntime(
     var stillWatchingHandledForEnded by mutableStateOf(false)
     var credentialRefreshJob by mutableStateOf<Job?>(null)
     var credentialRefreshAttemptedSourceUrl by mutableStateOf<String?>(null)
+
+    var castController: CastController? = null
+    var showCastPicker by mutableStateOf(false)
 
     var showVolumeBoostModal by mutableStateOf(false)
     var showAudioModal by mutableStateOf(false)

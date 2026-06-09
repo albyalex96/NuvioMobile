@@ -1586,6 +1586,14 @@
     <string name="player_volume_boost_title">Volume Boost</string>
     <string name="player_volume_boost_value">%1$d dB</string>
     <string name="player_volume_boost_off">Off</string>
+    <!-- Cast -->
+    <string name="player_action_cast">Cast to TV</string>
+    <string name="cast_picker_title">Cast to</string>
+    <string name="cast_picker_searching">Searching for devices…</string>
+    <string name="cast_picker_no_devices">No devices found. Make sure your TV is on the same Wi-Fi network.</string>
+    <string name="cast_picker_disconnect">Stop casting</string>
+    <string name="cast_status_connecting">Connecting…</string>
+    <string name="cast_status_casting_to">Casting to %1$s</string>
     <!-- CloudLibrary -->
     <string name="cloud_library_provider_unavailable">Cloud library is not available for %1$s.</string>
     <!-- Player iOS video settings modal -->
