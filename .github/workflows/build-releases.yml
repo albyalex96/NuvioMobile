@@ -90,31 +90,13 @@ jobs:
       # ── Changelog ─────────────────────────────────────────────────
       - name: Generate Changelog
         id: changelog
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git fetch --tags origin 2>/dev/null || true
-          PREV_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
-
-          if [ -n "$PREV_TAG" ]; then
-            echo "Previous release found: $PREV_TAG"
-            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
-          else
-            echo "No previous release, taking last 20 commits"
-            COMMITS=$(git log HEAD --pretty=format:"- %s (%h)" --no-merges -n 20)
-          fi
-
-          if [ -z "$COMMITS" ]; then
-            COMMITS="- No changes since last release"
-          fi
+          COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -n 30)
 
           {
             echo "## Nuvio Release Build #${{ github.run_number }}"
             echo ""
             echo "**Target branch:** \`${{ steps.resolve_branch.outputs.branch }}\`"
-            if [ -n "$PREV_TAG" ]; then
-              echo "**Previous Version:** \`$PREV_TAG\`"
-            fi
             echo ""
             echo "---"
             echo ""
