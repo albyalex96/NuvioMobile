@@ -28,7 +28,6 @@ actual object ThemeSettingsStorage {
         liquidGlassNativeTabBarEnabledKey,
         glassNavBarEnabledKey,
     )
-    private val globalSyncKeys = listOf(selectedAppLanguageKey)
 
     private var preferences: SharedPreferences? = null
 
@@ -126,13 +125,11 @@ actual object ThemeSettingsStorage {
         loadAmoledSurfacesEnabled()?.let { put(amoledSurfacesEnabledKey, encodeSyncBoolean(it)) }
         loadLiquidGlassNativeTabBarEnabled()?.let { put(liquidGlassNativeTabBarEnabledKey, encodeSyncBoolean(it)) }
         loadGlassNavBarEnabled()?.let { put(glassNavBarEnabledKey, encodeSyncBoolean(it)) }
-        loadSelectedAppLanguage()?.let { put(selectedAppLanguageKey, encodeSyncString(it)) }
     }
 
     actual fun replaceFromSyncPayload(payload: JsonObject) {
         preferences?.edit()?.apply {
             profileScopedSyncKeys.forEach { remove(ProfileScopedKey.of(it)) }
-            globalSyncKeys.forEach { remove(it) }
         }?.apply()
 
         payload.decodeSyncString(selectedThemeKey)?.let(::saveSelectedTheme)
@@ -140,7 +137,6 @@ actual object ThemeSettingsStorage {
         payload.decodeSyncBoolean(amoledSurfacesEnabledKey)?.let(::saveAmoledSurfacesEnabled)
         payload.decodeSyncBoolean(liquidGlassNativeTabBarEnabledKey)?.let(::saveLiquidGlassNativeTabBarEnabled)
         payload.decodeSyncBoolean(glassNavBarEnabledKey)?.let(::saveGlassNavBarEnabled)
-        payload.decodeSyncString(selectedAppLanguageKey)?.let(::saveSelectedAppLanguage)
         applySelectedAppLanguage(loadSelectedAppLanguage() ?: AppLanguage.ENGLISH.code)
     }
 }
