@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
@@ -38,6 +39,7 @@ import com.nuvio.app.core.format.formatReleaseDateForDisplay
 import com.nuvio.app.features.home.MetaPreview
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.action_saved
 import nuvio.composeapp.generated.resources.episodes_cd_watched
 import nuvio.composeapp.generated.resources.hero_add_to_library
 import nuvio.composeapp.generated.resources.hero_mark_unwatched
@@ -163,6 +165,56 @@ fun BoxScope.NuvioPosterWatchedOverlay(
         isVisible = isWatched,
         modifier = modifier
             .align(Alignment.TopEnd)
+            .padding(padding),
+    )
+}
+
+@Composable
+fun NuvioBookmarkedBadge(
+    modifier: Modifier = Modifier,
+) {
+    val tokens = MaterialTheme.nuvio
+    Box(
+        modifier = modifier
+            .size(NuvioTokens.Icon.md)
+            .clip(tokens.shapes.avatar)
+            .background(tokens.colors.accent),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Bookmark,
+            contentDescription = stringResource(Res.string.action_saved),
+            tint = tokens.colors.onAccent,
+            modifier = Modifier.size(NuvioTokens.Icon.xs),
+        )
+    }
+}
+
+@Composable
+fun NuvioAnimatedBookmarkedBadge(
+    isVisible: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = modifier,
+    ) {
+        NuvioBookmarkedBadge()
+    }
+}
+
+@Composable
+fun BoxScope.NuvioPosterBookmarkedOverlay(
+    isSaved: Boolean,
+    modifier: Modifier = Modifier,
+    padding: Dp = NuvioTokens.Space.s6,
+) {
+    NuvioAnimatedBookmarkedBadge(
+        isVisible = isSaved,
+        modifier = modifier
+            .align(Alignment.TopStart)
             .padding(padding),
     )
 }

@@ -68,8 +68,6 @@ fun PlayerScreen(
             videoId = videoId,
             parentMetaId = parentMetaId,
             parentMetaType = parentMetaType,
-            parentMetaLogo = parentMetaLogo,
-            parentMetaPoster = parentMetaPoster,
             providerAddonId = providerAddonId,
             torrentInfoHash = torrentInfoHash,
             torrentFileIdx = torrentFileIdx,
