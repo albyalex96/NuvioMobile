@@ -26,6 +26,7 @@ actual object CloudflareSolver {
 
     fun initialize(appContext: Context) {
         context = appContext
+        CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().removeAllCookies(null)
     }
 
@@ -51,11 +52,12 @@ actual object CloudflareSolver {
                 @SuppressLint("SetJavaScriptEnabled")
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.blockNetworkImage = true
                 settings.builtInZoomControls = false
                 settings.displayZoomControls = false
 
                 webViewUserAgent = settings.userAgentString
+
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
@@ -78,7 +80,10 @@ actual object CloudflareSolver {
                         view: WebView,
                         request: WebResourceRequest,
                     ): WebResourceResponse? {
-                        return if (shouldBlockResource(request.url.toString())) {
+                        val requestUrl = request.url.toString()
+                        return if (requestUrl.contains("/cdn-cgi/") || requestUrl.contains("recaptcha")) {
+                            super.shouldInterceptRequest(view, request)
+                        } else if (shouldBlockResource(requestUrl)) {
                             WebResourceResponse("image/png", null, null)
                         } else {
                             super.shouldInterceptRequest(view, request)
@@ -108,8 +113,11 @@ actual object CloudflareSolver {
     }
 
     private fun tryExtractCookie(urlOrHost: String): Boolean {
-        val host = if (urlOrHost.startsWith("http")) URI(urlOrHost).host ?: return false
-            else urlOrHost
+        val host = if (urlOrHost.startsWith("http")) {
+            URI(urlOrHost).host ?: return false
+        } else {
+            urlOrHost
+        }
 
         val cookie = CookieManager.getInstance().getCookie(
             if (urlOrHost.startsWith("http")) urlOrHost else "https://$urlOrHost/"
