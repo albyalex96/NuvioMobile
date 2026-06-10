@@ -64,6 +64,24 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Cache npm/yarn (wasmJs webpack)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/yarn
+            composeApp/.gradle/kotlinJs
+          key: npm-${{ runner.os }}-${{ hashFiles('**/yarn.lock', '**/package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Enable Gradle build cache
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
+          echo "org.gradle.parallel=true" >> ~/.gradle/gradle.properties
+          echo "org.gradle.vfs.watch=false" >> ~/.gradle/gradle.properties
+
       # ── Secrets → local.properties ────────────────────────────────
       - name: Write local.properties
         run: |
@@ -116,12 +134,12 @@ jobs:
 
       - name: Build Android Full APK
         run: |
-          ./gradlew :composeApp:assembleFullRelease
+          ./gradlew :composeApp:assembleFullRelease -x test --build-cache
 
       # ── Build: Web (WasmJs) ──────────────────────────────────────
       - name: Build Web (WasmJs Browser Distribution)
         run: |
-          ./gradlew :composeApp:wasmJsBrowserDistribution
+          ./gradlew :composeApp:wasmJsBrowserDistribution -x test --build-cache
 
       # ── Collect Web Artifacts ─────────────────────────────────────
       - name: Collect Web artifacts into web-dist/

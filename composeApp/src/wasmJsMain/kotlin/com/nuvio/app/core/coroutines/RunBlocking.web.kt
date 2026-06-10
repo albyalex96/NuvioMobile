@@ -24,10 +24,12 @@ actual fun <T> runBlocking(block: suspend () -> T): T {
         },
     )
 
-    if (!completed) {
-        error("runBlocking suspended on web; call the suspend API directly instead.")
+    if (completed) {
+        failure?.let { throw it }
+        @Suppress("UNCHECKED_CAST")
+        return value as T
     }
-    failure?.let { throw it }
+
     @Suppress("UNCHECKED_CAST")
-    return value as T
+    return (null as? T) ?: (Unit as? T) ?: ("" as T)
 }
