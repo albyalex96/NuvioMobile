@@ -1,5 +1,7 @@
 package com.nuvio.app.features.addons
 
+import com.nuvio.app.core.network.CloudflareSolver
+import com.nuvio.app.core.network.isCloudflareChallenge
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.plugins.HttpTimeout
@@ -168,12 +170,33 @@ actual suspend fun httpRequestRaw(
     body: String,
     followRedirects: Boolean,
 ): RawHttpResponse =
-    addonHttpClient
+    httpRequestRawWithCloudflare(method, url, headers, body, followRedirects)
+
+private suspend fun httpRequestRawWithCloudflare(
+    method: String,
+    url: String,
+    headers: Map<String, String>,
+    body: String,
+    followRedirects: Boolean,
+    isRetry: Boolean = false,
+): RawHttpResponse {
+    val host = url.toUriHost()
+    val cfCookies = CloudflareSolver.getCookies(host)
+    val webViewUA = CloudflareSolver.getWebViewUserAgent()
+
+    val rawResponse = addonHttpClient
         .request {
             url(url)
             this.method = HttpMethod.parse(method.uppercase())
             headers.forEach { (key, value) ->
                 header(key, value)
+            }
+            if (cfCookies.isNotEmpty()) {
+                val cookieHeader = cfCookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
+                header("Cookie", cookieHeader)
+            }
+            if (webViewUA != null && cfCookies.isNotEmpty()) {
+                header("User-Agent", webViewUA)
             }
             if (this.method == HttpMethod.Post || this.method == HttpMethod.Put || this.method == HttpMethod.Patch) {
                 setBody(body)
@@ -190,3 +213,22 @@ actual suspend fun httpRequestRaw(
                 },
             )
         }
+
+    if (!isRetry && isCloudflareChallenge(rawResponse)) {
+        val solved = CloudflareSolver.solve(url)
+        if (solved) {
+            return httpRequestRawWithCloudflare(method, url, headers, body, followRedirects, isRetry = true)
+        }
+    }
+
+    return rawResponse
+}
+
+private fun String.toUriHost(): String {
+    return try {
+        val cleaned = removePrefix("https://").removePrefix("http://")
+        cleaned.substringBefore("/").substringBefore(":").substringBefore("?")
+    } catch (_: Exception) {
+        ""
+    }
+}

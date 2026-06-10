@@ -31,8 +31,6 @@ fun PlayerScreen(
     videoId: String? = null,
     parentMetaId: String,
     parentMetaType: String,
-    parentMetaLogo: String? = null,
-    parentMetaPoster: String? = null,
     providerAddonId: String? = null,
     torrentInfoHash: String? = null,
     torrentFileIdx: Int? = null,

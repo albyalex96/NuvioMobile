@@ -242,7 +242,7 @@ actual fun PlatformPlayerSurface(
                         setMimeType(MimeTypes.APPLICATION_M3U8)
                     }
                 }
-            
+
             val subtitleConfigs = externalSubtitles.mapNotNull { subtitle ->
                 val mimeType = resolveSubtitleMimeType(subtitle.url, subtitle.headers)
                 MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.url))
@@ -277,7 +277,7 @@ actual fun PlatformPlayerSurface(
                     videoMediaItem = mediaItemBuilder.build(),
                     startPositionMs = fallbackStartPositionMs,
                 )
-            }                
+            }
             prepare()
             this.playWhenReady = playWhenReady
         }
