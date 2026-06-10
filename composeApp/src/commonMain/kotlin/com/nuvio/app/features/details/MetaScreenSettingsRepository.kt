@@ -3,7 +3,6 @@
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -164,9 +163,9 @@ object MetaScreenSettingsRepository {
     private var tabLayout: Boolean = false
     private var episodeCardStyle: MetaEpisodeCardStyle = MetaEpisodeCardStyle.Horizontal
     private var blurUnwatchedEpisodes: Boolean = false
-    private fun localizedString(resource: StringResource): String = runBlocking { getString(resource) }
+    private suspend fun localizedString(resource: StringResource): String = getString(resource)
 
-    fun ensureLoaded() {
+    suspend fun ensureLoaded() {
         if (hasLoaded) return
         hasLoaded = true
 
@@ -194,7 +193,7 @@ object MetaScreenSettingsRepository {
         persist()
     }
 
-    fun onProfileChanged() {
+    suspend fun onProfileChanged() {
         hasLoaded = false
         preferences.clear()
         cinematicBackground = false
@@ -206,42 +205,42 @@ object MetaScreenSettingsRepository {
         ensureLoaded()
     }
 
-    fun setCinematicBackground(enabled: Boolean) {
+    suspend fun setCinematicBackground(enabled: Boolean) {
         ensureLoaded()
         cinematicBackground = enabled
         publish()
         persist()
     }
 
-    fun setHeroTrailerPlayback(enabled: Boolean) {
+    suspend fun setHeroTrailerPlayback(enabled: Boolean) {
         ensureLoaded()
         heroTrailerPlayback = enabled
         publish()
         persist()
     }
 
-    fun setTabLayout(enabled: Boolean) {
+    suspend fun setTabLayout(enabled: Boolean) {
         ensureLoaded()
         tabLayout = enabled
         publish()
         persist()
     }
 
-    fun setEpisodeCardStyle(style: MetaEpisodeCardStyle) {
+    suspend fun setEpisodeCardStyle(style: MetaEpisodeCardStyle) {
         ensureLoaded()
         episodeCardStyle = style
         publish()
         persist()
     }
 
-    fun setBlurUnwatchedEpisodes(enabled: Boolean) {
+    suspend fun setBlurUnwatchedEpisodes(enabled: Boolean) {
         ensureLoaded()
         blurUnwatchedEpisodes = enabled
         publish()
         persist()
     }
 
-    fun setTabGroup(key: MetaScreenSectionKey, groupId: Int?) {
+    suspend fun setTabGroup(key: MetaScreenSectionKey, groupId: Int?) {
         ensureLoaded()
         if (!key.canBeTabbed) return
         if (groupId != null) {
@@ -265,7 +264,7 @@ object MetaScreenSettingsRepository {
         _uiState.value = MetaScreenSettingsUiState()
     }
 
-    internal fun applyFromSync(
+    internal suspend fun applyFromSync(
         items: List<MetaScreenSectionItem>,
         cinematicBackground: Boolean,
         heroTrailerPlayback: Boolean = false,
@@ -292,13 +291,13 @@ object MetaScreenSettingsRepository {
         persist()
     }
 
-    fun setEnabled(key: MetaScreenSectionKey, enabled: Boolean) {
+    suspend fun setEnabled(key: MetaScreenSectionKey, enabled: Boolean) {
         updatePreference(key) { preference ->
             preference.copy(enabled = enabled)
         }
     }
 
-    fun resetToDefaults() {
+    suspend fun resetToDefaults() {
         ensureLoaded()
         preferences.clear()
         cinematicBackground = false
@@ -311,7 +310,7 @@ object MetaScreenSettingsRepository {
         persist()
     }
 
-    fun moveByIndex(fromIndex: Int, toIndex: Int) {
+    suspend fun moveByIndex(fromIndex: Int, toIndex: Int) {
         ensureLoaded()
         val orderedKeys = definitions
             .sortedBy { definition -> preferences[definition.key]?.order ?: Int.MAX_VALUE }
@@ -328,7 +327,7 @@ object MetaScreenSettingsRepository {
         persist()
     }
 
-    private fun updatePreference(
+    private suspend fun updatePreference(
         key: MetaScreenSectionKey,
         transform: (StoredMetaScreenSectionPreference) -> StoredMetaScreenSectionPreference,
     ) {
@@ -354,7 +353,7 @@ object MetaScreenSettingsRepository {
         preferences = normalized
     }
 
-    private fun publish() {
+    private suspend fun publish() {
         _uiState.value = MetaScreenSettingsUiState(
             items = definitions
                 .sortedBy { definition -> preferences[definition.key]?.order ?: Int.MAX_VALUE }

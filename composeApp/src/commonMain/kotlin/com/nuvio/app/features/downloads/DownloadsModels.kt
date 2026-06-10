@@ -1,7 +1,6 @@
 ﻿package com.nuvio.app.features.downloads
 
 import kotlinx.serialization.Serializable
-import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.downloads_enqueue_missing_url
 import nuvio.composeapp.generated.resources.downloads_enqueue_replaced
@@ -93,14 +92,12 @@ enum class DownloadEnqueueResult {
     UnsupportedFormat,
     HlsNeedsSelection;
 
-    fun toastMessage(): String = runBlocking {
-        when (this@DownloadEnqueueResult) {
-            Started -> getString(Res.string.downloads_enqueue_started)
-            Replaced -> getString(Res.string.downloads_enqueue_replaced)
-            MissingUrl -> getString(Res.string.downloads_enqueue_missing_url)
-            UnsupportedFormat -> getString(Res.string.downloads_enqueue_unsupported_format)
-            HlsNeedsSelection -> ""
-        }
+    suspend fun toastMessage(): String = when (this@DownloadEnqueueResult) {
+        Started -> getString(Res.string.downloads_enqueue_started)
+        Replaced -> getString(Res.string.downloads_enqueue_replaced)
+        MissingUrl -> getString(Res.string.downloads_enqueue_missing_url)
+        UnsupportedFormat -> getString(Res.string.downloads_enqueue_unsupported_format)
+        HlsNeedsSelection -> ""
     }
 }
 

@@ -25,9 +25,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
@@ -56,6 +60,8 @@ fun DownloadsScreen(
     }.collectAsStateWithLifecycle()
 
     var selectedShowId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val scope = rememberCoroutineScope()
 
     val completedEpisodes = remember(uiState.items) {
         uiState.completedItems
@@ -92,12 +98,14 @@ fun DownloadsScreen(
                 uiState = uiState,
                 onOpenDownload = onOpenDownload,
                 onOpenShow = { showId -> selectedShowId = showId },
+                scope = scope,
             )
         } else {
             downloadsShowContent(
                 showId = selectedShowId.orEmpty(),
                 episodes = completedEpisodes,
                 onOpenDownload = onOpenDownload,
+                scope = scope,
             )
         }
     }
@@ -107,6 +115,7 @@ private fun LazyListScope.downloadsRootContent(
     uiState: DownloadsUiState,
     onOpenDownload: (DownloadItem) -> Unit,
     onOpenShow: (String) -> Unit,
+    scope: CoroutineScope,
 ) {
     val activeItems = uiState.activeItems
     val completedMovies = uiState.completedItems.filterNot(DownloadItem::isEpisode)
@@ -132,8 +141,8 @@ private fun LazyListScope.downloadsRootContent(
                 item = item,
                 onOpen = { onOpenDownload(item) },
                 onPause = { DownloadsRepository.pauseDownload(item.id) },
-                onResume = { DownloadsRepository.resumeDownload(item.id) },
-                onRetry = { DownloadsRepository.retryDownload(item.id) },
+                onResume = { scope.launch { DownloadsRepository.resumeDownload(item.id) } },
+                onRetry = { scope.launch { DownloadsRepository.retryDownload(item.id) } },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
                 onShare = shareItem(item),
             )
@@ -152,8 +161,8 @@ private fun LazyListScope.downloadsRootContent(
                 item = item,
                 onOpen = { onOpenDownload(item) },
                 onPause = { DownloadsRepository.pauseDownload(item.id) },
-                onResume = { DownloadsRepository.resumeDownload(item.id) },
-                onRetry = { DownloadsRepository.retryDownload(item.id) },
+                onResume = { scope.launch { DownloadsRepository.resumeDownload(item.id) } },
+                onRetry = { scope.launch { DownloadsRepository.retryDownload(item.id) } },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
                 onShare = shareItem(item),
             )
@@ -232,6 +241,7 @@ private fun LazyListScope.downloadsShowContent(
     showId: String,
     episodes: List<DownloadItem>,
     onOpenDownload: (DownloadItem) -> Unit,
+    scope: CoroutineScope,
 ) {
     val showEpisodes = episodes
         .filter { it.parentMetaId == showId }
@@ -285,8 +295,8 @@ private fun LazyListScope.downloadsShowContent(
                 item = item,
                 onOpen = { onOpenDownload(item) },
                 onPause = { DownloadsRepository.pauseDownload(item.id) },
-                onResume = { DownloadsRepository.resumeDownload(item.id) },
-                onRetry = { DownloadsRepository.retryDownload(item.id) },
+                onResume = { scope.launch { DownloadsRepository.resumeDownload(item.id) } },
+                onRetry = { scope.launch { DownloadsRepository.retryDownload(item.id) } },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
                 onShare = shareItem(item),
             )
@@ -497,16 +507,25 @@ private fun statusText(item: DownloadItem): String {
     }
 }
 
+@Composable
 private fun formatBytes(bytes: Long): String {
-    if (bytes <= 0L) return "0 ${localizedByteUnit("B")}"
+    var bLabel by remember { mutableStateOf("") }
+    var kbLabel by remember { mutableStateOf("") }
+    var mbLabel by remember { mutableStateOf("") }
+    var gbLabel by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { bLabel = localizedByteUnit("B") }
+    LaunchedEffect(Unit) { kbLabel = localizedByteUnit("KB") }
+    LaunchedEffect(Unit) { mbLabel = localizedByteUnit("MB") }
+    LaunchedEffect(Unit) { gbLabel = localizedByteUnit("GB") }
+    if (bytes <= 0L) return "0 $bLabel"
     val kib = 1024.0
     val mib = kib * 1024.0
     val gib = mib * 1024.0
     val value = bytes.toDouble()
     return when {
-        value >= gib -> "${((value / gib) * 10.0).toInt() / 10.0} ${localizedByteUnit("GB")}"
-        value >= mib -> "${((value / mib) * 10.0).toInt() / 10.0} ${localizedByteUnit("MB")}"
-        value >= kib -> "${((value / kib) * 10.0).toInt() / 10.0} ${localizedByteUnit("KB")}"
-        else -> "$bytes ${localizedByteUnit("B")}"
+        value >= gib -> "${((value / gib) * 10.0).toInt() / 10.0} $gbLabel"
+        value >= mib -> "${((value / mib) * 10.0).toInt() / 10.0} $mbLabel"
+        value >= kib -> "${((value / kib) * 10.0).toInt() / 10.0} $kbLabel"
+        else -> "$bytes $bLabel"
     }
 }

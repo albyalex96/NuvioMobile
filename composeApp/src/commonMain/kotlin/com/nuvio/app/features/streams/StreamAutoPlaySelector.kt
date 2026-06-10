@@ -153,7 +153,7 @@ object StreamAutoPlaySelector {
                     val searchableText = buildString {
                         append(stream.addonName).append(' ')
                         append(stream.name.orEmpty()).append(' ')
-                        append(stream.streamLabel).append(' ')
+                        append(stream.streamLabel("Stream")).append(' ')
                         append(stream.description.orEmpty()).append(' ')
                         append(url)
                     }

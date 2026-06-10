@@ -348,7 +348,7 @@ object SearchRepository {
                     val genreExtra = catalog.genreExtra()
                     DiscoverCatalogOption(
                         key = "${manifest.id}:${catalog.type}:${catalog.id}",
-                        addonName = addon.displayTitle,
+                        addonName = addon.displayTitle("Addon"),
                         manifestUrl = addon.manifestUrl,
                         type = catalog.type,
                         catalogId = catalog.id,
@@ -376,8 +376,8 @@ object SearchRepository {
         return HomeCatalogSection(
             key = "${manifest.id}:search:$type:$catalogId:${query.lowercase()}",
             title = getString(Res.string.discover_catalog_context, catalogName, type.displayLabel()),
-            subtitle = addon.displayTitle,
-            addonName = addon.displayTitle,
+            subtitle = addon.displayTitle(getString(Res.string.generic_addon)),
+            addonName = addon.displayTitle(getString(Res.string.generic_addon)),
             type = type,
             manifestUrl = manifest.transportUrl,
             catalogId = catalogId,
@@ -562,7 +562,7 @@ private fun List<MetaPreview>.previewNames(limit: Int = 5): String {
     }
 }
 
-private fun String.displayLabel(): String =
+private suspend fun String.displayLabel(): String =
     localizedMediaTypeLabel(this)
 
 private fun String.typeSortKey(): String =

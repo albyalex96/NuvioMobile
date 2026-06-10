@@ -78,7 +78,6 @@ import com.nuvio.app.features.details.seasonSortKey
 import com.nuvio.app.features.watchprogress.WatchProgressEntry
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.watching.application.WatchingState
-import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -269,10 +268,14 @@ fun DetailSeriesContent(
                 },
                 label = "season_episodes",
             ) { seasonForContent ->
+                var seasonForContentLabel by remember(seasonForContent) { mutableStateOf("") }
+                LaunchedEffect(seasonForContent) {
+                    seasonForContentLabel = seasonForContent.label()
+                }
                 val sectionTitle = if (meta.type != "series" && seasons.size == 1 && seasonForContent <= 0) {
                     stringResource(Res.string.details_videos)
                 } else {
-                    seasonForContent.label()
+                    seasonForContentLabel
                 }
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -409,6 +412,10 @@ private fun SeasonTextChipScrollRow(
     ) {
         items(seasons, key = { season -> season }) { season ->
             val isSelected = season == currentSeason
+            var seasonChipLabel by remember(season) { mutableStateOf("") }
+            LaunchedEffect(season) {
+                seasonChipLabel = season.label()
+            }
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(sizing.seasonChipRadius))
@@ -430,7 +437,7 @@ private fun SeasonTextChipScrollRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = season.label(),
+                    text = seasonChipLabel,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = sizing.seasonChipTextSize,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
@@ -477,8 +484,12 @@ private fun SeasonPosterScrollRow(
         horizontalArrangement = Arrangement.spacedBy(sizing.seasonChipGap),
     ) {
         items(seasons, key = { season -> season }) { season ->
+            var seasonPosterLabel by remember(season) { mutableStateOf("") }
+            LaunchedEffect(season) {
+                seasonPosterLabel = season.label()
+            }
             SeasonPosterButton(
-                label = season.label(),
+                label = seasonPosterLabel,
                 imageUrl = groupedEpisodes[season]
                     .orEmpty()
                     .firstNotNullOfOrNull { episode -> episode.seasonPoster }
@@ -661,8 +672,14 @@ private fun EpisodeHorizontalCard(
 ) {
     val cardShape = RoundedCornerShape(metrics.cornerRadius)
     val ratingLabel = remember(imdbRating) { imdbRating?.takeIf { it > 0.0 }?.let(::formatEpisodeRating) }
-    val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
-    val runtimeLabel = remember(video.runtime) { video.runtime?.takeIf { it > 0 }?.let(::formatEpisodeRuntime) }
+    var formattedDate by remember(video.released) { mutableStateOf<String?>(null) }
+    LaunchedEffect(video.released) {
+        formattedDate = video.released?.let { formatReleaseDateForDisplay(it) }
+    }
+    var runtimeLabel by remember(video.runtime) { mutableStateOf<String?>(null) }
+    LaunchedEffect(video.runtime) {
+        runtimeLabel = if (video.runtime != null && video.runtime > 0) formatEpisodeRuntime(video.runtime) else null
+    }
     Box(
         modifier = Modifier
             .width(metrics.cardWidth)
@@ -937,7 +954,7 @@ private fun rememberEpisodeHorizontalCardMetrics(maxWidthDp: Float): EpisodeHori
     }
 }
 
-private fun formatEpisodeRuntime(runtimeMinutes: Int): String {
+private suspend fun formatEpisodeRuntime(runtimeMinutes: Int): String {
     return formatRuntimeFromMinutes(runtimeMinutes)
 }
 
@@ -1030,7 +1047,10 @@ private fun EpisodeListCard(
 ) {
     val cardShape = RoundedCornerShape(sizing.cardRadius)
     val ratingLabel = remember(imdbRating) { imdbRating?.takeIf { it > 0.0 }?.let(::formatEpisodeRating) }
-    val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
+    var formattedDate by remember(video.released) { mutableStateOf<String?>(null) }
+    LaunchedEffect(video.released) {
+        formattedDate = video.released?.let { formatReleaseDateForDisplay(it) }
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -1337,11 +1357,11 @@ private fun seriesContentSizing(maxWidthDp: Float): SeriesContentSizing =
         )
     }
 
-private fun Int.label(): String =
+private suspend fun Int.label(): String =
     if (this <= 0) {
-        runBlocking { getString(Res.string.episodes_specials) }
+        getString(Res.string.episodes_specials)
     } else {
-        runBlocking { getString(Res.string.episodes_season, this@label) }
+        getString(Res.string.episodes_season, this@label)
     }
 
 @Composable
@@ -1353,7 +1373,7 @@ private fun MetaVideo.episodeBadge(): String =
                 episodeNumber = episode,
                 format = rememberEpisodeCodeFormat(),
             ).orEmpty()
-        else -> runBlocking { getString(Res.string.details_episode_badge_file) }
+        else -> stringResource(Res.string.details_episode_badge_file)
     }
 
 private fun MetaVideo.seasonEpisodeKey(): Pair<Int, Int>? {

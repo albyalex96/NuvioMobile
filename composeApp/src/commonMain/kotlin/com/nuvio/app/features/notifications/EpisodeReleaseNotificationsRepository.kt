@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
@@ -270,7 +269,7 @@ object EpisodeReleaseNotificationsRepository {
             testTargetTitle = null,
             errorMessage = null,
         )
-        updateTestTargetState()
+        scope.launch { updateTestTargetState() }
     }
 
     private fun persist() {
@@ -296,7 +295,7 @@ object EpisodeReleaseNotificationsRepository {
             permissionGranted = granted,
             testTargetTitle = currentTestTarget()?.name,
             errorMessage = when {
-                _uiState.value.isEnabled && !granted -> runBlocking { getString(Res.string.settings_notifications_permission_disabled) }
+                _uiState.value.isEnabled && !granted -> getString(Res.string.settings_notifications_permission_disabled)
                 else -> _uiState.value.errorMessage
             },
         )
@@ -326,7 +325,7 @@ object EpisodeReleaseNotificationsRepository {
         if (changed) {
             trackedShowsByKey = nextTrackedShows.toMap()
         }
-        updateTestTargetState()
+        scope.launch { updateTestTargetState() }
         return changed
     }
 
@@ -364,7 +363,7 @@ object EpisodeReleaseNotificationsRepository {
                     scheduledCount = 0,
                     testTargetTitle = currentTestTarget()?.name,
                     errorMessage = if (_uiState.value.isEnabled && !permissionGranted) {
-                        runBlocking { getString(Res.string.settings_notifications_permission_disabled) }
+                        getString(Res.string.settings_notifications_permission_disabled)
                     } else {
                         null
                     },
@@ -419,13 +418,13 @@ object EpisodeReleaseNotificationsRepository {
         }
     }
 
-    private fun updateTestTargetState() {
+    private suspend fun updateTestTargetState() {
         _uiState.value = _uiState.value.copy(
             testTargetTitle = currentTestTarget()?.name,
         )
     }
 
-    private fun currentTestTarget(): LibraryItem? {
+    private suspend fun currentTestTarget(): LibraryItem? {
         LibraryRepository.ensureLoaded()
         val libraryItems = LibraryRepository.uiState.value.items
         return libraryItems.firstOrNull { item -> isSeriesLibraryType(item.type) }

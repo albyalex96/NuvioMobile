@@ -22,6 +22,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -268,10 +273,14 @@ private fun DiscoverPosterTile(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            val detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it) }
-            if (detail != null) {
+            var detail by remember(item.releaseInfo) { mutableStateOf<String?>(null) }
+            LaunchedEffect(item.releaseInfo) {
+                detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it) }
+            }
+            val detailText = detail
+            if (detailText != null) {
                 Text(
-                    text = detail,
+                    text = detailText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

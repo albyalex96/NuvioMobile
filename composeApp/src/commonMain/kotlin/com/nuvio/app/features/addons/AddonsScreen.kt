@@ -371,7 +371,7 @@ private fun InstalledAddonCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = addon.displayTitle,
+                    text = addon.displayTitle(stringResource(Res.string.generic_addon)),
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,

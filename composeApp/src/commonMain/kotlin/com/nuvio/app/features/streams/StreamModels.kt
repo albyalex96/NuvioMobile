@@ -1,10 +1,8 @@
 ﻿package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.Serializable
-import nuvio.composeapp.generated.resources.*
-import org.jetbrains.compose.resources.getString
+
 
 @Serializable
 data class StreamSubtitle(
@@ -33,8 +31,7 @@ data class StreamItem(
     val externalSubtitles: List<StreamSubtitle> = emptyList(),
     val badges: List<StreamBadge> = emptyList(),
 ) {
-    val streamLabel: String
-        get() = name ?: runBlocking { getString(Res.string.stream_default_name) }
+    fun streamLabel(defaultLabel: String): String = name ?: defaultLabel
 
     val streamSubtitle: String?
         get() = description

@@ -568,7 +568,7 @@ internal fun PlayerScreenRuntime.tryRefreshCredentialedSourceAfterError(message:
         activeSourceAudioUrl = null
         activeSourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request)
         activeSourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response)
-        activeStreamTitle = stream.streamLabel
+        activeStreamTitle = stream.streamLabel(getString(Res.string.stream_default_name))
         activeStreamSubtitle = stream.streamSubtitle
         activeProviderName = stream.addonName
         activeProviderAddonId = stream.addonId
@@ -602,7 +602,7 @@ private fun findCredentialRefreshCandidate(
             if (!providerMatches) return@mapNotNull null
 
             var score = 100
-            if (stream.streamLabel == expectedStreamTitle) score += 40
+            if (stream.streamLabel("Stream") == expectedStreamTitle) score += 40
             if (!expectedBingeGroup.isNullOrBlank() && stream.behaviorHints.bingeGroup == expectedBingeGroup) {
                 score += 20
             }

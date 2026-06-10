@@ -2,6 +2,8 @@ package com.nuvio.app.features.player
 
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
+import nuvio.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.getString
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.downloads.DownloadItem
@@ -110,7 +112,7 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
 
         val installedAddonNames = AddonRepository.uiState.value.addons
             .enabledAddons()
-            .map { it.displayTitle }
+            .map { it.displayTitle(getString(Res.string.generic_addon)) }
             .toSet()
         val debridSettings = DebridSettingsRepository.snapshot()
 

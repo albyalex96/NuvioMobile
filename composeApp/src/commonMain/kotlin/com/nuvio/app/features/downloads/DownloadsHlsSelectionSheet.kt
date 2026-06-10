@@ -42,6 +42,7 @@ import nuvio.composeapp.generated.resources.downloads_hls_fetching
 import nuvio.composeapp.generated.resources.downloads_hls_quality
 import nuvio.composeapp.generated.resources.downloads_hls_select_variant
 import nuvio.composeapp.generated.resources.downloads_hls_subtitles
+import nuvio.composeapp.generated.resources.stream_default_name
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -165,7 +166,7 @@ fun DownloadsHlsSelectionSheet(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = stream.streamLabel,
+                    text = stream.streamLabel(stringResource(Res.string.stream_default_name)),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,

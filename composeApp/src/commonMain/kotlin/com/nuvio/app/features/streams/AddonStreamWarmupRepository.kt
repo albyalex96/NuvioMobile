@@ -283,7 +283,7 @@ private fun ManagedAddon.toWarmupTarget(type: String, videoId: String): AddonStr
     }
     if (!supportsRequestedStream) return null
 
-    val addonName = displayTitle.ifBlank { manifest.name }
+    val addonName = displayTitle(manifest.name ?: "Addon").ifBlank { manifest.name }
     return AddonStreamWarmupTarget(
         addonName = addonName,
         addonId = "addon:${manifest.id}:$manifestUrl",

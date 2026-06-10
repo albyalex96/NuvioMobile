@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -225,6 +224,7 @@ actual object PluginRepository {
                     fetchRepositoryData(manifestUrl, previous)
                 }
 
+                val refreshFailed = getString(Res.string.plugins_repository_refresh_failed)
                 _uiState.update { state ->
                     result.fold(
                         onSuccess = { (repo, scrapers) ->
@@ -242,7 +242,7 @@ actual object PluginRepository {
                                     if (existing.manifestUrl == manifestUrl) {
                                         existing.copy(
                                             isRefreshing = false,
-                                            errorMessage = error.message ?: runBlocking { getString(Res.string.plugins_repository_refresh_failed) },
+                                            errorMessage = error.message ?: refreshFailed,
                                         )
                                     } else {
                                         existing
@@ -573,9 +573,10 @@ actual object PluginRepository {
         return if (query.isEmpty()) withSuffix else "$withSuffix?$query"
     }
 
-    private fun normalizeManifestUrl(rawUrl: String): String {
+    private suspend fun normalizeManifestUrl(rawUrl: String): String {
         val trimmed = rawUrl.trim()
-        require(trimmed.isNotEmpty()) { runBlocking { getString(Res.string.plugins_error_enter_repo_url) } }
+        val msg = getString(Res.string.plugins_error_enter_repo_url)
+        require(trimmed.isNotEmpty()) { msg }
 
         val normalizedScheme = when {
             trimmed.startsWith("http://") || trimmed.startsWith("https://") -> trimmed

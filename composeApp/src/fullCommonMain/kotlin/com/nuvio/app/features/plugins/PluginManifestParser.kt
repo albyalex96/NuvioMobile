@@ -1,6 +1,5 @@
 package com.nuvio.app.features.plugins
 
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.plugins_manifest_name_missing
@@ -13,17 +12,14 @@ internal object PluginManifestParser {
         ignoreUnknownKeys = true
     }
 
-    fun parse(payload: String): PluginManifest {
+    suspend fun parse(payload: String): PluginManifest {
         val manifest = json.decodeFromString<PluginManifest>(payload)
-        require(manifest.name.isNotBlank()) {
-            runBlocking { getString(Res.string.plugins_manifest_name_missing) }
-        }
-        require(manifest.version.isNotBlank()) {
-            runBlocking { getString(Res.string.plugins_manifest_version_missing) }
-        }
-        require(manifest.scrapers.isNotEmpty()) {
-            runBlocking { getString(Res.string.plugins_manifest_no_providers) }
-        }
+        val nameMissing = getString(Res.string.plugins_manifest_name_missing)
+        require(manifest.name.isNotBlank()) { nameMissing }
+        val versionMissing = getString(Res.string.plugins_manifest_version_missing)
+        require(manifest.version.isNotBlank()) { versionMissing }
+        val noProviders = getString(Res.string.plugins_manifest_no_providers)
+        require(manifest.scrapers.isNotEmpty()) { noProviders }
         return manifest
     }
 }

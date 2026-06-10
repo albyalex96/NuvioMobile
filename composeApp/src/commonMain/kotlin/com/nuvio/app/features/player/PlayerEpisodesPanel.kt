@@ -634,7 +634,7 @@ private fun EpisodeSourceStreamRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stream.streamLabel,
+                text = stream.streamLabel(stringResource(Res.string.stream_default_name)),
                 color = tokens.colors.textPrimary,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
@@ -642,7 +642,7 @@ private fun EpisodeSourceStreamRow(
                 overflow = TextOverflow.Ellipsis,
             )
             stream.streamSubtitle?.let { subtitle ->
-                if (subtitle != stream.streamLabel) {
+                if (subtitle != stream.streamLabel(stringResource(Res.string.stream_default_name))) {
                     Text(
                         text = subtitle,
                         color = tokens.colors.textSecondary,

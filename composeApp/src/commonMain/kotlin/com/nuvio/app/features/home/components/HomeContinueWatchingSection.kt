@@ -25,9 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -595,10 +598,13 @@ private fun ContinueWatchingCard(
         )
     }
     val todayIsoDate = CurrentDateProvider.todayIsoDate()
-    val compactAirDateText = if (item.progressFraction <= 0f && item.seasonNumber != null && item.episodeNumber != null) {
-        computeAirDateBadgeText(item.released, todayIsoDate, compact = true)
-    } else {
-        null
+    var compactAirDateText by remember(item, todayIsoDate) { mutableStateOf<String?>(null) }
+    LaunchedEffect(item, todayIsoDate) {
+        compactAirDateText = if (item.progressFraction <= 0f && item.seasonNumber != null && item.episodeNumber != null) {
+            computeAirDateBadgeText(item.released, todayIsoDate, compact = true)
+        } else {
+            null
+        }
     }
     val preferBackdropForNextUp = item.isNextUp && compactAirDateText != null && !item.isReleaseAlert
     val imageUrl = item.continueWatchingCardArtworkUrl(
@@ -790,6 +796,12 @@ private fun ContinueWatchingWideCard(
     onClick: (() -> Unit)?,
     onLongClick: (() -> Unit)?,
 ) {
+    val isCompact = layout.wideCardWidth < 350.dp
+    val todayIsoDate = CurrentDateProvider.todayIsoDate()
+    var wideAirDateText by remember(item, todayIsoDate) { mutableStateOf<String?>(null) }
+    LaunchedEffect(item, todayIsoDate) {
+        wideAirDateText = computeAirDateBadgeText(item.released, todayIsoDate, compact = isCompact)
+    }
     Row(
         modifier = Modifier
             .width(layout.wideCardWidth)
@@ -823,7 +835,6 @@ private fun ContinueWatchingWideCard(
                 .padding(layout.wideContentPadding),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            val isCompact = layout.wideCardWidth < 350.dp
             val wideMetaLine = localizedContinueWatchingMetaLine(item)
             val episodeTitle = item.episodeTitle?.trim()?.takeIf { it.isNotBlank() }
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -844,14 +855,13 @@ private fun ContinueWatchingWideCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                     if (item.progressFraction <= 0f && item.seasonNumber != null && item.episodeNumber != null) {
-                        val todayIsoDate = CurrentDateProvider.todayIsoDate()
                         val badgeText = when {
                             item.isReleaseAlert -> {
                                 if (item.isNewSeasonRelease) stringResource(Res.string.cw_new_season)
                                 else stringResource(Res.string.cw_new_episode)
                             }
                             else -> {
-                                computeAirDateBadgeText(item.released, todayIsoDate, compact = isCompact)
+                                wideAirDateText
                                     ?: stringResource(Res.string.home_continue_watching_up_next)
                             }
                         }
@@ -917,6 +927,11 @@ private fun ContinueWatchingPosterCard(
     onClick: (() -> Unit)?,
     onLongClick: (() -> Unit)?,
 ) {
+    val todayIsoDate = CurrentDateProvider.todayIsoDate()
+    var posterAirDateText by remember(item, todayIsoDate) { mutableStateOf<String?>(null) }
+    LaunchedEffect(item, todayIsoDate) {
+        posterAirDateText = computeAirDateBadgeText(item.released, todayIsoDate, compact = true)
+    }
     Column(
         modifier = Modifier.width(layout.posterCardWidth),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -950,14 +965,13 @@ private fun ContinueWatchingPosterCard(
                         .align(Alignment.TopEnd)
                         .padding(8.dp),
                 ) {
-                    val todayIsoDate = CurrentDateProvider.todayIsoDate()
                     val badgeText = when {
                         item.isReleaseAlert -> {
                             if (item.isNewSeasonRelease) stringResource(Res.string.cw_new_season)
                             else stringResource(Res.string.cw_new_episode)
                         }
                         else -> {
-                            computeAirDateBadgeText(item.released, todayIsoDate, compact = true)
+                            posterAirDateText
                                 ?: stringResource(Res.string.home_continue_watching_up_next)
                         }
                     }

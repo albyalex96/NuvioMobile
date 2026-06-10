@@ -159,6 +159,7 @@ fun StreamsScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by StreamsRepository.uiState.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
     val playerSettings by remember {
         PlayerSettingsRepository.ensureLoaded()
         PlayerSettingsRepository.uiState
@@ -327,14 +328,16 @@ fun StreamsScreen(
                     )
                     .clickable(
                         onClick = {
-                            StreamsRepository.reload(
-                                type = type,
-                                videoId = videoId,
-                                parentMetaId = parentMetaId,
-                                season = seasonNumber,
-                                episode = episodeNumber,
-                                manualSelection = manualSelection,
-                            )
+                            coroutineScope.launch {
+                                StreamsRepository.reload(
+                                    type = type,
+                                    videoId = videoId,
+                                    parentMetaId = parentMetaId,
+                                    season = seasonNumber,
+                                    episode = episodeNumber,
+                                    manualSelection = manualSelection,
+                                )
+                            }
                         },
                     ),
                 contentAlignment = Alignment.Center,
@@ -410,25 +413,27 @@ fun StreamsScreen(
                 if (isHls) {
                     hlsDownloadTarget = stream
                 } else {
-                    val result = DownloadsRepository.enqueueFromStream(
-                        contentType = type,
-                        videoId = videoId,
-                        parentMetaId = parentMetaId,
-                        parentMetaType = parentMetaType,
-                        title = title,
-                        logo = logo,
-                        poster = poster,
-                        background = background,
-                        seasonNumber = seasonNumber,
-                        episodeNumber = episodeNumber,
-                        episodeTitle = episodeTitle,
-                        episodeThumbnail = episodeThumbnail,
-                        stream = stream,
-                    )
-                    if (result == DownloadEnqueueResult.HlsNeedsSelection) {
-                        hlsDownloadTarget = stream
-                    } else {
-                        NuvioToastController.show(result.toastMessage())
+                    coroutineScope.launch {
+                        val result = DownloadsRepository.enqueueFromStream(
+                            contentType = type,
+                            videoId = videoId,
+                            parentMetaId = parentMetaId,
+                            parentMetaType = parentMetaType,
+                            title = title,
+                            logo = logo,
+                            poster = poster,
+                            background = background,
+                            seasonNumber = seasonNumber,
+                            episodeNumber = episodeNumber,
+                            episodeTitle = episodeTitle,
+                            episodeThumbnail = episodeThumbnail,
+                            stream = stream,
+                        )
+                        if (result == DownloadEnqueueResult.HlsNeedsSelection) {
+                            hlsDownloadTarget = stream
+                        } else {
+                            NuvioToastController.show(result.toastMessage())
+                        }
                     }
                 }
             },
@@ -446,25 +451,27 @@ fun StreamsScreen(
             stream = hlsDownloadTarget,
             onDismiss = { hlsDownloadTarget = null },
             onDownload = { selection ->
-                val stream = hlsDownloadTarget ?: return@DownloadsHlsSelectionSheet
-                val result = DownloadsRepository.enqueueFromHlsSelection(
-                    contentType = type,
-                    videoId = videoId,
-                    parentMetaId = parentMetaId,
-                    parentMetaType = parentMetaType,
-                    title = title,
-                    logo = logo,
-                    poster = poster,
-                    background = background,
-                    seasonNumber = seasonNumber,
-                    episodeNumber = episodeNumber,
-                    episodeTitle = episodeTitle,
-                    episodeThumbnail = episodeThumbnail,
-                    stream = stream,
-                    selection = selection,
-                )
-                NuvioToastController.show(result.toastMessage())
-                hlsDownloadTarget = null
+                coroutineScope.launch {
+                    val stream = hlsDownloadTarget ?: return@launch
+                    val result = DownloadsRepository.enqueueFromHlsSelection(
+                        contentType = type,
+                        videoId = videoId,
+                        parentMetaId = parentMetaId,
+                        parentMetaType = parentMetaType,
+                        title = title,
+                        logo = logo,
+                        poster = poster,
+                        background = background,
+                        seasonNumber = seasonNumber,
+                        episodeNumber = episodeNumber,
+                        episodeTitle = episodeTitle,
+                        episodeThumbnail = episodeThumbnail,
+                        stream = stream,
+                        selection = selection,
+                    )
+                    NuvioToastController.show(result.toastMessage())
+                    hlsDownloadTarget = null
+                }
             },
         )
     }
@@ -1021,7 +1028,7 @@ internal fun streamCardRenderKey(
     append(':')
     append(itemIndex)
     append(':')
-    append(stream.url ?: stream.infoHash ?: stream.clientResolve?.infoHash ?: stream.streamLabel)
+    append(stream.url ?: stream.infoHash ?: stream.clientResolve?.infoHash ?: stream.streamLabel("Stream"))
 }
 
 // ---------------------------------------------------------------------------
@@ -1205,7 +1212,7 @@ private fun StreamNameWithInstantService(
         null
     }
     val showInstantLabel = instantLabel != null
-    val visibleState = remember(stream.streamLabel) {
+    val visibleState = remember(stream.streamLabel(stringResource(Res.string.stream_default_name))) {
         MutableTransitionState(showInstantLabel)
     }
     visibleState.targetState = showInstantLabel
@@ -1215,7 +1222,7 @@ private fun StreamNameWithInstantService(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stream.streamLabel,
+            text = stream.streamLabel(stringResource(Res.string.stream_default_name)),
             modifier = Modifier.weight(1f, fill = false),
             style = nameStyle,
             color = MaterialTheme.colorScheme.onSurface,
@@ -1283,7 +1290,7 @@ private fun PolishedStreamCardContent(
         ) {
             QualityBadge(badge = badges.quality, animated = animationsEnabled)
             Text(
-                text = sourceName ?: stream.streamLabel,
+                text = sourceName ?: stream.streamLabel(stringResource(Res.string.stream_default_name)),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
@@ -1573,19 +1580,21 @@ private fun SmallBadgeChip(badge: StreamBadgeData) {
 
 @Composable
 private fun rememberStreamBadges(stream: StreamItem): ParsedStreamBadges =
-    remember(stream.streamLabel, stream.streamSubtitle, stream.behaviorHints.videoSize, stream.name, stream.title) {
+    remember(stream.streamLabel(stringResource(Res.string.stream_default_name)), stream.streamSubtitle, stream.behaviorHints.videoSize, stream.name, stream.title) {
         buildParsedBadges(stream)
     }
 
 @Composable
-private fun rememberParsedLanguage(stream: StreamItem): String? =
-    remember(stream.streamLabel, stream.streamSubtitle) {
-        val combined = "${stream.streamLabel} ${stream.streamSubtitle.orEmpty()}"
+private fun rememberParsedLanguage(stream: StreamItem): String? {
+    val defaultName = stringResource(Res.string.stream_default_name)
+    return remember(stream.streamLabel(defaultName), stream.streamSubtitle) {
+        val combined = "${stream.streamLabel(defaultName)} ${stream.streamSubtitle.orEmpty()}"
         Regex(
             "\\b(English|Italian|French|Spanish|German|Japanese|Korean|Portuguese|Chinese|Arabic|Hindi|Russian)\\b",
             RegexOption.IGNORE_CASE,
         ).find(combined)?.value
     }
+}
 
 private fun buildParsedBadges(stream: StreamItem): ParsedStreamBadges {
     // Usa tutti i campi disponibili per massimizzare le chance di match
@@ -1745,7 +1754,7 @@ private fun StreamActionsSheet(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = stream.streamLabel,
+                    text = stream.streamLabel(stringResource(Res.string.stream_default_name)),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,

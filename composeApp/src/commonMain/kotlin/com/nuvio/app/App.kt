@@ -381,6 +381,7 @@ fun App() {
             .configurePlatformImageLoader()
             .build()
     }
+    val scope = rememberCoroutineScope()
     val selectedTheme by remember {
         ThemeSettingsRepository.ensureLoaded()
         ThemeSettingsRepository.selectedTheme
@@ -444,7 +445,7 @@ fun App() {
                 ?.takeUnless { it.pinEnabled }
         }
 
-        fun enterProfileGate(profiles: List<NuvioProfile>, syncOnEnter: Boolean) {
+        suspend fun enterProfileGate(profiles: List<NuvioProfile>, syncOnEnter: Boolean) {
             if (profiles.isEmpty()) {
                 autoSkipProfileSelection = true
                 gateScreen = AppGateScreen.ProfileSelection.name
@@ -581,7 +582,7 @@ fun App() {
                     }
                     ProfileSelectionScreen(
                         onProfileSelected = { profile ->
-                            ProfileRepository.selectProfile(profile.profileIndex)
+                            scope.launch { ProfileRepository.selectProfile(profile.profileIndex) }
                             if (authState is AuthState.Authenticated) {
                                 SyncManager.pullAllForProfile(profile.profileIndex)
                             }
@@ -631,16 +632,16 @@ private fun MainAppContent(
 ) {
         val navController = rememberNavController()
         val appUpdaterController = rememberAppUpdaterController()
-        remember {
+        LaunchedEffect(Unit) {
             EpisodeReleaseNotificationsRepository.ensureLoaded()
         }
-        remember {
+        LaunchedEffect(Unit) {
             CollectionSyncService.startObserving()
         }
-        remember {
+        LaunchedEffect(Unit) {
             HomeCatalogSettingsSyncService.startObserving()
         }
-        remember {
+        LaunchedEffect(Unit) {
             ProfileSettingsSync.startObserving()
         }
         val hapticFeedback = LocalHapticFeedback.current
@@ -673,8 +674,8 @@ private fun MainAppContent(
             AddonRepository.initialize()
             AddonRepository.uiState
         }.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { LibraryRepository.ensureLoaded() }
         val libraryUiState by remember {
-            LibraryRepository.ensureLoaded()
             LibraryRepository.uiState
         }.collectAsStateWithLifecycle()
         val authState by AuthRepository.state.collectAsStateWithLifecycle()
@@ -1365,7 +1366,7 @@ private fun MainAppContent(
                         val onProfileSelected: (NuvioProfile) -> Unit = { profile ->
                             profileSwitchLoading = true
                             selectedTab = AppScreenTab.Home
-                            ProfileRepository.selectProfile(profile.profileIndex)
+                            coroutineScope.launch { ProfileRepository.selectProfile(profile.profileIndex) }
                             com.nuvio.app.core.sync.SyncManager.pullAllForProfile(profile.profileIndex)
                         }
 
@@ -1780,7 +1781,7 @@ private fun MainAppContent(
                     fun p2pSentinelUrl(infoHash: String, fileIdx: Int?): String =
                         "torrent://$infoHash${fileIdx?.let { "?index=$it" }.orEmpty()}"
 
-                    fun openP2pStream(
+                    suspend fun openP2pStream(
                         stream: StreamItem,
                         resolvedResumePositionMs: Long?,
                         resolvedResumeProgressFraction: Float?,
@@ -1799,7 +1800,7 @@ private fun MainAppContent(
                             StreamLinkCacheRepository.save(
                                 contentKey = cacheKey,
                                 url = "",
-                                streamName = stream.streamLabel,
+                                streamName = stream.streamLabel(getString(Res.string.stream_default_name)),
                                 addonName = stream.addonName,
                                 addonId = stream.addonId,
                                 requestHeaders = emptyMap(),
@@ -1816,8 +1817,9 @@ private fun MainAppContent(
                         val playerLaunch = PlayerLaunch(
                             title = launch.title,
                             sourceUrl = sentinelUrl,
-                            sourceHeaders = emptyMap(),
-                            sourceResponseHeaders = emptyMap(),
+                            sourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
+                            sourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
+                            externalSubtitles = stream.externalSubtitles,
                             logo = launch.logo,
                             poster = launch.poster,
                             background = launch.background,
@@ -1825,7 +1827,7 @@ private fun MainAppContent(
                             episodeNumber = launch.episodeNumber,
                             episodeTitle = launch.episodeTitle,
                             episodeThumbnail = launch.episodeThumbnail,
-                            streamTitle = stream.streamLabel,
+                            streamTitle = stream.streamLabel(getString(Res.string.stream_default_name)),
                             streamSubtitle = stream.streamSubtitle,
                             bingeGroup = stream.behaviorHints.bingeGroup,
                             pauseDescription = pauseDescription,
@@ -1853,7 +1855,7 @@ private fun MainAppContent(
                         }
                     }
 
-                    fun requestOrOpenP2pStream(
+                    suspend fun requestOrOpenP2pStream(
                         stream: StreamItem,
                         resolvedResumePositionMs: Long?,
                         resolvedResumeProgressFraction: Float?,
@@ -2056,7 +2058,7 @@ private fun MainAppContent(
                             StreamLinkCacheRepository.save(
                                 contentKey = cacheKey,
                                 url = sourceUrl,
-                                streamName = stream.streamLabel,
+                                streamName = stream.streamLabel(getString(Res.string.stream_default_name)),
                                 addonName = stream.addonName,
                                 addonId = stream.addonId,
                                 requestHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
@@ -2079,7 +2081,7 @@ private fun MainAppContent(
                                 episodeNumber = launch.episodeNumber,
                                 episodeTitle = launch.episodeTitle,
                                 episodeThumbnail = launch.episodeThumbnail,
-                                streamTitle = stream.streamLabel,
+                                streamTitle = stream.streamLabel(getString(Res.string.stream_default_name)),
                                 streamSubtitle = stream.streamSubtitle,
                                 bingeGroup = stream.behaviorHints.bingeGroup,
                                 pauseDescription = pauseDescription,
@@ -2117,7 +2119,7 @@ private fun MainAppContent(
                         return@composable
                     }
 
-                    fun openSelectedStream(
+                    suspend fun openSelectedStream(
                         stream: StreamItem,
                         resolvedResumePositionMs: Long?,
                         resolvedResumeProgressFraction: Float?,
@@ -2182,7 +2184,7 @@ private fun MainAppContent(
                             StreamLinkCacheRepository.save(
                                 contentKey = cacheKey,
                                 url = sourceUrl,
-                                streamName = stream.streamLabel,
+                                streamName = stream.streamLabel(getString(Res.string.stream_default_name)),
                                 addonName = stream.addonName,
                                 addonId = stream.addonId,
                                 requestHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
@@ -2205,7 +2207,7 @@ private fun MainAppContent(
                             episodeNumber = launch.episodeNumber,
                             episodeTitle = launch.episodeTitle,
                             episodeThumbnail = launch.episodeThumbnail,
-                            streamTitle = stream.streamLabel,
+                            streamTitle = stream.streamLabel(getString(Res.string.stream_default_name)),
                             streamSubtitle = stream.streamSubtitle,
                             bingeGroup = stream.behaviorHints.bingeGroup,
                             pauseDescription = pauseDescription,
@@ -2263,22 +2265,26 @@ private fun MainAppContent(
                             manualSelection = launch.manualSelection,
                             startFromBeginning = launch.startFromBeginning,
                             onStreamSelected = { stream, resolvedResumePositionMs, resolvedResumeProgressFraction ->
-                                openSelectedStream(
-                                    stream = stream,
-                                    resolvedResumePositionMs = resolvedResumePositionMs,
-                                    resolvedResumeProgressFraction = resolvedResumeProgressFraction,
-                                    forceExternal = false,
-                                    forceInternal = false,
-                                )
+                                streamRouteScope.launch {
+                                    openSelectedStream(
+                                        stream = stream,
+                                        resolvedResumePositionMs = resolvedResumePositionMs,
+                                        resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                                        forceExternal = false,
+                                        forceInternal = false,
+                                    )
+                                }
                             },
                             onStreamActionOpen = { stream, openExternally, resolvedResumePositionMs, resolvedResumeProgressFraction ->
-                                openSelectedStream(
-                                    stream = stream,
-                                    resolvedResumePositionMs = resolvedResumePositionMs,
-                                    resolvedResumeProgressFraction = resolvedResumeProgressFraction,
-                                    forceExternal = openExternally,
-                                    forceInternal = !openExternally,
-                                )
+                                streamRouteScope.launch {
+                                    openSelectedStream(
+                                        stream = stream,
+                                        resolvedResumePositionMs = resolvedResumePositionMs,
+                                        resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                                        forceExternal = openExternally,
+                                        forceInternal = !openExternally,
+                                    )
+                                }
                             },
                             onBack = {
                                 StreamsRepository.clear()
@@ -2291,12 +2297,14 @@ private fun MainAppContent(
                                 onEnableP2p = {
                                     P2pSettingsRepository.setP2pEnabled(true)
                                     pendingP2pStreamOpen = null
-                                    openP2pStream(
-                                        stream = pending.stream,
-                                        resolvedResumePositionMs = pending.resumePositionMs,
-                                        resolvedResumeProgressFraction = pending.resumeProgressFraction,
-                                        replaceStreamRoute = pending.isAutoPlay,
-                                    )
+                                    streamRouteScope.launch {
+                                        openP2pStream(
+                                            stream = pending.stream,
+                                            resolvedResumePositionMs = pending.resumePositionMs,
+                                            resolvedResumeProgressFraction = pending.resumeProgressFraction,
+                                            replaceStreamRoute = pending.isAutoPlay,
+                                        )
+                                    }
                                 },
                                 onDismiss = {
                                     if (pending.isAutoPlay) {
@@ -2642,11 +2650,18 @@ private fun MainAppContent(
                 }
             }
 
+            var posterIsSaved by remember(selectedPosterActionTarget) {
+                mutableStateOf(false)
+            }
+            LaunchedEffect(selectedPosterActionTarget) {
+                posterIsSaved = selectedPosterActionTarget?.preview?.let { preview ->
+                    LibraryRepository.isSaved(preview.id, preview.type)
+                } == true
+            }
+
             NuvioPosterActionSheet(
                 item = selectedPosterActionTarget?.preview,
-                isSaved = selectedPosterActionTarget?.preview?.let { preview ->
-                    LibraryRepository.isSaved(preview.id, preview.type)
-                } == true,
+                isSaved = posterIsSaved,
                 isWatched = selectedPosterActionTarget?.preview?.let { preview ->
                     WatchingState.isPosterWatched(
                         watchedKeys = watchedUiState.watchedKeys,
@@ -2679,20 +2694,24 @@ private fun MainAppContent(
                                     }
                                 }
                             } else {
-                                LibraryRepository.remove(libraryItem.id)
+                                coroutineScope.launch {
+                                    LibraryRepository.remove(libraryItem.id)
+                                }
                             }
                         } else {
                             if (!isTraktLibrarySource) {
-                                LibraryRepository.toggleSaved(libraryItem)
+                                coroutineScope.launch {
+                                    LibraryRepository.toggleSaved(libraryItem)
+                                }
                             } else {
                                 pickerItem = libraryItem
                                 pickerTitle = preview.name
-                                pickerTabs = LibraryRepository.libraryListTabs()
-                                pickerMembership = pickerTabs.associate { it.key to false }
                                 pickerPending = true
                                 pickerError = null
-                                showLibraryListPicker = true
                                 coroutineScope.launch {
+                                    pickerTabs = LibraryRepository.libraryListTabs()
+                                    pickerMembership = pickerTabs.associate { it.key to false }
+                                    showLibraryListPicker = true
                                     runCatching {
                                         val snapshot = LibraryRepository.getMembershipSnapshot(libraryItem)
                                         val tabs = LibraryRepository.libraryListTabs()

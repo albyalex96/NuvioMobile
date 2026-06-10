@@ -25,7 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -271,8 +276,12 @@ private fun PosterSheetHeader(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            var releaseDetail by remember(item.releaseInfo) { mutableStateOf<String?>(null) }
+            LaunchedEffect(item.releaseInfo) {
+                releaseDetail = item.releaseInfo?.takeIf { it.isNotBlank() }?.let { formatReleaseDateForDisplay(it) }
+            }
             Text(
-                text = item.releaseInfo?.takeIf { it.isNotBlank() }?.let { formatReleaseDateForDisplay(it) }
+                text = releaseDetail
                     ?: item.type.replaceFirstChar { char ->
                         if (char.isLowerCase()) char.titlecase() else char.toString()
                 },

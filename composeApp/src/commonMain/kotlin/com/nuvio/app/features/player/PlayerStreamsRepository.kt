@@ -23,6 +23,8 @@ import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamParser
 import com.nuvio.app.features.streams.StreamsUiState
+import nuvio.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,18 +64,20 @@ object PlayerStreamsRepository {
         episode: Int? = null,
         forceRefresh: Boolean = false,
     ) {
-        fetchStreams(
-            type = type,
-            videoId = videoId,
-            season = season,
-            episode = episode,
-            forceRefresh = forceRefresh,
-            stateFlow = _sourceState,
-            requestKeyHolder = { sourceRequestKey },
-            setRequestKey = { sourceRequestKey = it },
-            jobHolder = { sourceJob },
-            setJob = { sourceJob = it },
-        )
+        scope.launch {
+            fetchStreams(
+                type = type,
+                videoId = videoId,
+                season = season,
+                episode = episode,
+                forceRefresh = forceRefresh,
+                stateFlow = _sourceState,
+                requestKeyHolder = { sourceRequestKey },
+                setRequestKey = { sourceRequestKey = it },
+                jobHolder = { sourceJob },
+                setJob = { sourceJob = it },
+            )
+        }
     }
 
     fun loadEpisodeStreams(
@@ -83,18 +87,20 @@ object PlayerStreamsRepository {
         episode: Int? = null,
         forceRefresh: Boolean = false,
     ) {
-        fetchStreams(
-            type = type,
-            videoId = videoId,
-            season = season,
-            episode = episode,
-            forceRefresh = forceRefresh,
-            stateFlow = _episodeStreamsState,
-            requestKeyHolder = { episodeStreamsRequestKey },
-            setRequestKey = { episodeStreamsRequestKey = it },
-            jobHolder = { episodeStreamsJob },
-            setJob = { episodeStreamsJob = it },
-        )
+        scope.launch {
+            fetchStreams(
+                type = type,
+                videoId = videoId,
+                season = season,
+                episode = episode,
+                forceRefresh = forceRefresh,
+                stateFlow = _episodeStreamsState,
+                requestKeyHolder = { episodeStreamsRequestKey },
+                setRequestKey = { episodeStreamsRequestKey = it },
+                jobHolder = { episodeStreamsJob },
+                setJob = { episodeStreamsJob = it },
+            )
+        }
     }
 
     fun selectSourceFilter(addonId: String?) {
@@ -118,7 +124,7 @@ object PlayerStreamsRepository {
         clearEpisodeStreams()
     }
 
-    private fun fetchStreams(
+    private suspend fun fetchStreams(
         type: String,
         videoId: String,
         season: Int?,
@@ -167,7 +173,8 @@ object PlayerStreamsRepository {
         }
 
         val installedAddons = AddonRepository.uiState.value.addons.enabledAddons()
-        val installedAddonNames = installedAddons.map { it.displayTitle }.toSet()
+        val defaultAddonName = getString(Res.string.generic_addon)
+        val installedAddonNames = installedAddons.map { it.displayTitle(defaultAddonName) }.toSet()
         PlayerSettingsRepository.ensureLoaded()
         val playerSettings = PlayerSettingsRepository.uiState.value
         val debridSettings = DebridSettingsRepository.snapshot()
@@ -198,7 +205,7 @@ object PlayerStreamsRepository {
                 if (!supportsRequestedStream) return@mapNotNull null
 
                 PlayerInstalledStreamAddonTarget(
-                    addonName = addon.displayTitle.ifBlank { manifest.name },
+                    addonName = addon.displayTitle(defaultAddonName).ifBlank { manifest.name },
                     addonId = addon.streamAddonInstanceId(manifest.id),
                     manifest = manifest,
                 )

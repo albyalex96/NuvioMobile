@@ -23,9 +23,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.compose_player_no_subtitles_found
-import nuvio.composeapp.generated.resources.player_addon_subtitle_display_format
+import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
 object SubtitleRepository {
@@ -89,9 +87,9 @@ object SubtitleRepository {
                                 display = getString(
                                     Res.string.player_addon_subtitle_display_format,
                                     getLanguageLabelForCode(rawLang),
-                                    addon.displayTitle,
+                                    addon.displayTitle(getString(Res.string.generic_addon)),
                                 ),
-                                addonName = addon.displayTitle,
+                                addonName = addon.displayTitle(getString(Res.string.generic_addon)),
                             )
                         )
                     }

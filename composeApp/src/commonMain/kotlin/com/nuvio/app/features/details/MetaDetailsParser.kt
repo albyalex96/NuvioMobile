@@ -3,7 +3,6 @@
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamProxyHeaders
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -20,7 +19,7 @@ import org.jetbrains.compose.resources.getString
 internal object MetaDetailsParser {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun parse(payload: String): MetaDetails {
+    suspend fun parse(payload: String): MetaDetails {
         val root = json.parseToJsonElement(payload).asJsonObjectOrNull()
             ?: error("Expected top-level JSON object in response")
         val meta = root.extractMetaObject()
@@ -217,7 +216,7 @@ internal object MetaDetailsParser {
         return merged.values.toList()
     }
 
-    private fun JsonObject.videos(): List<MetaVideo> =
+    private suspend fun JsonObject.videos(): List<MetaVideo> =
         array("videos").mapNotNull { element ->
             val video = element as? JsonObject ?: return@mapNotNull null
             val id = video.string("id") ?: return@mapNotNull null
@@ -236,7 +235,7 @@ internal object MetaDetailsParser {
             )
         }
 
-    private fun JsonObject.trailers(): List<MetaTrailer> =
+    private suspend fun JsonObject.trailers(): List<MetaTrailer> =
         array("trailers").mapNotNull { element ->
             val trailer = element as? JsonObject ?: return@mapNotNull null
             val key = trailer.string("key")
@@ -251,10 +250,10 @@ internal object MetaDetailsParser {
             MetaTrailer(
                 id = trailer.string("id")?.takeIf(String::isNotBlank) ?: normalizedKey,
                 key = normalizedKey,
-                name = trailer.string("name")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },
+                name = trailer.string("name")?.takeIf(String::isNotBlank) ?: getString(Res.string.generic_trailer),
                 site = trailer.string("site")?.takeIf(String::isNotBlank) ?: "YouTube",
                 size = trailer.int("size"),
-                type = trailer.string("type")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },
+                type = trailer.string("type")?.takeIf(String::isNotBlank) ?: getString(Res.string.generic_trailer),
                 official = trailer.boolean("official") == true,
                 publishedAt = trailer.string("published_at") ?: trailer.string("publishedAt"),
                 seasonNumber = trailer.int("seasonNumber") ?: trailer.int("season_number"),
@@ -262,7 +261,7 @@ internal object MetaDetailsParser {
             )
         }
 
-    private fun JsonObject.embeddedStreams(): List<StreamItem> {
+    private suspend fun JsonObject.embeddedStreams(): List<StreamItem> {
         val arr = this["streams"] as? JsonArray ?: return emptyList()
         return arr.mapNotNull { element ->
             val obj = element as? JsonObject ?: return@mapNotNull null
@@ -278,7 +277,7 @@ internal object MetaDetailsParser {
             val streamData = obj["streamData"] as? JsonObject
             val addonName = streamData?.string("addon")
                 ?: obj.string("name")
-                ?: runBlocking { getString(Res.string.source_embedded) }
+                ?: getString(Res.string.source_embedded)
             StreamItem(
                 name = obj.string("name"),
                 description = obj.string("description") ?: obj.string("title"),

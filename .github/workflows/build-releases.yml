@@ -22,7 +22,7 @@ on:
         type: string
   push:
     branches:
-      - "build/android-web"
+      - "build/suspend"
 
 permissions:
   contents: write

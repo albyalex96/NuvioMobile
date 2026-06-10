@@ -200,9 +200,7 @@ import nuvio.composeapp.generated.resources.settings_debrid_rule_required_releas
 import nuvio.composeapp.generated.resources.settings_debrid_rule_required_release_groups_desc
 import nuvio.composeapp.generated.resources.settings_debrid_rule_excluded_release_groups
 import nuvio.composeapp.generated.resources.settings_debrid_rule_excluded_release_groups_desc
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import com.nuvio.app.core.coroutines.runBlocking
 
 private const val CLOUD_SERVICES_FAQ_URL = "https://nuvioapp.space/faq#common-cloud-library-and-cloud-services"
 
@@ -487,6 +485,8 @@ internal fun LazyListScope.debridSettingsContent(
                     value = templatePreview(
                         value = settings.streamNameTemplate,
                         defaultValue = DebridStreamFormatterDefaults.NAME_TEMPLATE,
+                        defaultFormat = stringResource(Res.string.settings_debrid_template_default_format),
+                        originalFormat = stringResource(Res.string.settings_debrid_template_original_format),
                     ),
                     enabled = settings.canResolvePlayableLinks,
                     onClick = { activeTemplateField = DebridTemplateField.NAME },
@@ -499,6 +499,8 @@ internal fun LazyListScope.debridSettingsContent(
                     value = templatePreview(
                         value = settings.streamDescriptionTemplate,
                         defaultValue = DebridStreamFormatterDefaults.DESCRIPTION_TEMPLATE,
+                        defaultFormat = stringResource(Res.string.settings_debrid_template_default_format),
+                        originalFormat = stringResource(Res.string.settings_debrid_template_original_format),
                     ),
                     enabled = settings.canResolvePlayableLinks,
                     onClick = { activeTemplateField = DebridTemplateField.DESCRIPTION },
@@ -572,9 +574,7 @@ private enum class DebridTemplateField {
     DESCRIPTION,
 }
 
-private fun templatePreview(value: String, defaultValue: String): String {
-    val defaultFormat = runBlocking { getString(Res.string.settings_debrid_template_default_format) }
-    val originalFormat = runBlocking { getString(Res.string.settings_debrid_template_original_format) }
+private fun templatePreview(value: String, defaultValue: String, defaultFormat: String, originalFormat: String): String {
     val trimmed = value.trim()
     if (trimmed.isBlank()) return originalFormat
     if (trimmed == defaultValue.trim()) return defaultFormat

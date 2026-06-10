@@ -6,7 +6,7 @@ import com.nuvio.app.core.i18n.localizedMonthName
  * Formats ISO calendar dates (yyyy-MM-dd or yyyy-MM-ddTHH:mm:ss…) for UI as "2025 February 1".
  * Other strings (e.g. year-only "2024", human text from addons) are returned unchanged.
  */
-fun formatReleaseDateForDisplay(raw: String): String {
+suspend fun formatReleaseDateForDisplay(raw: String): String {
     val trimmed = raw.trim()
     if (trimmed.isEmpty()) return raw
     val datePart = trimmed.substringBefore('T').trim()
@@ -18,7 +18,7 @@ fun formatReleaseDateForDisplay(raw: String): String {
     return "$year ${localizedMonthName(month)} $day"
 }
 
-fun formatReleaseDateWithoutYear(raw: String): String {
+suspend fun formatReleaseDateWithoutYear(raw: String): String {
     val trimmed = raw.trim()
     if (trimmed.isEmpty()) return raw
     val datePart = trimmed.substringBefore('T').trim()

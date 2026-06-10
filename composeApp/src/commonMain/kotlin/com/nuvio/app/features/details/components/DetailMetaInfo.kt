@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,10 +61,8 @@ import nuvio.composeapp.generated.resources.rating_rotten_tomatoes
 import nuvio.composeapp.generated.resources.rating_tmdb
 import nuvio.composeapp.generated.resources.rating_trakt
 import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
@@ -79,7 +78,8 @@ fun DetailMetaInfo(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val releaseLine = formatMetaReleaseLineForDetails(meta)
-        val runtimeText = formatRuntimeForDisplay(meta.runtime)
+        var runtimeText by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(meta) { runtimeText = formatRuntimeForDisplay(meta.runtime) }
         val ageBadge = meta.ageRating?.trim()?.takeIf { it.isNotBlank() }
         val hasMdbImdbRating = meta.externalRatings.any { it.source == PROVIDER_IMDB }
         val validImdbRating = meta.imdbRating
@@ -200,9 +200,10 @@ fun DetailMetaInfo(
 private fun DetailRatingsRow(
     ratings: List<MetaExternalRating>,
 ) {
-    val orderedRatings = remember(ratings) {
+    val audienceScoreLabel = stringResource(Res.string.rating_audience_score)
+    val orderedRatings = remember(ratings, audienceScoreLabel) {
         val bySource = ratings.associateBy { it.source }
-        ratingVisuals.mapNotNull { visuals ->
+        ratingVisuals(audienceScoreLabel).mapNotNull { visuals ->
             bySource[visuals.source]?.let { rating -> visuals to rating }
         }
     }
@@ -334,7 +335,7 @@ private data class RatingVisuals(
     val format: (Double) -> String,
 )
 
-private val ratingVisuals = listOf(
+private fun ratingVisuals(audienceScoreLabel: String): List<RatingVisuals> = listOf(
     RatingVisuals(
         source = PROVIDER_IMDB,
         displayName = "IMDb",
@@ -385,7 +386,7 @@ private val ratingVisuals = listOf(
     ),
     RatingVisuals(
         source = PROVIDER_AUDIENCE,
-        displayName = runBlocking { getString(Res.string.rating_audience_score) },
+        displayName = audienceScoreLabel,
         logo = Res.drawable.rating_audience_score,
         logoWidth = 16.dp,
         valueColor = Color(0xFFFA320A),

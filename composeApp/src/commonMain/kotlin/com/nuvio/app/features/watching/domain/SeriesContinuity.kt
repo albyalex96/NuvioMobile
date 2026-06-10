@@ -84,7 +84,7 @@ fun nextReleasedEpisodeAfter(
     return candidates.firstOrNull { normalizeSeasonNumber(it.seasonNumber) > 0 }
 }
 
-fun decideSeriesPrimaryAction(
+suspend fun decideSeriesPrimaryAction(
     content: WatchingContentRef,
     episodes: List<WatchingReleasedEpisode>,
     progressRecords: List<WatchingProgressRecord>,
@@ -159,16 +159,16 @@ fun buildPlaybackVideoId(
         fallbackVideoId?.takeIf { it.isNotBlank() } ?: content.id
     }
 
-fun playLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
+suspend fun playLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
     localizedPlayLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format)
 
-fun upNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
+suspend fun upNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
     localizedUpNextLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format)
 
-fun resumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
+suspend fun resumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat = EpisodeCodeFormat.S01E01): String =
     localizedResumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format)
 
-private fun WatchingProgressRecord.toResumeAction(format: EpisodeCodeFormat): WatchingSeriesPrimaryAction =
+private suspend fun WatchingProgressRecord.toResumeAction(format: EpisodeCodeFormat): WatchingSeriesPrimaryAction =
     WatchingSeriesPrimaryAction(
         label = resumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber, format = format),
         videoId = videoId,

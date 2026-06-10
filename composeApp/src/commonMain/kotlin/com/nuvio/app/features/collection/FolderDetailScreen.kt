@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -215,10 +216,10 @@ private fun TabbedGridContent(
     onPosterClick: (MetaPreview) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
-    val libraryUiState by remember {
+    LaunchedEffect(Unit) {
         LibraryRepository.ensureLoaded()
-        LibraryRepository.uiState
-    }.collectAsState()
+    }
+    val libraryUiState by LibraryRepository.uiState.collectAsState()
 
     LaunchedEffect(gridState, uiState.selectedTabIndex, uiState.selectedTabCanLoadMore, uiState.selectedTabIsLoadingMore) {
         snapshotFlow { gridState.layoutInfo }
@@ -295,14 +296,9 @@ private fun TabbedGridContent(
                             key = { item -> item.lazyKey },
                         ) { keyedItem ->
                             val item = keyedItem.value
-                            val isSaved = remember(
-                                libraryUiState.items,
-                                libraryUiState.sections,
-                                libraryUiState.sourceMode,
-                                item.id,
-                                item.type,
-                            ) {
-                                LibraryRepository.isSaved(item.id, item.type)
+                            var isSaved by remember(item.id, item.type) { mutableStateOf(false) }
+                            LaunchedEffect(libraryUiState, item.id, item.type) {
+                                isSaved = LibraryRepository.isSaved(item.id, item.type)
                             }
                             NuvioPosterCard(
                                 title = item.name,

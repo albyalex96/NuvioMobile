@@ -180,28 +180,22 @@ fun SettingsScreen(
             }
         }
         val homescreenSettingsUiState by remember {
-            HomeCatalogSettingsRepository.snapshot()
             HomeCatalogSettingsRepository.uiState
         }.collectAsStateWithLifecycle()
         val collections by CollectionRepository.collections.collectAsStateWithLifecycle()
         val metaScreenSettingsUiState by remember {
-            MetaScreenSettingsRepository.ensureLoaded()
             MetaScreenSettingsRepository.uiState
         }.collectAsStateWithLifecycle()
         val continueWatchingPreferencesUiState by remember {
-            ContinueWatchingPreferencesRepository.ensureLoaded()
             ContinueWatchingPreferencesRepository.uiState
         }.collectAsStateWithLifecycle()
         val posterCardStyleUiState by remember {
-            PosterCardStyleRepository.ensureLoaded()
             PosterCardStyleRepository.uiState
         }.collectAsStateWithLifecycle()
         val episodeReleaseNotificationsUiState by remember {
-            EpisodeReleaseNotificationsRepository.ensureLoaded()
             EpisodeReleaseNotificationsRepository.uiState
         }.collectAsStateWithLifecycle()
         val liveTvUiState by remember {
-            LiveTvRepository.ensureLoaded()
             LiveTvRepository.uiState
         }.collectAsStateWithLifecycle()
         val profileSettingsState by remember {
@@ -214,6 +208,15 @@ fun SettingsScreen(
 
         LaunchedEffect(Unit) {
             CollectionRepository.initialize()
+        }
+
+        LaunchedEffect(Unit) {
+            HomeCatalogSettingsRepository.snapshot()
+            MetaScreenSettingsRepository.ensureLoaded()
+            ContinueWatchingPreferencesRepository.ensureLoaded()
+            PosterCardStyleRepository.ensureLoaded()
+            EpisodeReleaseNotificationsRepository.ensureLoaded()
+            LiveTvRepository.ensureLoaded()
         }
 
         LaunchedEffect(collections) {
@@ -659,6 +662,7 @@ private fun MobileSettingsScreen(
                 SettingsPage.MetaScreen -> metaScreenSettingsContent(
                     isTablet = false,
                     uiState = metaScreenSettingsUiState,
+                    scope = hapticScope,
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = false,
@@ -802,6 +806,7 @@ private fun TabletSettingsScreen(
     amoledSurfacesEnabled: Boolean,
     onAmoledSurfacesToggle: (Boolean) -> Unit,
 ) {
+    val hapticScope = rememberCoroutineScope()
     var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.General.name) }
     val activeCategory = SettingsCategory.valueOf(selectedCategory)
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -1001,6 +1006,7 @@ private fun TabletSettingsScreen(
                 SettingsPage.MetaScreen -> metaScreenSettingsContent(
                     isTablet = true,
                     uiState = metaScreenSettingsUiState,
+                    scope = hapticScope,
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = true,

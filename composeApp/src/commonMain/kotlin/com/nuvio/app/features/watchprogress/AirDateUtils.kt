@@ -1,17 +1,15 @@
 package com.nuvio.app.features.watchprogress
 
-import androidx.compose.runtime.Composable
 import com.nuvio.app.core.format.formatReleaseDateWithoutYear
 import com.nuvio.app.features.watching.domain.daysUntilExplicitRelease
 import com.nuvio.app.features.watching.domain.isoCalendarDateOrNull
 import com.nuvio.app.features.trakt.parseTraktIsoDateTimeToEpochMs
 import nuvio.composeapp.generated.resources.*
-import org.jetbrains.compose.resources.pluralStringResource
-import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.getPluralString
 import co.touchlab.kermit.Logger
 
-@Composable
-fun computeAirDateBadgeText(
+suspend fun computeAirDateBadgeText(
     releasedIso: String?,
     todayIsoDate: String,
     compact: Boolean
@@ -33,21 +31,21 @@ fun computeAirDateBadgeText(
     return when {
         daysUntil < 0 -> null
         daysUntil == 0 -> {
-            if (compact) stringResource(Res.string.cw_airs_today_short)
-            else stringResource(Res.string.cw_airs_today)
+            if (compact) getString(Res.string.cw_airs_today_short)
+            else getString(Res.string.cw_airs_today)
         }
         daysUntil == 1 -> {
-            if (compact) stringResource(Res.string.cw_airs_tomorrow_short)
-            else stringResource(Res.string.cw_airs_tomorrow)
+            if (compact) getString(Res.string.cw_airs_tomorrow_short)
+            else getString(Res.string.cw_airs_tomorrow)
         }
         daysUntil in 2..7 -> {
-            if (compact) pluralStringResource(Res.plurals.cw_airs_in_days_short, daysUntil, daysUntil)
-            else pluralStringResource(Res.plurals.cw_airs_in_days, daysUntil, daysUntil)
+            if (compact) getPluralString(Res.plurals.cw_airs_in_days_short, daysUntil, daysUntil)
+            else getPluralString(Res.plurals.cw_airs_in_days, daysUntil, daysUntil)
         }
         else -> {
             val formattedDate = formatReleaseDateWithoutYear(releasedIso)
-            if (compact) stringResource(Res.string.cw_airs_date_short, formattedDate)
-            else stringResource(Res.string.cw_airs_date, formattedDate)
+            if (compact) getString(Res.string.cw_airs_date_short, formattedDate)
+            else getString(Res.string.cw_airs_date, formattedDate)
         }
     }
 }

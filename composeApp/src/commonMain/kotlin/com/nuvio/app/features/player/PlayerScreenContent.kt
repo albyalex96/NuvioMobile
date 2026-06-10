@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -42,24 +43,19 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
     LockPlayerToLandscape()
 
     val playerSettingsUiState by remember {
-        PlayerSettingsRepository.ensureLoaded()
         PlayerSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val p2pSettingsUiState by remember {
-        P2pSettingsRepository.ensureLoaded()
         P2pSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val p2pStreamingState by P2pStreamingEngine.state.collectAsStateWithLifecycle()
     val metaScreenSettingsUiState by remember {
-        MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val watchedUiState by remember {
-        WatchedRepository.ensureLoaded()
         WatchedRepository.uiState
     }.collectAsStateWithLifecycle()
     val watchProgressUiState by remember {
-        WatchProgressRepository.ensureLoaded()
         WatchProgressRepository.uiState
     }.collectAsStateWithLifecycle()
     val sourceStreamsState by PlayerStreamsRepository.sourceState.collectAsStateWithLifecycle()
@@ -68,6 +64,14 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
     val addonsUiState by AddonRepository.uiState.collectAsStateWithLifecycle()
     val addonSubtitles by SubtitleRepository.addonSubtitles.collectAsStateWithLifecycle()
     val isLoadingAddonSubtitles by SubtitleRepository.isLoading.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        PlayerSettingsRepository.ensureLoaded()
+        P2pSettingsRepository.ensureLoaded()
+        MetaScreenSettingsRepository.ensureLoaded()
+        WatchedRepository.ensureLoaded()
+        WatchProgressRepository.ensureLoaded()
+    }
 
     val runtime = remember { PlayerScreenRuntime(args) }
     runtime.args = args

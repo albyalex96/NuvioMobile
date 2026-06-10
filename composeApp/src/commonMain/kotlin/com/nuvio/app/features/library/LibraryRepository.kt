@@ -16,7 +16,6 @@ import com.nuvio.app.features.trakt.effectiveLibrarySourceMode as resolveEffecti
 import com.nuvio.app.features.trakt.shouldUseTraktLibrary
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
-import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.library_local_tab_title
 import nuvio.composeapp.generated.resources.library_other
@@ -119,7 +118,7 @@ object LibraryRepository {
         }
     }
 
-    fun ensureLoaded() {
+    suspend fun ensureLoaded() {
         TraktAuthRepository.ensureLoaded()
         TraktSettingsRepository.ensureLoaded()
         TraktLibraryRepository.ensureLoaded()
@@ -133,7 +132,7 @@ object LibraryRepository {
         }
     }
 
-    fun onProfileChanged(profileId: Int) {
+    suspend fun onProfileChanged(profileId: Int) {
         if (profileId == currentProfileId && hasLoaded) return
         pushJob?.cancel()
         isPullingNuvioSyncFromServer = false
@@ -162,7 +161,7 @@ object LibraryRepository {
         _uiState.value = LibraryUiState()
     }
 
-    private fun loadFromDisk(profileId: Int) {
+    private suspend fun loadFromDisk(profileId: Int) {
         currentProfileId = profileId
         hasLoaded = true
         itemsById.clear()
@@ -211,15 +210,13 @@ object LibraryRepository {
         }
     }
 
-    fun toggleSaved(item: LibraryItem) {
+    suspend fun toggleSaved(item: LibraryItem) {
         ensureLoaded()
 
         if (isTraktLibrarySourceActive()) {
-            syncScope.launch {
-                runCatching { TraktLibraryRepository.toggleWatchlist(item) }
-                    .onFailure { e -> log.e(e) { "Failed to toggle Trakt watchlist" } }
-                publish()
-            }
+            runCatching { TraktLibraryRepository.toggleWatchlist(item) }
+                .onFailure { e -> log.e(e) { "Failed to toggle Trakt watchlist" } }
+            publish()
             return
         }
 
@@ -230,7 +227,7 @@ object LibraryRepository {
         }
     }
 
-    fun save(item: LibraryItem) {
+    suspend fun save(item: LibraryItem) {
         ensureLoaded()
         itemsById[libraryItemKey(item.id, item.type)] = item.copy(savedAtEpochMs = LibraryClock.nowEpochMs())
         publish()
@@ -238,7 +235,7 @@ object LibraryRepository {
         pushToServer()
     }
 
-    fun remove(id: String) {
+    suspend fun remove(id: String) {
         ensureLoaded()
         val before = itemsById.size
         itemsById.entries.removeAll { (_, item) -> item.id == id }
@@ -249,7 +246,7 @@ object LibraryRepository {
         }
     }
 
-    private fun remove(id: String, type: String) {
+    private suspend fun remove(id: String, type: String) {
         ensureLoaded()
         if (itemsById.remove(libraryItemKey(id, type)) != null) {
             publish()
@@ -258,7 +255,7 @@ object LibraryRepository {
         }
     }
 
-    fun isSaved(id: String, type: String? = null): Boolean {
+    suspend fun isSaved(id: String, type: String? = null): Boolean {
         ensureLoaded()
 
         if (isTraktLibrarySourceActive()) {
@@ -279,7 +276,7 @@ object LibraryRepository {
         }
     }
 
-    fun savedItem(id: String): LibraryItem? {
+    suspend fun savedItem(id: String): LibraryItem? {
         ensureLoaded()
 
         if (isTraktLibrarySourceActive()) {
@@ -289,7 +286,7 @@ object LibraryRepository {
         return itemsById.values.firstOrNull { it.id == id }
     }
 
-    fun libraryListTabs(): List<TraktListTab> {
+    suspend fun libraryListTabs(): List<TraktListTab> {
         val traktTabs = if (TraktAuthRepository.isAuthenticated.value) {
             TraktLibraryRepository.currentListTabs()
         } else {
@@ -298,7 +295,7 @@ object LibraryRepository {
         return libraryTabsWithLocal(traktTabs)
     }
 
-    fun traktListTabs(): List<TraktListTab> = libraryListTabs()
+    suspend fun traktListTabs(): List<TraktListTab> = libraryListTabs()
 
     suspend fun getMembershipSnapshot(item: LibraryItem): Map<String, Boolean> {
         ensureLoaded()
@@ -391,7 +388,7 @@ object LibraryRepository {
         return allItems
     }
 
-    private fun publish() {
+    private suspend fun publish() {
         if (isTraktLibrarySourceActive()) {
             val traktState = TraktLibraryRepository.uiState.value
             val sections = traktState.listTabs.mapNotNull { tab ->
@@ -477,14 +474,14 @@ object LibraryRepository {
 
 internal const val LOCAL_LIBRARY_LIST_KEY = "local"
 
-internal fun localLibraryListTab(): TraktListTab =
+internal suspend fun localLibraryListTab(): TraktListTab =
     TraktListTab(
         key = LOCAL_LIBRARY_LIST_KEY,
-        title = runBlocking { getString(Res.string.library_local_tab_title) },
+        title = getString(Res.string.library_local_tab_title),
         type = TraktListType.WATCHLIST,
     )
 
-internal fun libraryTabsWithLocal(traktTabs: List<TraktListTab>): List<TraktListTab> =
+internal suspend fun libraryTabsWithLocal(traktTabs: List<TraktListTab>): List<TraktListTab> =
     listOf(localLibraryListTab()) + traktTabs
 
 internal fun libraryMembershipWithLocal(
@@ -550,9 +547,9 @@ private fun PosterShape.toSyncName(): String =
         PosterShape.Landscape -> "LANDSCAPE"
     }
 
-internal fun String.toLibraryDisplayTitle(): String {
+internal suspend fun String.toLibraryDisplayTitle(): String {
     val normalized = trim()
-    if (normalized.isBlank()) return runBlocking { getString(Res.string.library_other) }
+    if (normalized.isBlank()) return getString(Res.string.library_other)
 
     return normalized
         .split('-', '_', ' ')
@@ -560,5 +557,5 @@ internal fun String.toLibraryDisplayTitle(): String {
         .joinToString(" ") { token ->
             token.lowercase().replaceFirstChar { char -> char.uppercase() }
         }
-        .ifBlank { runBlocking { getString(Res.string.library_other) } }
+        .ifBlank { getString(Res.string.library_other) }
 }

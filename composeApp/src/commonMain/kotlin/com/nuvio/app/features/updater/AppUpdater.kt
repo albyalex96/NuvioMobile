@@ -25,7 +25,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +51,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -106,9 +107,7 @@ private val appUpdaterJson = Json {
     isLenient = true
 }
 
-private class NoChannelReleaseException : IllegalStateException(
-    runBlocking { getString(Res.string.updates_no_channel_release) },
-)
+private class NoChannelReleaseException(message: String? = null) : IllegalStateException(message)
 
 private object VersionUtils {
     fun normalize(raw: String?): String {
@@ -164,7 +163,7 @@ private object AppUpdaterRepository {
 
         val releases = appUpdaterJson.decodeFromString<List<GitHubReleaseDto>>(response.body)
         val release = releases.firstOrNull { it.matchesRequestedChannel() && !it.draft && !it.prerelease }
-            ?: throw NoChannelReleaseException()
+            ?: throw NoChannelReleaseException(getString(Res.string.updates_no_channel_release))
 
         val tag = release.tagName?.takeIf { it.isNotBlank() }
             ?: release.name?.takeIf { it.isNotBlank() }
@@ -501,9 +500,16 @@ fun AppUpdaterHost(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.SemiBold,
                                 )
-                                val assetLine = update.assetSizeBytes?.let(::formatFileSize)?.let { size ->
-                                    stringResource(Res.string.updates_asset_line, size, update.assetName)
-                                } ?: update.assetName
+                                var assetLine by remember(update) { mutableStateOf(update.assetName) }
+                                LaunchedEffect(update) {
+                                    if (update.assetSizeBytes != null) {
+                                        assetLine = getString(
+                                            Res.string.updates_asset_line,
+                                            formatFileSize(update.assetSizeBytes!!),
+                                            update.assetName,
+                                        )
+                                    }
+                                }
                                 Text(
                                     text = assetLine,
                                     style = MaterialTheme.typography.bodySmall,
@@ -637,7 +643,7 @@ fun AppUpdaterHost(
     }
 }
 
-private fun formatFileSize(sizeBytes: Long): String {
+private suspend fun formatFileSize(sizeBytes: Long): String {
     if (sizeBytes <= 0L) return "0 ${localizedByteUnit("B")}"
     val units = listOf("B", "KB", "MB", "GB")
     var value = sizeBytes.toDouble()

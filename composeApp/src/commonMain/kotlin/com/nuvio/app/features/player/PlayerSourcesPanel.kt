@@ -298,7 +298,7 @@ private fun SourceStreamRow(
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
             ) {
                 Text(
-                    text = stream.streamLabel,
+                    text = stream.streamLabel(stringResource(Res.string.stream_default_name)),
                     color = tokens.colors.textPrimary,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
@@ -324,7 +324,7 @@ private fun SourceStreamRow(
             }
 
             val subtitle = stream.streamSubtitle
-            if (!subtitle.isNullOrBlank() && subtitle != stream.streamLabel) {
+            if (!subtitle.isNullOrBlank() && subtitle != stream.streamLabel(stringResource(Res.string.stream_default_name))) {
                 Spacer(modifier = Modifier.height(NuvioTokens.Space.s2))
                 Text(
                     text = subtitle,
@@ -484,7 +484,7 @@ private fun isCurrentStream(
     currentName: String?,
 ): Boolean {
     if (currentUrl != null && stream.playableDirectUrl == currentUrl) return true
-    if (currentName != null && stream.streamLabel.equals(currentName, ignoreCase = true) &&
+    if (currentName != null && stream.streamLabel("Stream").equals(currentName, ignoreCase = true) &&
         stream.playableDirectUrl == currentUrl
     ) return true
     return false

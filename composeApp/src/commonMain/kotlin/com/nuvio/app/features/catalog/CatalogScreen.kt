@@ -84,14 +84,14 @@ fun CatalogScreen(
     val homeCatalogSettingsUiState by HomeCatalogSettingsRepository.uiState.collectAsStateWithLifecycle()
     val posterCardStyle = rememberPosterCardStyleUiState()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
-    val watchedUiState by remember {
+    LaunchedEffect(Unit) {
         WatchedRepository.ensureLoaded()
-        WatchedRepository.uiState
-    }.collectAsStateWithLifecycle()
-    val libraryUiState by remember {
+    }
+    LaunchedEffect(Unit) {
         LibraryRepository.ensureLoaded()
-        LibraryRepository.uiState
-    }.collectAsStateWithLifecycle()
+    }
+    val watchedUiState by WatchedRepository.uiState.collectAsStateWithLifecycle()
+    val libraryUiState by LibraryRepository.uiState.collectAsStateWithLifecycle()
     val initialScrollPosition = remember(
         manifestUrl,
         type,
@@ -230,14 +230,9 @@ fun CatalogScreen(
                         key = { item -> item.lazyKey },
                     ) { keyedItem ->
                         val item = keyedItem.value
-                        val isSaved = remember(
-                            libraryUiState.items,
-                            libraryUiState.sections,
-                            libraryUiState.sourceMode,
-                            item.id,
-                            item.type,
-                        ) {
-                            LibraryRepository.isSaved(item.id, item.type)
+                        var isSaved by remember(item.id, item.type) { mutableStateOf(false) }
+                        LaunchedEffect(libraryUiState, item.id, item.type) {
+                            isSaved = LibraryRepository.isSaved(item.id, item.type)
                         }
                         CatalogPosterTile(
                             item = item,
@@ -359,10 +354,14 @@ private fun CatalogPosterTile(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            val detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it) }
-            if (detail != null) {
+            var detail by remember(item.releaseInfo) { mutableStateOf<String?>(null) }
+            LaunchedEffect(item.releaseInfo) {
+                detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it) }
+            }
+            val detailText = detail
+            if (detailText != null) {
                 Text(
-                    text = detail,
+                    text = detailText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

@@ -10,6 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -28,19 +33,26 @@ fun DetailAdditionalInfoSection(
     modifier: Modifier = Modifier,
     showHeader: Boolean = true,
 ) {
+    var runtimeText by remember { mutableStateOf("") }
+    LaunchedEffect(meta) { runtimeText = formatRuntimeForDisplay(meta.runtime) ?: "" }
+
     val isSeriesLike = meta.type == "series" || meta.videos.any { it.season != null || it.episode != null }
     val title = if (isSeriesLike) {
         stringResource(Res.string.details_show_details)
     } else {
         stringResource(Res.string.details_movie_details)
     }
+    var releaseInfoDisplay by remember(meta.releaseInfo) { mutableStateOf<String?>(null) }
+    LaunchedEffect(meta.releaseInfo) {
+        releaseInfoDisplay = meta.releaseInfo?.let { formatReleaseDateForDisplay(it) }
+    }
     val rows = buildList {
         meta.status?.let { add(stringResource(Res.string.details_status) to it) }
-        meta.releaseInfo?.let {
-            add(stringResource(Res.string.details_release_info) to formatReleaseDateForDisplay(it))
+        releaseInfoDisplay?.let {
+            add(stringResource(Res.string.details_release_info) to it)
         }
-        formatRuntimeForDisplay(meta.runtime)?.let {
-            add(stringResource(Res.string.details_runtime) to it)
+        if (runtimeText.isNotEmpty()) {
+            add(stringResource(Res.string.details_runtime) to runtimeText)
         }
         meta.ageRating?.let { add(stringResource(Res.string.details_certification) to it) }
         meta.country?.let { add(stringResource(Res.string.details_origin_country) to it) }

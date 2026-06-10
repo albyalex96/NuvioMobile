@@ -79,7 +79,7 @@ internal fun PlayerScreenRuntime.saveP2pStreamForReuse(
     StreamLinkCacheRepository.save(
         contentKey = cacheKey,
         url = "",
-        streamName = stream.streamLabel,
+        streamName = stream.streamLabel("Stream"),
         addonName = stream.addonName,
         addonId = stream.addonId,
         requestHeaders = emptyMap(),
@@ -119,7 +119,7 @@ internal fun PlayerScreenRuntime.switchToP2pSourceStream(stream: StreamItem) {
     activeTorrentFilename = stream.p2pFilename
     activeTorrentMagnetUri = stream.torrentMagnetUri
     activeTorrentTrackers = stream.p2pTrackers
-    activeStreamTitle = stream.streamLabel
+    activeStreamTitle = stream.streamLabel("Stream")
     activeStreamSubtitle = stream.streamSubtitle
     activeProviderName = stream.addonName
     activeProviderAddonId = stream.addonId
@@ -202,7 +202,7 @@ internal fun PlayerScreenRuntime.switchToSource(stream: StreamItem) {
     activeSourceAudioUrl = null
     activeSourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request)
     activeSourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response)
-    activeStreamTitle = stream.streamLabel
+    activeStreamTitle = stream.streamLabel("Stream")
     activeStreamSubtitle = stream.streamSubtitle
     activeProviderName = stream.addonName
     activeProviderAddonId = stream.addonId
@@ -380,7 +380,7 @@ private fun PlayerScreenRuntime.applyEpisodeStreamMetadata(
     episode: MetaVideo,
     resume: EpisodeResume,
 ) {
-    activeStreamTitle = stream.streamLabel
+    activeStreamTitle = stream.streamLabel("Stream")
     activeStreamSubtitle = stream.streamSubtitle
     activeProviderName = stream.addonName
     activeProviderAddonId = stream.addonId
@@ -412,7 +412,7 @@ private fun PlayerScreenRuntime.saveDirectStreamForReuse(
     StreamLinkCacheRepository.save(
         contentKey = cacheKey,
         url = url,
-        streamName = stream.streamLabel,
+        streamName = stream.streamLabel("Stream"),
         addonName = stream.addonName,
         addonId = stream.addonId,
         requestHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),

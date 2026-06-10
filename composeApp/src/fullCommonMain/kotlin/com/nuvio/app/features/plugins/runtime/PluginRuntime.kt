@@ -14,7 +14,6 @@ import com.nuvio.app.features.plugins.runtime.network.UrlBridge
 import com.nuvio.app.features.plugins.runtime.wasm.WasmBridge
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -192,7 +191,7 @@ internal object PluginRuntime {
         }
     }
 
-    private fun parseJsonResults(rawJson: String): List<PluginRuntimeResult> {
+    private suspend fun parseJsonResults(rawJson: String): List<PluginRuntimeResult> {
         return runCatching {
             val array = json.parseToJsonElement(rawJson) as? JsonArray ?: return emptyList()
             array.mapNotNull { element ->
@@ -230,7 +229,7 @@ internal object PluginRuntime {
                 }?.takeIf { it.isNotEmpty() }
 
                 PluginRuntimeResult(
-                    title = item.stringOrNull("title") ?: item.stringOrNull("name") ?: runBlocking { getString(Res.string.generic_unknown) },
+                    title = item.stringOrNull("title") ?: item.stringOrNull("name") ?: getString(Res.string.generic_unknown),
                     name = item.stringOrNull("name"),
                     url = url,
                     quality = item.stringOrNull("quality"),

@@ -10,6 +10,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -120,13 +125,17 @@ internal fun StreamBadgeImage(badge: StreamBadge) {
 internal fun StreamFileSizeBadge(stream: StreamItem) {
     val tokens = MaterialTheme.nuvio
     val bytes = stream.behaviorHints.videoSize ?: return
+    var gbLabel by remember { mutableStateOf("") }
+    var mbLabel by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { gbLabel = localizedByteUnit("GB") }
+    LaunchedEffect(Unit) { mbLabel = localizedByteUnit("MB") }
     val gib = bytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
     val sizeLabel = if (gib >= 1.0) {
         val roundedGiB = round(gib * 10.0) / 10.0
-        "$roundedGiB ${localizedByteUnit("GB")}"
+        "$roundedGiB $gbLabel"
     } else {
         val mib = bytes.toDouble() / (1024.0 * 1024.0)
-        "${round(mib).toInt()} ${localizedByteUnit("MB")}"
+        "${round(mib).toInt()} $mbLabel"
     }
 
     val badgeShape = StreamBadgeChipDefaults.shape

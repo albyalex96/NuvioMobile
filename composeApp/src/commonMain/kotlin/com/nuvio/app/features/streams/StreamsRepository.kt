@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.launch
@@ -52,7 +51,7 @@ object StreamsRepository {
     ): String =
         "$type::$videoId::$season::$episode::$manualSelection"
 
-    fun load(type: String, videoId: String, parentMetaId: String? = null, season: Int? = null, episode: Int? = null, manualSelection: Boolean = false) {
+    suspend fun load(type: String, videoId: String, parentMetaId: String? = null, season: Int? = null, episode: Int? = null, manualSelection: Boolean = false) {
         load(
             type = type,
             videoId = videoId,
@@ -64,7 +63,7 @@ object StreamsRepository {
         )
     }
 
-    fun reload(type: String, videoId: String, parentMetaId: String? = null, season: Int? = null, episode: Int? = null, manualSelection: Boolean = false) {
+    suspend fun reload(type: String, videoId: String, parentMetaId: String? = null, season: Int? = null, episode: Int? = null, manualSelection: Boolean = false) {
         load(
             type = type,
             videoId = videoId,
@@ -76,7 +75,7 @@ object StreamsRepository {
         )
     }
 
-    private fun load(type: String, videoId: String, parentMetaId: String?, season: Int?, episode: Int?, manualSelection: Boolean, forceRefresh: Boolean) {
+    private suspend fun load(type: String, videoId: String, parentMetaId: String?, season: Int?, episode: Int?, manualSelection: Boolean, forceRefresh: Boolean) {
         val pluginUiState = if (AppFeaturePolicy.pluginsEnabled) {
             PluginRepository.initialize()
             PluginRepository.uiState.value
@@ -179,6 +178,7 @@ object StreamsRepository {
             return
         }
 
+        val defaultAddonName = getString(Res.string.generic_addon)
         val streamAddons = installedAddons
             .mapNotNull { addon ->
                 val manifest = addon.manifest ?: return@mapNotNull null
@@ -191,7 +191,7 @@ object StreamsRepository {
                 if (!supportsRequestedStream) return@mapNotNull null
 
                 InstalledStreamAddonTarget(
-                    addonName = addon.displayTitle.ifBlank { manifest.name },
+                    addonName = addon.displayTitle(defaultAddonName).ifBlank { manifest.name },
                     addonId = addon.streamAddonInstanceId(manifest.id),
                     manifest = manifest,
                 )
@@ -837,7 +837,7 @@ private sealed interface StreamLoadCompletion {
     ) : StreamLoadCompletion
 }
 
-private fun List<PluginScraper>.toPluginProviderGroups(
+private suspend fun List<PluginScraper>.toPluginProviderGroups(
     repositories: List<PluginRepositoryItem>,
     groupByRepository: Boolean,
 ): List<PluginProviderGroup> {
@@ -941,18 +941,18 @@ private fun List<StreamItem>.sortedForGroupedDisplay(): List<StreamItem> =
     sortedWith(
         compareBy<StreamItem>(
             { it.sourceName.orEmpty().lowercase() },
-            { it.streamLabel.lowercase() },
+            { it.streamLabel("Stream").lowercase() },
             { it.streamSubtitle.orEmpty().lowercase() },
         ),
     )
 
-private fun String.fallbackRepositoryLabel(): String {
+private suspend fun String.fallbackRepositoryLabel(): String {
     val withoutQuery = substringBefore("?")
     val withoutManifest = withoutQuery.removeSuffix("/manifest.json")
     val host = withoutManifest.substringAfter("://", withoutManifest).substringBefore('/')
     return host.ifBlank {
         withoutManifest.substringAfterLast('/').ifBlank {
-            runBlocking { getString(Res.string.streams_plugin_repository_fallback) }
+            getString(Res.string.streams_plugin_repository_fallback)
         }
     }
 }

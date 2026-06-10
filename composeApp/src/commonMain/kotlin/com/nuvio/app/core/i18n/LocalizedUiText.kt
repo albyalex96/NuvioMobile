@@ -2,7 +2,6 @@
 
 import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.core.ui.formatEpisodeCode
-import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.action_play_episode
@@ -48,7 +47,7 @@ import nuvio.composeapp.generated.resources.unit_bytes_kb
 import nuvio.composeapp.generated.resources.unit_bytes_mb
 import org.jetbrains.compose.resources.getString
 
-fun localizedMediaTypeLabel(type: String): String {
+suspend fun localizedMediaTypeLabel(type: String): String {
     val fallback = type.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     return when (type.trim().lowercase()) {
         "movie" -> resourceString("Movies") { getString(Res.string.media_movies) }
@@ -60,9 +59,9 @@ fun localizedMediaTypeLabel(type: String): String {
     }
 }
 
-fun localizedMovieTypeLabel(): String = resourceString("Movie") { getString(Res.string.media_movie) }
+suspend fun localizedMovieTypeLabel(): String = resourceString("Movie") { getString(Res.string.media_movie) }
 
-fun localizedSeasonEpisodeCode(seasonNumber: Int?, episodeNumber: Int?): String? =
+suspend fun localizedSeasonEpisodeCode(seasonNumber: Int?, episodeNumber: Int?): String? =
     when {
         seasonNumber != null && episodeNumber != null ->
             resourceString("S${seasonNumber}E${episodeNumber}") {
@@ -86,7 +85,7 @@ fun localizedSeasonEpisodeCode(
     else -> null
 }
 
-fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?): String {
+suspend fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?): String {
     val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber)
     return if (episodeCode != null) {
         resourceString("Play $episodeCode") { getString(Res.string.action_play_episode, episodeCode) }
@@ -95,7 +94,7 @@ fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?): String {
     }
 }
 
-fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String {
+suspend fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String {
     val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber, format)
     return if (episodeCode != null) {
         resourceString("Play $episodeCode") { getString(Res.string.action_play_episode, episodeCode) }
@@ -104,7 +103,7 @@ fun localizedPlayLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeC
     }
 }
 
-fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?): String {
+suspend fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?): String {
     val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber)
     return if (episodeCode != null) {
         resourceString("Resume $episodeCode") { getString(Res.string.action_resume_episode, episodeCode) }
@@ -113,7 +112,7 @@ fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?): String {
     }
 }
 
-fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String {
+suspend fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String {
     val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber, format)
     return if (episodeCode != null) {
         resourceString("Resume $episodeCode") { getString(Res.string.action_resume_episode, episodeCode) }
@@ -122,7 +121,7 @@ fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: Episod
     }
 }
 
-fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
+suspend fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
     if (seasonNumber != null && episodeNumber != null) {
         resourceString("Up Next • S${seasonNumber}E${episodeNumber}") {
             getString(Res.string.continue_watching_up_next_episode, seasonNumber, episodeNumber)
@@ -131,7 +130,7 @@ fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
         resourceString("Up Next") { getString(Res.string.continue_watching_up_next) }
     }
 
-fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String =
+suspend fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String =
     if (seasonNumber != null && episodeNumber != null) {
         val code = formatEpisodeCode(seasonNumber, episodeNumber, format)
         resourceString("Up Next • $code") {
@@ -141,7 +140,7 @@ fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: Episod
         resourceString("Up Next") { getString(Res.string.continue_watching_up_next) }
     }
 
-fun localizedMonthName(month: Int): String =
+suspend fun localizedMonthName(month: Int): String =
     when (month) {
         1 -> resourceString("January") { getString(Res.string.date_month_january) }
         2 -> resourceString("February") { getString(Res.string.date_month_february) }
@@ -158,7 +157,7 @@ fun localizedMonthName(month: Int): String =
         else -> month.toString()
     }
 
-fun localizedShortMonthName(month: Int): String =
+suspend fun localizedShortMonthName(month: Int): String =
     when (month) {
         1 -> resourceString("Jan") { getString(Res.string.date_month_short_jan) }
         2 -> resourceString("Feb") { getString(Res.string.date_month_short_feb) }
@@ -175,7 +174,7 @@ fun localizedShortMonthName(month: Int): String =
         else -> month.toString()
     }
 
-fun localizedByteUnit(unit: String): String =
+suspend fun localizedByteUnit(unit: String): String =
     when (unit) {
         "GB" -> resourceString("GB") { getString(Res.string.unit_bytes_gb) }
         "MB" -> resourceString("MB") { getString(Res.string.unit_bytes_mb) }
@@ -183,9 +182,9 @@ fun localizedByteUnit(unit: String): String =
         else -> resourceString("B") { getString(Res.string.unit_bytes_b) }
     }
 
-private fun resourceString(
+private suspend fun resourceString(
     fallback: String,
     provider: suspend () -> String,
 ): String = runCatching {
-    runBlocking { provider() }
+    provider()
 }.getOrDefault(fallback)

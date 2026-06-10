@@ -37,7 +37,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -62,7 +61,7 @@ object ProfileRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val log = Logger.withTag("ProfileRepository")
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    private fun localizedString(resource: StringResource): String = runBlocking { getString(resource) }
+    private suspend fun localizedString(resource: StringResource): String = getString(resource)
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
@@ -141,7 +140,7 @@ object ProfileRepository {
         }
     }
 
-    fun selectProfile(profileIndex: Int) {
+    suspend fun selectProfile(profileIndex: Int) {
         activeProfileIndex = profileIndex
         val selectedProfile = _state.value.profiles.find { it.profileIndex == profileIndex }
         _state.value = _state.value.copy(
@@ -431,7 +430,7 @@ object ProfileRepository {
         ProfilePinCacheStorage.savePayload(profileIndex, json.encodeToString(payload))
     }
 
-    private fun verifyPinLocally(profileIndex: Int, pin: String): PinVerifyResult {
+    private suspend fun verifyPinLocally(profileIndex: Int, pin: String): PinVerifyResult {
         val profile = _state.value.profiles.find { it.profileIndex == profileIndex }
         if (profile?.pinEnabled != true) {
             return PinVerifyResult(unlocked = true)

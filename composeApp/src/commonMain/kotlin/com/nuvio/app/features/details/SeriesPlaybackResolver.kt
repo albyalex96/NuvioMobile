@@ -138,7 +138,7 @@ internal data class SeriesPrimaryAction(
     val resumePositionMs: Long?,
 )
 
-internal fun MetaDetails.seriesPrimaryAction(
+internal suspend fun MetaDetails.seriesPrimaryAction(
     entries: List<WatchProgressEntry>,
     watchedItems: List<WatchedItem>,
     todayIsoDate: String,
@@ -156,7 +156,7 @@ internal fun MetaDetails.seriesPrimaryAction(
         format = format,
     )
 
-internal fun MetaDetails.seriesPrimaryAction(
+internal suspend fun MetaDetails.seriesPrimaryAction(
     content: WatchingContentRef,
     entries: List<WatchProgressEntry>,
     watchedItems: List<WatchedItem>,
@@ -176,13 +176,13 @@ internal fun MetaDetails.seriesPrimaryAction(
         format = format,
     )?.toLegacySeriesPrimaryAction()
 
-internal fun MetaVideo.playLabel(): String =
+internal suspend fun MetaVideo.playLabel(): String =
     playLabel(seasonNumber = season, episodeNumber = episode)
 
-internal fun MetaVideo.upNextLabel(): String =
+internal suspend fun MetaVideo.upNextLabel(): String =
     upNextLabel(seasonNumber = season, episodeNumber = episode)
 
-internal fun WatchProgressEntry.resumeLabel(): String =
+internal suspend fun WatchProgressEntry.resumeLabel(): String =
     resumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber)
 
 internal fun MetaVideo.isReleasedBy(todayIsoDate: String): Boolean =

@@ -5,7 +5,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -104,7 +103,7 @@ object DownloadsRepository {
         return resolvedUri
     }
 
-    fun enqueueFromStream(
+    suspend fun enqueueFromStream(
         contentType: String,
         videoId: String,
         parentMetaId: String,
@@ -164,7 +163,7 @@ object DownloadsRepository {
         return HlsStreamMetadata(master, sourceUrl)
     }
 
-    fun enqueueFromHlsSelection(
+    suspend fun enqueueFromHlsSelection(
         contentType: String,
         videoId: String,
         parentMetaId: String,
@@ -215,7 +214,7 @@ object DownloadsRepository {
             seasonNumber = seasonNumber,
             episodeNumber = episodeNumber,
             episodeTitle = episodeTitle,
-            fallbackTitle = stream.streamLabel,
+            fallbackTitle = stream.streamLabel(getString(Res.string.stream_default_name)),
             quality = selection.displayQuality,
             nowEpochMs = now,
         )
@@ -266,7 +265,7 @@ object DownloadsRepository {
         }
     }
 
-    private fun enqueueDirectStream(
+    private suspend fun enqueueDirectStream(
         contentType: String,
         videoId: String,
         parentMetaId: String,
@@ -306,7 +305,7 @@ object DownloadsRepository {
             seasonNumber = seasonNumber,
             episodeNumber = episodeNumber,
             episodeTitle = episodeTitle,
-            fallbackTitle = stream.streamLabel,
+            fallbackTitle = stream.streamLabel(getString(Res.string.stream_default_name)),
             sourceUrl = sourceUrl,
             nowEpochMs = now,
         )
@@ -325,7 +324,7 @@ object DownloadsRepository {
             episodeNumber = episodeNumber,
             episodeTitle = episodeTitle,
             episodeThumbnail = episodeThumbnail,
-            streamTitle = stream.streamLabel,
+            streamTitle = stream.streamLabel(getString(Res.string.stream_default_name)),
             streamSubtitle = stream.streamSubtitle,
             providerName = stream.addonName,
             providerAddonId = stream.addonId,
@@ -377,7 +376,7 @@ object DownloadsRepository {
             .forEach(::pauseDownload)
     }
 
-    fun resumeDownload(downloadId: String) {
+    suspend fun resumeDownload(downloadId: String) {
         ensureLoaded()
         val item = _uiState.value.items.firstOrNull { it.id == downloadId } ?: return
         if (item.status != DownloadStatus.Paused && item.status != DownloadStatus.Failed) return
@@ -394,7 +393,7 @@ object DownloadsRepository {
         startDownload(reset)
     }
 
-    fun retryDownload(downloadId: String) {
+    suspend fun retryDownload(downloadId: String) {
         resumeDownload(downloadId)
     }
 
@@ -445,7 +444,7 @@ object DownloadsRepository {
         }
     }
 
-    private fun startDownload(item: DownloadItem) {
+    private suspend fun startDownload(item: DownloadItem) {
         if (item.isHls) {
             startHlsDownload(item)
         } else {
@@ -453,12 +452,13 @@ object DownloadsRepository {
         }
     }
 
-    private fun startDirectDownload(item: DownloadItem) {
+    private suspend fun startDirectDownload(item: DownloadItem) {
         val request = DownloadPlatformRequest(
             sourceUrl = item.sourceUrl,
             sourceHeaders = item.sourceHeaders,
             destinationFileName = item.fileName,
         )
+        val fallbackError = getString(Res.string.download_failed)
 
         val handle = DownloadsPlatformDownloader.start(
             request = request,
@@ -501,7 +501,7 @@ object DownloadsRepository {
                     } else {
                         current.copy(
                             status = DownloadStatus.Failed,
-                            errorMessage = message.ifBlank { runBlocking { getString(Res.string.download_failed) } },
+                            errorMessage = message.ifBlank { fallbackError },
                             updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                         )
                     }
@@ -512,9 +512,10 @@ object DownloadsRepository {
         activeHandles[item.id] = handle
     }
 
-    private fun startHlsDownload(item: DownloadItem) {
+    private suspend fun startHlsDownload(item: DownloadItem) {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.Default)
+        val fallbackError = getString(Res.string.download_failed)
 
         scope.launch {
             val mediaContent = DownloadsPlatformDownloader.fetchUrlAsString(
@@ -522,11 +523,10 @@ object DownloadsRepository {
                 headers = item.sourceHeaders,
             )
             if (mediaContent == null) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
                 mutateItem(item.id) { current ->
                     current.copy(
                         status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
+                        errorMessage = fallbackError,
                         updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                     )
                 }
@@ -535,11 +535,10 @@ object DownloadsRepository {
 
             val mediaPlaylist = HlsPlaylistParser.parseMediaPlaylist(mediaContent, item.sourceUrl)
             if (mediaPlaylist.segments.isEmpty()) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
                 mutateItem(item.id) { current ->
                     current.copy(
                         status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
+                        errorMessage = fallbackError,
                         updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                     )
                 }
@@ -591,9 +590,7 @@ object DownloadsRepository {
                         } else {
                             current.copy(
                                 status = DownloadStatus.Failed,
-                                errorMessage = message.ifBlank {
-                                    runBlocking { getString(Res.string.download_failed) }
-                                },
+                                errorMessage = message.ifBlank { fallbackError },
                                 updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                             )
                         }

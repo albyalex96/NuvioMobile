@@ -95,10 +95,10 @@ fun LibraryScreen(
     onCloudFilePlay: ((CloudLibraryItem, CloudLibraryFile) -> Unit)? = null,
     onConnectCloudClick: (() -> Unit)? = null,
 ) {
-    val uiState by remember {
+    LaunchedEffect(Unit) {
         LibraryRepository.ensureLoaded()
-        LibraryRepository.uiState
-    }.collectAsStateWithLifecycle()
+    }
+    val uiState by LibraryRepository.uiState.collectAsStateWithLifecycle()
     val cloudUiState by CloudLibraryRepository.uiState.collectAsStateWithLifecycle()
     val cloudSettings by remember {
         DebridSettingsRepository.ensureLoaded()
@@ -827,7 +827,7 @@ private fun cloudLibraryStatusLine(item: CloudLibraryItem): String {
     }
     return listOfNotNull(
         item.status?.toDisplayStatus(),
-        item.sizeBytes?.let(::formatCloudBytes),
+        item.sizeBytes?.let { formatCloudBytes(it) },
         item.progressFraction?.let { "${(it * 100f).toInt()}%" },
     ).joinToString(" • ").ifBlank { fallback }
 }
@@ -841,17 +841,26 @@ private fun cloudLibraryTypeLabel(type: CloudLibraryItemType): String =
         CloudLibraryItemType.File -> stringResource(Res.string.cloud_library_type_files)
     }
 
+@Composable
 private fun formatCloudBytes(bytes: Long): String {
-    if (bytes <= 0L) return "0 ${localizedByteUnit("B")}"
+    var bLabel by remember { mutableStateOf("") }
+    var kbLabel by remember { mutableStateOf("") }
+    var mbLabel by remember { mutableStateOf("") }
+    var gbLabel by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) { bLabel = localizedByteUnit("B") }
+    LaunchedEffect(Unit) { kbLabel = localizedByteUnit("KB") }
+    LaunchedEffect(Unit) { mbLabel = localizedByteUnit("MB") }
+    LaunchedEffect(Unit) { gbLabel = localizedByteUnit("GB") }
+    if (bytes <= 0L) return "0 $bLabel"
     val kib = 1024.0
     val mib = kib * 1024.0
     val gib = mib * 1024.0
     val value = bytes.toDouble()
     return when {
-        value >= gib -> "${((value / gib) * 10.0).toInt() / 10.0} ${localizedByteUnit("GB")}"
-        value >= mib -> "${((value / mib) * 10.0).toInt() / 10.0} ${localizedByteUnit("MB")}"
-        value >= kib -> "${((value / kib) * 10.0).toInt() / 10.0} ${localizedByteUnit("KB")}"
-        else -> "$bytes ${localizedByteUnit("B")}"
+        value >= gib -> "${((value / gib) * 10.0).toInt() / 10.0} $gbLabel"
+        value >= mib -> "${((value / mib) * 10.0).toInt() / 10.0} $mbLabel"
+        value >= kib -> "${((value / kib) * 10.0).toInt() / 10.0} $kbLabel"
+        else -> "$bytes $bLabel"
     }
 }
 

@@ -1,6 +1,5 @@
 ﻿package com.nuvio.app.features.addons
 
-import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -9,9 +8,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.addons_manifest_missing_field
-import org.jetbrains.compose.resources.getString
+
 
 internal object AddonManifestParser {
     private val json = Json {
@@ -96,9 +93,7 @@ internal object AddonManifestParser {
 
     private fun JsonObject.requiredString(name: String): String =
         optionalString(name)?.takeIf { it.isNotBlank() }
-            ?: throw IllegalArgumentException(
-                runBlocking { getString(Res.string.addons_manifest_missing_field, name) },
-            )
+            ?: throw IllegalArgumentException("Addon manifest missing required field: $name")
 
     private fun JsonObject.optionalString(name: String): String? =
         this[name]?.jsonPrimitive?.contentOrNull

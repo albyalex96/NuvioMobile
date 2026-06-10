@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioScreen
@@ -91,9 +92,11 @@ fun MetaScreenSettingsScreen(
     onBack: () -> Unit,
 ) {
     val metaScreenSettingsUiState by remember {
-        MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
+
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { MetaScreenSettingsRepository.ensureLoaded() }
 
     NuvioScreen(
         modifier = Modifier.fillMaxSize(),
@@ -107,6 +110,7 @@ fun MetaScreenSettingsScreen(
         metaScreenSettingsContent(
             isTablet = false,
             uiState = metaScreenSettingsUiState,
+            scope = scope,
         )
     }
 }

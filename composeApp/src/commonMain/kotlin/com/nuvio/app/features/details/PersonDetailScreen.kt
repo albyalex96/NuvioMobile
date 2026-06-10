@@ -755,14 +755,17 @@ private fun calculateAge(birthday: String, deathday: String?): Int? {
     return age.takeIf { it >= 0 }
 }
 
+@Composable
 private fun formatDateForDisplay(date: String): String? {
     val parts = date.split("-").mapNotNull { it.toIntOrNull() }
     if (parts.size < 3) return null
     val month = parts[1]
     val day = parts[2]
     val year = parts[0]
+    var monthName by remember { mutableStateOf("") }
+    LaunchedEffect(month) { monthName = localizedShortMonthName(month) }
     return if (month in 1..12) {
-        "${localizedShortMonthName(month)} $day, $year"
+        "$monthName $day, $year"
     } else {
         null
     }

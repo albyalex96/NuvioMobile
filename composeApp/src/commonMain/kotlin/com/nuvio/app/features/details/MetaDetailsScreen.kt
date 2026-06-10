@@ -136,35 +136,27 @@ fun MetaDetailsScreen(
     val displayedMeta = uiState.meta?.takeIf { it.type == type && it.id == id }
         ?: MetaDetailsRepository.peek(type, id)
     val metaScreenSettingsUiState by remember {
-        MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val traktAuthUiState by remember {
-        TraktAuthRepository.ensureLoaded()
         TraktAuthRepository.uiState
     }.collectAsStateWithLifecycle()
     val traktSettingsUiState by remember {
-        TraktSettingsRepository.ensureLoaded()
         TraktSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val tmdbSettingsUiState by remember {
-        TmdbSettingsRepository.ensureLoaded()
         TmdbSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val libraryUiState by remember {
-        LibraryRepository.ensureLoaded()
         LibraryRepository.uiState
     }.collectAsStateWithLifecycle()
     val watchedUiState by remember {
-        WatchedRepository.ensureLoaded()
         WatchedRepository.uiState
     }.collectAsStateWithLifecycle()
     val watchProgressUiState by remember {
-        WatchProgressRepository.ensureLoaded()
         WatchProgressRepository.uiState
     }.collectAsStateWithLifecycle()
     val playerSettingsUiState by remember {
-        PlayerSettingsRepository.ensureLoaded()
         PlayerSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
@@ -173,7 +165,6 @@ fun MetaDetailsScreen(
     var selectedEpisodeForActions by remember(type, id) { mutableStateOf<MetaVideo?>(null) }
     var selectedSeasonForActions by remember(type, id) { mutableStateOf<Int?>(null) }
     val commentsEnabled by remember {
-        TraktCommentsSettings.ensureLoaded()
         TraktCommentsSettings.enabled
     }.collectAsStateWithLifecycle()
     var comments by remember(type, id) { mutableStateOf<List<TraktCommentReview>>(emptyList()) }
@@ -195,6 +186,18 @@ fun MetaDetailsScreen(
         traktAuthUiState.mode == TraktConnectionMode.CONNECTED &&
         displayedMeta != null &&
         displayedMeta.type.lowercase().let { it == "movie" || it == "series" || it == "show" || it == "tv" }
+
+    LaunchedEffect(Unit) {
+        MetaScreenSettingsRepository.ensureLoaded()
+        TraktAuthRepository.ensureLoaded()
+        TraktSettingsRepository.ensureLoaded()
+        TmdbSettingsRepository.ensureLoaded()
+        LibraryRepository.ensureLoaded()
+        WatchedRepository.ensureLoaded()
+        WatchProgressRepository.ensureLoaded()
+        PlayerSettingsRepository.ensureLoaded()
+        TraktCommentsSettings.ensureLoaded()
+    }
 
     LaunchedEffect(displayedMeta?.id, shouldShowComments) {
         if (!shouldShowComments || displayedMeta == null) {
@@ -337,14 +340,23 @@ fun MetaDetailsScreen(
                 val meta = displayedMeta
                 val metaPreview = remember(meta) { meta.toMetaPreview() }
                 val todayIsoDate = CurrentDateProvider.todayIsoDate()
-                val isSaved = remember(
+                var isSaved by remember(
                     libraryUiState.items,
                     libraryUiState.sections,
                     libraryUiState.sourceMode,
                     meta.id,
                     meta.type,
                 ) {
-                    LibraryRepository.isSaved(meta.id, meta.type)
+                    mutableStateOf(false)
+                }
+                LaunchedEffect(
+                    libraryUiState.items,
+                    libraryUiState.sections,
+                    libraryUiState.sourceMode,
+                    meta.id,
+                    meta.type,
+                ) {
+                    isSaved = LibraryRepository.isSaved(meta.id, meta.type)
                 }
                 val isWatched = remember(watchedUiState.watchedKeys, metaPreview) {
                     WatchingState.isPosterWatched(
@@ -355,12 +367,12 @@ fun MetaDetailsScreen(
                 val openLibraryListPicker = remember(meta) {
                     {
                         val libraryItem = meta.toLibraryItem(savedAtEpochMs = 0L)
-                        pickerTabs = LibraryRepository.libraryListTabs()
-                        pickerMembership = pickerTabs.associate { it.key to false }
-                        pickerPending = true
-                        pickerError = null
-                        showLibraryListPicker = true
                         detailsScope.launch {
+                            pickerTabs = LibraryRepository.libraryListTabs()
+                            pickerMembership = pickerTabs.associate { it.key to false }
+                            pickerPending = true
+                            pickerError = null
+                            showLibraryListPicker = true
                             runCatching {
                                 val snapshot = LibraryRepository.getMembershipSnapshot(libraryItem)
                                 val tabs = LibraryRepository.libraryListTabs()
@@ -378,7 +390,10 @@ fun MetaDetailsScreen(
                 }
                 val toggleSaved = remember(meta) {
                     {
-                        LibraryRepository.toggleSaved(meta.toLibraryItem(savedAtEpochMs = 0L))
+                        detailsScope.launch {
+                            LibraryRepository.toggleSaved(meta.toLibraryItem(savedAtEpochMs = 0L))
+                        }
+                        Unit
                     }
                 }
                 val toggleWatched = remember(metaPreview) {
@@ -417,8 +432,11 @@ fun MetaDetailsScreen(
                     ?.takeUnless { it.isCompleted }
                 val cwPrefs by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
                 val episodeCodeFormat = rememberEpisodeCodeFormat()
-                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, episodeCodeFormat) {
-                    meta.seriesPrimaryAction(
+                var seriesActionResult by remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, episodeCodeFormat) {
+                    mutableStateOf<SeriesPrimaryAction?>(null)
+                }
+                LaunchedEffect(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, episodeCodeFormat) {
+                    seriesActionResult = meta.seriesPrimaryAction(
                         entries = watchProgressUiState.entries,
                         watchedItems = watchedUiState.items,
                         todayIsoDate = todayIsoDate,
@@ -426,6 +444,7 @@ fun MetaDetailsScreen(
                         format = episodeCodeFormat,
                     )
                 }
+                val seriesAction = seriesActionResult
                 val seriesActionVideo = remember(seriesAction, meta.id, meta.videos) {
                     val action = seriesAction ?: return@remember null
                     meta.videos.firstOrNull { video ->

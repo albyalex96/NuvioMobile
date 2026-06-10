@@ -86,7 +86,7 @@ object ProfileSettingsSync {
 
     private var observeJob: Job? = null
 
-    fun startObserving() {
+    suspend fun startObserving() {
         if (observeJob?.isActive == true) return
         ensureRepositoriesLoaded()
         observeLocalChangesAndPush()
@@ -211,7 +211,7 @@ object ProfileSettingsSync {
         log.d { "pushToRemoteLocked(profileId=$profileId) — success" }
     }
 
-    private fun exportSettingsBlob(): MobileProfileSettingsBlob {
+    private suspend fun exportSettingsBlob(): MobileProfileSettingsBlob {
         ensureRepositoriesLoaded()
         return MobileProfileSettingsBlob(
             features = MobileProfileSettingsFeatures(
@@ -237,7 +237,7 @@ object ProfileSettingsSync {
         )
     }
 
-    private fun applyRemoteBlob(blob: MobileProfileSettingsBlob) {
+    private suspend fun applyRemoteBlob(blob: MobileProfileSettingsBlob) {
         ThemeSettingsStorage.replaceFromSyncPayload(blob.features.themeSettings)
         ThemeSettingsRepository.onProfileChanged()
 
@@ -286,7 +286,7 @@ object ProfileSettingsSync {
         StreamsAppearanceRepository.setDisplayMode(DisplayMode.fromString(blob.features.streamsAppearanceDisplayMode))
     }
 
-    private fun ensureRepositoriesLoaded() {
+    private suspend fun ensureRepositoriesLoaded() {
         ThemeSettingsRepository.ensureLoaded()
         PosterCardStyleRepository.ensureLoaded()
         PlayerSettingsRepository.ensureLoaded()

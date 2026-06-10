@@ -99,6 +99,9 @@ import nuvio.composeapp.generated.resources.settings_meta_tab_layout
 import nuvio.composeapp.generated.resources.settings_meta_tab_layout_description
 import nuvio.composeapp.generated.resources.settings_meta_trailers
 import nuvio.composeapp.generated.resources.settings_meta_trailers_description
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableCollectionItemScope
@@ -108,6 +111,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 internal fun LazyListScope.metaScreenSettingsContent(
     isTablet: Boolean,
     uiState: MetaScreenSettingsUiState,
+    scope: CoroutineScope,
 ) {
     val showHeroTrailerPlaybackSetting = AppFeaturePolicy.heroTrailerPlaybackSupported &&
         AppFeaturePolicy.trailerPlaybackMode == TrailerPlaybackMode.IN_APP
@@ -122,7 +126,7 @@ internal fun LazyListScope.metaScreenSettingsContent(
                     description = stringResource(Res.string.settings_meta_cinematic_background_description),
                     checked = uiState.cinematicBackground,
                     isTablet = isTablet,
-                    onCheckedChange = { MetaScreenSettingsRepository.setCinematicBackground(it) },
+                    onCheckedChange = { scope.launch { MetaScreenSettingsRepository.setCinematicBackground(it) } },
                 )
                 if (showHeroTrailerPlaybackSetting) {
                     SettingsGroupDivider(isTablet = isTablet)
@@ -131,7 +135,7 @@ internal fun LazyListScope.metaScreenSettingsContent(
                         description = stringResource(Res.string.settings_meta_hero_trailer_playback_description),
                         checked = uiState.heroTrailerPlayback,
                         isTablet = isTablet,
-                        onCheckedChange = { MetaScreenSettingsRepository.setHeroTrailerPlayback(it) },
+                        onCheckedChange = { scope.launch { MetaScreenSettingsRepository.setHeroTrailerPlayback(it) } },
                     )
                 }
                 SettingsGroupDivider(isTablet = isTablet)
@@ -140,13 +144,13 @@ internal fun LazyListScope.metaScreenSettingsContent(
                     description = stringResource(Res.string.settings_meta_tab_layout_description),
                     checked = uiState.tabLayout,
                     isTablet = isTablet,
-                    onCheckedChange = { MetaScreenSettingsRepository.setTabLayout(it) },
+                    onCheckedChange = { scope.launch { MetaScreenSettingsRepository.setTabLayout(it) } },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 MetaEpisodeCardStyleSelector(
                     isTablet = isTablet,
                     selectedStyle = uiState.episodeCardStyle,
-                    onStyleSelected = MetaScreenSettingsRepository::setEpisodeCardStyle,
+                    onStyleSelected = { scope.launch { MetaScreenSettingsRepository.setEpisodeCardStyle(it) } },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
@@ -154,7 +158,7 @@ internal fun LazyListScope.metaScreenSettingsContent(
                     description = stringResource(Res.string.settings_meta_blur_unwatched_episodes_description),
                     checked = uiState.blurUnwatchedEpisodes,
                     isTablet = isTablet,
-                    onCheckedChange = { MetaScreenSettingsRepository.setBlurUnwatchedEpisodes(it) },
+                    onCheckedChange = { scope.launch { MetaScreenSettingsRepository.setBlurUnwatchedEpisodes(it) } },
                 )
             }
         }
@@ -166,7 +170,7 @@ internal fun LazyListScope.metaScreenSettingsContent(
             actions = {
                 NuvioActionLabel(
                     text = stringResource(Res.string.action_reset),
-                    onClick = MetaScreenSettingsRepository::resetToDefaults,
+                    onClick = { scope.launch { MetaScreenSettingsRepository.resetToDefaults() } },
                 )
             },
         ) {
@@ -188,6 +192,7 @@ private fun MetaSectionReorderableList(
     tabLayout: Boolean,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(
         lazyListState = lazyListState,
@@ -223,8 +228,8 @@ private fun MetaSectionReorderableList(
                             isTablet = isTablet,
                             tabLayout = tabLayout,
                             groupCounts = groupCounts,
-                            onEnabledChange = { MetaScreenSettingsRepository.setEnabled(item.key, it) },
-                            onTabGroupChange = { MetaScreenSettingsRepository.setTabGroup(item.key, it) },
+                            onEnabledChange = { scope.launch { MetaScreenSettingsRepository.setEnabled(item.key, it) } },
+                            onTabGroupChange = { scope.launch { MetaScreenSettingsRepository.setTabGroup(item.key, it) } },
                             dragHandleScope = this@ReorderableItem,
                         )
                     }

@@ -22,8 +22,6 @@ import kotlin.random.Random
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.StringResource
-import com.nuvio.app.core.coroutines.runBlocking
-
 object TraktAuthRepository {
     private const val BASE_URL = "https://api.trakt.tv"
     private const val AUTHORIZE_URL = "https://trakt.tv/oauth/authorize"
@@ -68,7 +66,7 @@ object TraktAuthRepository {
     fun hasRequiredCredentials(): Boolean =
         TraktConfig.CLIENT_ID.isNotBlank() && TraktConfig.CLIENT_SECRET.isNotBlank()
 
-    fun onConnectRequested(): String? {
+    suspend fun onConnectRequested(): String? {
         ensureLoaded()
         if (!hasRequiredCredentials()) {
             publish(errorMessage = localizedString(Res.string.trakt_missing_credentials))
@@ -494,4 +492,4 @@ private data class TraktUserDto(
 private data class TraktUserIdsDto(
     val slug: String? = null,
 )
-    private fun localizedString(resource: StringResource): String = runBlocking { getString(resource) }
+    private suspend fun localizedString(resource: StringResource): String = getString(resource)
