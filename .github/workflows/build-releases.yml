@@ -63,10 +63,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       # ── Secrets → local.properties ────────────────────────────────
-      - name: Decode Keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "${{ github.workspace }}/nuvio-release.keystore"
-
       - name: Write local.properties
         run: |
           printf 'SUPABASE_URL=%s\n' "${{ secrets.SUPABASE_URL }}" > local.properties
@@ -76,10 +72,6 @@ jobs:
           printf 'TRAKT_REDIRECT_URI=%s\n' "${{ secrets.TRAKT_REDIRECT_URI }}" >> local.properties
           printf 'INTRODB_API_URL=%s/\n' "${{ secrets.INTRODB_API_URL }}" >> local.properties
           printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" >> local.properties
-          printf 'NUVIO_RELEASE_STORE_FILE=%s/nuvio-release.keystore\n' "${{ github.workspace }}" >> local.properties
-          printf 'NUVIO_RELEASE_STORE_PASSWORD=%s\n' "nuvio1234" >> local.properties
-          printf 'NUVIO_RELEASE_KEY_ALIAS=%s\n' "nuvio-release" >> local.properties
-          printf 'NUVIO_RELEASE_KEY_PASSWORD=%s\n' "nuvio1234" >> local.properties
           printf 'DONATIONS_BASE_URL=%s\n' "https://donations.nuvioapp.space/" >> local.properties
           printf 'DONATIONS_DONATE_URL=%s\n' "https://ko-fi.com/tapframe" >> local.properties
           printf 'CONTRIBUTIONS_URL=%s\n' "${{ secrets.CONTRIBUTION_URL }}" >> local.properties
@@ -129,9 +121,9 @@ jobs:
           } > release_body.md
 
       # ── Build: Android Full Release ───────────────────────────────
-      - name: Build Android Full APK
-        run: |
-          ./gradlew :composeApp:assembleFullRelease
+     # - name: Build Android Full APK
+     #   run: |
+     #     ./gradlew :composeApp:assembleFullRelease
 
       # ── Build: Android Play Store Release ─────────────────────────
      # - name: Build Android Play Store APK
@@ -160,8 +152,6 @@ jobs:
           prerelease: false
           target_commitish: ${{ steps.resolve_branch.outputs.branch }}
           files: |
-            composeApp/build/outputs/apk/full/release/*.apk
-            composeApp/build/outputs/apk/playstore/release/*.apk
             web-dist/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -176,8 +166,6 @@ jobs:
             -H "Click: https://github.com/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}" \
             -d "## Nuvio Build #${{ github.run_number }} — done 🚀
             Branch: \`${{ steps.resolve_branch.outputs.branch }}\`
-            Android Full APK ✅
-            Android Play Store APK ✅
             Web (WasmJs) ✅
             [Open Release](${{ github.server_url }}/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }})" \
             https://ntfy.sh/nuvio_builds
