@@ -109,6 +109,10 @@ jobs:
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/nuvio-release.keystore
+          echo "NUVIO_RELEASE_STORE_FILE=${{ github.workspace }}/nuvio-release.keystore" >> local.properties
+          echo "NUVIO_RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> local.properties
+          echo "NUVIO_RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> local.properties
+          echo "NUVIO_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> local.properties
 
       - name: Build Android Full APK
         run: |
