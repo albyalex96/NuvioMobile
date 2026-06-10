@@ -61,6 +61,12 @@ Extended plugin infrastructure with per-plugin scraper configuration, enabling f
 ### Episode Code Formatter
 Choose your preferred episode display format from options like `01x01`, `1x1`, `S01E01`, and more, ensuring episode labels match your personal preference.
 
+### Cloudflare Challenge Solver
+Automatically bypasses Cloudflare protection on streaming sources. When a request receives a 403/503 response with a Cloudflare challenge, a hidden WebView solves the challenge (executes JS, computes the challenge token, sets cookies). The resolved cookies are then reused for subsequent requests, enabling playback from add-ons that rely on Cloudflare-protected CDNs.
+
+### Bookmark Badge on Posters
+Items saved to the user's library are visually identified by a bookmark badge overlay on their poster across the Home screen, catalog pages, and collection folders. The badge uses the app's accent color scheme and fades in with animation, providing immediate visual feedback about which content is already in the library.
+
 ## Installation
 
 ### Android
