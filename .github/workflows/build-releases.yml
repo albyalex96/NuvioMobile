@@ -106,6 +106,10 @@ jobs:
           } > release_body.md
 
       # ── Build: Android Full Release ───────────────────────────────
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/nuvio-release.keystore
+
       - name: Build Android Full APK
         run: |
           ./gradlew :composeApp:assembleFullRelease
