@@ -139,18 +139,15 @@ jobs:
           ./gradlew :composeApp:assemblePlaystoreRelease
 
       # ── Build: Web (WasmJs) ──────────────────────────────────────
-      - name: Build Web (WasmJs)
+      - name: Build Web (WasmJs Browser Distribution)
         run: |
-          ./gradlew :composeApp:compileKotlinWasmJs
+          ./gradlew :composeApp:wasmJsBrowserDistribution
 
       # ── Collect Web Artifacts ─────────────────────────────────────
       - name: Collect Web distribution
         run: |
           mkdir -p web-dist
-          cp -r composeApp/build/compileSync/wasmJs/main/productionExecutable/kotlin web-dist/ 2>/dev/null || true
-          cp -r composeApp/build/compileSync/wasmJs/main/productionExecutable/resources web-dist/ 2>/dev/null || true
-          # If a browser distribution task exists in the future, it will land here:
-          cp -r composeApp/build/dist/wasmJs/main web-dist/dist 2>/dev/null || true
+          cp -r composeApp/build/dist/wasmJs/main/* web-dist/ 2>/dev/null || true
 
       # ── Create GitHub Release ─────────────────────────────────────
       - name: Create GitHub Release
