@@ -133,7 +133,13 @@ jobs:
       # ── Build: Web (WasmJs) ──────────────────────────────────────
       - name: Build Web (WasmJs Browser Distribution)
         run: |
-          ./gradlew :composeApp:wasmJsBrowserDistribution
+          # gradle.properties ha default 8GB/12GB → riduci per runner 7GB
+          sed -i \
+            -e 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512m/' \
+            -e 's/^kotlin\.daemon\.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx1g/' \
+            -e 's/^kotlin\.native\.jvmArgs=.*/kotlin.native.jvmArgs=-Xmx1g/' \
+            gradle.properties
+          ./gradlew :composeApp:wasmJsBrowserDistribution --no-daemon --max-workers=2
 
       # ── Collect Web Artifacts ─────────────────────────────────────
       - name: Collect Web distribution
