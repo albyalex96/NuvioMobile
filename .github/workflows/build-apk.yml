@@ -10,7 +10,7 @@ on:
         type: string
   push:
     branches:
-      - "app-enhanced"
+      - "app/enhanced"
 
 permissions:
   contents: write
