@@ -134,9 +134,9 @@ jobs:
           ./gradlew :composeApp:assembleFullRelease
 
       # ── Build: Android Play Store Release ─────────────────────────
-      - name: Build Android Play Store APK
-        run: |
-          ./gradlew :composeApp:assemblePlaystoreRelease
+     # - name: Build Android Play Store APK
+     #   run: |
+     #     ./gradlew :composeApp:assemblePlaystoreRelease
 
       # ── Build: Web (WasmJs) ──────────────────────────────────────
       - name: Build Web (WasmJs)
