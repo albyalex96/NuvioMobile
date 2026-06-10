@@ -100,6 +100,7 @@ actual object CloudflareSolver {
             }
         } catch (_: Exception) {
             if (!deferred.isCompleted) deferred.complete(false)
+            false
         } finally {
             webView?.stopLoading()
             webView?.destroy()
