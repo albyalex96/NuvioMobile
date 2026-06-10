@@ -312,7 +312,10 @@ fun DownloadsHlsSelectionSheet(
 private fun formatBandwidth(bandwidth: Long): String {
     if (bandwidth <= 0L) return ""
     val mbps = bandwidth.toDouble() / 1_000_000.0
-    return "${"%.1f".format(mbps).trimEnd('0').trimEnd('.')} Mbps"
+    val scaled = (mbps * 10.0 + 0.05).toLong()
+    val whole = scaled / 10
+    val frac = scaled % 10
+    return if (frac == 0L) "$whole Mbps" else "$whole.${frac} Mbps"
 }
 
 private fun friendlyCodec(codecs: String): String {

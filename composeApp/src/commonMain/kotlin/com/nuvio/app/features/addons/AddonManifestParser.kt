@@ -1,6 +1,6 @@
-package com.nuvio.app.features.addons
+﻿package com.nuvio.app.features.addons
 
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject

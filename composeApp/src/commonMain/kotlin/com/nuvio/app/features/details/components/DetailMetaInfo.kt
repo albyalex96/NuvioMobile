@@ -1,4 +1,4 @@
-package com.nuvio.app.features.details.components
+﻿package com.nuvio.app.features.details.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -63,7 +63,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 

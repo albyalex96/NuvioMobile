@@ -1,4 +1,4 @@
-package com.nuvio.app.features.library
+﻿package com.nuvio.app.features.library
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.auth.AuthRepository
@@ -16,7 +16,7 @@ import com.nuvio.app.features.trakt.effectiveLibrarySourceMode as resolveEffecti
 import com.nuvio.app.features.trakt.shouldUseTraktLibrary
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.library_local_tab_title
 import nuvio.composeapp.generated.resources.library_other

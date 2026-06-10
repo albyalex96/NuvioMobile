@@ -1,8 +1,8 @@
-package com.nuvio.app.features.notifications
+﻿package com.nuvio.app.features.notifications
 
 import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.core.ui.formatEpisodeCode
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_player_episode_code_episode_only

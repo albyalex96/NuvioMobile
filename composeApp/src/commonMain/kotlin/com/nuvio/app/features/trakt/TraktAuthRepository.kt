@@ -1,4 +1,4 @@
-package com.nuvio.app.features.trakt
+﻿package com.nuvio.app.features.trakt
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.features.addons.httpGetTextWithHeaders
@@ -22,7 +22,7 @@ import kotlin.random.Random
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.StringResource
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 
 object TraktAuthRepository {
     private const val BASE_URL = "https://api.trakt.tv"

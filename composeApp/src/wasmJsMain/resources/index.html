@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nuvio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="webApp"></div>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+      (function () {
+        const queue = [];
+        const isQtHost = Boolean(
+          globalThis.qt && globalThis.qt.webChannelTransport && typeof globalThis.QWebChannel === 'function'
+        );
+        globalThis.nuvioQtNativeHost = isQtHost;
+        globalThis.nuvioNativePlayerQueue = queue;
+        function flushQueue() {
+          const player = globalThis.nuvioNativePlayer;
+          if (!player || typeof player.playUrl !== 'function') return;
+          while (queue.length > 0) {
+            const item = queue.shift();
+            player.playUrl(item.url, item.headersJson || '{}', Number(item.startMs || 0));
+          }
+        }
+        globalThis.nuvioQtPlayNative = function (url, headersJson, startMs) {
+          if (!isQtHost) return false;
+          try {
+            const player = globalThis.nuvioNativePlayer;
+            if (player && typeof player.playUrl === 'function') {
+              player.playUrl(url, headersJson || '{}', Number(startMs || 0));
+              return true;
+            }
+            queue.push({url: url, headersJson: headersJson || '{}', startMs: Number(startMs || 0)});
+            return true;
+          } catch (_) {
+            return false;
+          }
+        };
+        globalThis.nuvioQtCommandNative = function (command, value) {
+          if (!isQtHost) return false;
+          try {
+            const player = globalThis.nuvioNativePlayer;
+            if (!player) return false;
+            const numericValue = Number(value);
+            const trackValue = Number.isFinite(numericValue) ? Math.trunc(numericValue) : -1;
+            switch (command) {
+              case 'pause':
+                player.pause();
+                return true;
+              case 'resume':
+                player.resume();
+                return true;
+              case 'stop':
+                player.stop();
+                return true;
+              case 'seekTo':
+                player.seekTo(Number(value || 0));
+                return true;
+              case 'seekBy':
+                player.seekBy(Number(value || 0));
+                return true;
+              case 'setSpeed':
+                player.setPlaybackSpeed(Number(value || 1));
+                return true;
+              case 'setResizeMode':
+                if (typeof player.setResizeMode === 'function') {
+                  player.setResizeMode(trackValue);
+                  return true;
+                }
+                return false;
+              case 'selectAudioTrack':
+                player.selectAudioTrack(trackValue);
+                return true;
+              case 'selectSubtitleTrack':
+                player.selectSubtitleTrack(trackValue);
+                return true;
+              case 'clearExternalSubtitle':
+                player.clearExternalSubtitle();
+                return true;
+              case 'clearExternalSubtitleAndSelect':
+                player.clearExternalSubtitleAndSelect(trackValue);
+                return true;
+              default:
+                return false;
+            }
+          } catch (_) {
+            return false;
+          }
+        };
+        globalThis.nuvioQtStringCommandNative = function (command, value) {
+          if (!isQtHost) return false;
+          try {
+            const player = globalThis.nuvioNativePlayer;
+            if (!player) return false;
+            switch (command) {
+              case 'setSubtitleUri':
+                player.setSubtitleUri(String(value || ''));
+                return true;
+              case 'applySubtitleStyle':
+                player.applySubtitleStyle(String(value || '{}'));
+                return true;
+              default:
+                return false;
+            }
+          } catch (_) {
+            return false;
+          }
+        };
+        globalThis.nuvioQtSetPlayerContext = function (contextJson) {
+          if (!isQtHost) return false;
+          try {
+            const player = globalThis.nuvioNativePlayer;
+            if (!player || typeof player.updatePlayerContext !== 'function') return false;
+            player.updatePlayerContext(String(contextJson || '{}'));
+            return true;
+          } catch (_) {
+            return false;
+          }
+        };
+        globalThis.nuvioQtConsumePlayerAction = function () {
+          if (!isQtHost) return '';
+          try {
+            const player = globalThis.nuvioNativePlayer;
+            if (!player || typeof player.pendingPlayerAction !== 'string') return '';
+            const token = String(player.pendingPlayerAction || '');
+            if (!token || token === globalThis.nuvioQtLastConsumedActionToken) return '';
+            globalThis.nuvioQtLastConsumedActionToken = token;
+            if (typeof player.acknowledgePlayerAction === 'function') {
+              player.acknowledgePlayerAction(token);
+            }
+            const separator = token.indexOf('\n');
+            return separator >= 0 ? token.slice(separator + 1) : token;
+          } catch (_) {
+            return '';
+          }
+        };
+        globalThis.nuvioQtTakePlayerSnapshot = function () {
+          if (!isQtHost) return '';
+          try {
+            const player = globalThis.nuvioNativePlayer;
+            if (!player || typeof player.playerSnapshotJson !== 'string') return '';
+            return String(player.playerSnapshotJson || '');
+          } catch (_) {
+            return '';
+          }
+        };
+        globalThis.nuvioQtTakePlayerTracks = function () {
+          if (!isQtHost) return '';
+          try {
+            const player = globalThis.nuvioNativePlayer;
+            if (!player || typeof player.playerTracksJson !== 'string') return '';
+            return String(player.playerTracksJson || '');
+          } catch (_) {
+            return '';
+          }
+        };
+        if (isQtHost) {
+          new QWebChannel(globalThis.qt.webChannelTransport, function (channel) {
+            globalThis.nuvioNativePlayer = channel.objects.nuvioNativePlayer;
+            flushQueue();
+          });
+        }
+      })();
+    </script>
+    <script src="composeApp.js"></script>
+  </body>
+</html>

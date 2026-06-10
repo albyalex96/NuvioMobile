@@ -16,7 +16,7 @@ composeMultiplatform = "1.11.1"
 coil = "3.5.0-beta01"
 kermit = "2.0.5"
 junit = "4.13.2"
-kotlin = "2.3.0"
+kotlin = "2.3.21"
 kotlinx-serialization = "1.8.1"
 ktor = "3.4.1"
 material3 = "1.11.0-alpha07"
@@ -27,6 +27,7 @@ ksoup = "0.2.6"
 reorderable = "3.0.0"
 desugarJdkLibs = "2.1.5"
 okhttp = "4.12.0"
+
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -57,6 +58,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "androidx-media3" }
 androidx-media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "androidx-media3" }

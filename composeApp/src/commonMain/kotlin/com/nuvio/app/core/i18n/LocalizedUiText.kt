@@ -1,8 +1,8 @@
-package com.nuvio.app.core.i18n
+﻿package com.nuvio.app.core.i18n
 
 import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.core.ui.formatEpisodeCode
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.action_play_episode

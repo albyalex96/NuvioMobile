@@ -1,7 +1,7 @@
-package com.nuvio.app.features.streams
+﻿package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString

@@ -8,9 +8,11 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.util.Properties
+import groovy.json.JsonSlurper
 
 abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     @get:OutputDirectory
@@ -134,18 +136,23 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     }
 }
 
-fun readXcconfigValue(file: File, key: String): String? {
+fun readVersionJson(file: File): Pair<String, Int>? {
     if (!file.exists()) return null
-    return file.readLines()
-        .asSequence()
-        .map(String::trim)
-        .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains('=') }
-        .map { line ->
-            val separatorIndex = line.indexOf('=')
-            line.substring(0, separatorIndex).trim() to line.substring(separatorIndex + 1).trim()
-        }
-        .firstOrNull { (entryKey, _) -> entryKey == key }
-        ?.second
+    val json = try { JsonSlurper().parse(file) as Map<String, Any> } catch (_: Exception) { return null }
+    val versionName = json["versionName"] as? String ?: return null
+    val versionCode = (json["versionCode"] as? Number)?.toInt() ?: return null
+    return versionName to versionCode
+}
+
+fun writeVersionXcconfig(sourceJson: File, destXcconfig: File) {
+    val (versionName, versionCode) = readVersionJson(sourceJson)
+        ?: error("Failed to read ${sourceJson.path}")
+    destXcconfig.writeText(
+        """
+        |CURRENT_PROJECT_VERSION=$versionCode
+        |MARKETING_VERSION=$versionName
+        """.trimMargin()
+    )
 }
 
 plugins {
@@ -165,12 +172,15 @@ val releaseStorePassword = supabaseProps.getProperty("NUVIO_RELEASE_STORE_PASSWO
 val releaseKeyAlias = supabaseProps.getProperty("NUVIO_RELEASE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
 val releaseKeyPassword = supabaseProps.getProperty("NUVIO_RELEASE_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
 val releaseKeystore = releaseStoreFile?.let(rootProject::file)
-val appVersionConfigFile = rootProject.file("iosApp/Configuration/Version.xcconfig")
-val releaseAppVersionName = readXcconfigValue(appVersionConfigFile, "MARKETING_VERSION")
-    ?: error("MARKETING_VERSION is missing from ${appVersionConfigFile.path}")
-val releaseAppVersionCode = readXcconfigValue(appVersionConfigFile, "CURRENT_PROJECT_VERSION")
-    ?.toIntOrNull()
-    ?: error("CURRENT_PROJECT_VERSION is missing or invalid in ${appVersionConfigFile.path}")
+val appVersionFile = rootProject.file("version.json")
+val versionInfo = readVersionJson(appVersionFile)
+    ?: error("versionName / versionCode missing from ${appVersionFile.path}")
+val releaseAppVersionName = versionInfo.first
+val releaseAppVersionCode = versionInfo.second
+
+// Sync version.json -> iosApp/Configuration/Version.xcconfig for Xcode
+val xcconfigFile = rootProject.file("iosApp/Configuration/Version.xcconfig")
+writeVersionXcconfig(appVersionFile, xcconfigFile)
 val iosDistribution = (
     providers.gradleProperty("nuvio.ios.distribution").orNull
         ?: System.getenv("NUVIO_IOS_DISTRIBUTION")
@@ -252,6 +262,17 @@ kotlin {
         }
     }
     
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        outputModuleName.set("composeApp")
+        browser {
+            commonWebpackConfig {
+                outputFileName = "composeApp.js"
+            }
+        }
+        binaries.executable()
+    }
+
     sourceSets {
         val commonMain by getting {
             kotlin.srcDir(generatedRuntimeConfigDir)
@@ -303,6 +324,9 @@ kotlin {
             implementation(libs.supabase.auth)
             implementation(libs.supabase.functions)
             implementation(libs.reorderable)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

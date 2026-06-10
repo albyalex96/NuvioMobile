@@ -1,7 +1,7 @@
-package com.nuvio.app.features.downloads
+﻿package com.nuvio.app.features.downloads
 
 import kotlinx.serialization.Serializable
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.downloads_enqueue_missing_url
 import nuvio.composeapp.generated.resources.downloads_enqueue_replaced

@@ -1,6 +1,6 @@
-package com.nuvio.app.features.details
+﻿package com.nuvio.app.features.details
 
-import kotlinx.coroutines.runBlocking
+import com.nuvio.app.core.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.details_runtime_hours_minutes
 import nuvio.composeapp.generated.resources.details_runtime_hours_only
