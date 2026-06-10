@@ -52,6 +52,7 @@ jobs:
         with:
           ref: ${{ steps.resolve_branch.outputs.branch }}
           fetch-depth: 0
+          fetch-tags: true
 
       # ── Environment ────────────────────────────────────────────────
       - name: Set up JDK 17
