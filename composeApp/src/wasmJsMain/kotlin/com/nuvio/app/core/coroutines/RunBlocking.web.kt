@@ -30,6 +30,5 @@ actual fun <T> runBlocking(block: suspend () -> T): T {
         return value as T
     }
 
-    @Suppress("UNCHECKED_CAST")
-    return (null as? T) ?: (Unit as? T) ?: ("" as T)
+    error("runBlocking suspended on web; call the suspend API directly instead.")
 }

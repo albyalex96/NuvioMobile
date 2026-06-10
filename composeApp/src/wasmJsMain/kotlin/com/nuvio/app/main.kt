@@ -1,11 +1,24 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.nuvio.app
 
+import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
+import com.nuvio.app.core.resources.defaultStringResource
+import org.jetbrains.compose.resources.getString
 
-@OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     ComposeViewport(viewportContainerId = "webApp") {
-        App()
+        var ready by remember { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            getString(defaultStringResource())
+            ready = true
+        }
+
+        if (ready) {
+            App()
+        }
     }
 }
