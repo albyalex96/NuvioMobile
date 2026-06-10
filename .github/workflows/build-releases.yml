@@ -133,44 +133,16 @@ jobs:
       # ── Build: Web (WasmJs) ──────────────────────────────────────
       - name: Build Web (WasmJs Browser Distribution)
         run: |
-          # gradle.properties ha default 8GB/12GB → riduci per runner 7GB
-          sed -i \
-            -e 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512m/' \
-            -e 's/^kotlin\.daemon\.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx1g/' \
-            -e 's/^kotlin\.native\.jvmArgs=.*/kotlin.native.jvmArgs=-Xmx1g/' \
-            gradle.properties
-          ./gradlew :composeApp:wasmJsBrowserDistribution --no-daemon --max-workers=2
+          ./gradlew :composeApp:wasmJsBrowserDistribution
 
       # ── Collect Web Artifacts ─────────────────────────────────────
-      - name: Collect Web distribution
+      - name: Collect Web artifacts into web-dist/
         run: |
           mkdir -p web-dist
-          echo "🍳 Looking for wasmJsBrowserDistribution output..."
-          find composeApp/build -type f \( -name "*.wasm" -o -name "*.js" -o -name "*.html" -o -name "*.mjs" \) -path "*/dist/*" 2>/dev/null | head -30
-          echo "---"
-          ls -la composeApp/build/dist/ 2>/dev/null || echo "(no dist/)"
-          # try known candidate paths
-          for dir in \
-            composeApp/build/dist/wasmJs/main \
-            composeApp/build/dist/wasmJs/main/productionExecutable \
-            composeApp/build/dist/wasmJs/main/developmentExecutable \
-            composeApp/build/dist/wasmJs; do
-            if [ -d "$dir" ]; then
-              echo "✔️ Found: $dir"
-              cp -r "$dir"/* web-dist/ 2>/dev/null || true
-            fi
-          done
-          if [ -z "$(ls -A web-dist 2>/dev/null)" ]; then
-            # last resort: find anything .wasm in the whole build dir
-            WASM_DIR=$(find composeApp/build -name "*.wasm" -type f 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-            if [ -n "$WASM_DIR" ]; then
-              echo "⚠️ Fallback: copying from $WASM_DIR"
-              cp -r "$WASM_DIR"/* web-dist/ 2>/dev/null || true
-            fi
-          fi
-          echo "✅ web-dist contents:"
+          cp -r composeApp/build/dist/wasmJs/productionExecutable/* web-dist/ 2>/dev/null || true
+          echo "📦 web-dist contents:"
           ls -la web-dist/
-
+                   
       # ── Create GitHub Release ─────────────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
