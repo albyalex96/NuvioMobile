@@ -1,20 +1,14 @@
 # Build: docker build -t ghcr.io/<your-org>/nuvioweb:latest -f docker/Dockerfile .
 # Push:  docker push ghcr.io/<your-org>/nuvioweb:latest
 
-ARG REGISTRY=ghcr.io
-ARG IMAGE_NAME=nuvioweb
-
 FROM nginx:stable-alpine
 RUN apk add --no-cache brotli gettext
 RUN mkdir -p /etc/nginx/templates
 
-# Configurazione nginx di default (standalone in docker/default.conf.template)
-# Per sovrascrivere al runtime:
-#   - via volume mount: -v /tuo/percorso/default.conf.template:/etc/nginx/templates/default.conf.template
-#   - via env var:      -e NGINX_CONFIG="$(cat tua-config.conf)"
-COPY default.conf.template /etc/nginx/templates/default.conf.template
-
-COPY ./ /usr/share/nginx/html/
+# Build context must be the project root (.)
+# Web artifacts must be pre-collected into web-dist/ by the caller
+COPY docker/default.conf.template /etc/nginx/templates/default.conf.template
+COPY web-dist/ /usr/share/nginx/html/
 RUN find /usr/share/nginx/html -type f \( -name "*.js" -o -name "*.wasm" -o -name "*.css" \) \
     -exec sh -c 'gzip -kf "$1"; brotli -f "$1"' _ {} \;
 

@@ -99,6 +99,47 @@
         ctx.drawImage(v, 0, 0, w, h);
         return c.toDataURL('image/jpeg', quality).split(',')[1] || '';
       };
+      // Plugin system: async JS scraper eval for Wasm
+      // Called from PluginRuntime.web.kt via @JsFun
+      globalThis.__pluginEval = function (code, tmdbId, mediaType, season, episode) {
+        try {
+          window.__plugin_result = undefined;
+          window.__plugin_done = false;
+          var m = { exports: {} };
+          var getStreams;
+          (function () {
+            (0, eval)(code);
+            getStreams = m.exports.getStreams || window.getStreams;
+          })();
+          if (typeof getStreams !== 'function') {
+            window.__plugin_result = '[]';
+            window.__plugin_done = true;
+            return;
+          }
+          var result = getStreams(
+            tmdbId, mediaType,
+            season !== undefined && season !== -1 ? season : undefined,
+            episode !== undefined && episode !== -1 ? episode : undefined
+          );
+          if (result && typeof result.then === 'function') {
+            result.then(function (r) {
+              window.__plugin_result = JSON.stringify(r || []);
+              window.__plugin_done = true;
+            }).catch(function (e) {
+              console.error('Plugin async error:', e && e.message ? e.message : e);
+              window.__plugin_result = '[]';
+              window.__plugin_done = true;
+            });
+          } else {
+            window.__plugin_result = JSON.stringify(result || []);
+            window.__plugin_done = true;
+          }
+        } catch (e) {
+          console.error('Plugin eval error:', e && e.message ? e.message : e);
+          window.__plugin_result = '[]';
+          window.__plugin_done = true;
+        }
+      };
     </script>
   </head>
   <body>
