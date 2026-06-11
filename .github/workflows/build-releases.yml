@@ -10,7 +10,7 @@
 name: Build Release (Android + Web)
 
 env:
-  TRIGGER_BRANCH: "build/android-web"
+  TRIGGER_BRANCH: "build/suspend"
 
 on:
   workflow_dispatch:
