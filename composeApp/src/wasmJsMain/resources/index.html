@@ -5,165 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nuvio</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17"></script>
+    <script>
+      globalThis.nuvioConfigureCanvas = function () {
+        const style = document.createElement('style');
+        style.textContent = 'canvas { background: transparent !important; } body { background: #000; margin: 0; overflow: hidden; }';
+        document.head.appendChild(style);
+      };
+      globalThis.nuvioCreateVideo = function () {
+        const v = document.createElement('video');
+        v.crossOrigin = 'anonymous';
+        v.preload = 'auto';
+        v.playsInline = true;
+        v.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:0';
+        document.body.insertBefore(v, document.body.firstChild);
+        globalThis.nuvioVideoElement = v;
+        return true;
+      };
+      globalThis.nuvioDestroyVideo = function () {
+        const v = globalThis.nuvioVideoElement;
+        if (v) { v.pause(); v.removeAttribute('src'); v.load(); v.remove(); globalThis.nuvioVideoElement = null; }
+        const h = globalThis.nuvioHlsInstance;
+        if (h) { h.destroy(); globalThis.nuvioHlsInstance = null; }
+        return true;
+      };
+      globalThis.nuvioSetupSource = function (url, streamType, headersJson) {
+        const v = globalThis.nuvioVideoElement;
+        if (!v) return JSON.stringify({ ok: false, error: 'no video element' });
+        const h = globalThis.nuvioHlsInstance;
+        if (h) { h.destroy(); globalThis.nuvioHlsInstance = null; }
+        v.removeAttribute('src');
+        v.load();
+        const isHls = streamType === 'hls' || url.includes('.m3u8');
+        const headers = (function () { try { return JSON.parse(headersJson || '{}'); } catch (_) { return {}; } })();
+        if (isHls && !v.canPlayType('application/vnd.apple.mpegurl') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+          const hls = new Hls({ xhrSetup: function (xhr) { for (var k in headers) { if (Object.prototype.hasOwnProperty.call(headers, k)) xhr.setRequestHeader(k, headers[k]); } } });
+          hls.loadSource(url);
+          hls.attachMedia(v);
+          globalThis.nuvioHlsInstance = hls;
+          return JSON.stringify({ ok: true, engine: 'hlsjs' });
+        } else {
+          v.src = url;
+          return JSON.stringify({ ok: true, engine: 'native' });
+        }
+      };
+      globalThis.nuvioVideoPlay = function () { var v = globalThis.nuvioVideoElement; if (v) v.play().catch(function () {}); };
+      globalThis.nuvioVideoPause = function () { var v = globalThis.nuvioVideoElement; if (v) v.pause(); };
+      globalThis.nuvioVideoSeekTo = function (ms) { var v = globalThis.nuvioVideoElement; if (v) v.currentTime = ms / 1000; };
+      globalThis.nuvioVideoSeekBy = function (ms) { var v = globalThis.nuvioVideoElement; if (v) v.currentTime += ms / 1000; };
+      globalThis.nuvioVideoSetSpeed = function (speed) { var v = globalThis.nuvioVideoElement; if (v) v.playbackRate = speed; };
+      globalThis.nuvioVideoSetMuted = function (muted) { var v = globalThis.nuvioVideoElement; if (v) v.muted = muted; };
+      globalThis.nuvioVideoSetVolume = function (vol) { var v = globalThis.nuvioVideoElement; if (v) v.volume = vol; };
+      globalThis.nuvioVideoGetSnapshot = function () {
+        var v = globalThis.nuvioVideoElement;
+        if (!v) return '{}';
+        var buf = v.buffered;
+        var bufEnd = 0;
+        if (buf.length > 0) bufEnd = buf.end(buf.length - 1);
+        return JSON.stringify({
+          readyState: v.readyState,
+          paused: v.paused,
+          ended: v.ended,
+          currentTime: v.currentTime,
+          duration: v.duration || 0,
+          bufferedEnd: bufEnd,
+          playbackRate: v.playbackRate,
+          seeking: v.seeking,
+          videoWidth: v.videoWidth,
+          videoHeight: v.videoHeight,
+          error: v.error ? (v.error.code + ': ' + v.error.message) : null
+        });
+      };
+      globalThis.nuvioVideoGetTrackInfo = function () {
+        var v = globalThis.nuvioVideoElement;
+        if (!v) return '{}';
+        var audioTracks = [];
+        var videoTracks = [];
+        try { for (var i = 0; i < v.audioTracks.length; i++) { var t = v.audioTracks[i]; audioTracks.push({ index: i, id: t.id || String(i), label: t.label || 'Track ' + i, language: t.language || null, enabled: t.enabled }); } } catch (_) {}
+        return JSON.stringify({ audioTracks: audioTracks });
+      };
+      globalThis.nuvioVideoSelectAudioTrack = function (index) {
+        var v = globalThis.nuvioVideoElement;
+        if (!v || !v.audioTracks) return;
+        try { for (var i = 0; i < v.audioTracks.length; i++) v.audioTracks[i].enabled = (i === index); } catch (_) {}
+      };
+      globalThis.nuvioVideoCaptureFrame = function (quality) {
+        var v = globalThis.nuvioVideoElement;
+        if (!v || v.videoWidth === 0 || v.videoHeight === 0) return new Int8Array(0);
+        var w = v.videoWidth, h = v.videoHeight;
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(v, 0, 0, w, h);
+        var dataUrl = c.toDataURL('image/jpeg', quality);
+        var binary = atob(dataUrl.split(',')[1]);
+        var buf = new ArrayBuffer(binary.length);
+        var bytes = new Uint8Array(buf);
+        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return new Int8Array(buf);
+      };
+    </script>
   </head>
   <body>
     <div id="webApp"></div>
-    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
     <script>
-      (function () {
-        const queue = [];
-        const isQtHost = Boolean(
-          globalThis.qt && globalThis.qt.webChannelTransport && typeof globalThis.QWebChannel === 'function'
-        );
-        globalThis.nuvioQtNativeHost = isQtHost;
-        globalThis.nuvioNativePlayerQueue = queue;
-        function flushQueue() {
-          const player = globalThis.nuvioNativePlayer;
-          if (!player || typeof player.playUrl !== 'function') return;
-          while (queue.length > 0) {
-            const item = queue.shift();
-            player.playUrl(item.url, item.headersJson || '{}', Number(item.startMs || 0));
-          }
-        }
-        globalThis.nuvioQtPlayNative = function (url, headersJson, startMs) {
-          if (!isQtHost) return false;
-          try {
-            const player = globalThis.nuvioNativePlayer;
-            if (player && typeof player.playUrl === 'function') {
-              player.playUrl(url, headersJson || '{}', Number(startMs || 0));
-              return true;
-            }
-            queue.push({url: url, headersJson: headersJson || '{}', startMs: Number(startMs || 0)});
-            return true;
-          } catch (_) {
-            return false;
-          }
-        };
-        globalThis.nuvioQtCommandNative = function (command, value) {
-          if (!isQtHost) return false;
-          try {
-            const player = globalThis.nuvioNativePlayer;
-            if (!player) return false;
-            const numericValue = Number(value);
-            const trackValue = Number.isFinite(numericValue) ? Math.trunc(numericValue) : -1;
-            switch (command) {
-              case 'pause':
-                player.pause();
-                return true;
-              case 'resume':
-                player.resume();
-                return true;
-              case 'stop':
-                player.stop();
-                return true;
-              case 'seekTo':
-                player.seekTo(Number(value || 0));
-                return true;
-              case 'seekBy':
-                player.seekBy(Number(value || 0));
-                return true;
-              case 'setSpeed':
-                player.setPlaybackSpeed(Number(value || 1));
-                return true;
-              case 'setResizeMode':
-                if (typeof player.setResizeMode === 'function') {
-                  player.setResizeMode(trackValue);
-                  return true;
-                }
-                return false;
-              case 'selectAudioTrack':
-                player.selectAudioTrack(trackValue);
-                return true;
-              case 'selectSubtitleTrack':
-                player.selectSubtitleTrack(trackValue);
-                return true;
-              case 'clearExternalSubtitle':
-                player.clearExternalSubtitle();
-                return true;
-              case 'clearExternalSubtitleAndSelect':
-                player.clearExternalSubtitleAndSelect(trackValue);
-                return true;
-              default:
-                return false;
-            }
-          } catch (_) {
-            return false;
-          }
-        };
-        globalThis.nuvioQtStringCommandNative = function (command, value) {
-          if (!isQtHost) return false;
-          try {
-            const player = globalThis.nuvioNativePlayer;
-            if (!player) return false;
-            switch (command) {
-              case 'setSubtitleUri':
-                player.setSubtitleUri(String(value || ''));
-                return true;
-              case 'applySubtitleStyle':
-                player.applySubtitleStyle(String(value || '{}'));
-                return true;
-              default:
-                return false;
-            }
-          } catch (_) {
-            return false;
-          }
-        };
-        globalThis.nuvioQtSetPlayerContext = function (contextJson) {
-          if (!isQtHost) return false;
-          try {
-            const player = globalThis.nuvioNativePlayer;
-            if (!player || typeof player.updatePlayerContext !== 'function') return false;
-            player.updatePlayerContext(String(contextJson || '{}'));
-            return true;
-          } catch (_) {
-            return false;
-          }
-        };
-        globalThis.nuvioQtConsumePlayerAction = function () {
-          if (!isQtHost) return '';
-          try {
-            const player = globalThis.nuvioNativePlayer;
-            if (!player || typeof player.pendingPlayerAction !== 'string') return '';
-            const token = String(player.pendingPlayerAction || '');
-            if (!token || token === globalThis.nuvioQtLastConsumedActionToken) return '';
-            globalThis.nuvioQtLastConsumedActionToken = token;
-            if (typeof player.acknowledgePlayerAction === 'function') {
-              player.acknowledgePlayerAction(token);
-            }
-            const separator = token.indexOf('\n');
-            return separator >= 0 ? token.slice(separator + 1) : token;
-          } catch (_) {
-            return '';
-          }
-        };
-        globalThis.nuvioQtTakePlayerSnapshot = function () {
-          if (!isQtHost) return '';
-          try {
-            const player = globalThis.nuvioNativePlayer;
-            if (!player || typeof player.playerSnapshotJson !== 'string') return '';
-            return String(player.playerSnapshotJson || '');
-          } catch (_) {
-            return '';
-          }
-        };
-        globalThis.nuvioQtTakePlayerTracks = function () {
-          if (!isQtHost) return '';
-          try {
-            const player = globalThis.nuvioNativePlayer;
-            if (!player || typeof player.playerTracksJson !== 'string') return '';
-            return String(player.playerTracksJson || '');
-          } catch (_) {
-            return '';
-          }
-        };
-        if (isQtHost) {
-          new QWebChannel(globalThis.qt.webChannelTransport, function (channel) {
-            globalThis.nuvioNativePlayer = channel.objects.nuvioNativePlayer;
-            flushQueue();
-          });
-        }
-      })();
+      globalThis.nuvioConfigureCanvas();
+      globalThis.nuvioCreateVideo();
     </script>
     <script src="composeApp.js"></script>
   </body>

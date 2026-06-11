@@ -35,6 +35,8 @@ internal external fun openWebUrl(url: String): Boolean
 @JsFun("() => { try { return (globalThis.navigator?.languages ?? [globalThis.navigator?.language]).filter(Boolean).join(','); } catch (_) { return ''; } }")
 private external fun jsNavigatorLanguages(): String
 
+// --- Qt native player bridge (kept for backward compat) ---
+
 @JsFun("(url, headersJson, startPositionMs) => { try { return globalThis.nuvioQtPlayNative?.(url, headersJson, Number(startPositionMs || 0)) === true; } catch (_) { return false; } }")
 internal external fun playQtNativeMedia(url: String, headersJson: String, startPositionMs: Double): Boolean
 
@@ -58,6 +60,52 @@ internal external fun takeQtNativePlayerSnapshot(): String
 
 @JsFun("() => { try { return globalThis.nuvioQtTakePlayerTracks?.() || ''; } catch (_) { return ''; } }")
 internal external fun takeQtNativePlayerTracks(): String
+
+// --- HTML5 Video API ---
+
+@JsFun("() => globalThis.nuvioCreateVideo?.() === true")
+internal external fun jsVideoCreate(): Boolean
+
+@JsFun("() => globalThis.nuvioDestroyVideo?.() === true")
+internal external fun jsVideoDestroy(): Boolean
+
+@JsFun("(url, streamType, headersJson) => globalThis.nuvioSetupSource?.(url, streamType ?? '', headersJson ?? '{}') || '{\"ok\":false}'")
+internal external fun jsVideoSetupSource(url: String, streamType: String?, headersJson: String): String
+
+@JsFun("() => globalThis.nuvioVideoPlay?.()")
+internal external fun jsVideoPlay()
+
+@JsFun("() => globalThis.nuvioVideoPause?.()")
+internal external fun jsVideoPause()
+
+@JsFun("(ms) => globalThis.nuvioVideoSeekTo?.(ms)")
+internal external fun jsVideoSeekTo(ms: Double)
+
+@JsFun("(ms) => globalThis.nuvioVideoSeekBy?.(ms)")
+internal external fun jsVideoSeekBy(ms: Double)
+
+@JsFun("(speed) => globalThis.nuvioVideoSetSpeed?.(speed)")
+internal external fun jsVideoSetSpeed(speed: Double)
+
+@JsFun("(muted) => globalThis.nuvioVideoSetMuted?.(muted)")
+internal external fun jsVideoSetMuted(muted: Boolean)
+
+@JsFun("(vol) => globalThis.nuvioVideoSetVolume?.(vol)")
+internal external fun jsVideoSetVolume(vol: Double)
+
+@JsFun("() => globalThis.nuvioVideoGetSnapshot?.() || '{}'")
+internal external fun jsVideoGetSnapshot(): String
+
+@JsFun("() => globalThis.nuvioVideoGetTrackInfo?.() || '{}'")
+internal external fun jsVideoGetTrackInfo(): String
+
+@JsFun("(index) => globalThis.nuvioVideoSelectAudioTrack?.(index)")
+internal external fun jsVideoSelectAudioTrack(index: Int)
+
+@JsFun("(quality) => globalThis.nuvioVideoCaptureFrame?.(quality) || new Int8Array(0)")
+internal external fun jsVideoCaptureFrame(quality: Double): ByteArray
+
+// --- Kotlin wrappers ---
 
 internal fun webNowEpochMs(): Long = jsNowEpochMs().toLong()
 
