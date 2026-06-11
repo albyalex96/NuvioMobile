@@ -22,45 +22,7 @@ import org.jetbrains.compose.resources.getString
 private const val PLUGIN_TIMEOUT_MS = 60_000L
 private const val POLL_INTERVAL_MS = 15L
 
-@JsFun("""
-    return function(code, tmdbId, mediaType, season, episode) {
-        try {
-            window.__plugin_result = undefined;
-            window.__plugin_done = false;
-            var module = { exports: {} };
-            var exports = module.exports;
-            (function() {
-                (0, eval)(code);
-            })();
-            var getStreams = module.exports.getStreams || window.getStreams;
-            if (typeof getStreams !== 'function') {
-                window.__plugin_result = '[]';
-                window.__plugin_done = true;
-                return;
-            }
-            var result = getStreams(tmdbId, mediaType,
-                (season !== undefined && season !== -1) ? season : undefined,
-                (episode !== undefined && episode !== -1) ? episode : undefined);
-            if (result && typeof result.then === 'function') {
-                result.then(function(r) {
-                    window.__plugin_result = JSON.stringify(r || []);
-                    window.__plugin_done = true;
-                }).catch(function(e) {
-                    console.error('Plugin async error:', e && e.message ? e.message : e);
-                    window.__plugin_result = '[]';
-                    window.__plugin_done = true;
-                });
-            } else {
-                window.__plugin_result = JSON.stringify(result || []);
-                window.__plugin_done = true;
-            }
-        } catch(e) {
-            console.error('Plugin eval error:', e && e.message ? e.message : e);
-            window.__plugin_result = '[]';
-            window.__plugin_done = true;
-        }
-    }
-""")
+@JsFun("(c,t,m,s,e) => { window.__plugin_result = undefined; window.__plugin_done = false; try { var md = { exports: {} }; (new Function('module', 'exports', c))(md, md.exports); var fn = md.exports.getStreams || window.getStreams; if (typeof fn !== 'function') { window.__plugin_result = '[]'; window.__plugin_done = true; return; } var r = fn(t, m, s !== -1 ? s : undefined, e !== -1 ? e : undefined); if (r && typeof r.then === 'function') { r.then(function(v) { window.__plugin_result = JSON.stringify(v || []); window.__plugin_done = true; }).catch(function() { window.__plugin_result = '[]'; window.__plugin_done = true; }); } else { window.__plugin_result = JSON.stringify(r || []); window.__plugin_done = true; } } catch(ex) { window.__plugin_result = '[]'; window.__plugin_done = true; } }")
 private external fun jsStartEval(code: String, tmdbId: String, mediaType: String, season: Int, episode: Int)
 
 @JsFun("() => window.__plugin_done === true")
