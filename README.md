@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="https://github.com/tapframe/NuvioTV/blob/main/assets/brand/app_logo_wordmark.png" alt="Nuvio" width="300" />
+  <img src="https://github.com/albyalex96/NuvioTV/blob/main/assets/brand/app_logo_wordmark.png" alt="Nuvio Enhanced" width="300" />
   <br />
   <br />
 
@@ -10,116 +10,121 @@
   [![Issues][issues-shield]][issues-url]
   [![License][license-shield]][license-url]
 
-  <p>
-    A modern media hub for Android and iOS built with Kotlin Multiplatform and Compose Multiplatform.
-    <br />
-    Stremio addon ecosystem • Cross-platform
-  </p>
+  <br />
+
+  **A modern media hub for Android, iOS and Web — powered by the Stremio addon ecosystem.**
+
+  <br />
 
 </div>
 
 ## About
 
-Nuvio is the current Kotlin Multiplatform rewrite of the original React Native app. It delivers a shared Compose UI for Android and iOS while keeping the playback-focused experience, collection tools, watch progress flows, downloads, and Stremio addon ecosystem integration that shaped the earlier app.
+**Nuvio Enhanced** is a feature-enhanced fork of [Nuvio](https://github.com/NuvioMedia/NuvioMobile), a Kotlin Multiplatform rewrite of the original React Native app. It delivers a shared Compose UI across Android, iOS, and Web while retaining the playback-focused experience, collection management, watch progress syncing, downloads, and Stremio addon ecosystem integration that shaped the original.
 
-The mobile app is built from a single shared codebase in [composeApp](./composeApp), with native platform entry points for Android and iOS.
+The mobile/web app is built from a single shared codebase in [`composeApp/`](./composeApp) with native entry points for each platform.
 
-## Enhanced Version Specific Features
+---
 
-The following features are unique to this mobile repository and are not present in the original NuvioMobile codebase.
+## Enhanced Features
+
+The following features are unique to this fork and are not present in the upstream NuvioMobile codebase:
 
 ### Stream Parser with Animated Badges
-A polished stream information display that parses and presents video quality tags (4K, 1080p, 720p, etc.), audio codecs, and cached/debrid status with animated badges. Each badge animates on appearance, drawing attention to stream quality indicators and whether the stream is already cached for instant playback.
+Parses and presents video quality tags (4K, 1080p, 720p, etc.), audio codecs, and cached/debrid status with animated badges for instant visual feedback.
 
 ### AMOLED Mode
-Two nested toggles that turn backgrounds pure black (`#000000`) for OLED power savings. The main toggle sets the base background to black; a second toggle, visible only when the first is active, also blacks out all surfaces, cards, and elevated elements. When AMOLED mode is turned off, the surfaces sub-option is automatically disabled.
+Two nested toggles that turn backgrounds pure black (`#000000`) for OLED power savings. A secondary toggle extends this to all surfaces and cards.
 
 ### GlassMorph Navigation Tab
-A translucent, glass-styled bottom navigation bar that adapts to the selected theme accent color. Gives the interface a modern, layered look while remaining functional with native tab behavior.
+A translucent, glass-styled bottom navigation bar that adapts to the selected theme accent color.
 
-### Live TV with Configurable M3U Playlist
-Built-in Live TV support powered by user-provided M3U playlists. Browse channels, view EPG data where available, and watch live streams directly inside the app.
+### Live TV with M3U Playlist
+Built-in Live TV with user-provided M3U playlists, channel browsing, EPG data, and in-app playback.
 
 ### Swipe Gesture Toggle
-Ability to disable brightness and volume swipe controls during video playback. Useful for users who prefer dedicated hardware keys or find accidental gesture triggers disruptive.
+Disable brightness/volume swipe controls during video playback for users who prefer hardware keys.
 
 ### Configurable Skip Interval
-Customizable forward/backward skip duration during playback. Choose the exact number of seconds to jump when tapping the skip controls, tailoring the experience to your watching habits.
+Customizable forward/backward seek duration.
 
 ### "Still Watching?" Prompt (Netflix-Style)
-After a period of inactivity, a prompt appears asking if you are still watching. Includes an additional toggle to restrict this behavior to nighttime hours (22:00–04:00), preventing interruptions during daytime use.
+Inactivity prompt with a nighttime-only mode (22:00–04:00) toggle.
 
 ### DNS over HTTPS
-Secure DNS resolution via DNS-over-HTTPS (DoH) for improved privacy and protection against DNS spoofing, all configurable within the app settings.
+Secure DNS resolution via DoH, configurable in app settings.
 
 ### TOP 10 Catalogs
-Two configurable rows that display posters with a numbered badge from 1 to 10, highlighting the most popular or trending content in a ranked format.
+Configurable ranked rows with numbered badges from 1 to 10 for trending content.
 
 ### Plugin System Enhancements
-Extended plugin infrastructure with per-plugin scraper configuration, enabling fine-grained control over how each addon discovers and resolves media sources.
+Per-plugin scraper configuration for fine-grained control over addon media source discovery.
 
 ### Episode Code Formatter
-Choose your preferred episode display format from options like `01x01`, `1x1`, `S01E01`, and more, ensuring episode labels match your personal preference.
+Choose your preferred episode display format (e.g. `01x01`, `1x1`, `S01E01`).
 
 ### Cloudflare Challenge Solver
-Automatically bypasses Cloudflare protection on streaming sources. When a request receives a 403/503 response with a Cloudflare challenge, a hidden WebView solves the challenge (executes JS, computes the challenge token, sets cookies). The resolved cookies are then reused for subsequent requests, enabling playback from add-ons that rely on Cloudflare-protected CDNs.
+Automatically bypasses Cloudflare protection via a hidden WebView that resolves challenge tokens and reuses cookies for subsequent requests.
 
 ### Bookmark Badge on Posters
-Items saved to the user's library are visually identified by a bookmark badge overlay on their poster across the Home screen, catalog pages, and collection folders. The badge uses the app's accent color scheme and fades in with animation, providing immediate visual feedback about which content is already in the library.
+Library items display a bookmark badge overlay on posters across Home, catalogs, and collections.
 
-## Installation
+---
 
-### Android
-
-Download the latest Android build from [GitHub Releases](https://github.com/NuvioMedia/NuvioMobile/releases/latest).
-
-### iOS
-
-- [TestFlight](https://testflight.apple.com/join/u4y7MHK9)
-
-## Development
+## Quick Start
 
 ```bash
-git clone https://github.com/NuvioMedia/NuvioMobile.git
+git clone -b build/cmp https://github.com/albyalex96/NuvioMobile.git
 cd NuvioMobile
-./scripts/run-mobile.sh android
-# or
-./scripts/run-mobile.sh ios
+./scripts/run-mobile.sh android    # Android emulator
+./scripts/run-mobile.sh ios s      # iOS simulator
 ```
 
-### Project Structure
+> **Note:** You'll need API keys (Supabase, Trakt, TMDB, debrid services) configured in `local.properties`. See the upstream setup guide for details. Original platform credentials are fully compatible with this fork.
 
-- `composeApp/` contains the shared Kotlin Multiplatform and Compose Multiplatform app code.
-- `composeApp/src/commonMain/` contains shared UI, features, repositories, and platform-agnostic logic.
-- `composeApp/src/androidMain/` contains Android-specific integrations.
-- `composeApp/src/iosMain/` contains iOS-specific integrations.
-- `iosApp/` contains the native Xcode project and iOS entry point.
-
-Useful commands:
+### Build
 
 ```bash
-./gradlew :composeApp:assembleDebug
+# Android debug (full variant — preferred)
+./gradlew :composeApp:assembleFullDebug
+
+# iOS compile check
 ./gradlew :composeApp:compileKotlinIosSimulatorArm64
-./scripts/build-distribution.sh
+
+# Web (WasmJs)
+./gradlew :composeApp:wasmJsBrowserDistribution
 ```
 
-Versioning is driven from `iosApp/Configuration/Version.xcconfig`, which is used as the shared source of truth for both iOS and Android builds.
+Versioning is driven from [`version.json`](./version.json) at the project root — the single source of truth for both `versionName` and `versionCode` across Android, iOS, and Web. The Xcode config is auto-synced from this file at build time.
 
-## Legal & DMCA
+---
 
-Nuvio functions solely as a client-side interface for browsing metadata and playing media provided by user-installed extensions and/or user-provided sources. It is intended for content the user owns or is otherwise authorized to access.
+## Self-Hosting (Web)
 
-Nuvio is not affiliated with any third-party extensions, catalogs, sources, or content providers. It does not host, store, or distribute any media content.
+The Web (WasmJs) build is distributed as a Docker image. For full self-hosting instructions — including deployment, nginx configuration, environment variables, and API proxying — see **[SELFHOSTING.md](./SELFHOSTING.md)**.
 
-For comprehensive legal information, including our full disclaimer, third-party extension policy, and DMCA/Copyright information, please visit our [Legal & Disclaimer Page](https://nuvioapp.space/legal).
+---
+
+## Legal
+
+Nuvio Enhanced functions solely as a client-side interface for browsing metadata and playing media provided by user-installed extensions and/or user-provided sources. It is intended for content the user owns or is otherwise authorized to access.
+
+This fork is not affiliated with the original Nuvio project or any third-party extensions, catalogs, sources, or content providers. It does not host, store, or distribute any media content.
+
+For comprehensive legal information, including our full disclaimer, third-party extension policy, and DMCA/Copyright information, please visit the [original Nuvio Legal Page](https://nuvio.tv/legal).
+
+---
 
 ## Built With
 
-- Kotlin Multiplatform
-- Compose Multiplatform
-- Kotlin
-- AndroidX Media3
-- AVFoundation and native iOS integrations
+- [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html)
+- [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/)
+- [Kotlin](https://kotlinlang.org/)
+- [AndroidX Media3 (ExoPlayer)](https://developer.android.com/media/media3)
+- [AVFoundation (iOS)](https://developer.apple.com/av-foundation/)
+- [Stremio Addon Protocol](https://github.com/Stremio/stremio-addon-sdk)
+
+---
 
 ## Star History
 
@@ -130,6 +135,12 @@ For comprehensive legal information, including our full disclaimer, third-party 
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=NuvioMedia/NuvioMobile&type=date&legend=top-left" />
  </picture>
 </a>
+
+---
+
+<div align="center">
+  <sub>Built on the shoulders of the Nuvio project. Licensed under the GPLv3.</sub>
+</div>
 
 <!-- MARKDOWN LINKS & IMAGES -->
 [contributors-shield]: https://img.shields.io/github/contributors/NuvioMedia/NuvioMobile.svg?style=for-the-badge

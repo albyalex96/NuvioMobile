@@ -1,5 +1,5 @@
 # =============================================================================
-# Nuvio Multi-Platform Release Builder (Android + Web)
+# Nuvio Enhanced Multi-Platform Release Builder (Android + Web)
 # =============================================================================
 # To change the trigger branch, update TRIGGER_BRANCH in both places:
 #   1. `on.push.branches`  (line 24)
@@ -10,7 +10,7 @@
 name: Build Release (Android + Web)
 
 env:
-  TRIGGER_BRANCH: "build/suspend"
+  TRIGGER_BRANCH: "build/cmp"
 
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ on:
         type: string
   push:
     branches:
-      - "build/suspend"
+      - "build/cmp"
 
 permissions:
   contents: write
@@ -116,7 +116,7 @@ jobs:
           COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -n 30)
 
           {
-            echo "## Nuvio Release Build #${{ github.run_number }}"
+            echo "## Nuvio Enhanced Release Build #${{ github.run_number }}"
             echo ""
             echo "**Target branch:** \`${{ steps.resolve_branch.outputs.branch }}\`"
             echo ""
@@ -192,7 +192,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}"
-          name: "Nuvio Build - ${{ steps.resolve_branch.outputs.branch }} #${{ github.run_number }}"
+          name: "Nuvio Enhanced Build - ${{ steps.resolve_branch.outputs.branch }} #${{ github.run_number }}"
           body_path: release_body.md
           draft: false
           prerelease: false
@@ -206,11 +206,11 @@ jobs:
       - name: Send ntfy Notification
         run: |
           curl \
-            -H "Title: Nuvio Build Complete" \
+            -H "Title: Nuvio Enhanced Build Complete" \
             -H "Priority: high" \
             -H "Tags: rocket,android,globe_with_meridians" \
             -H "Click: https://github.com/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}" \
-            -d "## Nuvio Build #${{ github.run_number }} — done 🚀
+            -d "## Nuvio Enhanced Build #${{ github.run_number }} — done 🚀
             Branch: \`${{ steps.resolve_branch.outputs.branch }}\`
             Android (Full) ✅ · Web (WasmJs) ✅ · Docker (ghcr.io) ✅
             [Open Release](${{ github.server_url }}/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }})" \

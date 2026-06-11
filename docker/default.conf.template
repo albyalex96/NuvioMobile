@@ -1,0 +1,91 @@
+server {
+  listen ${PORT};
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  gzip on;
+  gzip_types text/plain text/css application/javascript application/wasm image/svg+xml;
+  gzip_min_length 1024;
+  gzip_vary on;
+  gzip_static on;
+
+  # ── Security headers ──────────────────────────────────
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+  # ── CORS generalizzato ────────────────────────────────
+  # Consente richieste cross-origin da qualsiasi origine.
+  # Con COEP: credentialless le risorse caricate via tag HTML
+  # (<img>, <script>, <link>, <video>) funzionano anche senza
+  # header CORS dal server remoto.
+  add_header Access-Control-Allow-Origin "*" always;
+  add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+  add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,apikey,X-Client-Info" always;
+  add_header Access-Control-Expose-Headers "Content-Length,Content-Range" always;
+
+  if ($request_method = OPTIONS) { return 204; }
+
+  # ── SharedArrayBuffer (multithreading WASM) ───────────
+  # credentialless instead of require-corp: non blocca le risorse
+  # cross-origin che non inviano Cross-Origin-Resource-Policy.
+  location ~* \.(?:js|wasm)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Embedder-Policy "credentialless" always;
+  }
+
+  # ── Asset caching ─────────────────────────────────────
+  location /composeResources/ { expires 1y; add_header Cache-Control "public, immutable"; }
+  location ~* \.map$ { expires -1; add_header Cache-Control "no-cache"; }
+  location = /index.html { expires -1; add_header Cache-Control "no-cache, no-store, must-revalidate"; }
+  location = /styles.css { expires 1y; add_header Cache-Control "public, immutable"; }
+
+  # ── Proxy per servizi esterni senza CORS ──────────────
+  # Le API che supportano CORS (Supabase, Trakt, TMDB API,
+  # debrid services) funzionano direttamente.
+  # I server che NON inviano header CORS vanno proxati qui.
+  #
+  # Come aggiungerne uno nuovo:
+  #   location /nome-servizio/ {
+  #     proxy_pass https://il-servizio-esterno.com/;
+  #     proxy_hide_header Cross-Origin-Resource-Policy;
+  #     add_header Cross-Origin-Resource-Policy "cross-origin" always;
+  #     proxy_set_header Host il-servizio-esterno.com;
+  #     proxy_set_header X-Real-IP $remote_addr;
+  #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  #     proxy_set_header X-Forwarded-Proto $scheme;
+  #     expires 30d;
+  #     add_header Cache-Control "public, immutable";
+  #     # Se il servizio serve risorse dinamiche, togli expires
+  #   }
+
+  location /tmdb-image/ {
+    proxy_pass https://image.tmdb.org/t/p/;
+    proxy_hide_header Cross-Origin-Resource-Policy;
+    add_header Cross-Origin-Resource-Policy "cross-origin" always;
+    proxy_set_header Host image.tmdb.org;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+  }
+
+  location /extendedratings/ {
+    proxy_pass https://extendedratings.com/;
+    proxy_hide_header Cross-Origin-Resource-Policy;
+    add_header Cross-Origin-Resource-Policy "cross-origin" always;
+    proxy_set_header Host extendedratings.com;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+  }
+
+  # ── Fallback SPA ──────────────────────────────────────
+  location / { try_files $uri /index.html; }
+}

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Nuvio.
+Thanks for helping improve Nuvio Enhanced.
 
 ## Strict rules - read before opening anything
 

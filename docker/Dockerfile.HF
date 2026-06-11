@@ -1,0 +1,14 @@
+# Dockerfile for HuggingFace Spaces deployment
+#
+# Usage:
+#   1. Set PORT env var in HuggingFace UI (default: 7860)
+#   2. To override nginx config, uncomment the COPY line below
+#      and place your custom default.conf.template next to this file.
+#
+#   Build:
+#     docker build -f docker/Dockerfile.HF -t nuvio-mobile-hf .
+
+FROM ghrc.io/albyalex96/nuvioweb:latest 
+
+# Uncomment to override the default nginx configuration:
+# COPY custom-nginx.conf.template /etc/nginx/templates/default.conf.template
