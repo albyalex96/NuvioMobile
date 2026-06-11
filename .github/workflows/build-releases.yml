@@ -136,9 +136,13 @@ jobs:
           echo "NUVIO_RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> local.properties
           echo "NUVIO_RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> local.properties
 
-      - name: Build Android Full APK
+      - name: Build Android Full APK (phone)
         run: |
           ./gradlew :composeApp:assembleFullRelease -x test --build-cache
+
+      - name: Build Android Full APK (TV)
+        run: |
+          ./gradlew :composeApp:assembleFullTvRelease -x test --build-cache
 
       # ── Build: Web (WasmJs) ──────────────────────────────────────
       - name: Build Web (WasmJs Browser Distribution)
@@ -199,6 +203,7 @@ jobs:
           target_commitish: ${{ steps.resolve_branch.outputs.branch }}
           files: |
             composeApp/build/outputs/apk/full/release/*.apk
+            composeApp/build/outputs/apk/fullTv/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -212,6 +217,6 @@ jobs:
             -H "Click: https://github.com/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}" \
             -d "## Nuvio Enhanced Build #${{ github.run_number }} — done 🚀
             Branch: \`${{ steps.resolve_branch.outputs.branch }}\`
-            Android (Full) ✅ · Web (WasmJs) ✅ · Docker (ghcr.io) ✅
+            Android Phone (Full) ✅ · Android TV (Full) ✅ · Web (WasmJs) ✅ · Docker (ghcr.io) ✅
             [Open Release](${{ github.server_url }}/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }})" \
             https://ntfy.sh/nuvio_builds

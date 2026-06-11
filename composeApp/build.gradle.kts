@@ -133,6 +133,19 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 """.trimMargin()
             )
         }
+
+        outDir.resolve("com/nuvio/app/core/auth").apply {
+            mkdirs()
+            resolve("TvLoginConfig.kt").writeText(
+                """
+                |package com.nuvio.app.core.auth
+                |
+                |object TvLoginConfig {
+                |    const val WEB_BASE_URL = "${props.getProperty("TV_LOGIN_WEB_BASE_URL", "https://app.nuvio.tv/tv-login")}" 
+                |}
+                """.trimMargin()
+            )
+        }
     }
 }
 
@@ -303,6 +316,7 @@ kotlin {
             implementation(libs.androidx.media3.extractor)
             implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
         }
+
         commonMain.dependencies {
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
@@ -332,12 +346,16 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+
 }
 
 afterEvaluate {
     dependencies {
         add("fullImplementation", files("libs/quickjs-kt-android-1.0.5-nuvio.aar"))
         add("fullImplementation", libs.ksoup)
+        add("fullTvImplementation", files("libs/quickjs-kt-android-1.0.5-nuvio.aar"))
+        add("fullTvImplementation", libs.ksoup)
+        add("fullTvImplementation", libs.zxing.core)
     }
 }
 
@@ -372,8 +390,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = releaseAppVersionCode
         versionName = releaseAppVersionName
+        missingDimensionStrategy("device", "phone")
     }
-    flavorDimensions += "distribution"
+    flavorDimensions("distribution", "device")
     productFlavors {
         create("full") {
             dimension = "distribution"
@@ -381,10 +400,33 @@ android {
         create("playstore") {
             dimension = "distribution"
         }
+        create("phone") {
+            dimension = "device"
+        }
+        create("tv") {
+            dimension = "device"
+            applicationIdSuffix = ".tv"
+            versionNameSuffix = "-tv"
+        }
     }
     sourceSets.getByName("full") {
         manifest.srcFile("src/androidFull/AndroidManifest.xml")
         java.srcDir(fullCommonSourceDir)
+    }
+    sourceSets.getByName("tv") {
+        manifest.srcFile("src/androidTv/AndroidManifest.xml")
+        java.srcDir(fullCommonSourceDir)
+    }
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            if (this is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
+                val flavorName = variant.flavorName.lowercase()
+                val apkPrefix = if (flavorName.contains("tv")) "NuvioEnhancedTV-" else "NuvioEnhanced-"
+                val abi = filters.find { it.filterType == "ABI" }?.identifier ?: "universal"
+                outputFileName = "${apkPrefix}${variant.buildType.name}-${releaseAppVersionName}-${abi}.apk"
+            }
+        }
     }
     splits {
         abi {

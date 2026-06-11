@@ -45,6 +45,14 @@ server {
 
     proxy_pass $arg_url;
 
+    # SSL upstream (gli addon scraper usano HTTPS con cert vari)
+    proxy_ssl_server_name on;
+    proxy_ssl_verify off;
+
+    # HTTP/1.1 per upstream (alcuni server richiedono keepalive)
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+
     # Headers di forward
     proxy_set_header Host $proxy_host;
     proxy_set_header X-Real-IP $remote_addr;
