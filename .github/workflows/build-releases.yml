@@ -198,7 +198,6 @@ jobs:
           prerelease: false
           target_commitish: ${{ steps.resolve_branch.outputs.branch }}
           files: |
-            web-dist/**
             composeApp/build/outputs/apk/full/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
