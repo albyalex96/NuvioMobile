@@ -27,6 +27,10 @@ COPY ./ /usr/share/nginx/html/
 RUN find /usr/share/nginx/html -type f \( -name "*.js" -o -name "*.wasm" -o -name "*.css" \) \
     -exec sh -c 'gzip -kf "$1"; brotli -f "$1"' _ {} \;
 ENV PORT=7860
+ENV NGINX_CONFIG=""
 EXPOSE 7860
-CMD envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf \
+CMD if [ -n "$NGINX_CONFIG" ]; then \
+      printf '%s\n' "$NGINX_CONFIG" > /etc/nginx/templates/default.conf.template; \
+    fi \
+    && envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf \
     && nginx -g 'daemon off;'
