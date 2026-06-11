@@ -13,12 +13,15 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import io.ktor.http.encodeURLQueryComponent
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+
+private const val PROXY_PREFIX = "/ext-proxy/?url="
 
 internal actual object AddonStorage {
     private const val namespace = "nuvio_addons"
@@ -52,11 +55,16 @@ internal actual object AddonStorage {
 
 private val addonHttpClient = HttpClient(Js)
 
+private fun proxyUrl(url: String): String {
+    if (!url.startsWith("http://") && !url.startsWith("https://")) return url
+    return "${PROXY_PREFIX}${url.encodeURLQueryComponent()}"
+}
+
 actual suspend fun httpGetText(url: String): String =
-    addonHttpClient.get(url).bodyAsText()
+    addonHttpClient.get(proxyUrl(url)).bodyAsText()
 
 actual suspend fun httpPostJson(url: String, body: String): String =
-    addonHttpClient.post(url) {
+    addonHttpClient.post(proxyUrl(url)) {
         contentType(ContentType.Application.Json)
         setBody(body)
     }.bodyAsText()
@@ -65,7 +73,7 @@ actual suspend fun httpGetTextWithHeaders(
     url: String,
     headers: Map<String, String>,
 ): String =
-    addonHttpClient.get(url) {
+    addonHttpClient.get(proxyUrl(url)) {
         appendRequestHeaders(headers)
     }.bodyAsText()
 
@@ -74,7 +82,7 @@ actual suspend fun httpPostJsonWithHeaders(
     body: String,
     headers: Map<String, String>,
 ): String =
-    addonHttpClient.post(url) {
+    addonHttpClient.post(proxyUrl(url)) {
         contentType(ContentType.Application.Json)
         appendRequestHeaders(headers)
         setBody(body)
@@ -87,7 +95,7 @@ actual suspend fun httpRequestRaw(
     body: String,
     followRedirects: Boolean,
 ): RawHttpResponse {
-    val response = addonHttpClient.request(url) {
+    val response = addonHttpClient.request(proxyUrl(url)) {
         this.method = HttpMethod.parse(method)
         appendRequestHeaders(headers)
         if (requestAllowsBody(method)) {

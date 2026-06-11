@@ -4,6 +4,9 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
+  resolver 1.1.1.1 8.8.8.8 valid=300s;
+  resolver_timeout 10s;
+
   gzip on;
   gzip_types text/plain text/css application/javascript application/wasm image/svg+xml;
   gzip_min_length 1024;
@@ -14,18 +17,6 @@ server {
   add_header X-Frame-Options "SAMEORIGIN" always;
   add_header X-Content-Type-Options "nosniff" always;
   add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
-  # ── CORS generalizzato ────────────────────────────────
-  # Consente richieste cross-origin da qualsiasi origine.
-  # Con COEP: credentialless le risorse caricate via tag HTML
-  # (<img>, <script>, <link>, <video>) funzionano anche senza
-  # header CORS dal server remoto.
-  add_header Access-Control-Allow-Origin "*" always;
-  add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-  add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,apikey,X-Client-Info" always;
-  add_header Access-Control-Expose-Headers "Content-Length,Content-Range" always;
-
-  if ($request_method = OPTIONS) { return 204; }
 
   # ── SharedArrayBuffer (multithreading WASM) ───────────
   # credentialless instead of require-corp: non blocca le risorse
@@ -43,25 +34,45 @@ server {
   location = /index.html { expires -1; add_header Cache-Control "no-cache, no-store, must-revalidate"; }
   location = /styles.css { expires 1y; add_header Cache-Control "public, immutable"; }
 
-  # ── Proxy per servizi esterni senza CORS ──────────────
-  # Le API che supportano CORS (Supabase, Trakt, TMDB API,
-  # debrid services) funzionano direttamente.
-  # I server che NON inviano header CORS vanno proxati qui.
+  # ── Proxy generico per richieste esterne (CORS bypass) ──
+  # L'app instrada TUTTE le richieste HTTP verso server esterni
+  # attraverso questo endpoint. nginx forwarda la richiesta
+  # originale e aggiunge gli header CORS necessari.
   #
-  # Come aggiungerne uno nuovo:
-  #   location /nome-servizio/ {
-  #     proxy_pass https://il-servizio-esterno.com/;
-  #     proxy_hide_header Cross-Origin-Resource-Policy;
-  #     add_header Cross-Origin-Resource-Policy "cross-origin" always;
-  #     proxy_set_header Host il-servizio-esterno.com;
-  #     proxy_set_header X-Real-IP $remote_addr;
-  #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  #     proxy_set_header X-Forwarded-Proto $scheme;
-  #     expires 30d;
-  #     add_header Cache-Control "public, immutable";
-  #     # Se il servizio serve risorse dinamiche, togli expires
-  #   }
+  # Uso: /ext-proxy/?url=https%3A%2F%2Ftarget.com%2Fpath
+  location /ext-proxy/ {
+    if ($arg_url = "") { return 400; }
 
+    proxy_pass $arg_url;
+
+    # Headers di forward
+    proxy_set_header Host $proxy_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # Forward the original request method, headers, body
+    proxy_pass_request_headers on;
+    proxy_pass_request_body on;
+    proxy_method $request_method;
+
+    # CORS headers per la risposta proxata
+    add_header Access-Control-Allow-Origin "*" always;
+    add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "*" always;
+    add_header Access-Control-Expose-Headers "*" always;
+
+    # Buffer per risposte grandi (video, immagini)
+    proxy_buffering off;
+    proxy_max_temp_file_size 0;
+
+    # Timeout aumentati per stream video
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+    proxy_connect_timeout 30s;
+  }
+
+  # ── Proxy specifici (per backward compatibilità) ─────
   location /tmdb-image/ {
     proxy_pass https://image.tmdb.org/t/p/;
     proxy_hide_header Cross-Origin-Resource-Policy;
