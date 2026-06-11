@@ -22,9 +22,12 @@ import com.nuvio.app.core.platform.jsVideoPause
 import com.nuvio.app.core.platform.jsVideoPlay
 import com.nuvio.app.core.platform.jsVideoSetMuted
 import com.nuvio.app.core.platform.jsVideoSetupSource
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlinx.coroutines.delay
 import org.jetbrains.skia.Image as SkiaImage
 
+@OptIn(ExperimentalEncodingApi::class)
 @Composable
 actual fun HeroTrailerPlayerSurface(
     sourceUrl: String,
@@ -78,9 +81,10 @@ actual fun HeroTrailerPlayerSurface(
                     latestOnError.value()
                 }
             }
-            val bytes = jsVideoCaptureFrame(0.5)
-            if (bytes.isNotEmpty()) {
+            val b64 = jsVideoCaptureFrame(0.5)
+            if (b64.isNotBlank()) {
                 try {
+                    val bytes = Base64.decode(b64)
                     val skiaImage = SkiaImage.makeFromEncoded(bytes)
                     currentFrame.value = skiaImage.toComposeImageBitmap()
                 } catch (_: Exception) { }

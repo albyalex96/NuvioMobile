@@ -91,18 +91,13 @@
       };
       globalThis.nuvioVideoCaptureFrame = function (quality) {
         var v = globalThis.nuvioVideoElement;
-        if (!v || v.videoWidth === 0 || v.videoHeight === 0) return new Int8Array(0);
+        if (!v || v.videoWidth === 0 || v.videoHeight === 0) return '';
         var w = v.videoWidth, h = v.videoHeight;
         var c = document.createElement('canvas');
         c.width = w; c.height = h;
         var ctx = c.getContext('2d');
         ctx.drawImage(v, 0, 0, w, h);
-        var dataUrl = c.toDataURL('image/jpeg', quality);
-        var binary = atob(dataUrl.split(',')[1]);
-        var buf = new ArrayBuffer(binary.length);
-        var bytes = new Uint8Array(buf);
-        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        return new Int8Array(buf);
+        return c.toDataURL('image/jpeg', quality).split(',')[1] || '';
       };
     </script>
   </head>

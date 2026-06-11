@@ -102,8 +102,8 @@ internal external fun jsVideoGetTrackInfo(): String
 @JsFun("(index) => globalThis.nuvioVideoSelectAudioTrack?.(index)")
 internal external fun jsVideoSelectAudioTrack(index: Int)
 
-@JsFun("(quality) => globalThis.nuvioVideoCaptureFrame?.(quality) || new Int8Array(0)")
-internal external fun jsVideoCaptureFrame(quality: Double): ByteArray
+@JsFun("(quality) => globalThis.nuvioVideoCaptureFrame?.(quality) || ''")
+internal external fun jsVideoCaptureFrame(quality: Double): String
 
 // --- Kotlin wrappers ---
 

@@ -27,6 +27,8 @@ import com.nuvio.app.core.platform.jsVideoSelectAudioTrack
 import com.nuvio.app.core.platform.jsVideoSetMuted
 import com.nuvio.app.core.platform.jsVideoSetSpeed
 import com.nuvio.app.core.platform.jsVideoSetupSource
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
@@ -43,6 +45,7 @@ private const val FRAME_CAPTURE_QUALITY = 0.55
 private const val SNAPSHOT_POLL_MS = 250L
 private const val FRAME_CAPTURE_INTERVAL_MS = 40L
 
+@OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
 @Composable
 actual fun PlatformPlayerSurface(
     sourceUrl: String,
@@ -155,9 +158,10 @@ actual fun PlatformPlayerSurface(
     LaunchedEffect(sourceReady.value) {
         if (!sourceReady.value) return@LaunchedEffect
         while (true) {
-            val bytes = jsVideoCaptureFrame(FRAME_CAPTURE_QUALITY)
-            if (bytes.isNotEmpty()) {
+            val b64 = jsVideoCaptureFrame(FRAME_CAPTURE_QUALITY)
+            if (b64.isNotBlank()) {
                 try {
+                    val bytes = Base64.decode(b64)
                     val skiaImage = SkiaImage.makeFromEncoded(bytes)
                     currentFrame.value = skiaImage.toComposeImageBitmap()
                 } catch (_: Exception) { }
