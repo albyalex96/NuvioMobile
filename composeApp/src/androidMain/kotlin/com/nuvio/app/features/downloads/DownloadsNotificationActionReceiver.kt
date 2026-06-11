@@ -3,6 +3,7 @@ package com.nuvio.app.features.downloads
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import kotlinx.coroutines.runBlocking
 
 class DownloadsNotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -17,7 +18,7 @@ class DownloadsNotificationActionReceiver : BroadcastReceiver() {
 
         when (action) {
             actionPause -> DownloadsRepository.pauseDownload(downloadId)
-            actionResume -> DownloadsRepository.resumeDownload(downloadId)
+            actionResume -> runBlocking { DownloadsRepository.resumeDownload(downloadId) }
         }
     }
 
