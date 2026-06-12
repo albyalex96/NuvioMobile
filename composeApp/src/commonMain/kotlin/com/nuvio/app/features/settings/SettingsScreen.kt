@@ -259,6 +259,7 @@ fun SettingsScreen(
                 showLoadingOverlay = playerSettingsUiState.showLoadingOverlay,
                 holdToSpeedEnabled = playerSettingsUiState.holdToSpeedEnabled,
                 holdToSpeedValue = playerSettingsUiState.holdToSpeedValue,
+                touchGesturesEnabled = playerSettingsUiState.touchGesturesEnabled,
                 preferredAudioLanguage = playerSettingsUiState.preferredAudioLanguage,
                 secondaryPreferredAudioLanguage = playerSettingsUiState.secondaryPreferredAudioLanguage,
                 preferredSubtitleLanguage = playerSettingsUiState.preferredSubtitleLanguage,
@@ -321,6 +322,7 @@ fun SettingsScreen(
                 showLoadingOverlay = playerSettingsUiState.showLoadingOverlay,
                 holdToSpeedEnabled = playerSettingsUiState.holdToSpeedEnabled,
                 holdToSpeedValue = playerSettingsUiState.holdToSpeedValue,
+                touchGesturesEnabled = playerSettingsUiState.touchGesturesEnabled,
                 preferredAudioLanguage = playerSettingsUiState.preferredAudioLanguage,
                 secondaryPreferredAudioLanguage = playerSettingsUiState.secondaryPreferredAudioLanguage,
                 preferredSubtitleLanguage = playerSettingsUiState.preferredSubtitleLanguage,
@@ -393,6 +395,7 @@ private fun MobileSettingsScreen(
     showLoadingOverlay: Boolean,
     holdToSpeedEnabled: Boolean,
     holdToSpeedValue: Float,
+    touchGesturesEnabled: Boolean,
     preferredAudioLanguage: String,
     secondaryPreferredAudioLanguage: String?,
     preferredSubtitleLanguage: String,
@@ -575,6 +578,7 @@ private fun MobileSettingsScreen(
                     showLoadingOverlay = showLoadingOverlay,
                     holdToSpeedEnabled = holdToSpeedEnabled,
                     holdToSpeedValue = holdToSpeedValue,
+                    touchGesturesEnabled = touchGesturesEnabled,
                     preferredAudioLanguage = preferredAudioLanguage,
                     secondaryPreferredAudioLanguage = secondaryPreferredAudioLanguage,
                     preferredSubtitleLanguage = preferredSubtitleLanguage,
@@ -748,6 +752,7 @@ private fun TabletSettingsScreen(
     showLoadingOverlay: Boolean,
     holdToSpeedEnabled: Boolean,
     holdToSpeedValue: Float,
+    touchGesturesEnabled: Boolean,
     preferredAudioLanguage: String,
     secondaryPreferredAudioLanguage: String?,
     preferredSubtitleLanguage: String,
@@ -884,7 +889,7 @@ private fun TabletSettingsScreen(
                 SettingsPage.Root -> settingsRootContent(
                     isTablet = true,
                     onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
-                                onStreamsClick = { openInlinePage(SettingsPage.Streams) },
+                    onStreamsClick = { openInlinePage(SettingsPage.Streams) },
                     onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
                     onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
                     onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
@@ -917,6 +922,7 @@ private fun TabletSettingsScreen(
                     showLoadingOverlay = showLoadingOverlay,
                     holdToSpeedEnabled = holdToSpeedEnabled,
                     holdToSpeedValue = holdToSpeedValue,
+                    touchGesturesEnabled = touchGesturesEnabled,
                     preferredAudioLanguage = preferredAudioLanguage,
                     secondaryPreferredAudioLanguage = secondaryPreferredAudioLanguage,
                     preferredSubtitleLanguage = preferredSubtitleLanguage,
@@ -935,9 +941,9 @@ private fun TabletSettingsScreen(
                     stillWatchingNightMode = stillWatchingNightMode,
                     skipSeekIntervalSeconds = skipSeekIntervalSeconds,
                 )
-                    SettingsPage.Streams -> streamsSettingsContent(
-                        isTablet = true,
-                    )
+                SettingsPage.Streams -> streamsSettingsContent(
+                    isTablet = true,
+                )
                 SettingsPage.Appearance -> appearanceSettingsContent(
                     isTablet = true,
                     selectedTheme = selectedTheme,

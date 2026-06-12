@@ -356,6 +356,9 @@ private fun PlayerLaunch.toExternalPlayerPlaybackRequest(): ExternalPlayerPlayba
         streamTitle = streamTitle,
         sourceHeaders = sourceHeaders,
         resumePositionMs = initialPositionMs,
+        season = seasonNumber,
+        episode = episodeNumber,
+        episodeTitle = episodeTitle,
     )
 
 private enum class AppGateScreen {
@@ -481,21 +484,26 @@ fun App() {
 
         LaunchedEffect(authState, networkStatusUiState.condition, profileState.profiles) {
             val cachedProfiles = profileState.profiles
-            val allowOfflineProfileAccess =
+            val hasCachedProfileAccess =
                 cachedProfiles.isNotEmpty() &&
-                    authState !is AuthState.Authenticated &&
-                    networkStatusUiState.condition != NetworkCondition.Online
+                    authState !is AuthState.Authenticated
+            val allowCachedProfileAccess =
+                hasCachedProfileAccess &&
+                    (
+                        networkStatusUiState.condition != NetworkCondition.Online ||
+                            gateScreen != AppGateScreen.Auth.name
+                    )
 
             when (authState) {
                 is AuthState.Loading -> {
-                    if (allowOfflineProfileAccess) {
+                    if (hasCachedProfileAccess) {
                         enterProfileGate(cachedProfiles, syncOnEnter = false)
                     } else {
                         gateScreen = AppGateScreen.Loading.name
                     }
                 }
                 is AuthState.Unauthenticated -> {
-                    if (allowOfflineProfileAccess) {
+                    if (allowCachedProfileAccess) {
                         enterProfileGate(cachedProfiles, syncOnEnter = false)
                     } else {
                         ProfileRepository.clearInMemory()
@@ -946,6 +954,14 @@ private fun MainAppContent(
         }
     }
 
+    LaunchedEffect(currentBackStackEntry?.destination) {
+        val inPlaybackFlow = currentBackStackEntry?.destination?.hasRoute<StreamRoute>() == true ||
+            currentBackStackEntry?.destination?.hasRoute<PlayerRoute>() == true
+        if (inPlaybackFlow) {
+            resumePromptItem = null
+        }
+    }
+
         LaunchedEffect(navController) {
             AppDeepLinkRepository.pendingDeepLink.collectLatest { deepLink ->
                 when (deepLink) {
@@ -1212,6 +1228,7 @@ private fun MainAppContent(
                     type = section.type,
                     catalogId = section.catalogId,
                     supportsPagination = section.supportsPagination,
+                    genre = section.genre,
                 ),
             )
         }
@@ -1236,6 +1253,7 @@ private fun MainAppContent(
         }
 
         val openContinueWatching: (ContinueWatchingItem, Boolean, Boolean) -> Unit = { item, manualSelection, startFromBeginning ->
+            resumePromptItem = null
             if (item.isCloudLibraryContinueWatchingItem()) {
                 coroutineScope.launch {
                     when (
@@ -1804,12 +1822,11 @@ private fun MainAppContent(
                                 addonId = stream.addonId,
                                 requestHeaders = emptyMap(),
                                 responseHeaders = emptyMap(),
-                                filename = stream.p2pFilename,
+                                filename = stream.behaviorHints.filename,
                                 videoSize = stream.behaviorHints.videoSize,
                                 infoHash = infoHash,
                                 fileIdx = stream.p2pFileIdx,
-                                magnetUri = stream.torrentMagnetUri,
-                                sources = stream.p2pSourceHints,
+                                sources = stream.sources,
                                 bingeGroup = stream.behaviorHints.bingeGroup,
                             )
                         }
@@ -1818,6 +1835,7 @@ private fun MainAppContent(
                             sourceUrl = sentinelUrl,
                             sourceHeaders = emptyMap(),
                             sourceResponseHeaders = emptyMap(),
+                            streamType = stream.streamType,
                             logo = launch.logo,
                             poster = launch.poster,
                             background = launch.background,
@@ -1837,8 +1855,7 @@ private fun MainAppContent(
                             parentMetaType = launch.parentMetaType ?: launch.type,
                             torrentInfoHash = infoHash,
                             torrentFileIdx = stream.p2pFileIdx,
-                            torrentFilename = stream.p2pFilename,
-                            torrentMagnetUri = stream.torrentMagnetUri,
+                            torrentFilename = stream.behaviorHints.filename,
                             torrentTrackers = stream.p2pTrackers,
                             initialPositionMs = resolvedResumePositionMs ?: 0L,
                             initialProgressFraction = resolvedResumeProgressFraction,
@@ -1907,10 +1924,10 @@ private fun MainAppContent(
                         val maxAgeMs = playerSettings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
                         val cached = StreamLinkCacheRepository.getValid(cacheKey, maxAgeMs)
                         if (cached != null) {
-                            if (cached.url.isBlank() && (!cached.infoHash.isNullOrBlank() || !cached.magnetUri.isNullOrBlank())) {
+                            if (cached.url.isBlank() && !cached.infoHash.isNullOrBlank()) {
                                 val cachedStream = StreamItem(
                                     name = cached.streamName,
-                                    url = cached.magnetUri,
+                                    url = null,
                                     infoHash = cached.infoHash,
                                     fileIdx = cached.fileIdx,
                                     sources = cached.sources,
@@ -1939,6 +1956,7 @@ private fun MainAppContent(
                                     sourceHeaders = sanitizePlaybackHeaders(cached.requestHeaders),
                                     sourceResponseHeaders = sanitizePlaybackResponseHeaders(cached.responseHeaders),
                                     externalSubtitles = emptyList(),
+                                    streamType = cached.streamType,
                                     logo = launch.logo,
                                     poster = launch.poster,
                                     background = launch.background,
@@ -2064,6 +2082,7 @@ private fun MainAppContent(
                                 filename = stream.behaviorHints.filename,
                                 videoSize = stream.behaviorHints.videoSize,
                                 bingeGroup = stream.behaviorHints.bingeGroup,
+                                streamType = stream.streamType,
                             )
                         }
                         val playerLaunch = PlayerLaunch(
@@ -2072,6 +2091,7 @@ private fun MainAppContent(
                                 sourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                                 sourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
                                 externalSubtitles = stream.externalSubtitles,
+                                streamType = stream.streamType,
                                 logo = launch.logo,
                                 poster = launch.poster,
                                 background = launch.background,
@@ -2085,7 +2105,6 @@ private fun MainAppContent(
                                 pauseDescription = pauseDescription,
                                 providerName = stream.addonName,
                                 providerAddonId = stream.addonId,
-                                streamType = stream.streamType,
                                 contentType = launch.type,
                                 videoId = effectiveVideoId,
                                 parentMetaId = launch.parentMetaId ?: effectiveVideoId,
@@ -2190,6 +2209,7 @@ private fun MainAppContent(
                                 filename = stream.behaviorHints.filename,
                                 videoSize = stream.behaviorHints.videoSize,
                                 bingeGroup = stream.behaviorHints.bingeGroup,
+                                streamType = stream.streamType,
                             )
                         }
                         val playerLaunch = PlayerLaunch(
@@ -2198,6 +2218,7 @@ private fun MainAppContent(
                             sourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                             sourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
                             externalSubtitles = stream.externalSubtitles,
+                            streamType = stream.streamType,
                             logo = launch.logo,
                             poster = launch.poster,
                             background = launch.background,
@@ -2211,7 +2232,6 @@ private fun MainAppContent(
                             pauseDescription = pauseDescription,
                             providerName = stream.addonName,
                             providerAddonId = stream.addonId,
-                                streamType = stream.streamType,
                             contentType = launch.type,
                             videoId = effectiveVideoId,
                             parentMetaId = launch.parentMetaId ?: effectiveVideoId,
@@ -2383,7 +2403,6 @@ private fun MainAppContent(
                         torrentInfoHash = launch.torrentInfoHash,
                         torrentFileIdx = launch.torrentFileIdx,
                         torrentFilename = launch.torrentFilename,
-                        torrentMagnetUri = launch.torrentMagnetUri,
                         torrentTrackers = launch.torrentTrackers,
                         initialPositionMs = launch.initialPositionMs,
                         initialProgressFraction = launch.initialProgressFraction,

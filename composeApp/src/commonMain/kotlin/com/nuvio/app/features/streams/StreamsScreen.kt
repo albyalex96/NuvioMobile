@@ -53,7 +53,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -98,8 +97,6 @@ import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.features.debrid.DebridProviders
 import com.nuvio.app.features.debrid.DebridSettingsRepository
-import com.nuvio.app.features.p2p.P2pSettingsRepository
-import com.nuvio.app.features.p2p.P2pStreamingEngine
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import kotlin.math.round
@@ -167,10 +164,6 @@ fun StreamsScreen(
         DebridSettingsRepository.ensureLoaded()
         DebridSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
-    val p2pSettings by remember {
-        P2pSettingsRepository.ensureLoaded()
-        P2pSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
     val watchProgressUiState by remember {
         WatchProgressRepository.ensureLoaded()
         WatchProgressRepository.uiState
@@ -189,6 +182,8 @@ fun StreamsScreen(
     var streamActionsTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
     var hlsDownloadTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
     var preferredFilterApplied by remember(videoId) { mutableStateOf(false) }
+    var autoPlayOverlayLogoLoadError by remember(logo) { mutableStateOf(false) }
+    val autoPlayOverlayLogoUrl = logo?.takeIf { it.isNotBlank() }
     val storedProgress = if (startFromBeginning) {
         null
     } else {
@@ -214,15 +209,6 @@ fun StreamsScreen(
             null
         } else {
             (resumePositionMs ?: storedProgress?.takeIf { it.isResumable }?.lastPositionMs)?.takeIf { it > 0L }
-        }
-    }
-
-    DisposableEffect(P2pSettingsRepository.isVisible, p2pSettings.p2pEnabled) {
-        if (P2pSettingsRepository.isVisible && p2pSettings.p2pEnabled) {
-            P2pStreamingEngine.warmup()
-        }
-        onDispose {
-            P2pStreamingEngine.cooldownWarmup()
         }
     }
 
@@ -364,13 +350,24 @@ fun StreamsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    if (!logo.isNullOrBlank()) {
+                    if (autoPlayOverlayLogoUrl != null && !autoPlayOverlayLogoLoadError) {
                         AsyncImage(
-                            model = logo,
-                            contentDescription = null,
+                            model = autoPlayOverlayLogoUrl,
+                            contentDescription = title,
                             modifier = Modifier
                                 .height(48.dp),
                             contentScale = ContentScale.Fit,
+                            onError = { autoPlayOverlayLogoLoadError = true },
+                        )
+                    } else if (title.isNotBlank()) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 24.dp),
                         )
                     }
                     CircularProgressIndicator(
@@ -621,6 +618,9 @@ private fun MovieHeroBlock(
     logo: String?,
     modifier: Modifier = Modifier,
 ) {
+    var logoLoadError by remember(logo) { mutableStateOf(false) }
+    val logoUrl = logo?.takeIf { it.isNotBlank() }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -628,14 +628,15 @@ private fun MovieHeroBlock(
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)),
         contentAlignment = Alignment.Center,
     ) {
-        if (logo != null) {
+        if (logoUrl != null && !logoLoadError) {
             AsyncImage(
-                model = logo,
-                contentDescription = null,
+                model = logoUrl,
+                contentDescription = title,
                 modifier = Modifier
                     .height(80.dp)
                     .fillMaxWidth(0.85f),
                 contentScale = ContentScale.Fit,
+                onError = { logoLoadError = true },
             )
         } else {
             Text(
@@ -907,6 +908,7 @@ internal fun StreamList(
                         debridEnabled = debridEnabled,
                         appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
                         showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
+                        showAddonLogo = streamBadgeSettings.showAddonLogo,
                         badgePlacement = streamBadgeSettings.badgePlacement,
                         onStreamSelected = onStreamSelected,
                         onStreamLongPress = onStreamLongPress,
@@ -935,6 +937,7 @@ private fun LazyListScope.streamSection(
     debridEnabled: Boolean,
     appendInstantServiceToDefaultName: Boolean,
     showFileSizeBadges: Boolean,
+    showAddonLogo: Boolean,
     badgePlacement: StreamBadgePlacement,
     onStreamSelected: (stream: StreamItem, resumePositionMs: Long?, resumeProgressFraction: Float?) -> Unit,
     onStreamLongPress: (StreamItem) -> Unit,
@@ -987,6 +990,7 @@ private fun LazyListScope.streamSection(
                 enabled = stream.isSelectableForPlayback(debridEnabled),
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
                 showFileSizeBadges = showFileSizeBadges,
+                showAddonLogo = showAddonLogo,
                 badgePlacement = badgePlacement,
                 onClick = {
                     if (stream.isSelectableForPlayback(debridEnabled)) {
@@ -1094,6 +1098,7 @@ private fun StreamCard(
     enabled: Boolean,
     appendInstantServiceToDefaultName: Boolean,
     showFileSizeBadges: Boolean,
+    showAddonLogo: Boolean,
     badgePlacement: StreamBadgePlacement,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
@@ -1122,7 +1127,7 @@ private fun StreamCard(
                 onLongClick = onLongClick,
             )
             .padding(14.dp),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (displayMode == DisplayMode.POLISHED) {
             PolishedStreamCardContent(stream = stream, modifier = Modifier.weight(1f))
@@ -1162,6 +1167,31 @@ private fun StreamCard(
                     showFileSizeBadges = showFileSizeBadges,
                 )
             }
+            }
+        }
+
+        if (showAddonLogo) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (!stream.addonLogo.isNullOrBlank()) {
+                    AsyncImage(
+                        model = stream.addonLogo,
+                        contentDescription = stream.addonName,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stream.addonName,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
         }
     }

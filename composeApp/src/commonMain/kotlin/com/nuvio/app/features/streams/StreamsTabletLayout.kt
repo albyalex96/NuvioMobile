@@ -224,19 +224,23 @@ private fun TabletMovieInfoPanel(
     logo: String?,
     modifier: Modifier = Modifier,
 ) {
+    var logoLoadError by remember(logo) { mutableStateOf(false) }
+    val logoUrl = logo?.takeIf { it.isNotBlank() }
+
     Column(
         modifier = modifier.fillMaxWidth(0.8f),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        if (!logo.isNullOrBlank()) {
+        if (logoUrl != null && !logoLoadError) {
             AsyncImage(
-                model = logo,
-                contentDescription = null,
+                model = logoUrl,
+                contentDescription = title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
                 contentScale = ContentScale.Fit,
+                onError = { logoLoadError = true },
             )
         } else if (title.isNotBlank()) {
             Text(
@@ -279,6 +283,8 @@ private fun TabletEpisodeInfoPanel(
     showTitle: String,
     modifier: Modifier = Modifier,
 ) {
+    var logoLoadError by remember(logo) { mutableStateOf(false) }
+    val logoUrl = logo?.takeIf { it.isNotBlank() }
     val textShadow = Shadow(
         color = Color.Black,
         offset = Offset(0f, 0f),
@@ -290,14 +296,15 @@ private fun TabletEpisodeInfoPanel(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        if (!logo.isNullOrBlank()) {
+        if (logoUrl != null && !logoLoadError) {
             AsyncImage(
-                model = logo,
-                contentDescription = null,
+                model = logoUrl,
+                contentDescription = showTitle,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
                 contentScale = ContentScale.Fit,
+                onError = { logoLoadError = true },
             )
         } else {
             Text(

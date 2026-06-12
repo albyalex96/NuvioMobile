@@ -103,6 +103,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                         layoutSize = layoutSize,
                         sideGestureSystemEdgeExclusionPx = sideGestureSystemEdgeExclusionPx,
                         playerControlsLockedState = gestureCallbacks.playerControlsLocked,
+                        touchGesturesEnabledState = gestureCallbacks.touchGesturesEnabled,
                         isHoldToSpeedGestureActiveState = gestureCallbacks.isHoldToSpeedGestureActive,
                         currentPositionMsState = gestureCallbacks.currentPositionMs,
                         currentDurationMsState = gestureCallbacks.currentDurationMs,
@@ -264,6 +265,9 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                             sourceHeaders = activeSourceHeaders,
                             resumePositionMs = playbackSnapshot.positionMs,
                             subtitles = loadedSubtitles,
+                            season = activeSeasonNumber,
+                            episode = activeEpisodeNumber,
+                            episodeTitle = activeEpisodeTitle,
                         ),
                     )
                 }

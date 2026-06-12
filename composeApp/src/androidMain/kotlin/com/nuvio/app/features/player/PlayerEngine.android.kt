@@ -62,6 +62,7 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.ui.SubtitleView
 import androidx.media3.ui.CaptionStyleCompat
 import com.nuvio.app.R
+import com.nuvio.app.features.streams.normalizeStreamType
 import io.github.peerless2012.ass.media.widget.AssSubtitleView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
@@ -81,9 +82,9 @@ actual fun PlatformPlayerSurface(
     sourceAudioUrl: String?,
     streamType: String?,
     sourceHeaders: Map<String, String>,
-    sourceResponseHeaders: Map<String, String>,
-    externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
-    useYoutubeChunkedPlayback: Boolean,
+      sourceResponseHeaders: Map<String, String>,
+      externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
+      useYoutubeChunkedPlayback: Boolean,
     modifier: Modifier,
     playWhenReady: Boolean,
     resizeMode: PlayerResizeMode,
@@ -109,6 +110,9 @@ actual fun PlatformPlayerSurface(
     val sanitizedSourceResponseHeaders = remember(sourceResponseHeaders) {
         sanitizePlaybackResponseHeaders(sourceResponseHeaders)
     }
+    val normalizedStreamType = remember(streamType) {
+        normalizeStreamType(streamType)
+    }
     val useLibass = playerSettings.useLibass
     val libassRenderType = runCatching {
         LibassRenderType.valueOf(playerSettings.libassRenderType)
@@ -118,6 +122,7 @@ actual fun PlatformPlayerSurface(
         sourceAudioUrl.orEmpty(),
         sanitizedSourceHeaders,
         sanitizedSourceResponseHeaders,
+        normalizedStreamType.orEmpty(),
         useYoutubeChunkedPlayback,
     )
     var subtitleDelayMs by remember(playerSourceKey) { mutableStateOf(0) }
@@ -174,6 +179,7 @@ actual fun PlatformPlayerSurface(
         sourceAudioUrl,
         sanitizedSourceHeaders,
         sanitizedSourceResponseHeaders,
+        normalizedStreamType,
         useYoutubeChunkedPlayback,
         effectiveDecoderPriority,
     ) {

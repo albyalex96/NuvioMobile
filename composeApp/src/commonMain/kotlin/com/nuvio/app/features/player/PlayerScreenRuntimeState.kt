@@ -32,6 +32,7 @@ internal class PlayerScreenRuntime(
     val sourceAudioUrl: String? get() = args.sourceAudioUrl
     val sourceHeaders: Map<String, String> get() = args.sourceHeaders
     val sourceResponseHeaders: Map<String, String> get() = args.sourceResponseHeaders
+    val streamType: String? get() = args.streamType
     val providerName: String get() = args.providerName
     val streamTitle: String get() = args.streamTitle
     val streamSubtitle: String? get() = args.streamSubtitle
@@ -52,12 +53,10 @@ internal class PlayerScreenRuntime(
     val torrentInfoHash: String? get() = args.torrentInfoHash
     val torrentFileIdx: Int? get() = args.torrentFileIdx
     val torrentFilename: String? get() = args.torrentFilename
-    val torrentMagnetUri: String? get() = args.torrentMagnetUri
     val torrentTrackers: List<String> get() = args.torrentTrackers
     val initialPositionMs: Long get() = args.initialPositionMs
     val initialProgressFraction: Float? get() = args.initialProgressFraction
     val isSeries: Boolean get() = parentMetaType == "series"
-    val streamType: String? get() = args.streamType
     val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> get() = args.externalSubtitles
 
     lateinit var scope: CoroutineScope
@@ -98,15 +97,19 @@ internal class PlayerScreenRuntime(
     var activeSourceAudioUrl by mutableStateOf(sourceAudioUrl)
     var activeSourceHeaders by mutableStateOf(sanitizePlaybackHeaders(sourceHeaders))
     var activeSourceResponseHeaders by mutableStateOf(sanitizePlaybackResponseHeaders(sourceResponseHeaders))
+    var activeStreamType: String? by mutableStateOf(streamType)
     var activeTorrentInfoHash by mutableStateOf(torrentInfoHash)
     var activeTorrentFileIdx by mutableStateOf(torrentFileIdx)
     var activeTorrentFilename by mutableStateOf(torrentFilename)
-    var activeTorrentMagnetUri by mutableStateOf(torrentMagnetUri)
     var activeTorrentTrackers by mutableStateOf(torrentTrackers)
     var p2pResolvedSourceUrl by mutableStateOf<String?>(null)
+    var activeSourceIdentityKey by mutableStateOf(
+        torrentInfoHash?.trim()?.lowercase()?.takeIf { it.isNotBlank() }?.let { hash ->
+            "torrent:$hash:${torrentFileIdx ?: -1}"
+        } ?: sourceUrl.trim().takeIf { it.isNotBlank() }?.let { url -> "url:$url" },
+    )
     var activeStreamTitle by mutableStateOf(streamTitle)
     var activeStreamSubtitle by mutableStateOf(streamSubtitle)
-    var activeStreamType by mutableStateOf(streamType)
     var activeProviderName by mutableStateOf(providerName)
     var activeProviderAddonId by mutableStateOf(providerAddonId)
     var currentStreamBingeGroup by mutableStateOf(initialBingeGroup)

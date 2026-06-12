@@ -31,6 +31,7 @@ import com.nuvio.app.features.player.PlayerSettingsStorage
 import com.nuvio.app.features.player.PlayerTrackPreferenceStorage
 import com.nuvio.app.core.share.SharePlatform
 import com.nuvio.app.features.player.ExternalPlayerPlatform
+import com.nuvio.app.features.player.SubtitleFileCache
 import com.nuvio.app.features.player.PlayerPictureInPictureManager
 import com.nuvio.app.features.p2p.P2pSettingsStorage
 import com.nuvio.app.features.p2p.P2pStreamingEngine
@@ -83,8 +84,9 @@ class MainActivity : AppCompatActivity() {
         P2pSettingsStorage.initialize(applicationContext)
         P2pStreamingEngine.initialize(applicationContext)
         ExternalPlayerPlatform.initialize(applicationContext)
-        SharePlatform.initialize(applicationContext)
-        ProfileStorage.initialize(applicationContext)
+          SharePlatform.initialize(applicationContext)
+          SubtitleFileCache.initialize(applicationContext)
+          ProfileStorage.initialize(applicationContext)
         AvatarStorage.initialize(applicationContext)
         ProfilePinCacheStorage.initialize(applicationContext)
         SearchHistoryStorage.initialize(applicationContext)

@@ -18,6 +18,7 @@ object StreamParser {
         payload: String,
         addonName: String,
         addonId: String,
+        addonLogo: String? = null,
     ): List<StreamItem> {
         val root = json.parseToJsonElement(payload).jsonObject
         val streamsArray = root["streams"] as? JsonArray ?: return emptyList()
@@ -44,10 +45,11 @@ object StreamParser {
                 infoHash = infoHash,
                 fileIdx = obj.int("fileIdx"),
                 externalUrl = externalUrl,
-                streamType = streamType,
+                streamType = normalizeStreamType(streamType),
                 sources = obj.stringList("sources"),
                 addonName = addonName,
                 addonId = addonId,
+                addonLogo = addonLogo,
                 clientResolve = clientResolve,
                 behaviorHints = StreamBehaviorHints(
                     bingeGroup = hintsObj?.string("bingeGroup"),

@@ -459,6 +459,7 @@ object StreamsRepository {
                             payload = payload,
                             addonName = displayName,
                             addonId = addon.addonId,
+                            addonLogo = addon.manifest.logoUrl,
                         )
                     }.fold(
                         onSuccess = { streams ->
@@ -915,10 +916,10 @@ private fun PluginRuntimeResult.toStreamItem(
         url = url,
         infoHash = infoHash,
         sourceName = scraper.name,
-        addonName = addonName,
-        addonId = addonId,
-        streamType = type,
-        behaviorHints = if (requestHeaders.isEmpty()) {
+          addonName = addonName,
+          addonId = addonId,
+          streamType = normalizeStreamType(type),
+          behaviorHints = if (requestHeaders.isEmpty()) {
             StreamBehaviorHints()
         } else {
             StreamBehaviorHints(

@@ -23,6 +23,7 @@ import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamParser
 import com.nuvio.app.features.streams.StreamsUiState
+import com.nuvio.app.features.streams.normalizeStreamType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -456,8 +457,8 @@ private fun PluginRuntimeResult.toStreamItem(scraper: PluginScraper): StreamItem
         infoHash = infoHash,
         addonName = scraper.name,
         addonId = "plugin:${scraper.id}",
-        streamType = type,
-        behaviorHints = if (requestHeaders.isEmpty()) {
+          streamType = normalizeStreamType(type),
+          behaviorHints = if (requestHeaders.isEmpty()) {
             com.nuvio.app.features.streams.StreamBehaviorHints()
         } else {
             com.nuvio.app.features.streams.StreamBehaviorHints(
