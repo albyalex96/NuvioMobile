@@ -13,6 +13,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.p2p.formatP2pMegabytes
 import com.nuvio.app.features.p2p.formatP2pSpeed
+import com.nuvio.app.features.player.cast.CastDevicePicker
 import com.nuvio.app.isIos
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -183,6 +184,13 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             p2pRebufferProgress = p2pRebufferProgress,
         )
         RenderPlayerModals(displayedPositionMs = displayedPositionMs)
+
+        if (showCastPicker && castController != null) {
+            CastDevicePicker(
+                controller = castController!!,
+                onDismiss = { showCastPicker = false },
+            )
+        }
     }
 }
 
@@ -267,6 +275,8 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 }
             },
             onVolumeBoostClick = { showVolumeBoostModal = true },
+            onCastClick = if (castController != null) { { showCastPicker = true } } else null,
+            isCastConnected = castController?.isCasting == true,
             onSubmitIntroClick = if (
                 isSeries &&
                 playerSettingsUiState.introSubmitEnabled &&

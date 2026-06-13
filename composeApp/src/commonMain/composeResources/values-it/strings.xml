@@ -194,6 +194,13 @@
   <string name="compose_player_tap_to_unlock">Tocca per sbloccare</string>
   <string name="compose_player_track_number">Traccia %1$d</string>
   <string name="compose_player_unlock_controls">Sblocca comandi player</string>
+  <string name="player_action_cast">Trasmetti su TV</string>
+  <string name="cast_picker_title">Trasmetti a</string>
+  <string name="cast_picker_searching">Ricerca dispositivi…</string>
+  <string name="cast_picker_no_devices">Nessun dispositivo trovato. Assicurati che la TV sia sulla stessa rete Wi-Fi.</string>
+  <string name="cast_picker_disconnect">Interrompi trasmissione</string>
+  <string name="cast_status_connecting">Connessione in corso…</string>
+  <string name="cast_status_casting_to">Trasmissione a %1$s</string>
   <string name="compose_player_youre_watching">Stai guardando</string>
   <string name="compose_profile_add_profile">Aggiungi profilo</string>
   <string name="compose_search_clear">Cancella ricerca</string>
