@@ -1,0 +1,142 @@
+name: Build Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Branch da compilare'
+        required: false
+        default: 'app/enhanced'
+        type: string
+  push:
+    branches:
+      - "app/enhanced"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve target branch
+        id: resolve_branch
+        run: |
+          INPUT_BRANCH="${{ github.event.inputs.target_branch }}"
+          if [ -z "$INPUT_BRANCH" ]; then
+            CHOSEN_BRANCH="${{ github.ref_name }}"
+          else
+            CHOSEN_BRANCH="$INPUT_BRANCH"
+          fi
+          echo "branch=$CHOSEN_BRANCH" >> $GITHUB_OUTPUT
+          echo "Selected branch: $CHOSEN_BRANCH"
+
+      - name: Checkout target branch code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve_branch.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/nuvio-release.keystore
+
+      - name: Write local.properties
+        run: |
+          printf 'SUPABASE_URL=%s\n' "${{ secrets.SUPABASE_URL }}" > local.properties
+          printf 'SUPABASE_ANON_KEY=%s\n' "${{ secrets.SUPABASE_ANON_KEY }}" >> local.properties
+          printf 'TRAKT_CLIENT_ID=%s\n' "${{ secrets.TRAKT_CLIENT_ID }}" >> local.properties
+          printf 'TRAKT_CLIENT_SECRET=%s\n' "${{ secrets.TRAKT_CLIENT_SECRET }}" >> local.properties
+          printf 'TRAKT_REDIRECT_URI=%s\n' "${{ secrets.TRAKT_REDIRECT_URI }}" >> local.properties
+          printf 'INTRODB_API_URL=%s/\n' "${{ secrets.INTRODB_API_URL }}" >> local.properties
+          printf 'TMDB_API_KEY=%s\n' "${{ secrets.TMDB_API_KEY }}" >> local.properties
+          printf 'NUVIO_RELEASE_STORE_FILE=%s/nuvio-release.keystore\n' "${{ github.workspace }}" >> local.properties
+          printf 'NUVIO_RELEASE_STORE_PASSWORD=%s\n' "nuvio1234" >> local.properties
+          printf 'NUVIO_RELEASE_KEY_ALIAS=%s\n' "nuvio-release" >> local.properties
+          printf 'NUVIO_RELEASE_KEY_PASSWORD=%s\n' "nuvio1234" >> local.properties
+          printf 'DONATIONS_BASE_URL=%s\n' "https://donations.nuvioapp.space/" >> local.properties
+          printf 'DONATIONS_DONATE_URL=%s\n' "https://ko-fi.com/tapframe" >> local.properties
+          printf 'CONTRIBUTIONS_URL=%s\n' "${{ secrets.CONTRIBUTION_URL }}" >> local.properties
+          printf 'DIRECT_DEBRID_API_BASE_URL=%s\n' "https://api.torbox.app/v1/api" >> local.properties
+
+      - name: Set flavor tag name
+        id: flavor
+        run: |
+          BRANCH_NAME="${{ steps.resolve_branch.outputs.branch }}"
+          BRANCH_LOWER=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9]/-/g')
+          echo "name=${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        id: changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PREV_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Release precedente trovata: $PREV_TAG"
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "Nessuna release precedente, prendo gli ultimi 20 commit"
+            COMMITS=$(git log HEAD --pretty=format:"- %s (%h)" --no-merges -n 20)
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Nessuna modifica rilevata rispetto alla release precedente"
+          fi
+
+          {
+            echo "## 📦 Nuvio Release Build #${{ github.run_number }}"
+            echo ""
+            echo "**Branch target:** \`${{ steps.resolve_branch.outputs.branch }}\`"
+            if [ -n "$PREV_TAG" ]; then
+              echo "**Previous Version:** \`$PREV_TAG\`"
+            fi
+            echo ""
+            echo "---"
+            echo ""
+            echo "## 🔨 Changes"
+            echo ""
+            echo "$COMMITS"
+          } > release_body.md
+
+      - name: Build Full Release APK
+        run: |
+          ./gradlew :composeApp:assembleFullRelease
+
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}"
+          name: "Nuvio Build - ${{ steps.resolve_branch.outputs.branch }} #${{ github.run_number }}"
+          body_path: release_body.md
+          draft: false
+          prerelease: false
+          target_commitish: ${{ steps.resolve_branch.outputs.branch }}
+          files: |
+            composeApp/build/outputs/apk/**/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send ntfy Notification
+        run: |
+          curl \
+            -H "Title: 🎉 Build Completata con Successo!" \
+            -H "Priority: high" \
+            -H "Tags: rocket,android" \
+            -H "Click: https://github.com/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}" \
+            -d "La build per **Nuvio** (#${{ github.run_number }}) sul branch *${{ steps.resolve_branch.outputs.branch }}* è pronta! 🚀
+
+            Flavor: ${{ steps.flavor.outputs.name }}
+            Il file APK è stato caricato correttamente nella Release." \
+            https://ntfy.sh/nuvio_builds
