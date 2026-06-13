@@ -1924,4 +1924,18 @@
     <string name="trakt_more_like_this_source_title">Fonte Più Simili</string>
     <string name="trakt_more_like_this_source_tmdb">TMDB</string>
     <string name="trakt_more_like_this_source_trakt">Trakt</string>
+
+    <!-- SponsorBlock -->
+    <string name="settings_playback_sponsorblock">SponsorBlock</string>
+    <string name="settings_playback_sponsorblock_enabled">SponsorBlock</string>
+    <string name="settings_playback_sponsorblock_enabled_description">Salta automaticamente i segmenti sponsorizzati</string>
+    <string name="settings_playback_sponsorblock_auto_skip">Salto automatico</string>
+    <string name="settings_playback_sponsorblock_auto_skip_description">Salta senza mostrare il pulsante</string>
+    <string name="settings_playback_sponsorblock_show_skip_button">Mostra pulsante salta</string>
+    <string name="settings_playback_sponsorblock_show_skip_button_description">Mostra un pulsante quando viene rilevato un segmento</string>
+    <string name="settings_playback_sponsorblock_show_notification">Mostra notifica</string>
+    <string name="settings_playback_sponsorblock_show_notification_description">Mostra un toast quando un segmento viene saltato</string>
+    <string name="settings_playback_sponsorblock_privacy_mode">Modalità privacy</string>
+    <string name="settings_playback_sponsorblock_privacy_mode_description">Usa API basata su hash per non inviare ID video completi</string>
+    <string name="settings_playback_sponsorblock_categories">Categorie da saltare</string>
 </resources>

@@ -1959,4 +1959,18 @@
 
     <!-- Downloads share -->
     <string name="downloads_share">Share</string>
+
+    <!-- SponsorBlock -->
+    <string name="settings_playback_sponsorblock">SponsorBlock</string>
+    <string name="settings_playback_sponsorblock_enabled">SponsorBlock</string>
+    <string name="settings_playback_sponsorblock_enabled_description">Skip crowd-sourced sponsor segments automatically</string>
+    <string name="settings_playback_sponsorblock_auto_skip">Auto-skip segments</string>
+    <string name="settings_playback_sponsorblock_auto_skip_description">Automatically skip without showing the button</string>
+    <string name="settings_playback_sponsorblock_show_skip_button">Show skip button</string>
+    <string name="settings_playback_sponsorblock_show_skip_button_description">Display a skip button when a segment is detected</string>
+    <string name="settings_playback_sponsorblock_show_notification">Show notification</string>
+    <string name="settings_playback_sponsorblock_show_notification_description">Brief toast when a segment is skipped</string>
+    <string name="settings_playback_sponsorblock_privacy_mode">Privacy mode</string>
+    <string name="settings_playback_sponsorblock_privacy_mode_description">Use hash-based API to avoid sending full video IDs</string>
+    <string name="settings_playback_sponsorblock_categories">Categories to skip</string>
 </resources>
