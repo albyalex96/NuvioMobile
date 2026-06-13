@@ -864,8 +864,6 @@
       <string name="settings_playback_hold_to_speed_description">Long-press anywhere on the player surface to temporarily boost playback speed.</string>
       <string name="settings_playback_touch_gestures">Touch Gestures</string>
       <string name="settings_playback_touch_gestures_description">Allow swipes and double-taps on the player surface to seek, adjust brightness, or adjust volume.</string>
-      <string name="settings_playback_enable_swipe_gestures">Swipe Gestures</string>
-      <string name="settings_playback_enable_swipe_gestures_description">Allow vertical swiping on the player surface to control volume and brightness.</string>
       <string name="settings_playback_skip_seek_interval">Skip Seek Interval</string>
       <string name="settings_playback_invalid_regex_pattern">Invalid regex pattern</string>
     <string name="settings_playback_last_link_cache_duration">Last Link Cache Duration</string>

@@ -106,8 +106,6 @@ internal expect object PlayerSettingsStorage {
     fun saveStillWatchingEpisodeCount(count: Int)
     fun loadStillWatchingNightMode(): Boolean?
     fun saveStillWatchingNightMode(enabled: Boolean)
-    fun loadSwipeGesturesEnabled(): Boolean?
-    fun saveSwipeGesturesEnabled(enabled: Boolean)
     fun loadIosVideoOutputPreset(): String?
     fun saveIosVideoOutputPreset(preset: String)
     fun loadIosToneMappingMode(): String?

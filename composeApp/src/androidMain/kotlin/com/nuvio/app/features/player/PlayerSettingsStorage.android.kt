@@ -70,7 +70,6 @@ actual object PlayerSettingsStorage {
     private const val stillWatchingEnabledKey = "still_watching_enabled"
     private const val stillWatchingEpisodeCountKey = "still_watching_episode_count"
     private const val stillWatchingNightModeKey = "still_watching_night_mode"
-    private const val swipeGesturesEnabledKey = "swipe_gestures_enabled"
     private const val iosVideoOutputPresetKey = "ios_video_output_preset"
     private const val iosToneMappingModeKey = "ios_tone_mapping_mode"
     private const val iosTargetPrimariesKey = "ios_target_primaries"
@@ -138,7 +137,6 @@ actual object PlayerSettingsStorage {
         stillWatchingEnabledKey,
         stillWatchingEpisodeCountKey,
         stillWatchingNightModeKey,
-        swipeGesturesEnabledKey,
         iosVideoOutputPresetKey,
         iosToneMappingModeKey,
         iosTargetPrimariesKey,
@@ -926,23 +924,6 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
-    actual fun loadSwipeGesturesEnabled(): Boolean? =
-        preferences?.let { sharedPreferences ->
-            val key = ProfileScopedKey.of(swipeGesturesEnabledKey)
-            if (sharedPreferences.contains(key)) {
-                sharedPreferences.getBoolean(key, true)
-            } else {
-                null
-            }
-        }
-
-    actual fun saveSwipeGesturesEnabled(enabled: Boolean) {
-        preferences
-            ?.edit()
-            ?.putBoolean(ProfileScopedKey.of(swipeGesturesEnabledKey), enabled)
-            ?.apply()
-    }
-
     actual fun loadIosVideoOutputPreset(): String? =
         preferences?.getString(ProfileScopedKey.of(iosVideoOutputPresetKey), null)
 
@@ -1148,7 +1129,6 @@ actual object PlayerSettingsStorage {
         loadStillWatchingEnabled()?.let { put(stillWatchingEnabledKey, encodeSyncBoolean(it)) }
         loadStillWatchingEpisodeCount()?.let { put(stillWatchingEpisodeCountKey, encodeSyncInt(it)) }
         loadStillWatchingNightMode()?.let { put(stillWatchingNightModeKey, encodeSyncBoolean(it)) }
-        loadSwipeGesturesEnabled()?.let { put(swipeGesturesEnabledKey, encodeSyncBoolean(it)) }
         loadIosVideoOutputPreset()?.let { put(iosVideoOutputPresetKey, encodeSyncString(it)) }
         loadIosToneMappingMode()?.let { put(iosToneMappingModeKey, encodeSyncString(it)) }
         loadIosTargetPrimaries()?.let { put(iosTargetPrimariesKey, encodeSyncString(it)) }
@@ -1224,7 +1204,6 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncBoolean(stillWatchingEnabledKey)?.let(::saveStillWatchingEnabled)
         payload.decodeSyncInt(stillWatchingEpisodeCountKey)?.let(::saveStillWatchingEpisodeCount)
         payload.decodeSyncBoolean(stillWatchingNightModeKey)?.let(::saveStillWatchingNightMode)
-        payload.decodeSyncBoolean(swipeGesturesEnabledKey)?.let(::saveSwipeGesturesEnabled)
         payload.decodeSyncString(iosVideoOutputPresetKey)?.let(::saveIosVideoOutputPreset)
         payload.decodeSyncString(iosToneMappingModeKey)?.let(::saveIosToneMappingMode)
         payload.decodeSyncString(iosTargetPrimariesKey)?.let(::saveIosTargetPrimaries)

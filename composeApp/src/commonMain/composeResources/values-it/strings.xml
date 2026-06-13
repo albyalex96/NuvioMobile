@@ -1444,8 +1444,8 @@
   <string name="settings_network_dns_default">Usa il risolutore DNS di sistema.</string>
   <string name="settings_network_dns_custom">Cifra le query DNS tramite %1$s.</string>
    
-  <string name="settings_playback_enable_swipe_gestures">Swipe Gesture</string>
-  <string name="settings_playback_enable_swipe_gestures_description">Permetti lo swipe verticale sulla superficie del player per controllare volume e luminosità.</string>
+  <string name="settings_playback_touch_gestures">Swipe Gestures</string>
+  <string name="settings_playback_touch_gestures_description">Permetti swipes e doppi tocchi sulla superficie del player per cercare, regolare la luminosità o il volume.</string>
   <string name="settings_playback_skip_seek_interval">Intervallo Skip</string>
   <string name="top10_header">Cataloghi Top 10</string>
   <string name="top10_description">Scegli i cataloghi da mostrare come riga Top 10 sulla Home</string>

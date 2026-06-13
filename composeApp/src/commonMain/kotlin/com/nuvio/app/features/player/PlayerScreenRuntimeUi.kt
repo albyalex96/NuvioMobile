@@ -96,29 +96,23 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 deactivateHoldToSpeedState = gestureCallbacks.deactivateHoldToSpeed,
                 revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
             )
-            .let { modifier ->
-                if (playerSettingsUiState.swipeGesturesEnabled) {
-                    modifier.playerSurfaceDragGestures(
-                        gestureController = gestureController,
-                        layoutSize = layoutSize,
-                        sideGestureSystemEdgeExclusionPx = sideGestureSystemEdgeExclusionPx,
-                        playerControlsLockedState = gestureCallbacks.playerControlsLocked,
-                        touchGesturesEnabledState = gestureCallbacks.touchGesturesEnabled,
-                        isHoldToSpeedGestureActiveState = gestureCallbacks.isHoldToSpeedGestureActive,
-                        currentPositionMsState = gestureCallbacks.currentPositionMs,
-                        currentDurationMsState = gestureCallbacks.currentDurationMs,
-                        deactivateHoldToSpeedState = gestureCallbacks.deactivateHoldToSpeed,
-                        showHorizontalSeekPreviewState = gestureCallbacks.showHorizontalSeekPreview,
-                        showBrightnessFeedbackState = gestureCallbacks.showBrightnessFeedback,
-                        showVolumeFeedbackState = gestureCallbacks.showVolumeFeedback,
-                        clearLiveGestureFeedbackState = gestureCallbacks.clearLiveGestureFeedback,
-                        revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
-                        commitHorizontalSeekState = gestureCallbacks.commitHorizontalSeek,
-                    )
-                } else {
-                    modifier
-                }
-            },
+            .playerSurfaceDragGestures(
+                gestureController = gestureController,
+                layoutSize = layoutSize,
+                sideGestureSystemEdgeExclusionPx = sideGestureSystemEdgeExclusionPx,
+                playerControlsLockedState = gestureCallbacks.playerControlsLocked,
+                touchGesturesEnabledState = gestureCallbacks.touchGesturesEnabled,
+                isHoldToSpeedGestureActiveState = gestureCallbacks.isHoldToSpeedGestureActive,
+                currentPositionMsState = gestureCallbacks.currentPositionMs,
+                currentDurationMsState = gestureCallbacks.currentDurationMs,
+                deactivateHoldToSpeedState = gestureCallbacks.deactivateHoldToSpeed,
+                showHorizontalSeekPreviewState = gestureCallbacks.showHorizontalSeekPreview,
+                showBrightnessFeedbackState = gestureCallbacks.showBrightnessFeedback,
+                showVolumeFeedbackState = gestureCallbacks.showVolumeFeedback,
+                clearLiveGestureFeedbackState = gestureCallbacks.clearLiveGestureFeedback,
+                revealLockedOverlayState = gestureCallbacks.revealLockedOverlay,
+                commitHorizontalSeekState = gestureCallbacks.commitHorizontalSeek,
+            ),
     ) {
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
         if (playerSurfaceSourceUrl != null) {

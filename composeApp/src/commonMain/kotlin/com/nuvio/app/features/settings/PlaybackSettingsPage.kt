@@ -103,7 +103,6 @@ internal fun LazyListScope.playbackSettingsContent(
     tunnelingEnabled: Boolean,
     useLibass: Boolean,
     libassRenderType: String,
-    swipeGesturesEnabled: Boolean,
     episodeCodeFormat: com.nuvio.app.core.ui.EpisodeCodeFormat,
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
@@ -128,7 +127,6 @@ internal fun LazyListScope.playbackSettingsContent(
             tunnelingEnabled = tunnelingEnabled,
             useLibass = useLibass,
             libassRenderType = libassRenderType,
-            swipeGesturesEnabled = swipeGesturesEnabled,
             episodeCodeFormat = episodeCodeFormat,
             stillWatchingEnabled = stillWatchingEnabled,
             stillWatchingEpisodeCount = stillWatchingEpisodeCount,
@@ -269,7 +267,6 @@ private fun PlaybackSettingsSection(
     tunnelingEnabled: Boolean,
     useLibass: Boolean,
     libassRenderType: String,
-    swipeGesturesEnabled: Boolean,
     episodeCodeFormat: com.nuvio.app.core.ui.EpisodeCodeFormat,
     stillWatchingEnabled: Boolean,
     stillWatchingEpisodeCount: Int,
@@ -398,15 +395,6 @@ private fun PlaybackSettingsSection(
                         onClick = { showHoldToSpeedValueDialog = true },
                     )
                 }
-                SettingsGroupDivider(isTablet = isTablet)
-                SettingsSwitchRow(
-                    title = stringResource(Res.string.settings_playback_enable_swipe_gestures),
-                    description = stringResource(Res.string.settings_playback_enable_swipe_gestures_description),
-                    checked = swipeGesturesEnabled,
-                    isTablet = isTablet,
-                    onCheckedChange = PlayerSettingsRepository::setSwipeGesturesEnabled,
-                )
-                SettingsGroupDivider(isTablet = isTablet)
                 SettingsSliderRow(
                     title = stringResource(Res.string.settings_playback_skip_seek_interval),
                     value = skipSeekIntervalSeconds,
