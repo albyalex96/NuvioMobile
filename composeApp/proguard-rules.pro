@@ -37,6 +37,28 @@
 -keep class com.dokar.quickjs.** { *; }
 -keep class com.nuvio.app.features.plugins.** { *; }
 
+# CloudStream3 DEX extension compatibility stubs (loaded via DexClassLoader)
+-keep class com.lagradost.cloudstream3.** { *; }
+-keepclassmembers class com.lagradost.cloudstream3.** { *; }
+-keep class com.lagradost.nicehttp.** { *; }
+-keepclassmembers class com.lagradost.nicehttp.** { *; }
+-keep class com.lagradost.api.** { *; }
+-keepclassmembers class com.lagradost.api.** { *; }
+
+# Jackson (used by CloudStream DataStore)
+-keep class com.fasterxml.jackson.** { *; }
+-keepclassmembers class com.fasterxml.jackson.** { *; }
+-dontwarn java.beans.ConstructorProperties
+-dontwarn java.beans.Transient
+
+# DexClassLoader runtime deps — extensions resolve by FQN from host classloader
+-keep class kotlin.** { *; }
+-keep class kotlinx.coroutines.** { *; }
+
+# CloudStream skipped optional deps
+-dontwarn org.mozilla.javascript.**
+-dontwarn com.google.re2j.**
+
 # TorrServer based P2P streaming.
 -keep class com.nuvio.app.features.p2p.** { *; }
 

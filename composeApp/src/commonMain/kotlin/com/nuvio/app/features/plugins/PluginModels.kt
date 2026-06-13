@@ -29,6 +29,7 @@ data class PluginManifestScraper(
     @SerialName("supportedFormats") val supportedFormats: List<String>? = null,
     @SerialName("supportsExternalPlayer") val supportsExternalPlayer: Boolean? = null,
     val limited: Boolean? = null,
+    @SerialName("pluginType") val pluginType: String = "js",
 )
 
 data class PluginRepositoryItem(
@@ -57,6 +58,7 @@ data class PluginScraper(
     val contentLanguage: List<String> = emptyList(),
     val formats: List<String>? = null,
     val code: String,
+    val pluginType: String = "js",
 ) {
     fun supportsType(type: String): Boolean {
         val normalizedType = normalizePluginType(type)
@@ -134,6 +136,7 @@ internal data class StoredPluginScraper(
     val contentLanguage: List<String> = emptyList(),
     val formats: List<String>? = null,
     val code: String,
+    val pluginType: String = "js",
 )
 
 internal fun normalizePluginType(value: String): String =
@@ -141,3 +144,12 @@ internal fun normalizePluginType(value: String): String =
         "series", "show", "other" -> "tv"
         else -> value.lowercase()
     }
+
+internal var dexScraper: (suspend (String, String, String, Int?, Int?) -> List<PluginRuntimeResult>)? = null
+
+internal data class DexRepoInstallData(
+    val repository: PluginRepositoryItem,
+    val scrapers: List<PluginScraper>,
+)
+
+internal var dexRepoParser: suspend (String) -> DexRepoInstallData? = { null }

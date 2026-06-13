@@ -253,16 +253,21 @@ fun PluginsSettingsPageContent(
                     isAdding = true
                     message = null
                     coroutineScope.launch {
-                        when (val result = PluginRepository.addRepository(requested)) {
-                            is AddPluginRepositoryResult.Success -> {
-                                repositoryUrl = ""
-                                message = installedTemplate.replace("%1\$s", result.repository.name)
+                        try {
+                            when (val result = PluginRepository.addRepository(requested)) {
+                                is AddPluginRepositoryResult.Success -> {
+                                    repositoryUrl = ""
+                                    message = installedTemplate.replace("%1\$s", result.repository.name)
+                                }
+                                is AddPluginRepositoryResult.Error -> {
+                                    message = result.message
+                                }
                             }
-                            is AddPluginRepositoryResult.Error -> {
-                                message = result.message
-                            }
+                        } catch (e: Exception) {
+                            message = "Error: ${e.message}"
+                        } finally {
+                            isAdding = false
                         }
-                        isAdding = false
                     }
                 },
             )
@@ -345,6 +350,9 @@ fun PluginsSettingsPageContent(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_providers, repo.scraperCount))
+                        if (sortedScrapers.any { it.repositoryUrl == repo.manifestUrl && it.pluginType == "dex" }) {
+                            NuvioInfoBadge(text = "Cloudstream")
+                        }
                         if (repo.isRefreshing) {
                             NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_refreshing))
                         }

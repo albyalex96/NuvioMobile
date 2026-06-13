@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -152,8 +153,32 @@ actual object PluginRepository {
 
     actual suspend fun addRepository(rawUrl: String): AddPluginRepositoryResult {
         initialize()
+        val trimmedUrl = rawUrl.trim()
+
+        if (_uiState.value.repositories.any { it.manifestUrl == trimmedUrl }) {
+            return AddPluginRepositoryResult.Error(getString(Res.string.plugins_repository_already_installed))
+        }
+
+        val dexData = try {
+            withTimeout(30_000L) { dexRepoParser(trimmedUrl) }
+        } catch (error: Throwable) {
+            log.w(error) { "DEX repo parser failed for $trimmedUrl" }
+            null as DexRepoInstallData?
+        }
+        if (dexData != null) {
+            _uiState.update { state ->
+                state.copy(
+                    repositories = state.repositories + dexData.repository,
+                    scrapers = state.scrapers.filterNot { it.repositoryUrl == trimmedUrl } + dexData.scrapers,
+                )
+            }
+            persist()
+            pushToServer()
+            return AddPluginRepositoryResult.Success(dexData.repository)
+        }
+
         val manifestUrl = try {
-            normalizeManifestUrl(rawUrl)
+            normalizeManifestUrl(trimmedUrl)
         } catch (error: IllegalArgumentException) {
             return AddPluginRepositoryResult.Error(error.message ?: getString(Res.string.plugins_error_enter_valid_url))
         }
@@ -329,6 +354,16 @@ actual object PluginRepository {
             tmdbId = tmdbId,
             mediaType = mediaType,
         )
+
+        if (scraper.pluginType == "dex") {
+            val executor = dexScraper
+            if (executor == null) {
+                return Result.failure(IllegalArgumentException("DEX scraper not supported on this platform"))
+            }
+            return runCatching {
+                executor(scraper.id, resolvedTmdbId, normalizePluginType(mediaType), season, episode)
+            }
+        }
       
         return runCatching {
             PluginRuntime.executePlugin(
@@ -396,6 +431,7 @@ actual object PluginRepository {
                         contentLanguage = info.contentLanguage ?: emptyList(),
                         formats = info.formats ?: info.supportedFormats,
                         code = code,
+                        pluginType = info.pluginType,
                     )
                 }.getOrNull()
             }
@@ -490,6 +526,7 @@ actual object PluginRepository {
                     contentLanguage = scraper.contentLanguage,
                     formats = scraper.formats,
                     code = scraper.code,
+                    pluginType = scraper.pluginType,
                 )            },
         )
         PluginStorage.saveState(currentProfileId, json.encodeToString(payload))
@@ -557,6 +594,7 @@ actual object PluginRepository {
                         contentLanguage = it.contentLanguage,
                         formats = it.formats,
                         code = it.code,
+                        pluginType = it.pluginType,
                     )
                 }
                 ?: emptyList(),
