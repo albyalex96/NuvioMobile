@@ -58,6 +58,9 @@ Two configurable rows that display posters with a numbered badge from 1 to 10, h
 ### Plugin System Enhancements
 Extended plugin infrastructure with per-plugin scraper configuration, enabling fine-grained control over how each addon discovers and resolves media sources.
 
+### CloudStream DEX Plugin Support
+Android‑only integration of the CloudStream 3 plugin ecosystem. DEX‑based repositories (`.cs3`) can be installed from the same plugin management screen as JS plugins, with automatic detection of the manifest format and a dedicated "Cloudstream" badge on repository cards. Built‑in TMDB title resolution enables search‑based content discovery from CloudStream providers, and the existing Test Provider button works for both JS and DEX scrapers.
+
 ### Episode Code Formatter
 Choose your preferred episode display format from options like `01x01`, `1x1`, `S01E01`, and more, ensuring episode labels match your personal preference.
 
