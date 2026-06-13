@@ -67,6 +67,15 @@ Automatically bypasses Cloudflare protection on streaming sources. When a reques
 ### Bookmark Badge on Posters
 Items saved to the user's library are visually identified by a bookmark badge overlay on their poster across the Home screen, catalog pages, and collection folders. The badge uses the app's accent color scheme and fades in with animation, providing immediate visual feedback about which content is already in the library.
 
+### Chromecast / DLNA Casting
+Built-in casting support combining Google Cast and DLNA/UPnP protocols. Discover devices on your local network, stream video directly to Chromecast-enabled devices or any DLNA/UPnP renderer. Includes a local HTTP proxy server that forwards authentication headers to the cast receiver, enabling playback from token-authenticated or debrid-protected streams. Available on both Android and iOS (Google Cast SDK + native DLNA). Note: HLS playback via Chromecast has very limited support and may not work reliably.
+
+### SponsorBlock Integration
+Privacy-preserving SponsorBlock API integration that identifies and skips sponsored segments, intros, outros, filler, self-promotions, and interaction reminders. Uses SHA-256 hashing to avoid sending full video URLs. Skip intervals are merged with existing IntroDb/AniSkip data with overlap deduplication, and each category can be individually toggled in settings.
+
+### Skip Segments on Timeline
+Visual markers drawn directly on the playback progress bar showing where intro, recap, and outro segments are located. Colored rounded blocks appear along the slider track, making it easy to see upcoming skip segments at a glance while scrubbing through the video.
+
 ## Installation
 
 ### Android
