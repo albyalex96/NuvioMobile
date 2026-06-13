@@ -51,6 +51,7 @@ import nuvio.composeapp.generated.resources.compose_player_none
 import nuvio.composeapp.generated.resources.compose_player_style
 import nuvio.composeapp.generated.resources.compose_player_subtitles
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.features.player.dualsubtitle.DualSubtitleSection
 
 @Composable
 fun SubtitleModal(
@@ -150,13 +151,18 @@ fun SubtitleModal(
                                     selectedIndex = selectedSubtitleIndex,
                                     onTrackSelected = onBuiltInTrackSelected,
                                 )
-                                SubtitleTab.Addons -> AddonSubtitleList(
-                                    addons = addonSubtitles,
-                                    selectedId = selectedAddonSubtitleId,
-                                    isLoading = isLoadingAddonSubtitles,
-                                    onSubtitleSelected = onAddonSubtitleSelected,
-                                    onFetch = onFetchAddonSubtitles,
-                                )
+                                SubtitleTab.Addons -> {
+                                    AddonSubtitleList(
+                                        addons = addonSubtitles,
+                                        selectedId = selectedAddonSubtitleId,
+                                        isLoading = isLoadingAddonSubtitles,
+                                        onSubtitleSelected = onAddonSubtitleSelected,
+                                        onFetch = onFetchAddonSubtitles,
+                                    )
+                                    DualSubtitleSection(
+                                        addonSubtitles = addonSubtitles,
+                                    )
+                                }
                                 SubtitleTab.Style -> SubtitleStylePanel(
                                     style = subtitleStyle,
                                     subtitleDelayMs = subtitleDelayMs,

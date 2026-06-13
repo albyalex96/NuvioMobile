@@ -72,6 +72,7 @@ import com.nuvio.app.features.player.SubtitleLanguageOption
 import com.nuvio.app.features.player.formatPlaybackSpeedLabel
 import com.nuvio.app.features.player.languageLabelForCode
 import com.nuvio.app.features.player.toStorageHexString
+import com.nuvio.app.features.player.sponsorblock.SponsorBlockSettingsSection
 import com.nuvio.app.features.p2p.P2pConsentDialog
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.plugins.PluginsUiState
@@ -950,6 +951,13 @@ private fun PlaybackSettingsSection(
                     }
                 }
             }
+        }
+
+        SettingsSection(
+            title = "SponsorBlock",
+            isTablet = isTablet,
+        ) {
+            SponsorBlockSettingsSection()
         }
 
         SettingsSection(
