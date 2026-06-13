@@ -88,15 +88,15 @@ import nuvio.composeapp.generated.resources.settings_stream_badge_urls_descripti
 import nuvio.composeapp.generated.resources.settings_stream_badge_urls_title
 import nuvio.composeapp.generated.resources.settings_stream_badges_section
 import nuvio.composeapp.generated.resources.settings_stream_size_badges_description
-  import nuvio.composeapp.generated.resources.settings_stream_size_badges_title
-  import nuvio.composeapp.generated.resources.settings_stream_addon_logo_title
-  import nuvio.composeapp.generated.resources.settings_stream_addon_logo_description
-  import nuvio.composeapp.generated.resources.settings_stream_display_section
-  import nuvio.composeapp.generated.resources.stream_parser_animations_description
-  import nuvio.composeapp.generated.resources.stream_parser_animations_title
-  import nuvio.composeapp.generated.resources.stream_parser_description
-  import nuvio.composeapp.generated.resources.stream_parser_title
-  import org.jetbrains.compose.resources.stringResource
+import nuvio.composeapp.generated.resources.settings_stream_size_badges_title
+import nuvio.composeapp.generated.resources.settings_stream_addon_logo_title
+import nuvio.composeapp.generated.resources.settings_stream_addon_logo_description
+import nuvio.composeapp.generated.resources.settings_stream_display_section
+import nuvio.composeapp.generated.resources.stream_parser_animations_description
+import nuvio.composeapp.generated.resources.stream_parser_animations_title
+import nuvio.composeapp.generated.resources.stream_parser_description
+import nuvio.composeapp.generated.resources.stream_parser_title
+import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
     item {

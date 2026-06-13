@@ -1194,6 +1194,31 @@ private fun StreamCard(
                 )
             }
         }
+
+        if (showAddonLogo) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (!stream.addonLogo.isNullOrBlank()) {
+                    AsyncImage(
+                        model = stream.addonLogo,
+                        contentDescription = stream.addonName,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stream.addonName,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import androidx.compose.ui.Modifier
+import com.nuvio.app.features.streams.StreamSubtitle
 
 internal data class PlayerScreenArgs(
     val title: String,
@@ -9,7 +10,7 @@ internal data class PlayerScreenArgs(
     val streamType: String? = null,
     val sourceHeaders: Map<String, String>,
     val sourceResponseHeaders: Map<String, String>,
-    val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList(),
+
     val providerName: String,
     val streamTitle: String,
     val streamSubtitle: String?,
@@ -38,4 +39,5 @@ internal data class PlayerScreenArgs(
     val torrentTrackers: List<String>,
     val initialPositionMs: Long,
     val initialProgressFraction: Float?,
+    val externalSubtitles: List<StreamSubtitle> = emptyList(),
 )

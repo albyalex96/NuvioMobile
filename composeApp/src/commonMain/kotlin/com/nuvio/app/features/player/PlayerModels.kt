@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import androidx.compose.runtime.Composable
+import com.nuvio.app.features.streams.StreamSubtitle
 import kotlinx.serialization.Serializable
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.player_ios_hardware_decoder_off
@@ -26,7 +27,7 @@ data class PlayerLaunch(
     val streamType: String? = null,
     val sourceHeaders: Map<String, String> = emptyMap(),
     val sourceResponseHeaders: Map<String, String> = emptyMap(),
-    val externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList(),
+
     val logo: String? = null,
     val poster: String? = null,
     val background: String? = null,
@@ -50,6 +51,7 @@ data class PlayerLaunch(
     val torrentTrackers: List<String> = emptyList(),
     val initialPositionMs: Long = 0L,
     val initialProgressFraction: Float? = null,
+    val externalSubtitles: List<StreamSubtitle> = emptyList(),
 )
 
 object PlayerLaunchStore {

@@ -50,6 +50,7 @@ object StreamParser {
                 addonName = addonName,
                 addonId = addonId,
                 addonLogo = addonLogo,
+
                 clientResolve = clientResolve,
                 behaviorHints = StreamBehaviorHints(
                     bingeGroup = hintsObj?.string("bingeGroup"),

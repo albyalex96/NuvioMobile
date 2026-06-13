@@ -1955,7 +1955,7 @@ private fun MainAppContent(
                                     sourceUrl = cached.url,
                                     sourceHeaders = sanitizePlaybackHeaders(cached.requestHeaders),
                                     sourceResponseHeaders = sanitizePlaybackResponseHeaders(cached.responseHeaders),
-                                    externalSubtitles = emptyList(),
+
                                     streamType = cached.streamType,
                                     logo = launch.logo,
                                     poster = launch.poster,

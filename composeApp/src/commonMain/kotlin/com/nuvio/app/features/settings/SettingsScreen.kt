@@ -304,6 +304,12 @@ fun SettingsScreen(
                 continueWatchingPreferencesUiState = continueWatchingPreferencesUiState,
                 posterCardStyleUiState = posterCardStyleUiState,
                 onSwitchProfile = onSwitchProfile,
+                onAccountClick = onAccountClick,
+                onHomescreenClick = onHomescreenClick,
+                onMetaScreenClick = onMetaScreenClick,
+                onContinueWatchingClick = onContinueWatchingClick,
+                onAddonsClick = onAddonsClick,
+                onPluginsClick = onPluginsClick,
                 onDownloadsClick = onDownloadsClick,
                 onSupportersContributorsClick = onSupportersContributorsClick,
                 onLicensesAttributionsClick = onLicensesAttributionsClick,
@@ -793,6 +799,12 @@ private fun TabletSettingsScreen(
     continueWatchingPreferencesUiState: ContinueWatchingPreferencesUiState,
     posterCardStyleUiState: PosterCardStyleUiState,
     onSwitchProfile: (() -> Unit)? = null,
+    onAccountClick: () -> Unit = {},
+    onHomescreenClick: () -> Unit = {},
+    onMetaScreenClick: () -> Unit = {},
+    onContinueWatchingClick: () -> Unit = {},
+    onAddonsClick: () -> Unit = {},
+    onPluginsClick: () -> Unit = {},
     onDownloadsClick: () -> Unit = {},
     onSupportersContributorsClick: () -> Unit = {},
     onLicensesAttributionsClick: () -> Unit = {},
@@ -862,8 +874,70 @@ private fun TabletSettingsScreen(
             }
         }
 
+        var settingsSearchQuery by rememberSaveable { mutableStateOf("") }
+        var rootSearchVisible by rememberSaveable { mutableStateOf(false) }
+        var rootSearchRevealAnimating by rememberSaveable { mutableStateOf(false) }
+        val listState = rememberLazyListState()
+        val hapticFeedback = LocalHapticFeedback.current
+        val hapticScope = rememberCoroutineScope()
+        val rootSearchRevealConnection = rememberSettingsRootSearchRevealConnection(
+            page = page,
+            listState = listState,
+            query = settingsSearchQuery,
+            searchVisible = rootSearchVisible,
+        ) {
+            rootSearchVisible = true
+            rootSearchRevealAnimating = true
+            hapticScope.launch {
+                delay(SettingsSearchRevealHapticDelayMillis)
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+        }
+        val searchEntries = settingsSearchEntries(
+            pluginsEnabled = AppFeaturePolicy.pluginsEnabled,
+            liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
+            switchProfileAvailable = onSwitchProfile != null,
+            checkForUpdatesAvailable = onCheckForUpdatesClick != null,
+        )
+        fun openSearchTarget(target: SettingsSearchTarget) {
+            when (target) {
+                is SettingsSearchTarget.Page -> when (target.page) {
+                    SettingsPage.Account -> onAccountClick()
+                    SettingsPage.SupportersContributors -> onSupportersContributorsClick()
+                    SettingsPage.LicensesAttributions -> onLicensesAttributionsClick()
+                    SettingsPage.ContinueWatching -> onContinueWatchingClick()
+                    SettingsPage.Addons -> onAddonsClick()
+                    SettingsPage.Plugins -> {
+                        if (AppFeaturePolicy.pluginsEnabled) {
+                            onPluginsClick()
+                        }
+                    }
+                    SettingsPage.Homescreen -> onHomescreenClick()
+                    SettingsPage.MetaScreen -> onMetaScreenClick()
+                    else -> onPageChange(target.page)
+                }
+                SettingsSearchTarget.Downloads -> onDownloadsClick()
+                SettingsSearchTarget.Collections -> onCollectionsClick()
+                SettingsSearchTarget.SwitchProfile -> onSwitchProfile?.invoke()
+                SettingsSearchTarget.CheckForUpdates -> onCheckForUpdatesClick?.invoke()
+            }
+        }
+        LaunchedEffect(rootSearchRevealAnimating) {
+            if (rootSearchRevealAnimating) {
+                delay(SettingsSearchRevealAnimationMillis)
+                rootSearchRevealAnimating = false
+            }
+        }
+        LaunchedEffect(scrollToTopRequests) {
+            scrollToTopRequests.collect {
+                listState.animateScrollToItem(0)
+            }
+        }
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(rootSearchRevealConnection),
             contentPadding = PaddingValues(
                 start = 40.dp,
                 top = topOffset,
@@ -875,34 +949,55 @@ private fun TabletSettingsScreen(
             item {
                 val previousPage = page.previousPage()
                 TabletPageHeader(
-                    title = stringResource(if (page == SettingsPage.Root) activeCategory.labelRes else page.titleRes),
+                    title = if (page == SettingsPage.Root) {
+                        if (settingsSearchQuery.isBlank()) {
+                            stringResource(activeCategory.labelRes)
+                        } else {
+                            stringResource(Res.string.compose_settings_page_root)
+                        }
+                    } else {
+                        stringResource(page.titleRes)
+                    },
                     showBack = previousPage != null,
                     onBack = { previousPage?.let(onPageChange) },
                 )
             }
             when (page) {
-                SettingsPage.Root -> settingsRootContent(
-                    isTablet = true,
-                    onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
-                    onStreamsClick = { openInlinePage(SettingsPage.Streams) },
-                    onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
-                    onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
-                    onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
-                    onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
-                    onNetworkClick = { openInlinePage(SettingsPage.Network) },
-                    onIntegrationsClick = { openInlinePage(SettingsPage.Integrations) },
-                    onTraktClick = { openInlinePage(SettingsPage.TraktAuthentication) },
-                    onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
-                    onLicensesAttributionsClick = { openInlinePage(SettingsPage.LicensesAttributions) },
-                    onCheckForUpdatesClick = onCheckForUpdatesClick,
-                    onDownloadsClick = onDownloadsClick,
-                    onAccountClick = { openInlinePage(SettingsPage.Account) },
-                    onSwitchProfileClick = onSwitchProfile,
-                    showAccountSection = activeCategory == SettingsCategory.Account,
-                    showGeneralSection = activeCategory == SettingsCategory.General,
-                    showAboutSection = activeCategory == SettingsCategory.About,
-                    showAdvancedSection = activeCategory == SettingsCategory.Advanced,
-                )
+                SettingsPage.Root -> {
+                    settingsSearchRootContent(
+                        query = settingsSearchQuery,
+                        entries = searchEntries,
+                        isTablet = true,
+                        showSearchField = rootSearchVisible,
+                        animateSearchField = rootSearchRevealAnimating,
+                        onQueryChange = { settingsSearchQuery = it },
+                        onTargetClick = { openSearchTarget(it) },
+                    )
+                    if (settingsSearchQuery.isBlank()) {
+                        settingsRootContent(
+                            isTablet = true,
+                            onPlaybackClick = { openInlinePage(SettingsPage.Playback) },
+                            onStreamsClick = { openInlinePage(SettingsPage.Streams) },
+                            onAppearanceClick = { openInlinePage(SettingsPage.Appearance) },
+                            onAdvancedClick = { openInlinePage(SettingsPage.Advanced) },
+                            onNotificationsClick = { openInlinePage(SettingsPage.Notifications) },
+                            onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
+                            onNetworkClick = { openInlinePage(SettingsPage.Network) },
+                            onIntegrationsClick = { openInlinePage(SettingsPage.Integrations) },
+                            onTraktClick = { openInlinePage(SettingsPage.TraktAuthentication) },
+                            onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
+                            onLicensesAttributionsClick = { openInlinePage(SettingsPage.LicensesAttributions) },
+                            onCheckForUpdatesClick = onCheckForUpdatesClick,
+                            onDownloadsClick = onDownloadsClick,
+                            onAccountClick = { openInlinePage(SettingsPage.Account) },
+                            onSwitchProfileClick = onSwitchProfile,
+                            showAccountSection = activeCategory == SettingsCategory.Account,
+                            showGeneralSection = activeCategory == SettingsCategory.General,
+                            showAboutSection = activeCategory == SettingsCategory.About,
+                            showAdvancedSection = activeCategory == SettingsCategory.Advanced,
+                        )
+                    }
+                }
                 SettingsPage.Account -> accountSettingsContent(
                     isTablet = true,
                 )
@@ -987,7 +1082,7 @@ private fun TabletSettingsScreen(
                     onHomescreenClick = { openInlinePage(SettingsPage.Homescreen) },
                     onMetaScreenClick = { openInlinePage(SettingsPage.MetaScreen) },
                     onCollectionsClick = onCollectionsClick,
-                        onTop10CatalogClick = onTop10CatalogClick,
+                    onTop10CatalogClick = onTop10CatalogClick,
                 )
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
@@ -996,7 +1091,7 @@ private fun TabletSettingsScreen(
                     heroEnabled = homescreenHeroEnabled,
                     items = homescreenItems,
                     hideCatalogUnderline = homescreenHideCatalogUnderline,
-                    hideUnreleasedContent= homescreenHideUnreleasedContent,
+                    hideUnreleasedContent = homescreenHideUnreleasedContent,
                 )
                 SettingsPage.MetaScreen -> metaScreenSettingsContent(
                     isTablet = true,
@@ -1007,7 +1102,7 @@ private fun TabletSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onDebridClick = { openInlinePage(SettingsPage.Debrid) },
-                        onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
+                    onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                 )
                 SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                     isTablet = true,
@@ -1033,9 +1128,9 @@ private fun TabletSettingsScreen(
                     uiState = traktAuthUiState,
                     settingsUiState = traktSettingsUiState,
                     commentsEnabled = traktCommentsEnabled,
-                    onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
+            onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
+            }
             }
         }
     }
-}

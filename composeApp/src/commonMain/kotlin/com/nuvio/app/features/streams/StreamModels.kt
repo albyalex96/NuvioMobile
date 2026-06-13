@@ -53,7 +53,7 @@ data class StreamItem(
             .firstOrNull { !it.isMagnetLink() && !it.isTorrentSchemeUrl() }
 
     val torrentMagnetUri: String?
-        get() = listOfNotNull(url, externalUrl, clientResolve?.magnetUri)
+        get() = listOfNotNull(url, externalUrl)
             .firstOrNull { it.isMagnetLink() }
 
     val torrentSchemeUri: String?
@@ -84,7 +84,6 @@ data class StreamItem(
     val p2pInfoHash: String?
         get() = infoHash.normalizedInfoHash()
             ?: clientResolve?.infoHash.normalizedInfoHash()
-            ?: clientResolve?.magnetUri.extractBtihInfoHash()
             ?: torrentMagnetUri.extractBtihInfoHash()
             ?: torrentSchemeUri.extractTorrentSchemeInfoHash()
 
@@ -98,7 +97,7 @@ data class StreamItem(
         get() = sources + clientResolve?.sources.orEmpty()
 
     val p2pTrackers: List<String>
-        get() = p2pSourceHints
+        get() = sources
             .asSequence()
             .filter { it.startsWith("tracker:") }
             .map { it.removePrefix("tracker:").trim() }
