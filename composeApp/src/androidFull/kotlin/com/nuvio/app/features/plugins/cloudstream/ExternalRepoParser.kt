@@ -18,7 +18,7 @@ data class ExternalPluginEntry(
     val name: String,
     val internalName: String,
     val description: String? = null,
-    val version: Int = 1,
+    val version: String? = null,
     val apiVersion: Int = 1,
     val status: Int = 1,
     val authors: List<String>? = null,
@@ -124,7 +124,7 @@ object ExternalRepoParser {
                 name = obj.getString("name"),
                 internalName = obj.getString("internalName"),
                 description = obj.optString("description", null),
-                version = obj.optInt("version", 1),
+                version = parseVersion(obj),
                 apiVersion = obj.optInt("apiVersion", 1),
                 status = obj.optInt("status", 1),
                 authors = obj.optJSONArray("authors")?.let { ja ->
@@ -166,6 +166,17 @@ object ExternalRepoParser {
         }
         val base = baseUrl.substringBeforeLast("/")
         return "$base/$relativeUrl"
+    }
+
+    private fun parseVersion(obj: JSONObject): String? {
+        return if (obj.has("version")) {
+            val v = obj.get("version")
+            when (v) {
+                is Int -> "v$v"
+                is String -> if (v.startsWith("v")) v else "v$v"
+                else -> null
+            }
+        } else null
     }
 
     private fun inferRepoName(url: String): String {

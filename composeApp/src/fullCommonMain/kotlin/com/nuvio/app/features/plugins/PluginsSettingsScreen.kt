@@ -460,7 +460,9 @@ fun PluginsSettingsPageContent(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         NuvioInfoBadge(text = scraper.supportedTypes.joinToString(" | "))
-                        NuvioInfoBadge(text = stringResource(Res.string.plugins_provider_version, scraper.version))
+                        if (scraper.version.isNotBlank()) {
+                            NuvioInfoBadge(text = stringResource(Res.string.plugins_provider_version, scraper.version))
+                        }
                         if (!scraper.manifestEnabled) {
                             NuvioInfoBadge(text = stringResource(Res.string.plugins_provider_disabled_by_repo))
                         }

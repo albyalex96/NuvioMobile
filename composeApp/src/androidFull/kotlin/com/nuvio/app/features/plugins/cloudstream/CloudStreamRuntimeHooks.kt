@@ -89,7 +89,7 @@ object CloudStreamRuntimeHooks {
                             repositoryUrl = url,
                             name = entry.name,
                             description = entry.description ?: "",
-                            version = "v${entry.version}",
+                            version = entry.version ?: "",
                             filename = file.name,
                             supportedTypes = supportedTypes,
                             enabled = true,
