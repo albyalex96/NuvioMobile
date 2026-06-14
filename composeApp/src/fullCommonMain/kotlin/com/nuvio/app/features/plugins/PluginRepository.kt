@@ -153,7 +153,8 @@ actual object PluginRepository {
 
     actual suspend fun addRepository(rawUrl: String): AddPluginRepositoryResult {
         initialize()
-        val trimmedUrl = rawUrl.trim()
+        val resolvedUrl = rawUrl.trim().replaceFirst("cloudstreamrepo:", "https:")
+        val trimmedUrl = resolvedUrl
 
         if (_uiState.value.repositories.any { it.manifestUrl == trimmedUrl }) {
             return AddPluginRepositoryResult.Error(getString(Res.string.plugins_repository_already_installed))
