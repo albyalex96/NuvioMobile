@@ -3,6 +3,7 @@ package com.nuvio.app.features.plugins
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.network.SupabaseProvider
 import com.nuvio.app.features.addons.httpGetText
+import com.nuvio.app.features.addons.httpRequestRaw
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.tmdb.TmdbService
 import com.nuvio.app.features.plugins.runtime.PluginRuntime
@@ -154,7 +155,7 @@ actual object PluginRepository {
     actual suspend fun addRepository(rawUrl: String): AddPluginRepositoryResult {
         initialize()
         val resolvedUrl = rawUrl.trim().replaceFirst("cloudstreamrepo:", "https:")
-        val trimmedUrl = resolvedUrl
+        val trimmedUrl = if ("://" in resolvedUrl) resolvedUrl else resolveShortcode(resolvedUrl)
 
         if (_uiState.value.repositories.any { it.manifestUrl == trimmedUrl }) {
             return AddPluginRepositoryResult.Error(getString(Res.string.plugins_repository_already_installed))
@@ -635,6 +636,23 @@ actual object PluginRepository {
         val path = withoutFragment.substringBefore("?").trimEnd('/')
         val manifestPath = if (path.endsWith("/manifest.json")) path else "$path/manifest.json"
         return if (query.isEmpty()) manifestPath else "$manifestPath?$query"
+    }
+
+    private suspend fun resolveShortcode(shortcode: String): String {
+        val cuttlyUrl = "https://cutt.ly/$shortcode"
+        return try {
+            val response = httpRequestRaw(
+                method = "GET",
+                url = cuttlyUrl,
+                headers = emptyMap(),
+                body = "",
+                followRedirects = true,
+            )
+            response.url
+        } catch (e: Exception) {
+            log.w(e) { "Failed to resolve shortcode '$shortcode', falling back to raw input" }
+            shortcode
+        }
     }
 
     private fun resolveEffectiveProfileId(profileId: Int): Int {
