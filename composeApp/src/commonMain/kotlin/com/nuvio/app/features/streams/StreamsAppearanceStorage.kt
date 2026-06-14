@@ -6,4 +6,6 @@ internal expect object StreamsAppearanceStorage {
     fun loadDisplayMode(): DisplayMode
     fun saveBadgeAnimationsEnabled(enabled: Boolean)
     fun loadBadgeAnimationsEnabled(): Boolean
+    fun saveSortByQuality(enabled: Boolean)
+    fun loadSortByQuality(): Boolean
 }

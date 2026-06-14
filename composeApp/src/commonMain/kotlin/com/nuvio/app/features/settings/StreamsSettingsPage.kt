@@ -95,6 +95,8 @@ import nuvio.composeapp.generated.resources.settings_stream_display_section
 import nuvio.composeapp.generated.resources.stream_parser_animations_description
 import nuvio.composeapp.generated.resources.stream_parser_animations_title
 import nuvio.composeapp.generated.resources.stream_parser_description
+import nuvio.composeapp.generated.resources.stream_parser_sort_by_quality_description
+import nuvio.composeapp.generated.resources.stream_parser_sort_by_quality_title
 import nuvio.composeapp.generated.resources.stream_parser_title
 import org.jetbrains.compose.resources.stringResource
 
@@ -127,6 +129,13 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
                     checked = streamsAppearance.badgeAnimationsEnabled,
                     isTablet = isTablet,
                     onCheckedChange = StreamsAppearanceRepository::setBadgeAnimationsEnabled,
+                )
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.stream_parser_sort_by_quality_title),
+                    description = stringResource(Res.string.stream_parser_sort_by_quality_description),
+                    checked = streamsAppearance.sortByQuality,
+                    isTablet = isTablet,
+                    onCheckedChange = StreamsAppearanceRepository::setSortByQuality,
                 )
             }
         }

@@ -1470,6 +1470,8 @@
   <string name="stream_parser_proxied">Proxy</string>
   <string name="stream_parser_animations_title">Animazioni badge</string>
   <string name="stream_parser_animations_description">Mostra effetti animati sui badge puliti</string>
+  <string name="stream_parser_sort_by_quality_title">Ordina per qualità</string>
+  <string name="stream_parser_sort_by_quality_description">Ordina i flussi per qualità, migliore prima</string>
   <string name="collections_editor_tmdb_genres_movie_placeholder">28,12</string>
   <string name="collections_editor_tmdb_genres_series_placeholder">18,35</string>
   <string name="collections_editor_tmdb_date_from_placeholder">2020-01-01</string>

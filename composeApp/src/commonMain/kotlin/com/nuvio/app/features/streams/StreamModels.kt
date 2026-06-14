@@ -122,6 +122,27 @@ data class StreamBadge(
     val borderColor: String = "",
 )
 
+fun streamQualityRank(stream: StreamItem): Int {
+    val combined = listOfNotNull(
+        stream.name,
+        stream.title,
+        stream.description,
+        stream.behaviorHints.filename,
+        stream.clientResolve?.torrentName,
+        stream.clientResolve?.filename,
+        stream.clientResolve?.stream?.raw?.torrentName,
+        stream.clientResolve?.stream?.raw?.filename,
+    ).joinToString(" ")
+
+    return when {
+        Regex("\\b(4K|2160p|UHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) -> 5
+        Regex("\\b(1080p|FHD)\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) -> 4
+        Regex("\\b720p\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) -> 3
+        Regex("\\b480p\\b|\\bSD\\b", RegexOption.IGNORE_CASE).containsMatchIn(combined) -> 2
+        else -> 1
+    }
+}
+
 fun normalizeStreamType(raw: String?): String? =
     raw?.trim()?.lowercase()?.takeIf { it.isNotBlank() }
 

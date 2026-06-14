@@ -12,6 +12,7 @@ object StreamsAppearanceRepository {
     private var hasLoaded = false
     private var displayMode: DisplayMode = DisplayMode.POLISHED
     private var badgeAnimationsEnabled: Boolean = true
+    private var sortByQuality: Boolean = false
 
     fun ensureLoaded() {
         if (hasLoaded) return
@@ -34,10 +35,19 @@ object StreamsAppearanceRepository {
         StreamsAppearanceStorage.saveBadgeAnimationsEnabled(enabled)
     }
 
+    fun setSortByQuality(enabled: Boolean) {
+        ensureLoaded()
+        if (sortByQuality == enabled) return
+        sortByQuality = enabled
+        publish()
+        StreamsAppearanceStorage.saveSortByQuality(enabled)
+    }
+
     private fun loadFromDisk() {
         hasLoaded = true
         displayMode = StreamsAppearanceStorage.loadDisplayMode()
         badgeAnimationsEnabled = StreamsAppearanceStorage.loadBadgeAnimationsEnabled()
+        sortByQuality = StreamsAppearanceStorage.loadSortByQuality()
         publish()
     }
 
@@ -45,6 +55,7 @@ object StreamsAppearanceRepository {
         _uiState.value = StreamsAppearanceSettings(
             displayMode = displayMode,
             badgeAnimationsEnabled = badgeAnimationsEnabled,
+            sortByQuality = sortByQuality,
         )
     }
 }

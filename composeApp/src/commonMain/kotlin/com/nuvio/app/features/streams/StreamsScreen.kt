@@ -870,9 +870,20 @@ internal fun StreamList(
     displayMode: DisplayMode,
 ) {
     val filteredGroups = uiState.filteredGroups
-    val hasGroups = filteredGroups.isNotEmpty()
-    val hasAnyStreams = filteredGroups.any { it.streams.isNotEmpty() }
-    val anyLoading = filteredGroups.any { it.isLoading }
+    val sortByQuality = remember {
+        StreamsAppearanceRepository.uiState.value.sortByQuality
+    }
+    val displayGroups = if (sortByQuality) {
+        filteredGroups.map { group ->
+            group.copy(streams = group.streams.sortedByDescending { streamQualityRank(it) })
+        }
+    } else {
+        filteredGroups
+    }
+
+    val hasGroups = displayGroups.isNotEmpty()
+    val hasAnyStreams = displayGroups.any { it.streams.isNotEmpty() }
+    val anyLoading = displayGroups.any { it.isLoading }
     val streamBadgeSettings by remember {
         StreamBadgeSettingsRepository.ensureLoaded()
         StreamBadgeSettingsRepository.uiState
@@ -900,7 +911,7 @@ internal fun StreamList(
             }
 
             else -> {
-                filteredGroups.forEachIndexed { groupIndex, group ->
+                displayGroups.forEachIndexed { groupIndex, group ->
                     streamSection(
                         sectionKey = streamSectionRenderKey(groupIndex = groupIndex, group = group),
                         group = group,

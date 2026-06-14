@@ -8,6 +8,7 @@ internal actual object StreamsAppearanceStorage {
     private const val PREFS_NAME = "nuvio_streams_appearance"
     private const val KEY_DISPLAY_MODE = "display_mode"
     private const val KEY_BADGE_ANIMATIONS = "badge_animations"
+    private const val KEY_SORT_BY_QUALITY = "sort_by_quality"
 
     private var preferences: SharedPreferences? = null
 
@@ -30,5 +31,13 @@ internal actual object StreamsAppearanceStorage {
 
     actual fun loadBadgeAnimationsEnabled(): Boolean {
         return preferences?.getBoolean(KEY_BADGE_ANIMATIONS, true) ?: true
+    }
+
+    actual fun saveSortByQuality(enabled: Boolean) {
+        preferences?.edit()?.putBoolean(KEY_SORT_BY_QUALITY, enabled)?.apply()
+    }
+
+    actual fun loadSortByQuality(): Boolean {
+        return preferences?.getBoolean(KEY_SORT_BY_QUALITY, false) ?: false
     }
 }
