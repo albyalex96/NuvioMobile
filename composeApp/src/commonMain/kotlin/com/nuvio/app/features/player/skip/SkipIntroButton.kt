@@ -42,6 +42,11 @@ import nuvio.composeapp.generated.resources.player_skip
 import nuvio.composeapp.generated.resources.player_skip_intro
 import nuvio.composeapp.generated.resources.player_skip_outro
 import nuvio.composeapp.generated.resources.player_skip_recap
+import nuvio.composeapp.generated.resources.sponsorblock_skip_filler
+import nuvio.composeapp.generated.resources.sponsorblock_skip_interaction
+import nuvio.composeapp.generated.resources.sponsorblock_skip_music_offtopic
+import nuvio.composeapp.generated.resources.sponsorblock_skip_selfpromo
+import nuvio.composeapp.generated.resources.sponsorblock_skip_sponsor
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -152,10 +157,10 @@ private fun skipLabel(type: String?): String =
         "intro", "op", "mixed-op" -> stringResource(Res.string.player_skip_intro)
         "outro", "ed", "mixed-ed", "credits" -> stringResource(Res.string.player_skip_outro)
         "recap", "preview" -> stringResource(Res.string.player_skip_recap)
-        "sponsor" -> "Skip Sponsor"
-        "selfpromo" -> "Skip Self-Promo"
-        "interaction" -> "Skip Interaction"
-        "filler" -> "Skip Filler"
-        "music_offtopic" -> "Skip Non-Music"
+        "sponsor" -> stringResource(Res.string.sponsorblock_skip_sponsor)
+        "selfpromo" -> stringResource(Res.string.sponsorblock_skip_selfpromo)
+        "interaction" -> stringResource(Res.string.sponsorblock_skip_interaction)
+        "filler" -> stringResource(Res.string.sponsorblock_skip_filler)
+        "music_offtopic" -> stringResource(Res.string.sponsorblock_skip_music_offtopic)
         else -> stringResource(Res.string.player_skip)
     }

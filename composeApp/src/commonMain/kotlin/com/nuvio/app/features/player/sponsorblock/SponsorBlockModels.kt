@@ -1,21 +1,44 @@
 package com.nuvio.app.features.player.sponsorblock
 
+import androidx.compose.runtime.Composable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.sponsorblock_category_filler
+import nuvio.composeapp.generated.resources.sponsorblock_category_interaction
+import nuvio.composeapp.generated.resources.sponsorblock_category_intro
+import nuvio.composeapp.generated.resources.sponsorblock_category_music_offtopic
+import nuvio.composeapp.generated.resources.sponsorblock_category_outro
+import nuvio.composeapp.generated.resources.sponsorblock_category_preview
+import nuvio.composeapp.generated.resources.sponsorblock_category_selfpromo
+import nuvio.composeapp.generated.resources.sponsorblock_category_sponsor
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * Represents the categories of segments that SponsorBlock can identify.
  */
-enum class SponsorBlockCategory(val apiValue: String, val displayLabel: String) {
-    SPONSOR("sponsor", "Sponsor"),
-    SELFPROMO("selfpromo", "Self-Promotion"),
-    INTERACTION("interaction", "Interaction Reminder"),
-    INTRO("intro", "Intermission/Intro"),
-    OUTRO("outro", "Endcards/Credits"),
-    PREVIEW("preview", "Preview/Recap"),
-    MUSIC_OFFTOPIC("music_offtopic", "Non-Music in Music Videos"),
-    FILLER("filler", "Filler"),
+enum class SponsorBlockCategory(val apiValue: String) {
+    SPONSOR("sponsor"),
+    SELFPROMO("selfpromo"),
+    INTERACTION("interaction"),
+    INTRO("intro"),
+    OUTRO("outro"),
+    PREVIEW("preview"),
+    MUSIC_OFFTOPIC("music_offtopic"),
+    FILLER("filler"),
     ;
+
+    @Composable
+    fun displayLabel(): String = when (this) {
+        SPONSOR -> stringResource(Res.string.sponsorblock_category_sponsor)
+        SELFPROMO -> stringResource(Res.string.sponsorblock_category_selfpromo)
+        INTERACTION -> stringResource(Res.string.sponsorblock_category_interaction)
+        INTRO -> stringResource(Res.string.sponsorblock_category_intro)
+        OUTRO -> stringResource(Res.string.sponsorblock_category_outro)
+        PREVIEW -> stringResource(Res.string.sponsorblock_category_preview)
+        MUSIC_OFFTOPIC -> stringResource(Res.string.sponsorblock_category_music_offtopic)
+        FILLER -> stringResource(Res.string.sponsorblock_category_filler)
+    }
 
     companion object {
         /** Default categories that most users want to skip. */

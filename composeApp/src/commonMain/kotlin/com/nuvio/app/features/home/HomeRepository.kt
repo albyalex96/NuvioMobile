@@ -235,10 +235,11 @@ object HomeRepository {
         val top10Snapshot = Top10CatalogRepository.uiState.value
         val top10MovieItems = if (top10Snapshot.enabled && top10Snapshot.hasMovieCatalog) {
             cachedSections.values
-                .firstOrNull {
-                    it.manifestUrl == top10Snapshot.movieManifestUrl &&
-                    it.catalogId == top10Snapshot.movieCatalogId &&
-                    it.type == top10Snapshot.movieCatalogType
+                .firstOrNull { section ->
+                    val addonTarget = section.target as? CatalogTarget.Addon
+                    addonTarget?.manifestUrl == top10Snapshot.movieManifestUrl &&
+                    addonTarget?.catalogId == top10Snapshot.movieCatalogId &&
+                    section.target.contentType == top10Snapshot.movieCatalogType
                 }
                 ?.items
                 ?.take(10)
@@ -248,10 +249,11 @@ object HomeRepository {
         }
         val top10SeriesItems = if (top10Snapshot.enabled && top10Snapshot.hasSeriesCatalog) {
             cachedSections.values
-                .firstOrNull {
-                    it.manifestUrl == top10Snapshot.seriesManifestUrl &&
-                    it.catalogId == top10Snapshot.seriesCatalogId &&
-                    it.type == top10Snapshot.seriesCatalogType
+                .firstOrNull { section ->
+                    val addonTarget = section.target as? CatalogTarget.Addon
+                    addonTarget?.manifestUrl == top10Snapshot.seriesManifestUrl &&
+                    addonTarget?.catalogId == top10Snapshot.seriesCatalogId &&
+                    section.target.contentType == top10Snapshot.seriesCatalogType
                 }
                 ?.items
                 ?.take(10)
@@ -464,6 +466,7 @@ object HomeRepository {
 
     private fun collectionSourceKey(source: CollectionSource): String =
         source.catalogRouteKey()
+}
 
 private const val HOME_HERO_ITEM_LIMIT = 8
 private const val HOME_COLLECTION_HERO_SOURCE_LIMIT = 6
