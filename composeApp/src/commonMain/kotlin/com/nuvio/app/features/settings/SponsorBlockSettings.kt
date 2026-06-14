@@ -108,7 +108,7 @@ fun SponsorBlockSettingsSection(
                         onCheckedChange = { SponsorBlockSettingsRepository.toggleCategory(category) },
                     )
                     Text(
-                        text = category.displayLabel,
+                        text = category.displayLabel(),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(start = 8.dp),
                     )
