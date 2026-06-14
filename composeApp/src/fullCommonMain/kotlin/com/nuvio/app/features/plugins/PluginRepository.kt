@@ -109,7 +109,7 @@ actual object PluginRepository {
                 }
                 .decodeList<PluginRow>()
 
-            val urls = dedupeManifestUrls(rows.map { it.url })
+            val urls = rows.map { it.url }.distinct()
             if (urls.isEmpty() && !pulledFromServer) {
                 val localUrls = _uiState.value.repositories.map { it.manifestUrl }
                 if (localUrls.isNotEmpty()) {
