@@ -266,6 +266,7 @@ fun StreamsScreen(
                 },
                 onStreamLongPress = { stream -> streamActionsTarget = stream },
                 displayMode = streamsAppearance.displayMode,
+                sortByQuality = streamsAppearance.sortByQuality,
             )
         } else {
             MobileStreamsLayout(
@@ -286,6 +287,7 @@ fun StreamsScreen(
                 },
                 onStreamLongPress = { stream -> streamActionsTarget = stream },
                 displayMode = streamsAppearance.displayMode,
+                sortByQuality = streamsAppearance.sortByQuality,
             )
         }
 
@@ -485,6 +487,7 @@ private fun MobileStreamsLayout(
     onStreamLongPress: (StreamItem) -> Unit,
     modifier: Modifier = Modifier,
     displayMode: DisplayMode,
+    sortByQuality: Boolean = false,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         if (heroArtwork != null) {
@@ -568,6 +571,7 @@ private fun MobileStreamsLayout(
                         resumeProgressFraction = resumeProgressFraction,
                         modifier = Modifier.weight(1f),
                         displayMode = displayMode,
+                        sortByQuality = sortByQuality,
                     )
                 }
             }
@@ -868,22 +872,22 @@ internal fun StreamList(
     resumeProgressFraction: Float?,
     modifier: Modifier = Modifier,
     displayMode: DisplayMode,
+    sortByQuality: Boolean = false,
 ) {
     val filteredGroups = uiState.filteredGroups
-    val sortByQuality = remember {
-        StreamsAppearanceRepository.uiState.value.sortByQuality
-    }
-    val displayGroups = if (sortByQuality) {
-        filteredGroups.map { group ->
-            group.copy(streams = group.streams.sortedByDescending { streamQualityRank(it) })
-        }
+    val anyLoading = filteredGroups.any { it.isLoading }
+
+    val sortedAllStreams = if (sortByQuality) {
+        val all = filteredGroups.flatMap { it.streams }
+            .sortedByDescending { streamQualityRank(it) }
+        all.ifEmpty { null }
     } else {
-        filteredGroups
+        null
     }
 
-    val hasGroups = displayGroups.isNotEmpty()
-    val hasAnyStreams = displayGroups.any { it.streams.isNotEmpty() }
-    val anyLoading = displayGroups.any { it.isLoading }
+    val currentHasStreams = sortedAllStreams?.isNotEmpty()
+        ?: filteredGroups.any { it.streams.isNotEmpty() }
+
     val streamBadgeSettings by remember {
         StreamBadgeSettingsRepository.ensureLoaded()
         StreamBadgeSettingsRepository.uiState
@@ -898,40 +902,65 @@ internal fun StreamList(
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         when {
-            hasGroups && anyLoading && !hasAnyStreams -> {
-                item {
-                    LoadingStateBlock()
-                }
+            anyLoading && !currentHasStreams -> {
+                item { LoadingStateBlock() }
             }
 
-            !hasAnyStreams && !uiState.isAnyLoading -> {
-                item {
-                    EmptyStateBlock(reason = uiState.emptyStateReason)
-                }
+            !currentHasStreams && !uiState.isAnyLoading -> {
+                item { EmptyStateBlock(reason = uiState.emptyStateReason) }
             }
 
             else -> {
-                displayGroups.forEachIndexed { groupIndex, group ->
-                    streamSection(
-                        sectionKey = streamSectionRenderKey(groupIndex = groupIndex, group = group),
-                        group = group,
-                        showHeader = uiState.selectedFilter == null,
-                        debridEnabled = debridEnabled,
-                        appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
-                        showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
-                        showAddonLogo = streamBadgeSettings.showAddonLogo,
-                        badgePlacement = streamBadgeSettings.badgePlacement,
-                        onStreamSelected = onStreamSelected,
-                        onStreamLongPress = onStreamLongPress,
-                        resumePositionMs = resumePositionMs,
-                        resumeProgressFraction = resumeProgressFraction,
-                        displayMode = displayMode,
-                    )
+                if (sortedAllStreams != null) {
+                    itemsIndexed(
+                        items = sortedAllStreams,
+                        key = { index, stream ->
+                            "sorted_$index:${stream.url ?: stream.infoHash ?: stream.clientResolve?.infoHash ?: stream.streamLabel}"
+                        },
+                    ) { _, stream ->
+                        StreamCard(
+                            stream = stream,
+                            displayMode = displayMode,
+                            enabled = stream.isSelectableForPlayback(debridEnabled),
+                            appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+                            showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
+                            showAddonLogo = streamBadgeSettings.showAddonLogo,
+                            badgePlacement = streamBadgeSettings.badgePlacement,
+                            onClick = {
+                                if (stream.isSelectableForPlayback(debridEnabled)) {
+                                    onStreamSelected(stream, resumePositionMs, resumeProgressFraction)
+                                }
+                            },
+                            onLongClick = {
+                                if (stream.playableDirectUrl != null) {
+                                    onStreamLongPress(stream)
+                                }
+                            },
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                } else {
+                    val displayGroups = filteredGroups
+                    displayGroups.forEachIndexed { groupIndex, group ->
+                        streamSection(
+                            sectionKey = streamSectionRenderKey(groupIndex = groupIndex, group = group),
+                            group = group,
+                            showHeader = uiState.selectedFilter == null,
+                            debridEnabled = debridEnabled,
+                            appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+                            showFileSizeBadges = streamBadgeSettings.showFileSizeBadges,
+                            showAddonLogo = streamBadgeSettings.showAddonLogo,
+                            badgePlacement = streamBadgeSettings.badgePlacement,
+                            onStreamSelected = onStreamSelected,
+                            onStreamLongPress = onStreamLongPress,
+                            resumePositionMs = resumePositionMs,
+                            resumeProgressFraction = resumeProgressFraction,
+                            displayMode = displayMode,
+                        )
+                    }
                 }
                 if (anyLoading) {
-                    item {
-                        FooterLoadingBlock()
-                    }
+                    item { FooterLoadingBlock() }
                 }
                 item {
                     Spacer(modifier = Modifier.height(nuvioSafeBottomPadding(80.dp)))
