@@ -83,13 +83,23 @@ object CloudStreamRuntimeHooks {
                             else -> t.lowercase()
                         }
                     } ?: listOf("tv", "movie")
+                    val desc = buildString {
+                        entry.description?.let { append(it) }
+                        val authors = entry.authors
+                        if (authors != null && authors.isNotEmpty()) {
+                            if (isNotEmpty()) append(" | ")
+                            append("by ")
+                            append(authors.joinToString(", "))
+                        }
+                    }
                     scrapers.add(
                         PluginScraper(
                             id = entry.internalName,
                             repositoryUrl = url,
                             name = entry.name,
-                            description = entry.description ?: "",
+                            description = desc,
                             version = entry.version ?: "",
+                            logo = entry.iconUrl,
                             filename = file.name,
                             supportedTypes = supportedTypes,
                             enabled = true,
@@ -104,6 +114,7 @@ object CloudStreamRuntimeHooks {
                         manifestUrl = url,
                         name = parseResult.name,
                         description = parseResult.description,
+                        version = parseResult.manifestVersion?.toString(),
                         scraperCount = scrapers.size,
                     ),
                     scrapers = scrapers,

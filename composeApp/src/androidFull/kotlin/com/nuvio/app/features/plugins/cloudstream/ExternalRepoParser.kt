@@ -39,6 +39,7 @@ data class ExternalRepoManifest(
 data class ExternalRepoParseResult(
     val name: String,
     val description: String?,
+    val manifestVersion: Int? = null,
     val plugins: List<ExternalPluginEntry>,
 )
 
@@ -78,6 +79,7 @@ object ExternalRepoParser {
                     return@withContext ExternalRepoParseResult(
                         name = manifest.name,
                         description = manifest.description,
+                        manifestVersion = if (manifest.manifestVersion > 0) manifest.manifestVersion else null,
                         plugins = allPlugins
                     )
                 }
@@ -172,8 +174,8 @@ object ExternalRepoParser {
         return if (obj.has("version")) {
             val v = obj.get("version")
             when (v) {
-                is Int -> "v$v"
-                is String -> if (v.startsWith("v")) v else "v$v"
+                is Int -> v.toString()
+                is String -> v
                 else -> null
             }
         } else null
