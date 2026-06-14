@@ -249,8 +249,9 @@ actual object PluginRepository {
             try {
                 val result = runCatching {
                     val previous = _uiState.value.scrapers.associateBy { it.id }
-                    val hasDexScrapers = previous.values.any { it.repositoryUrl == manifestUrl && it.pluginType == "dex" }
-                    if (hasDexScrapers) {
+                    val tryDex = previous.values.any { it.repositoryUrl == manifestUrl && it.pluginType == "dex" }
+                        || previous.values.none { it.repositoryUrl == manifestUrl }
+                    if (tryDex) {
                         val dexData = try {
                             dexRepoParser?.invoke(manifestUrl)
                         } catch (_: Throwable) { null }
