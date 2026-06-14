@@ -355,12 +355,14 @@ fun NuvioInputField(
 fun NuvioInfoBadge(
     text: String,
     modifier: Modifier = Modifier,
+    backgroundColor: Color? = null,
+    contentColor: Color? = null,
 ) {
     val tokens = MaterialTheme.nuvio
     Box(
         modifier = modifier
             .background(
-                color = tokens.colors.surfaceCard,
+                color = backgroundColor ?: tokens.colors.surfaceCard,
                 shape = tokens.shapes.chip,
             )
             .padding(horizontal = NuvioTokens.Space.s10, vertical = NuvioTokens.Space.s6),
@@ -368,7 +370,7 @@ fun NuvioInfoBadge(
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            color = tokens.colors.textMuted,
+            color = contentColor ?: tokens.colors.textMuted,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

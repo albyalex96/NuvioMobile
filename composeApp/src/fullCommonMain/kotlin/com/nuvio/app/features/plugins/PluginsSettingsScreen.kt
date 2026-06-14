@@ -351,7 +351,11 @@ fun PluginsSettingsPageContent(
                     ) {
                         NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_providers, repo.scraperCount))
                         if (sortedScrapers.any { it.repositoryUrl == repo.manifestUrl && it.pluginType == "dex" }) {
-                            NuvioInfoBadge(text = "Cloudstream")
+                            NuvioInfoBadge(
+                                text = "Cloudstream",
+                                backgroundColor = Color(0xFF2D0A4E),
+                                contentColor = Color(0xFFD8B4FE),
+                            )
                         }
                         if (repo.isRefreshing) {
                             NuvioInfoBadge(text = stringResource(Res.string.plugins_badge_refreshing))
