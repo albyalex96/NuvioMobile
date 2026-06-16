@@ -18,6 +18,14 @@ enum class DnsProvider(val displayName: String) {
 interface NetworkSettingsStorage {
     fun getDnsProvider(): String?
     fun setDnsProvider(provider: String)
+    fun getCustomUserAgent(): String?
+    fun setCustomUserAgent(value: String)
+    fun getOverrideForAddons(): Boolean
+    fun setOverrideForAddons(enabled: Boolean)
+    fun getOverrideForPlugins(): Boolean
+    fun setOverrideForPlugins(enabled: Boolean)
+    fun getOverrideForBoth(): Boolean
+    fun setOverrideForBoth(enabled: Boolean)
 }
 
 class NetworkSettingsRepository(
@@ -31,9 +39,59 @@ class NetworkSettingsRepository(
     )
     val dnsProvider: StateFlow<DnsProvider> = _dnsProvider.asStateFlow()
 
+    private val _customUserAgent = MutableStateFlow(storage.getCustomUserAgent() ?: "")
+    val customUserAgent: StateFlow<String> = _customUserAgent.asStateFlow()
+
+    private val _overrideForAddons = MutableStateFlow(storage.getOverrideForAddons())
+    val overrideForAddons: StateFlow<Boolean> = _overrideForAddons.asStateFlow()
+
+    private val _overrideForPlugins = MutableStateFlow(storage.getOverrideForPlugins())
+    val overrideForPlugins: StateFlow<Boolean> = _overrideForPlugins.asStateFlow()
+
+    private val _overrideForBoth = MutableStateFlow(storage.getOverrideForBoth())
+    val overrideForBoth: StateFlow<Boolean> = _overrideForBoth.asStateFlow()
+
     fun setDnsProvider(provider: DnsProvider) {
         storage.setDnsProvider(provider.name)
         _dnsProvider.value = provider
+    }
+
+    fun setCustomUserAgent(value: String) {
+        storage.setCustomUserAgent(value)
+        _customUserAgent.value = value
+    }
+
+    fun setOverrideForAddons(enabled: Boolean) {
+        if (enabled) {
+            storage.setOverrideForPlugins(false)
+            storage.setOverrideForBoth(false)
+            _overrideForPlugins.value = false
+            _overrideForBoth.value = false
+        }
+        storage.setOverrideForAddons(enabled)
+        _overrideForAddons.value = enabled
+    }
+
+    fun setOverrideForPlugins(enabled: Boolean) {
+        if (enabled) {
+            storage.setOverrideForAddons(false)
+            storage.setOverrideForBoth(false)
+            _overrideForAddons.value = false
+            _overrideForBoth.value = false
+        }
+        storage.setOverrideForPlugins(enabled)
+        _overrideForPlugins.value = enabled
+    }
+
+    fun setOverrideForBoth(enabled: Boolean) {
+        if (enabled) {
+            storage.setOverrideForAddons(false)
+            storage.setOverrideForPlugins(false)
+            _overrideForAddons.value = false
+            _overrideForPlugins.value = false
+        }
+        storage.setOverrideForBoth(enabled)
+        _overrideForBoth.value = enabled
     }
 }
 

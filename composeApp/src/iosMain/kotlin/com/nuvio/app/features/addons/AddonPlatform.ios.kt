@@ -2,9 +2,11 @@ package com.nuvio.app.features.addons
 
 import com.nuvio.app.core.network.CloudflareSolver
 import com.nuvio.app.core.network.isCloudflareChallenge
+import com.nuvio.app.features.settings.globalNetworkSettingsRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -82,10 +84,23 @@ private val addonHttpClient = HttpClient(Darwin) {
     expectSuccess = false
 }
 
+private fun HttpRequestBuilder.applyCustomUserAgent(callerHeaders: Map<String, String> = emptyMap()) {
+    val callerHasUA = callerHeaders.entries.any { (key, _) -> key.equals("User-Agent", ignoreCase = true) }
+    val netSettings = globalNetworkSettingsRepository
+    val customUA = netSettings?.customUserAgent?.value
+    val shouldOverride = netSettings?.overrideForAddons?.value == true || netSettings?.overrideForBoth?.value == true
+    if (customUA != null && customUA.isNotBlank()) {
+        if (shouldOverride || !callerHasUA) {
+            header("User-Agent", customUA)
+        }
+    }
+}
+
 actual suspend fun httpGetText(url: String): String =
     addonHttpClient
         .get(url) {
             accept(ContentType.Application.Json)
+            applyCustomUserAgent()
         }
         .let { response ->
             val payload = response.bodyAsText()
@@ -103,6 +118,7 @@ actual suspend fun httpPostJson(url: String, body: String): String =
         .post(url) {
             accept(ContentType.Application.Json)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            applyCustomUserAgent()
             setBody(body)
         }
         .let { response ->
@@ -126,6 +142,7 @@ actual suspend fun httpGetTextWithHeaders(
             headers.forEach { (key, value) ->
                 header(key, value)
             }
+            applyCustomUserAgent(headers)
         }
         .let { response ->
             val payload = response.bodyAsText()
@@ -150,6 +167,7 @@ actual suspend fun httpPostJsonWithHeaders(
             headers.forEach { (key, value) ->
                 header(key, value)
             }
+            applyCustomUserAgent(headers)
             setBody(body)
         }
         .let { response ->
@@ -197,6 +215,8 @@ private suspend fun httpRequestRawWithCloudflare(
             }
             if (webViewUA != null && cfCookies.isNotEmpty()) {
                 header("User-Agent", webViewUA)
+            } else {
+                applyCustomUserAgent(headers)
             }
             if (this.method == HttpMethod.Post || this.method == HttpMethod.Put || this.method == HttpMethod.Patch) {
                 setBody(body)

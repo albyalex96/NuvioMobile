@@ -5,6 +5,7 @@ import com.dokar.quickjs.QuickJs
 import com.dokar.quickjs.binding.function
 import com.nuvio.app.features.addons.httpRequestRaw
 import com.nuvio.app.features.plugins.runtime.host.HostModule
+import com.nuvio.app.features.settings.globalNetworkSettingsRepository
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -52,7 +53,14 @@ internal class FetchBridge : HostModule {
         followRedirects: Boolean,
     ): String {
         val headers = parseHeaders(headersJson).toMutableMap()
-        if (!headers.containsKey("User-Agent")) {
+        val netSettings = globalNetworkSettingsRepository
+        val customUA = netSettings?.customUserAgent?.value
+        val shouldOverride = netSettings?.overrideForPlugins?.value == true || netSettings?.overrideForBoth?.value == true
+        if (customUA != null && customUA.isNotBlank() && shouldOverride) {
+            headers["User-Agent"] = customUA
+        } else if (customUA != null && customUA.isNotBlank() && !headers.containsKey("User-Agent")) {
+            headers["User-Agent"] = customUA
+        } else if (!headers.containsKey("User-Agent")) {
             headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
 

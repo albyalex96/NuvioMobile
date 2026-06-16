@@ -1462,7 +1462,20 @@
   <string name="settings_network_description">Configura DNS over HTTPS.</string>
   <string name="settings_network_dns_default">Usa il risolutore DNS di sistema.</string>
   <string name="settings_network_dns_custom">Cifra le query DNS tramite %1$s.</string>
-   
+
+  <string name="custom_user_agent_section_title">User Agent Personalizzato</string>
+  <string name="custom_user_agent_section_description">Imposta un header User-Agent personalizzato per le richieste HTTP di addon e plugin. Quando l\'override è disattivo, lo user agent personalizzato viene usato solo come fallback se nessun UA è fornito.</string>
+  <string name="custom_user_agent_input_placeholder">Inserisci user agent personalizzato</string>
+  <string name="custom_user_agent_save">Salva</string>
+  <string name="custom_user_agent_saved">User agent salvato</string>
+  <string name="custom_user_agent_override_addons">Sostituisci solo per addon</string>
+  <string name="custom_user_agent_override_addons_description">Applica lo user agent personalizzato solo alle richieste degli addon</string>
+  <string name="custom_user_agent_override_plugins">Sostituisci solo per plugin</string>
+  <string name="custom_user_agent_override_plugins_description">Applica lo user agent personalizzato solo alle richieste dei plugin</string>
+  <string name="custom_user_agent_override_both">Sostituisci per entrambi</string>
+  <string name="custom_user_agent_override_both_description">Applica lo user agent personalizzato sia ad addon che a plugin</string>
+  <string name="custom_user_agent_not_set">Non impostato</string>
+  
   <string name="settings_playback_touch_gestures">Swipe Gestures</string>
   <string name="settings_playback_touch_gestures_description">Permetti swipes e doppi tocchi sulla superficie del player per cercare, regolare la luminosità o il volume.</string>
   <string name="settings_playback_skip_seek_interval">Intervallo Skip</string>

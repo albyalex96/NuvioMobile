@@ -6,6 +6,7 @@ import android.util.Log
 import com.nuvio.app.core.network.IPv4FirstDns
 import com.nuvio.app.core.network.CloudflareSolver
 import com.nuvio.app.core.network.isCloudflareChallenge
+import com.nuvio.app.features.settings.globalNetworkSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import java.net.URI
 import kotlinx.coroutines.runBlocking
@@ -201,6 +202,16 @@ private suspend fun executeTextRequest(
         builder.header(key, value)
     }
 
+    val callerHasUA = sanitizedHeaders.entries.any { (key, _) -> key.equals("User-Agent", ignoreCase = true) }
+    val netSettings = globalNetworkSettingsRepository
+    val customUA = netSettings?.customUserAgent?.value
+    val shouldOverride = netSettings?.overrideForAddons?.value == true || netSettings?.overrideForBoth?.value == true
+    if (customUA != null && customUA.isNotBlank()) {
+        if (shouldOverride || !callerHasUA) {
+            builder.header("User-Agent", customUA)
+        }
+    }
+
     val request = if (requestAllowsBody(normalizedMethod)) {
         val contentType = sanitizedHeaders.getHeaderIgnoreCase("Content-Type")
             ?: if (normalizedMethod == "POST") "application/x-www-form-urlencoded" else "application/json"
@@ -301,6 +312,16 @@ private suspend fun httpRequestRawWithCloudflare(
     }
     if (webViewUA != null && cfCookies.isNotEmpty()) {
         builder.header("User-Agent", webViewUA)
+    } else {
+        val callerHasUA = sanitizedHeaders.entries.any { (key, _) -> key.equals("User-Agent", ignoreCase = true) }
+        val netSettings = globalNetworkSettingsRepository
+        val customUA = netSettings?.customUserAgent?.value
+        val shouldOverride = netSettings?.overrideForAddons?.value == true || netSettings?.overrideForBoth?.value == true
+        if (customUA != null && customUA.isNotBlank()) {
+            if (shouldOverride || !callerHasUA) {
+                builder.header("User-Agent", customUA)
+            }
+        }
     }
 
     val request = if (requestAllowsBody(normalizedMethod)) {

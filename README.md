@@ -52,6 +52,9 @@ After a period of inactivity, a prompt appears asking if you are still watching.
 ### DNS over HTTPS
 Secure DNS resolution via DNS-over-HTTPS (DoH) for improved privacy and protection against DNS spoofing, all configurable within the app settings.
 
+### Custom User Agent
+Override the User-Agent header sent by addon and plugin HTTP requests. Configure a custom UA string and choose where to apply it via three toggles: **Override for addons only**, **Override for plugins only**, or **Override for both**. When override is disabled, the custom UA is still used as a fallback if a request has no User-Agent header. When override is enabled, the custom UA forcibly replaces any existing User-Agent header, allowing precise control over how the app identifies itself to streaming sources.
+
 ### TOP 10 Catalogs
 Two configurable rows that display posters with a numbered badge from 1 to 10, highlighting the most popular or trending content in a ranked format.
 

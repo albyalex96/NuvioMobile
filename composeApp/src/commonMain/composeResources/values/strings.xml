@@ -1972,7 +1972,20 @@
     <string name="settings_network_description">Configure DNS over HTTPS.</string>
     <string name="settings_network_dns_default">Use the system's default DNS resolver.</string>
     <string name="settings_network_dns_custom">Encrypt DNS queries via %1$s.</string>
-     
+
+    <string name="custom_user_agent_section_title">Custom User Agent</string>
+    <string name="custom_user_agent_section_description">Set a custom User-Agent header for HTTP requests made by addons and plugins. When override is off, the custom UA is only used as a fallback when no UA is provided.</string>
+    <string name="custom_user_agent_input_placeholder">Enter custom user agent</string>
+    <string name="custom_user_agent_save">Save</string>
+    <string name="custom_user_agent_saved">User agent saved</string>
+    <string name="custom_user_agent_override_addons">Override for addons only</string>
+    <string name="custom_user_agent_override_addons_description">Apply custom user agent only to addon requests</string>
+    <string name="custom_user_agent_override_plugins">Override for plugins only</string>
+    <string name="custom_user_agent_override_plugins_description">Apply custom user agent only to plugin requests</string>
+    <string name="custom_user_agent_override_both">Override for both</string>
+    <string name="custom_user_agent_override_both_description">Apply custom user agent to both addons and plugins</string>
+    <string name="custom_user_agent_not_set">Not set</string>
+    
     <string name="top10_header">Top 10 Catalogs</string>
     <string name="top10_description">Choose catalogs to display as Top 10 rows on the home screen</string>
     <string name="top10_general_header">General</string>
