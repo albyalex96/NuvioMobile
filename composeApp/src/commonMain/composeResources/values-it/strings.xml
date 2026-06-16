@@ -1997,6 +1997,7 @@
     <string name="settings_integrations_simkl_description">Sincronizza lo stato di visione con SIMKL</string>
     <string name="settings_integrations_opensubtitles_description">Cerca e scarica sottotitoli da OpenSubtitles</string>
     <string name="settings_integrations_subdl_description">Trova e gestisci sottotitoli tramite SubDL</string>
+    <string name="work_in_progress">Lavori in Corso</string>
     <string name="settings_integrations_section_metadata">Metadati</string>
     <string name="settings_integrations_section_lists">Liste</string>
     <string name="settings_integrations_section_subtitles">Sottotitoli</string>

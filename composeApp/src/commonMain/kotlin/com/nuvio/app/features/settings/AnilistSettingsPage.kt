@@ -11,9 +11,11 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.settings_anilist_attribution_body
 import nuvio.composeapp.generated.resources.settings_anilist_attribution_title
+import nuvio.composeapp.generated.resources.work_in_progress
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.anilistSettingsContent(
@@ -39,6 +41,14 @@ internal fun LazyListScope.anilistSettingsContent(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(Res.string.work_in_progress),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 11.sp,
             )
         }
     }

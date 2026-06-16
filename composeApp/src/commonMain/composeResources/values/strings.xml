@@ -687,6 +687,7 @@
     <string name="settings_integrations_section_lists">Lists</string>
     <string name="settings_integrations_section_subtitles">Subtitles</string>
     <string name="settings_integrations_section_extra">Extra</string>
+    <string name="work_in_progress">Work In Progress</string>
     <string name="live_tv_title">Live TV</string>
     <string name="live_tv_channel_group_default">Channel</string>
     <string name="live_tv_empty_title">No channels found</string>
