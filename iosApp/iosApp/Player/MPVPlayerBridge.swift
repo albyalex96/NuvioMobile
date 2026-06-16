@@ -169,6 +169,14 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     func getPlaybackSpeed() -> Float { playerVC?.currentSpeed ?? 1.0 }
     func getErrorMessage() -> String { playerVC?.currentErrorMessage ?? "" }
 
+    func updateNowPlayingMetadata(title: String, subtitle: String?, artworkUrl: String?) {
+        playerVC?.updateNowPlaying(title: title, subtitle: subtitle, artworkUrl: artworkUrl)
+    }
+
+    func clearNowPlayingInfo() {
+        playerVC?.clearNowPlaying()
+    }
+
     func destroy() {
         playerVC?.destroyPlayer()
         playerVC = nil
@@ -248,6 +256,17 @@ final class MPVPlayerViewController: UIViewController {
     var positionMs: Int64 = 0
     var bufferedMs: Int64 = 0
     var currentSpeed: Float = 1.0
+    private lazy var nowPlayingController: NowPlayingController = {
+        let ctrl = NowPlayingController()
+        ctrl.onPlay = { [weak self] in self?.playPlayback() }
+        ctrl.onPause = { [weak self] in self?.pausePlayback() }
+        ctrl.onSeekForward = { [weak self] in self?.seekByMs(10_000) }
+        ctrl.onSeekBackward = { [weak self] in self?.seekByMs(-10_000) }
+        ctrl.onSeekTo = { [weak self] time in self?.seekToMs(Int64(time * 1000)) }
+        ctrl.onChangePlaybackPosition = { [weak self] time in self?.seekToMs(Int64(time * 1000)) }
+        return ctrl
+    }()
+
     var currentErrorMessage: String {
         errorStateLock.lock()
         defer { errorStateLock.unlock() }
@@ -703,6 +722,18 @@ final class MPVPlayerViewController: UIViewController {
         guard let ctx = mpv else { return }
         mpv = nil  // nil first so event loop stops reading
         mpv_terminate_destroy(ctx)
+    }
+
+    func updateNowPlaying(title: String, subtitle: String?, artworkUrl: String?) {
+        nowPlayingController.updateMetadata(
+            title: title,
+            subtitle: subtitle,
+            artworkUrl: artworkUrl
+        )
+    }
+
+    func clearNowPlaying() {
+        nowPlayingController.clearMetadata()
     }
 
     // MARK: - State Update

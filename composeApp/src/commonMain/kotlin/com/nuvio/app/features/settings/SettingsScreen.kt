@@ -501,6 +501,7 @@ private fun MobileSettingsScreen(
                     }
                     SettingsPage.Homescreen -> onHomescreenClick()
                     SettingsPage.MetaScreen -> onMetaScreenClick()
+                    SettingsPage.Downloads -> onPageChange(SettingsPage.Downloads)
                     else -> onPageChange(target.page)
                 }
                 SettingsSearchTarget.Downloads -> onDownloadsClick()
@@ -557,7 +558,6 @@ private fun MobileSettingsScreen(
                             onContentDiscoveryClick = { onPageChange(SettingsPage.ContentDiscovery) },
                 onNetworkClick = { onPageChange(SettingsPage.Network) },
                             onIntegrationsClick = { onPageChange(SettingsPage.Integrations) },
-                            onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                             onSupportersContributorsClick = onSupportersContributorsClick,
                             onLicensesAttributionsClick = onLicensesAttributionsClick,
                             onCheckForUpdatesClick = onCheckForUpdatesClick,
@@ -628,6 +628,9 @@ private fun MobileSettingsScreen(
                     isTablet = false,
                     uiState = episodeReleaseNotificationsUiState,
                 )
+                SettingsPage.Downloads -> downloadsSettingsContent(
+                    isTablet = false,
+                )
                 SettingsPage.ContinueWatching -> continueWatchingSettingsContent(
                     isTablet = false,
                     isVisible = continueWatchingPreferencesUiState.isVisible,
@@ -668,10 +671,42 @@ private fun MobileSettingsScreen(
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = false,
+                    onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                    onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
+                    onMalClick = { onPageChange(SettingsPage.Mal) },
+                    onKitsuClick = { onPageChange(SettingsPage.Kitsu) },
+                    onAnilistClick = { onPageChange(SettingsPage.Anilist) },
+                    onSimklClick = { onPageChange(SettingsPage.Simkl) },
+                    onOpenSubtitlesClick = { onPageChange(SettingsPage.OpenSubtitles) },
+                    onSubdlClick = { onPageChange(SettingsPage.Subdl) },
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
-                    onDebridClick = { onPageChange(SettingsPage.Debrid) },
                     onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
+                )
+                SettingsPage.Mal -> malSettingsContent(
+                    isTablet = false,
+                )
+                SettingsPage.Kitsu -> kitsuSettingsContent(
+                    isTablet = false,
+                )
+                SettingsPage.Anilist -> anilistSettingsContent(
+                    isTablet = false,
+                )
+                SettingsPage.Simkl -> simklSettingsContent(
+                    isTablet = false,
+                )
+                SettingsPage.OpenSubtitles -> openSubtitlesSettingsContent(
+                    isTablet = false,
+                )
+                SettingsPage.Subdl -> subdlSettingsContent(
+                    isTablet = false,
+                )
+                SettingsPage.TraktAuthentication -> traktSettingsContent(
+                    isTablet = false,
+                    uiState = traktAuthUiState,
+                    settingsUiState = traktSettingsUiState,
+                    commentsEnabled = traktCommentsEnabled,
+                    onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
                 SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                     isTablet = false,
@@ -688,13 +723,6 @@ private fun MobileSettingsScreen(
                 SettingsPage.LiveTv -> liveTvSettingsContent(
                     isTablet = false,
                     uiState = liveTvUiState,
-                )
-                SettingsPage.TraktAuthentication -> traktSettingsContent(
-                    isTablet = false,
-                    uiState = traktAuthUiState,
-                    settingsUiState = traktSettingsUiState,
-                    commentsEnabled = traktCommentsEnabled,
-                    onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
             SettingsPage.Network -> networkSettingsContent(
                 isTablet = false,
@@ -914,6 +942,7 @@ private fun TabletSettingsScreen(
                     }
                     SettingsPage.Homescreen -> onHomescreenClick()
                     SettingsPage.MetaScreen -> onMetaScreenClick()
+                    SettingsPage.Downloads -> onPageChange(SettingsPage.Downloads)
                     else -> onPageChange(target.page)
                 }
                 SettingsSearchTarget.Downloads -> onDownloadsClick()
@@ -984,7 +1013,6 @@ private fun TabletSettingsScreen(
                             onContentDiscoveryClick = { openInlinePage(SettingsPage.ContentDiscovery) },
                             onNetworkClick = { openInlinePage(SettingsPage.Network) },
                             onIntegrationsClick = { openInlinePage(SettingsPage.Integrations) },
-                            onTraktClick = { openInlinePage(SettingsPage.TraktAuthentication) },
                             onSupportersContributorsClick = { openInlinePage(SettingsPage.SupportersContributors) },
                             onLicensesAttributionsClick = { openInlinePage(SettingsPage.LicensesAttributions) },
                             onCheckForUpdatesClick = onCheckForUpdatesClick,
@@ -1059,6 +1087,9 @@ private fun TabletSettingsScreen(
                     isTablet = true,
                     uiState = episodeReleaseNotificationsUiState,
                 )
+                SettingsPage.Downloads -> downloadsSettingsContent(
+                    isTablet = true,
+                )
                 SettingsPage.ContinueWatching -> continueWatchingSettingsContent(
                     isTablet = true,
                     isVisible = continueWatchingPreferencesUiState.isVisible,
@@ -1099,10 +1130,42 @@ private fun TabletSettingsScreen(
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = true,
+                    onDebridClick = { openInlinePage(SettingsPage.Debrid) },
+                    onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
+                    onMalClick = { onPageChange(SettingsPage.Mal) },
+                    onKitsuClick = { onPageChange(SettingsPage.Kitsu) },
+                    onAnilistClick = { onPageChange(SettingsPage.Anilist) },
+                    onSimklClick = { onPageChange(SettingsPage.Simkl) },
+                    onOpenSubtitlesClick = { onPageChange(SettingsPage.OpenSubtitles) },
+                    onSubdlClick = { onPageChange(SettingsPage.Subdl) },
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
-                    onDebridClick = { openInlinePage(SettingsPage.Debrid) },
                     onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
+                )
+                SettingsPage.Mal -> malSettingsContent(
+                    isTablet = true,
+                )
+                SettingsPage.Kitsu -> kitsuSettingsContent(
+                    isTablet = true,
+                )
+                SettingsPage.Anilist -> anilistSettingsContent(
+                    isTablet = true,
+                )
+                SettingsPage.Simkl -> simklSettingsContent(
+                    isTablet = true,
+                )
+                SettingsPage.OpenSubtitles -> openSubtitlesSettingsContent(
+                    isTablet = true,
+                )
+                SettingsPage.Subdl -> subdlSettingsContent(
+                    isTablet = true,
+                )
+                SettingsPage.TraktAuthentication -> traktSettingsContent(
+                    isTablet = true,
+                    uiState = traktAuthUiState,
+                    settingsUiState = traktSettingsUiState,
+                    commentsEnabled = traktCommentsEnabled,
+            onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
                 SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                     isTablet = true,
@@ -1123,13 +1186,7 @@ private fun TabletSettingsScreen(
                 SettingsPage.Network -> networkSettingsContent(
                     isTablet = true,
                 )
-                SettingsPage.TraktAuthentication -> traktSettingsContent(
-                    isTablet = true,
-                    uiState = traktAuthUiState,
-                    settingsUiState = traktSettingsUiState,
-                    commentsEnabled = traktCommentsEnabled,
-            onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
-                )
+
             }
             }
         }

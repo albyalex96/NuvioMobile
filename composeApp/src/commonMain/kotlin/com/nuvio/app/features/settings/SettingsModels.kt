@@ -32,6 +32,13 @@ import nuvio.composeapp.generated.resources.compose_settings_page_streams
 import nuvio.composeapp.generated.resources.compose_settings_page_supporters_contributors
 import nuvio.composeapp.generated.resources.compose_settings_page_tmdb_enrichment
 import nuvio.composeapp.generated.resources.compose_settings_page_trakt
+import nuvio.composeapp.generated.resources.compose_settings_page_mal
+import nuvio.composeapp.generated.resources.compose_settings_page_kitsu
+import nuvio.composeapp.generated.resources.compose_settings_page_anilist
+import nuvio.composeapp.generated.resources.compose_settings_page_simkl
+import nuvio.composeapp.generated.resources.compose_settings_page_opensubtitles
+import nuvio.composeapp.generated.resources.compose_settings_page_subdl
+import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
 import nuvio.composeapp.generated.resources.settings_account
 import nuvio.composeapp.generated.resources.compose_settings_page_network
 import org.jetbrains.compose.resources.StringResource
@@ -101,10 +108,15 @@ internal enum class SettingsPage(
         category = SettingsCategory.General,
         parentPage = Root,
     ),
+    Downloads(
+        titleRes = Res.string.compose_settings_root_downloads_title,
+        category = SettingsCategory.General,
+        parentPage = Root,
+    ),
     ContinueWatching(
         titleRes = Res.string.compose_settings_page_continue_watching,
         category = SettingsCategory.General,
-        parentPage = Appearance,
+        parentPage = Root,
     ),
     PosterCustomization(
         titleRes = Res.string.compose_settings_page_poster_customization,
@@ -158,6 +170,36 @@ internal enum class SettingsPage(
     ),
     LiveTv(
         titleRes = Res.string.compose_settings_page_live_tv,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    Mal(
+        titleRes = Res.string.compose_settings_page_mal,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    Kitsu(
+        titleRes = Res.string.compose_settings_page_kitsu,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    Anilist(
+        titleRes = Res.string.compose_settings_page_anilist,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    Simkl(
+        titleRes = Res.string.compose_settings_page_simkl,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    OpenSubtitles(
+        titleRes = Res.string.compose_settings_page_opensubtitles,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    Subdl(
+        titleRes = Res.string.compose_settings_page_subdl,
         category = SettingsCategory.General,
         parentPage = Integrations,
     ),

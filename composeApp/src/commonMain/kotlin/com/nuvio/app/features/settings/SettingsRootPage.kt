@@ -48,13 +48,11 @@ import nuvio.composeapp.generated.resources.compose_settings_root_notifications_
 import nuvio.composeapp.generated.resources.compose_settings_root_streams_description
 import nuvio.composeapp.generated.resources.compose_settings_root_switch_profile_description
 import nuvio.composeapp.generated.resources.compose_settings_root_switch_profile_title
-import nuvio.composeapp.generated.resources.compose_settings_root_trakt_description
 import nuvio.composeapp.generated.resources.compose_settings_root_about_section
 import nuvio.composeapp.generated.resources.compose_settings_root_account_section
 import nuvio.composeapp.generated.resources.compose_settings_root_advanced_description
 import nuvio.composeapp.generated.resources.compose_settings_root_advanced_section
 import nuvio.composeapp.generated.resources.compose_settings_page_content_discovery
-import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.settings_playback_subtitle
 import nuvio.composeapp.generated.resources.about_supporters_contributors_subtitle
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
@@ -74,7 +72,6 @@ internal fun LazyListScope.settingsRootContent(
     onContentDiscoveryClick: () -> Unit,
     onNetworkClick: () -> Unit,
     onIntegrationsClick: () -> Unit,
-    onTraktClick: () -> Unit,
     onSupportersContributorsClick: () -> Unit,
     onLicensesAttributionsClick: () -> Unit,
     onCheckForUpdatesClick: (() -> Unit)? = null,
@@ -109,14 +106,6 @@ internal fun LazyListScope.settingsRootContent(
                         icon = Icons.Rounded.AccountCircle,
                         isTablet = isTablet,
                         onClick = onAccountClick,
-                    )
-                    SettingsGroupDivider(isTablet = isTablet)
-                    SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_page_trakt),
-                        description = stringResource(Res.string.compose_settings_root_trakt_description),
-                        iconPainter = integrationLogoPainter(IntegrationLogo.Trakt),
-                        isTablet = isTablet,
-                        onClick = onTraktClick,
                     )
                 }
             }

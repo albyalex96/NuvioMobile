@@ -60,7 +60,7 @@ actual fun PlatformPlayerSurface(
     }
 
     val controller = remember(bridge) {
-        object : PlayerEngineController {
+        object : PlayerEngineController, NowPlayingMetadataController {
             override fun play() {
                 bridge.play()
             }
@@ -233,6 +233,18 @@ actual fun PlatformPlayerSurface(
                     fontSize = style.toMpvSubtitleFontSize(),
                     subPos = style.toMpvSubtitlePosition(),
                 )
+            }
+
+            override fun updateNowPlayingMetadata(info: PlayerNowPlayingInfo) {
+                bridge.updateNowPlayingMetadata(
+                    info.title,
+                    info.subtitle,
+                    info.artworkUrl,
+                )
+            }
+
+            override fun clearNowPlayingInfo() {
+                bridge.clearNowPlayingInfo()
             }
         }
     }

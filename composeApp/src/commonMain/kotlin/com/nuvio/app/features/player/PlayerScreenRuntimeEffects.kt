@@ -242,6 +242,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
     BindPlayerUiVisibilityEffects()
     BindPlayerMetadataAndSkipEffects()
     BindCastEffects()
+    PlayerNowPlayingMetaDataEffect()
 
     DisposableEffect(playbackSession.videoId, activeSourceUrl, activeSourceAudioUrl) {
         val effectVideoId = playbackSession.videoId

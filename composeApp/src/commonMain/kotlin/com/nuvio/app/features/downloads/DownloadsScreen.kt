@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +43,7 @@ import com.nuvio.app.core.i18n.localizedByteUnit
 import com.nuvio.app.core.share.SharePlatform
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
+import com.nuvio.app.features.settings.DownloadsSettingsScreen
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -56,6 +58,7 @@ fun DownloadsScreen(
     }.collectAsStateWithLifecycle()
 
     var selectedShowId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
 
     val completedEpisodes = remember(uiState.items) {
         uiState.completedItems
@@ -67,6 +70,13 @@ fun DownloadsScreen(
         selectedShowId?.let { showId ->
             completedEpisodes.firstOrNull { it.parentMetaId == showId }?.title
         }
+    }
+
+    if (showSettings) {
+        DownloadsSettingsScreen(
+            onBack = { showSettings = false },
+        )
+        return
     }
 
     NuvioScreen {
@@ -82,6 +92,16 @@ fun DownloadsScreen(
                         selectedShowId = null
                     } else {
                         onBack()
+                    }
+                },
+                actions = {
+                    if (selectedShowId == null) {
+                        IconButton(onClick = { showSettings = true }) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = stringResource(Res.string.compose_settings_page_root),
+                            )
+                        }
                     }
                 },
             )

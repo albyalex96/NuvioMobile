@@ -74,6 +74,8 @@ interface NuvioPlayerBridge {
     fun getBufferedMs(): Long
     fun getPlaybackSpeed(): Float
     fun getErrorMessage(): String
+    fun updateNowPlayingMetadata(title: String, subtitle: String?, artworkUrl: String?)
+    fun clearNowPlayingInfo()
     fun destroy()
 }
 

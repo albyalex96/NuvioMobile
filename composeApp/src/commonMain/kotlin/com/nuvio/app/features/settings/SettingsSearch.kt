@@ -234,6 +234,13 @@ internal fun settingsSearchEntries(
         target = SettingsSearchTarget.Downloads,
     )
     addPage(
+        page = SettingsPage.Downloads,
+        key = "download-location",
+        title = stringResource(Res.string.settings_downloads_location_title),
+        description = stringResource(Res.string.compose_settings_root_downloads_description),
+        icon = Icons.Rounded.CloudDownload,
+    )
+    addPage(
         page = SettingsPage.Playback,
         key = "playback",
         title = playbackPage,
@@ -807,6 +814,49 @@ internal fun settingsSearchEntries(
             icon = Icons.Rounded.Link,
         )
     }
+
+    addPage(
+        page = SettingsPage.Mal,
+        key = "mal",
+        title = stringResource(Res.string.compose_settings_page_mal),
+        description = stringResource(Res.string.settings_integrations_mal_description),
+        icon = Icons.Rounded.Link,
+    )
+    addPage(
+        page = SettingsPage.Kitsu,
+        key = "kitsu",
+        title = stringResource(Res.string.compose_settings_page_kitsu),
+        description = stringResource(Res.string.settings_integrations_kitsu_description),
+        icon = Icons.Rounded.Link,
+    )
+    addPage(
+        page = SettingsPage.Anilist,
+        key = "anilist",
+        title = stringResource(Res.string.compose_settings_page_anilist),
+        description = stringResource(Res.string.settings_integrations_anilist_description),
+        icon = Icons.Rounded.Link,
+    )
+    addPage(
+        page = SettingsPage.Simkl,
+        key = "simkl",
+        title = stringResource(Res.string.compose_settings_page_simkl),
+        description = stringResource(Res.string.settings_integrations_simkl_description),
+        icon = Icons.Rounded.Link,
+    )
+    addPage(
+        page = SettingsPage.OpenSubtitles,
+        key = "opensubtitles",
+        title = stringResource(Res.string.compose_settings_page_opensubtitles),
+        description = stringResource(Res.string.settings_integrations_opensubtitles_description),
+        icon = Icons.Rounded.Link,
+    )
+    addPage(
+        page = SettingsPage.Subdl,
+        key = "subdl",
+        title = stringResource(Res.string.compose_settings_page_subdl),
+        description = stringResource(Res.string.settings_integrations_subdl_description),
+        icon = Icons.Rounded.Link,
+    )
 
     val notificationsAlerts = stringResource(Res.string.settings_notifications_section_alerts)
     addRow(

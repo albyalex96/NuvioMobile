@@ -1,6 +1,8 @@
 package com.nuvio.app.features.downloads
 
 import android.content.Context
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +18,8 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
@@ -30,6 +34,21 @@ private val downloadHttpClient = OkHttpClient.Builder()
 
 internal actual object DownloadsPlatformDownloader {
     private var appContext: Context? = null
+
+    private fun resolveTarget(context: Context, uriString: String): DownloadTarget? {
+        val uri = Uri.parse(uriString)
+        return if (uri.scheme == "content") {
+            val doc = DocumentFile.fromSingleUri(context, uri) ?: return null
+            DocumentSingleTarget(context, doc)
+        } else {
+            val file = if (uriString.startsWith("file:")) {
+                File(URI(uriString))
+            } else {
+                File(uriString)
+            }
+            FileDownloadTarget(file)
+        }
+    }
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -52,12 +71,29 @@ internal actual object DownloadsPlatformDownloader {
                 return@launch
             }
 
-            val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-            val destination = File(downloadsDir, request.destinationFileName)
-            val tempFile = File(downloadsDir, "${request.destinationFileName}.part")
+            DownloadsSettingsRepository.ensureLoaded()
+            val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
+            val customLocationUri = customLocationUriString?.let { Uri.parse(it) }
+
+            val destination: DownloadTarget
+            val tempFile: DownloadTarget
+
+            if (customLocationUri != null && customLocationUri.scheme == "content") {
+                val tree = DocumentFile.fromTreeUri(context, customLocationUri)
+                if (tree == null || !tree.canWrite()) {
+                    onFailure(runBlocking { getString(Res.string.downloads_error_cannot_write_location) })
+                    return@launch
+                }
+                destination = DocumentDownloadTarget(context, tree, request.destinationFileName)
+                tempFile = DocumentDownloadTarget(context, tree, "${request.destinationFileName}.part")
+            } else {
+                val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+                destination = FileDownloadTarget(File(downloadsDir, request.destinationFileName))
+                tempFile = FileDownloadTarget(File(downloadsDir, "${request.destinationFileName}.part"))
+            }
 
             try {
-                var resumeFromBytes = tempFile.takeIf { it.exists() }?.length()?.coerceAtLeast(0L) ?: 0L
+                var resumeFromBytes = if (tempFile.exists()) tempFile.length().coerceAtLeast(0L) else 0L
 
                 fun buildRequest(rangeStart: Long?): Request {
                     val requestBuilder = Request.Builder().url(request.sourceUrl)
@@ -119,7 +155,7 @@ internal actual object DownloadsPlatformDownloader {
                     onProgress(downloadedBytes, totalBytes)
 
                     body.byteStream().use { input ->
-                        FileOutputStream(tempFile, appendToTemp).use { output ->
+                        tempFile.openOutputStream(appendToTemp).use { output ->
                             val buffer = ByteArray(16 * 1024)
                             while (true) {
                                 ensureActive()
@@ -137,12 +173,12 @@ internal actual object DownloadsPlatformDownloader {
                         destination.delete()
                     }
                     if (!tempFile.renameTo(destination)) {
-                        tempFile.copyTo(destination, overwrite = true)
+                        tempFile.copyTo(destination)
                         tempFile.delete()
                     }
 
                     val finalSize = destination.length()
-                    onSuccess(destination.toURI().toString(), totalBytes ?: finalSize)
+                    onSuccess(destination.toUriString(), totalBytes ?: finalSize)
                 }
             } catch (error: Throwable) {
                 onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
@@ -158,34 +194,55 @@ internal actual object DownloadsPlatformDownloader {
 
     actual fun removeFile(localFileUri: String?): Boolean {
         if (localFileUri.isNullOrBlank()) return false
-        val file = localFileUri.toLocalFileOrNull() ?: return false
-        return runCatching { file.delete() }.getOrDefault(false)
+        val context = appContext ?: return false
+        val target = resolveTarget(context, localFileUri) ?: return false
+        return target.delete()
     }
 
     actual fun removePartialFile(destinationFileName: String): Boolean {
         val context = appContext ?: return false
-        val downloadsDir = File(context.filesDir, "downloads")
-        val tempFile = File(downloadsDir, "$destinationFileName.part")
+        DownloadsSettingsRepository.ensureLoaded()
+        val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
+        val customLocationUri = customLocationUriString?.let { Uri.parse(it) }
+
+        val tempFile: DownloadTarget = if (customLocationUri != null && customLocationUri.scheme == "content") {
+            val tree = DocumentFile.fromTreeUri(context, customLocationUri) ?: return false
+            DocumentDownloadTarget(context, tree, "$destinationFileName.part")
+        } else {
+            val downloadsDir = File(context.filesDir, "downloads")
+            FileDownloadTarget(File(downloadsDir, "$destinationFileName.part"))
+        }
+
         if (!tempFile.exists()) return true
-        return runCatching { tempFile.delete() }.getOrDefault(false)
+        return tempFile.delete()
     }
 
     actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? {
-        localFileUri
-            ?.toLocalFileOrNull()
-            ?.takeIf { it.exists() }
-            ?.let { return it.toURI().toString() }
-
         val context = appContext ?: return null
+        if (!localFileUri.isNullOrBlank()) {
+            val target = resolveTarget(context, localFileUri)
+            if (target?.exists() == true) {
+                return target.toUriString()
+            }
+        }
+
         val fileName = destinationFileName.trim().takeIf { it.isNotBlank() }
-            ?: localFileUri
-                ?.toLocalFileOrNull()
-                ?.name
-                ?.takeIf { it.isNotBlank() }
+            ?: localFileUri?.let { Uri.parse(it).lastPathSegment }
             ?: return null
-        val downloadsDir = File(context.filesDir, "downloads")
-        val localFile = File(downloadsDir, fileName)
-        return localFile.takeIf { it.exists() }?.toURI()?.toString()
+
+        DownloadsSettingsRepository.ensureLoaded()
+        val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
+        val customLocationUri = customLocationUriString?.let { Uri.parse(it) }
+
+        val localFileTarget: DownloadTarget = if (customLocationUri != null && customLocationUri.scheme == "content") {
+            val tree = DocumentFile.fromTreeUri(context, customLocationUri) ?: return null
+            DocumentDownloadTarget(context, tree, fileName)
+        } else {
+            val downloadsDir = File(context.filesDir, "downloads")
+            FileDownloadTarget(File(downloadsDir, fileName))
+        }
+
+        return localFileTarget.takeIf { it.exists() }?.toUriString()
     }
 
     actual fun fetchUrlAsString(url: String, headers: Map<String, String>): String? {
@@ -241,20 +298,34 @@ internal actual object DownloadsPlatformDownloader {
                 return@launch
             }
 
-            val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-            val destination = File(downloadsDir, destinationFileName)
-            val tempFile = File(downloadsDir, "${destinationFileName}.hls.part")
+            DownloadsSettingsRepository.ensureLoaded()
+            val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
+            val customLocationUri = customLocationUriString?.let { Uri.parse(it) }
+
+            val destination: DownloadTarget
+            val tempFile: DownloadTarget
+
+            if (customLocationUri != null && customLocationUri.scheme == "content") {
+                val tree = DocumentFile.fromTreeUri(context, customLocationUri)
+                if (tree == null || !tree.canWrite()) {
+                    onFailure(runBlocking { getString(Res.string.downloads_error_cannot_write_location) })
+                    return@launch
+                }
+                destination = DocumentDownloadTarget(context, tree, destinationFileName)
+                tempFile = DocumentDownloadTarget(context, tree, "${destinationFileName}.hls.part")
+            } else {
+                val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+                destination = FileDownloadTarget(File(downloadsDir, destinationFileName))
+                tempFile = FileDownloadTarget(File(downloadsDir, "${destinationFileName}.hls.part"))
+            }
+
             var totalDownloaded = 0L
-            var segmentIndex = 0
 
             try {
                 if (tempFile.exists()) tempFile.delete()
-                tempFile.createNewFile()
-
-                FileOutputStream(tempFile, true).use { output ->
+                tempFile.openOutputStream(false).use { output ->
                     for (segmentUrl in segmentUrls) {
                         ensureActive()
-                        segmentIndex++
 
                         val requestBuilder = Request.Builder().url(segmentUrl)
                         sourceHeaders.forEach { (key, value) ->
@@ -293,12 +364,12 @@ internal actual object DownloadsPlatformDownloader {
 
                 if (destination.exists()) destination.delete()
                 if (!tempFile.renameTo(destination)) {
-                    tempFile.copyTo(destination, overwrite = true)
+                    tempFile.copyTo(destination)
                     tempFile.delete()
                 }
 
                 val finalSize = destination.length()
-                onSuccess(destination.toURI().toString(), finalSize)
+                onSuccess(destination.toUriString(), finalSize)
             } catch (error: Throwable) {
                 onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
             }
@@ -320,14 +391,94 @@ private class AndroidDownloadsTaskHandle(
     }
 }
 
-private fun String.toLocalFileOrNull(): File? {
-    return runCatching {
-        if (startsWith("file:")) {
-            File(URI(this))
-        } else {
-            File(this)
+private interface DownloadTarget {
+    fun exists(): Boolean
+    fun length(): Long
+    fun delete(): Boolean
+    fun openOutputStream(append: Boolean): OutputStream
+    fun toUriString(): String
+    fun renameTo(other: DownloadTarget): Boolean
+    fun copyTo(other: DownloadTarget)
+}
+
+private class FileDownloadTarget(private val file: File) : DownloadTarget {
+    override fun exists(): Boolean = file.exists()
+    override fun length(): Long = file.length()
+    override fun delete(): Boolean = file.delete()
+    override fun openOutputStream(append: Boolean): OutputStream = FileOutputStream(file, append)
+    override fun toUriString(): String = file.toURI().toString()
+    override fun renameTo(other: DownloadTarget): Boolean {
+        if (other is FileDownloadTarget) {
+            return file.renameTo(other.file)
         }
-    }.getOrNull()
+        return false
+    }
+    override fun copyTo(other: DownloadTarget) {
+        if (other is FileDownloadTarget) {
+            file.copyTo(other.file, overwrite = true)
+        } else {
+            file.inputStream().use { input ->
+                other.openOutputStream(false).use { output ->
+                    input.copyTo(output)
+                }
+            }
+        }
+    }
+}
+
+private class DocumentDownloadTarget(
+    private val context: Context,
+    private val tree: DocumentFile,
+    private val fileName: String,
+) : DownloadTarget {
+    private fun getDoc(): DocumentFile? = tree.findFile(fileName)
+
+    override fun exists(): Boolean = getDoc()?.exists() ?: false
+    override fun length(): Long = getDoc()?.length() ?: 0L
+    override fun delete(): Boolean = getDoc()?.delete() ?: false
+    override fun openOutputStream(append: Boolean): OutputStream {
+        val doc = getDoc() ?: tree.createFile("application/octet-stream", fileName)
+            ?: error("Failed to create file $fileName")
+        return context.contentResolver.openOutputStream(doc.uri, if (append) "wa" else "w")
+            ?: error("Failed to open output stream for $fileName")
+    }
+    override fun toUriString(): String = getDoc()?.uri?.toString() ?: ""
+    override fun renameTo(other: DownloadTarget): Boolean {
+        val doc = getDoc() ?: return false
+        if (other is DocumentDownloadTarget && other.tree.uri == tree.uri) {
+            return doc.renameTo(other.fileName)
+        }
+        return false
+    }
+    override fun copyTo(other: DownloadTarget) {
+        val doc = getDoc() ?: return
+        context.contentResolver.openInputStream(doc.uri)?.use { input ->
+            other.openOutputStream(false).use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
+}
+
+private class DocumentSingleTarget(
+    private val context: Context,
+    private val doc: DocumentFile,
+) : DownloadTarget {
+    override fun exists(): Boolean = doc.exists()
+    override fun length(): Long = doc.length()
+    override fun delete(): Boolean = doc.delete()
+    override fun openOutputStream(append: Boolean): OutputStream =
+        context.contentResolver.openOutputStream(doc.uri, if (append) "wa" else "w")
+            ?: error("Failed to open output stream")
+    override fun toUriString(): String = doc.uri.toString()
+    override fun renameTo(other: DownloadTarget): Boolean = false
+    override fun copyTo(other: DownloadTarget) {
+        context.contentResolver.openInputStream(doc.uri)?.use { input ->
+            other.openOutputStream(false).use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
 }
 
 private fun resolveTotalBytes(
