@@ -671,7 +671,6 @@ private fun MobileSettingsScreen(
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = false,
-                    onDebridClick = { onPageChange(SettingsPage.Debrid) },
                     onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                     onMalClick = { onPageChange(SettingsPage.Mal) },
                     onKitsuClick = { onPageChange(SettingsPage.Kitsu) },
@@ -1130,7 +1129,6 @@ private fun TabletSettingsScreen(
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = true,
-                    onDebridClick = { openInlinePage(SettingsPage.Debrid) },
                     onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                     onMalClick = { onPageChange(SettingsPage.Mal) },
                     onKitsuClick = { onPageChange(SettingsPage.Kitsu) },

@@ -8,6 +8,12 @@ internal enum class IntegrationLogo {
     Trakt,
     MdbList,
     IntroDb,
+    Mal,
+    Kitsu,
+    Anilist,
+    Simkl,
+    OpenSubtitles,
+    Subdl,
 }
 
 @Composable

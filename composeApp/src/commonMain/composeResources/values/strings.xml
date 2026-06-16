@@ -683,6 +683,10 @@
     <string name="settings_integrations_simkl_description">Sync your watch status with SIMKL</string>
     <string name="settings_integrations_opensubtitles_description">Search and download subtitles from OpenSubtitles</string>
     <string name="settings_integrations_subdl_description">Find and manage subtitles via SubDL</string>
+    <string name="settings_integrations_section_metadata">Metadata</string>
+    <string name="settings_integrations_section_lists">Lists</string>
+    <string name="settings_integrations_section_subtitles">Subtitles</string>
+    <string name="settings_integrations_section_extra">Extra</string>
     <string name="live_tv_title">Live TV</string>
     <string name="live_tv_channel_group_default">Channel</string>
     <string name="live_tv_empty_title">No channels found</string>

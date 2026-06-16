@@ -46,6 +46,12 @@ private const val PremiumizeUrl = "https://www.premiumize.me"
 private const val TorboxUrl = "https://torbox.app"
 private const val MdbListUrl = "https://mdblist.com"
 private const val IntroDbUrl = "https://introdb.app/"
+private const val MalUrl = "https://myanimelist.net"
+private const val KitsuUrl = "https://kitsu.app"
+private const val AnilistUrl = "https://anilist.co"
+private const val SimklUrl = "https://simkl.com"
+private const val OpenSubtitlesUrl = "https://www.opensubtitles.org"
+private const val SubdlUrl = "https://subdl.com"
 private const val NuvioRepositoryUrl = "https://github.com/NuvioMedia/NuvioMobile"
 private const val MpvKitUrl = "https://github.com/mpvkit/MPVKit"
 private const val ApacheLicenseUrl = "https://www.apache.org/licenses/LICENSE-2.0"
@@ -355,6 +361,42 @@ private fun attributionItems(): List<AttributionItem> = listOf(
         bodyRes = Res.string.settings_licenses_attributions_introdb_body,
         logo = IntegrationLogo.IntroDb,
         link = IntroDbUrl,
+    ),
+    AttributionItem(
+        titleRes = Res.string.settings_mal_attribution_title,
+        bodyRes = Res.string.settings_mal_attribution_body,
+        logo = IntegrationLogo.Mal,
+        link = MalUrl,
+    ),
+    AttributionItem(
+        titleRes = Res.string.settings_kitsu_attribution_title,
+        bodyRes = Res.string.settings_kitsu_attribution_body,
+        logo = IntegrationLogo.Kitsu,
+        link = KitsuUrl,
+    ),
+    AttributionItem(
+        titleRes = Res.string.settings_anilist_attribution_title,
+        bodyRes = Res.string.settings_anilist_attribution_body,
+        logo = IntegrationLogo.Anilist,
+        link = AnilistUrl,
+    ),
+    AttributionItem(
+        titleRes = Res.string.settings_simkl_attribution_title,
+        bodyRes = Res.string.settings_simkl_attribution_body,
+        logo = IntegrationLogo.Simkl,
+        link = SimklUrl,
+    ),
+    AttributionItem(
+        titleRes = Res.string.settings_opensubtitles_attribution_title,
+        bodyRes = Res.string.settings_opensubtitles_attribution_body,
+        logo = IntegrationLogo.OpenSubtitles,
+        link = OpenSubtitlesUrl,
+    ),
+    AttributionItem(
+        titleRes = Res.string.settings_subdl_attribution_title,
+        bodyRes = Res.string.settings_subdl_attribution_body,
+        logo = IntegrationLogo.Subdl,
+        link = SubdlUrl,
     ),
     AttributionItem(
         titleRes = Res.string.settings_licenses_attributions_imdb_title,
