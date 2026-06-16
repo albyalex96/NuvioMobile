@@ -1,3 +1,6 @@
+# Keep @Serializable enum used as navigation route argument — must retain FQN for serialization.
+-keep class com.nuvio.app.features.catalog.CatalogTargetKind { *; }
+
 # Project-specific ProGuard rules for composeApp Android release builds.
 
 # Keep useful metadata for crash reports.
