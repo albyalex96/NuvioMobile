@@ -29,3 +29,4 @@ scripts/scrape_android_compose_animation_docs.py
 tools
 AGENTS.md
 iosApp/Pods/
+composeApp/src/desktopMain/native/windows/runtime/libmpv-2.dll
