@@ -143,6 +143,7 @@ internal class NativePlayerController(
             "toggleFullscreen" -> onEvent("toggleFullscreen", 0.0)
             "resize" -> cycleResizeMode()
             "speed" -> cyclePlaybackSpeed()
+            "selectBuiltInSubtitleTrack" -> selectSubtitleTrack(value.toInt())
             "subtitles" -> onEvent("subtitles", 0.0)
             "audio" -> onEvent("audio", 0.0)
             "sources" -> onEvent("sources", 0.0)

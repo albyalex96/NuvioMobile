@@ -44,6 +44,7 @@ actual fun PlatformPlayerSurface(
         NativePlayerSurface(
             sourceUrl = sourceUrl,
             sourceHeaders = sourceHeaders,
+            externalSubtitles = externalSubtitles,
             modifier = modifier,
             playWhenReady = playWhenReady,
             resizeMode = resizeMode,
@@ -63,6 +64,7 @@ actual fun PlatformPlayerSurface(
 private fun NativePlayerSurface(
     sourceUrl: String,
     sourceHeaders: Map<String, String>,
+    externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     modifier: Modifier,
     playWhenReady: Boolean,
     resizeMode: PlayerResizeMode,
@@ -164,6 +166,22 @@ private fun NativePlayerSurface(
                 println("[NuvioDesktopPlayer] stalled: pos=${snapshot.positionMs} dur=${snapshot.durationMs} playing=${snapshot.isPlaying} ended=${snapshot.isEnded} err=${err}")
             }
             delay(500L)
+        }
+    }
+
+    LaunchedEffect(controller, externalSubtitles) {
+        if (externalSubtitles.isEmpty()) return@LaunchedEffect
+        var pollCount = 0
+        while (pollCount < 40) {
+            val snap = controller.snapshot()
+            if (snap.durationMs > 0L || !snap.isLoading) break
+            delay(250L)
+            pollCount++
+        }
+        delay(500L)
+        externalSubtitles.forEach { sub ->
+            println("[NuvioDesktopPlayer] loading external subtitle: ${sub.url}")
+            controller.setSubtitleUri(sub.url)
         }
     }
 
