@@ -83,6 +83,9 @@ import com.nuvio.app.core.deeplink.AppDeepLink
 import com.nuvio.app.core.deeplink.AppDeepLinkRepository
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
+import com.nuvio.app.core.network.SupabaseProvider
+import com.nuvio.app.core.network.SyncBackendRefreshResult
+import com.nuvio.app.core.network.SyncBackendRepository
 import com.nuvio.app.core.sync.AppForegroundMonitor
 import com.nuvio.app.core.sync.ProfileSettingsSync
 import com.nuvio.app.core.sync.SyncManager
@@ -423,6 +426,32 @@ private enum class AppGateScreen {
     Main,
 }
 
+private suspend fun refreshSyncBackendSelection() {
+    SyncBackendRepository.ensureLoaded()
+
+    when (val result = SyncBackendRepository.refreshFromManifest()) {
+        SyncBackendRefreshResult.NotConfigured,
+        is SyncBackendRefreshResult.Failed,
+        SyncBackendRefreshResult.Unchanged,
+        -> Unit
+        is SyncBackendRefreshResult.Applied -> {
+            SupabaseProvider.rebuildClient()
+            NetworkStatusRepository.requestRefresh(force = true)
+        }
+        is SyncBackendRefreshResult.RequiresLogout -> {
+            AuthRepository.resetForSyncBackendChange()
+                .onSuccess {
+                    SyncBackendRepository.applyBackendAfterLogout(
+                        backend = result.targetBackend,
+                        revision = result.revision,
+                    )
+                    SupabaseProvider.rebuildClient()
+                    NetworkStatusRepository.requestRefresh(force = true)
+                }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
@@ -446,7 +475,14 @@ fun App() {
     val amoledSurfacesEnabled by remember { ThemeSettingsRepository.amoledSurfacesEnabled }.collectAsStateWithLifecycle()
     NuvioTheme(appTheme = selectedTheme, amoled = amoledEnabled, amoledSurfaces = amoledSurfacesEnabled) {
         LaunchedEffect(Unit) {
+            refreshSyncBackendSelection()
             AuthRepository.initialize()
+        }
+
+        LaunchedEffect(Unit) {
+            AppForegroundMonitor.events().collect {
+                refreshSyncBackendSelection()
+            }
         }
 
         LaunchedEffect(Unit) {
