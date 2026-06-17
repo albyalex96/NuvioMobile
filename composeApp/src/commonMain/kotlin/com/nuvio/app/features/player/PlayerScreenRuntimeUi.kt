@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import com.nuvio.app.features.p2p.P2pStreamingState
@@ -117,6 +118,28 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     ) {
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
         if (playerSurfaceSourceUrl != null) {
+            val episodeText = if (activeSeasonNumber != null && activeEpisodeNumber != null) {
+                "S${activeSeasonNumber} E${activeEpisodeNumber}"
+            } else ""
+
+            LaunchedEffect(
+                title, activeStreamTitle, activeProviderName, episodeText,
+                activeEpisodeTitle,
+            ) {
+                val ctrl = playerController ?: return@LaunchedEffect
+                val esc = { s: String -> "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"" }
+                val json = buildString {
+                    append("{")
+                    append("\"title\":${esc(title)}")
+                    if (!activeStreamTitle.isNullOrBlank()) append(",\"streamTitle\":${esc(activeStreamTitle!!)}")
+                    if (!activeProviderName.isNullOrBlank()) append(",\"providerName\":${esc(activeProviderName!!)}")
+                    if (episodeText.isNotBlank()) append(",\"episodeText\":${esc(episodeText)}")
+                    if (!activeEpisodeTitle.isNullOrBlank()) append(",\"episodeText\":${esc(activeEpisodeTitle!!)}")
+                    append("}")
+                }
+                ctrl.updateControlsJson(json)
+            }
+
             PlatformPlayerSurface(
                 sourceUrl = playerSurfaceSourceUrl,
                 sourceAudioUrl = activeSourceAudioUrl,
@@ -147,6 +170,39 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     if (message != null) {
                         controlsVisible = !playerControlsLocked
                         removeFailedStreamFromCache()
+                    }
+                },
+                onOverlayEvent = { type, value ->
+                    when (type) {
+                        "back" -> {
+                            flushWatchProgress()
+                            args.onBack()
+                        }
+                        "toggleFullscreen" -> {}
+                        "subtitles" -> {
+                            refreshTracks()
+                            showSubtitleModal = true
+                        }
+                        "audio" -> {
+                            refreshTracks()
+                            showAudioModal = true
+                        }
+                        "sources" -> if (activeVideoId != null) { openSourcesPanel() }
+                        "episodes" -> if (isSeries) { openEpisodesPanel() }
+                        "lock" -> {
+                            if (playerControlsLocked) unlockPlayerControls() else lockPlayerControls()
+                        }
+                        "playNextEpisode" -> playNextEpisode()
+                        "subtitleFontSizeDelta" -> {
+                            val oldSize = subtitleStyle.fontSizeSp
+                            PlayerSettingsRepository.setSubtitleStyle(subtitleStyle.copy(fontSizeSp = (oldSize + value.toInt()).coerceIn(10, 40)))
+                        }
+                        "submitIntroCommit" -> {
+                            if (playerSettingsUiState.introSubmitEnabled && playerSettingsUiState.introDbApiKey.isNotBlank()) {
+                                showSubmitIntroModal = true
+                            }
+                        }
+                        "enableP2pForPlayerControls" -> {}
                     }
                 },
             )

@@ -22,6 +22,7 @@ interface PlayerEngineController {
     fun setSubtitleDelayMs(delayMs: Int) {}
     fun configureIosVideoOutput(settings: PlayerSettingsUiState) {}
     fun setVolumeBoost(boostDb: Float) {}
+    fun updateControlsJson(json: String) {}
 }
 
 internal fun sanitizePlaybackHeaders(headers: Map<String, String>?): Map<String, String> {
@@ -34,6 +35,7 @@ internal fun sanitizePlaybackHeaders(headers: Map<String, String>?): Map<String,
         val value = rawValue.trim()
         if (key.isEmpty() || value.isEmpty()) return@forEach
         if (key.equals("Range", ignoreCase = true)) return@forEach
+        if (value.contains(',')) return@forEach
         sanitized[key] = value
     }
     return sanitized
@@ -65,8 +67,10 @@ expect fun PlatformPlayerSurface(
     modifier: Modifier = Modifier,
     playWhenReady: Boolean = true,
     resizeMode: PlayerResizeMode = PlayerResizeMode.Fit,
+    initialPositionMs: Long = 0L,
     useNativeController: Boolean = false,
     onControllerReady: (PlayerEngineController) -> Unit,
     onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
     onError: (String?) -> Unit,
+    onOverlayEvent: ((type: String, value: Double) -> Unit)? = null,
 )

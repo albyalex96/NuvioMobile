@@ -111,6 +111,7 @@ import dev.chrisbanes.haze.hazeSource
 import com.nuvio.app.features.auth.AuthScreen
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.catalog.CatalogRepository
+import androidx.navigation.NavType
 import com.nuvio.app.features.catalog.CatalogScreen
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.catalog.CatalogTargetKind
@@ -313,7 +314,7 @@ data class StreamRoute(
 data class CatalogRoute(
     val title: String,
     val subtitle: String,
-    val targetKind: CatalogTargetKind,
+    val targetKind: String,
     val contentType: String,
     val supportsPagination: Boolean = false,
     val manifestUrl: String? = null,
@@ -335,7 +336,7 @@ data class CatalogRoute(
             is CatalogTarget.Addon -> CatalogTargetKind.ADDON
             is CatalogTarget.Library -> CatalogTargetKind.LIBRARY
             is CatalogTarget.CollectionSource -> CatalogTargetKind.COLLECTION_SOURCE
-        },
+        }.name,
         contentType = target.contentType,
         supportsPagination = target.supportsPagination,
         manifestUrl = (target as? CatalogTarget.Addon)?.manifestUrl,
@@ -348,7 +349,7 @@ data class CatalogRoute(
     )
 
     fun toCatalogTarget(): CatalogTarget =
-        when (targetKind) {
+        when (CatalogTargetKind.valueOf(targetKind)) {
             CatalogTargetKind.ADDON -> CatalogTarget.Addon(
                 manifestUrl = requireNotNull(manifestUrl),
                 contentType = contentType,

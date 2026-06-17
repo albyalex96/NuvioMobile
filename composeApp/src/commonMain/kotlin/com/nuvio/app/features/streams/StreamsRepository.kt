@@ -156,8 +156,11 @@ object StreamsRepository {
 
         val installedAddons = AddonRepository.uiState.value.addons.enabledAddons()
         val pluginScrapers = if (AppFeaturePolicy.pluginsEnabled) {
-            PluginRepository.getEnabledScrapersForType(type)
+            PluginRepository.getEnabledScrapersForType(type).also {
+                log.i { "getEnabledScrapersForType($type) returned ${it.size} scrapers" }
+            }
         } else {
+            log.i { "Plugins disabled by AppFeaturePolicy" }
             emptyList()
         }
         val pluginProviderGroups = pluginScrapers.toPluginProviderGroups(
@@ -232,7 +235,7 @@ object StreamsRepository {
         )
 
         activeJob = scope.launch {
-            val completions = Channel<StreamLoadCompletion>(capacity = Channel.BUFFERED)
+            val completions = Channel<StreamLoadCompletion>(capacity = Channel.UNLIMITED)
             val pluginRemainingByAddonId = pluginProviderGroups
                 .associate { it.addonId to it.scrapers.size }
                 .toMutableMap()
@@ -242,12 +245,13 @@ object StreamsRepository {
 
             val installedAddonNames = installedAddonOrder.toSet()
             val installedAddonIds = streamAddons.map { it.addonId }.toSet()
+            val eligibleForDebridIds = installedAddonIds + pluginProviderGroups.map { it.addonId }
             val debridAvailabilityJobs = mutableListOf<Job>()
             var autoSelectTriggered = false
             var timeoutElapsed = false
             fun publishCompletion(completion: StreamLoadCompletion) {
                 if (completions.trySend(completion).isFailure) {
-                    log.d { "Ignoring late stream load completion after channel close" }
+                    log.w { "Stream completion dropped! Channel capacity exhausted or closed." }
                 }
             }
             fun presentStreamGroup(group: AddonStreamGroup): AddonStreamGroup {
@@ -475,9 +479,11 @@ object StreamsRepository {
                 }
             }
 
+            log.i { "Plugin provider groups: ${pluginProviderGroups.size} groups, total scrapers: ${pluginProviderGroups.sumOf { it.scrapers.size }}" }
             pluginProviderGroups.forEach { providerGroup ->
                 val includeScraperNameInSubtitle = false
                 providerGroup.scrapers.forEach { scraper ->
+                    log.i { "Launching plugin scraper: ${scraper.id} (group=${providerGroup.addonId})" }
                     launch {
                         val completion = PluginRepository.executeScraper(
                             scraper = scraper,
@@ -491,16 +497,18 @@ object StreamsRepository {
                             episode = episode,
                         ).fold(
                             onSuccess = { results ->
+                                val streamItems = results.map { result ->
+                                    result.toStreamItem(
+                                        scraper = scraper,
+                                        addonName = providerGroup.addonName,
+                                        addonId = providerGroup.addonId,
+                                        includeScraperNameInSubtitle = includeScraperNameInSubtitle,
+                                    )
+                                }
+                                log.i { "executeScraper OK: ${results.size} results -> ${streamItems.size} streamItems for ${providerGroup.addonId}" }
                                 StreamLoadCompletion.PluginScraper(
                                     addonId = providerGroup.addonId,
-                                    streams = results.map { result ->
-                                        result.toStreamItem(
-                                            scraper = scraper,
-                                            addonName = providerGroup.addonName,
-                                            addonId = providerGroup.addonId,
-                                            includeScraperNameInSubtitle = includeScraperNameInSubtitle,
-                                        )
-                                    },
+                                    streams = streamItems,
                                     error = null,
                                 )
                             },
@@ -527,6 +535,7 @@ object StreamsRepository {
                     is StreamLoadCompletion.PluginScraper -> {
                         val remaining = (pluginRemainingByAddonId[completion.addonId] ?: 1) - 1
                         pluginRemainingByAddonId[completion.addonId] = remaining.coerceAtLeast(0)
+                        log.i { "PluginScraper completion for addonId=${completion.addonId}: ${completion.streams.size} streams, error=${completion.error}" }
                         if (!completion.error.isNullOrBlank() && pluginFirstErrorByAddonId[completion.addonId].isNullOrBlank()) {
                             pluginFirstErrorByAddonId[completion.addonId] = completion.error
                         }
@@ -602,7 +611,7 @@ object StreamsRepository {
             launch {
                 DirectDebridStreamPreparer.prepare(
                     streams = _uiState.value.groups
-                        .filter { it.addonId in installedAddonIds }
+                        .filter { it.addonId in eligibleForDebridIds }
                         .flatMap { it.streams },
                     season = season,
                     episode = episode,
@@ -615,7 +624,7 @@ object StreamsRepository {
                                 groups = current.groups,
                                 original = original,
                                 prepared = prepared,
-                                eligibleGroupIds = installedAddonIds,
+                                eligibleGroupIds = eligibleForDebridIds,
                             ),
                         )
                     }

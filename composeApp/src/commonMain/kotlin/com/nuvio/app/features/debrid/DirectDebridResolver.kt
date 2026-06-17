@@ -109,13 +109,16 @@ object DirectDebridPlaybackResolver {
         }
     }
 
+    private fun StreamItem.isPluginOrAddonStream(): Boolean =
+        isInstalledAddonStream || addonId.startsWith("plugin:") || addonId.startsWith("plugin-repo:")
+
     fun shouldResolveToPlayableStream(stream: StreamItem): Boolean {
         val settings = DebridSettingsRepository.snapshot()
         if (!settings.canResolvePlayableLinks) return false
         if (stream.needsLocalDebridResolve) {
-            return stream.isInstalledAddonStream && localTorrentResolveCredential(settings) != null
+            return stream.isPluginOrAddonStream() && localTorrentResolveCredential(settings) != null
         }
-        if (!stream.isInstalledAddonStream || !stream.isDirectDebridStream || stream.playableDirectUrl != null) {
+        if (!stream.isPluginOrAddonStream() || !stream.isDirectDebridStream || stream.playableDirectUrl != null) {
             return false
         }
         val providerId = DebridProviders.byId(stream.clientResolve?.service)?.id ?: return false
