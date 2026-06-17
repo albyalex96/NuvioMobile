@@ -23,19 +23,19 @@ internal actual object SyncBackendStorage {
 internal actual suspend fun fetchSyncBackendManifestText(url: String): String =
     withContext(Dispatchers.IO) {
         val connection = URL(url).openConnection(Proxy.NO_PROXY) as HttpURLConnection
-        connection.apply {
-            connectTimeout = 10_000
-            readTimeout = 10_000
-            instanceFollowRedirects = true
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/json")
-        }
-        connection.use {
-            val responseCode = it.responseCode
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 10_000
+        connection.instanceFollowRedirects = true
+        connection.requestMethod = "GET"
+        connection.setRequestProperty("Accept", "application/json")
+        try {
+            val responseCode = connection.responseCode
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 error("Sync backend manifest request failed with HTTP $responseCode")
             }
-            it.inputStream.bufferedReader().readText().takeIf { payload -> payload.isNotBlank() }
+            connection.inputStream.bufferedReader().readText().takeIf { it.isNotBlank() }
                 ?: error("Sync backend manifest response was empty")
+        } finally {
+            connection.disconnect()
         }
     }
