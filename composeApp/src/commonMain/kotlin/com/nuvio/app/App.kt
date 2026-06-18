@@ -471,9 +471,10 @@ fun App() {
         ThemeSettingsRepository.ensureLoaded()
         ThemeSettingsRepository.selectedTheme
     }.collectAsStateWithLifecycle()
+    val customAccentHex by remember { ThemeSettingsRepository.customAccentHex }.collectAsStateWithLifecycle()
     val amoledEnabled by remember { ThemeSettingsRepository.amoledEnabled }.collectAsStateWithLifecycle()
     val amoledSurfacesEnabled by remember { ThemeSettingsRepository.amoledSurfacesEnabled }.collectAsStateWithLifecycle()
-    NuvioTheme(appTheme = selectedTheme, amoled = amoledEnabled, amoledSurfaces = amoledSurfacesEnabled) {
+    NuvioTheme(appTheme = selectedTheme, customAccentHex = customAccentHex, amoled = amoledEnabled, amoledSurfaces = amoledSurfacesEnabled) {
         LaunchedEffect(Unit) {
             refreshSyncBackendSelection()
             AuthRepository.initialize()

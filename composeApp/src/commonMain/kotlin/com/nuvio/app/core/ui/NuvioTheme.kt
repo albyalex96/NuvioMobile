@@ -191,11 +191,12 @@ private val NuvioRippleConfiguration = RippleConfiguration(
 fun NuvioTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     appTheme: AppTheme = AppTheme.WHITE,
+    customAccentHex: String? = null,
     amoled: Boolean = false,
     amoledSurfaces: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val palette = ThemeColors.getColorPalette(appTheme)
+    val palette = ThemeColors.getColorPalette(appTheme, customAccentHex)
     val colorScheme = buildColorScheme(palette, amoled = amoled, amoledSurfaces = amoledSurfaces)
     val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, amoledSurfaces = amoledSurfaces, colorScheme = colorScheme)
 

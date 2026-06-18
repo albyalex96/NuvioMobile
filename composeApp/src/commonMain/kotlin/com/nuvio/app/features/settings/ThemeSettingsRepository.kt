@@ -11,6 +11,9 @@ object ThemeSettingsRepository {
     private val _selectedTheme = MutableStateFlow(AppTheme.WHITE)
     val selectedTheme: StateFlow<AppTheme> = _selectedTheme.asStateFlow()
 
+    private val _customAccentHex = MutableStateFlow("#1E88E5")
+    val customAccentHex: StateFlow<String> = _customAccentHex.asStateFlow()
+
     private val _amoledEnabled = MutableStateFlow(false)
     val amoledEnabled: StateFlow<Boolean> = _amoledEnabled.asStateFlow()
 
@@ -40,11 +43,12 @@ object ThemeSettingsRepository {
     fun clearLocalState() {
         hasLoaded = false
         _selectedTheme.value = AppTheme.WHITE
+        _customAccentHex.value = "#1E88E5"
         _amoledEnabled.value = false
         _amoledSurfacesEnabled.value = false
         _liquidGlassNativeTabBarEnabled.value = false
         _glassNavBarEnabled.value = false
-        NativeTabBridge.publishAccentColor(AppTheme.WHITE.nativeTabAccentHex())
+        NativeTabBridge.publishAccentColor(nativeTabAccentHex(AppTheme.WHITE, "#1E88E5"))
         NativeTabBridge.publishLiquidGlassEnabled(false)
         _selectedAppLanguage.value = AppLanguage.ENGLISH
     }
@@ -62,7 +66,8 @@ object ThemeSettingsRepository {
             AppTheme.WHITE
         }
         _selectedTheme.value = theme
-        NativeTabBridge.publishAccentColor(theme.nativeTabAccentHex())
+        _customAccentHex.value = ThemeSettingsStorage.loadCustomAccentHex() ?: "#1E88E5"
+        NativeTabBridge.publishAccentColor(nativeTabAccentHex(theme, _customAccentHex.value))
         _amoledEnabled.value = ThemeSettingsStorage.loadAmoledEnabled() ?: false
         _amoledSurfacesEnabled.value = ThemeSettingsStorage.loadAmoledSurfacesEnabled() ?: false
         val liquidGlassEnabled = ThemeSettingsStorage.loadLiquidGlassNativeTabBarEnabled() ?: false
@@ -79,7 +84,17 @@ object ThemeSettingsRepository {
         if (_selectedTheme.value == theme) return
         _selectedTheme.value = theme
         ThemeSettingsStorage.saveSelectedTheme(theme.name)
-        NativeTabBridge.publishAccentColor(theme.nativeTabAccentHex())
+        NativeTabBridge.publishAccentColor(nativeTabAccentHex(theme, _customAccentHex.value))
+    }
+
+    fun setCustomAccentColor(hex: String) {
+        ensureLoaded()
+        if (_customAccentHex.value == hex) return
+        _customAccentHex.value = hex
+        ThemeSettingsStorage.saveCustomAccentHex(hex)
+        if (_selectedTheme.value == AppTheme.CUSTOM) {
+            NativeTabBridge.publishAccentColor(hex)
+        }
     }
 
     fun setAmoled(enabled: Boolean) {
@@ -124,5 +139,5 @@ object ThemeSettingsRepository {
     }
 }
 
-private fun AppTheme.nativeTabAccentHex(): String =
-    ThemeColors.getColorPalette(this).nativeAccentHex
+private fun nativeTabAccentHex(theme: AppTheme, customHex: String): String =
+    ThemeColors.getColorPalette(theme, customHex).nativeAccentHex

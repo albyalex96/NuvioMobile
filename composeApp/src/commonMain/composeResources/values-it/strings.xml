@@ -315,6 +315,8 @@
   <string name="settings_appearance_glass_navbar_description">Applica un effetto vetro satinato alla barra di navigazione inferiore.</string>
   <string name="settings_appearance_section_display">DISPLAY</string>
   <string name="settings_appearance_section_home">HOME</string>
+  <string name="settings_appearance_custom_color">Colore personalizzato</string>
+  <string name="settings_appearance_custom_color_description">Scegli il tuo colore accent personalizzato</string>
   <string name="settings_appearance_section_theme">TEMA</string>
   <string name="settings_homescreen_collection_with_addon">Collezione • %1$s</string>
   <string name="settings_homescreen_display_name">Nome visualizzato</string>
@@ -655,6 +657,9 @@
   <string name="theme_rose">Rose</string>
   <string name="theme_violet">Violet</string>
   <string name="theme_white">White</string>
+  <string name="theme_custom">Personalizzato</string>
+  <string name="color_picker_hex_label">Hex</string>
+  <string name="color_picker_presets">Preimpostati</string>
   <string name="player_next_episode">Prossimo episodio</string>
   <string name="player_next_episode_finding_source">Ricerca sorgente…</string>
   <string name="player_next_episode_playing_via_countdown">In riproduzione tramite %1$s tra %2$d…</string>

@@ -127,6 +127,7 @@ fun SettingsScreen(
             ThemeSettingsRepository.ensureLoaded()
             ThemeSettingsRepository.selectedTheme
         }.collectAsStateWithLifecycle()
+        val customAccentHex by remember { ThemeSettingsRepository.customAccentHex }.collectAsStateWithLifecycle()
         val amoledEnabled by remember { ThemeSettingsRepository.amoledEnabled }.collectAsStateWithLifecycle()
         val amoledSurfacesEnabled by remember { ThemeSettingsRepository.amoledSurfacesEnabled }.collectAsStateWithLifecycle()
         val liquidGlassNativeTabBarEnabled by remember {
@@ -279,6 +280,8 @@ fun SettingsScreen(
                 rememberLastProfileEnabled = profileSettingsState.rememberLastProfileEnabled,
                 selectedTheme = selectedTheme,
                 onThemeSelected = ThemeSettingsRepository::setTheme,
+                customAccentHex = customAccentHex,
+                onCustomColorChanged = ThemeSettingsRepository::setCustomAccentColor,
                 amoledEnabled = amoledEnabled,
                 onAmoledToggle = ThemeSettingsRepository::setAmoled,
                 liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
@@ -347,6 +350,8 @@ fun SettingsScreen(
                 rememberLastProfileEnabled = profileSettingsState.rememberLastProfileEnabled,
                 selectedTheme = selectedTheme,
                 onThemeSelected = ThemeSettingsRepository::setTheme,
+                customAccentHex = customAccentHex,
+                onCustomColorChanged = ThemeSettingsRepository::setCustomAccentColor,
                 amoledEnabled = amoledEnabled,
                 onAmoledToggle = ThemeSettingsRepository::setAmoled,
                 liquidGlassNativeTabBarSupported = liquidGlassNativeTabBarSupported,
@@ -419,6 +424,8 @@ private fun MobileSettingsScreen(
     rememberLastProfileEnabled: Boolean,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
+    customAccentHex: String,
+    onCustomColorChanged: (String) -> Unit,
     amoledEnabled: Boolean,
     onAmoledToggle: (Boolean) -> Unit,
     liquidGlassNativeTabBarSupported: Boolean,
@@ -606,6 +613,8 @@ private fun MobileSettingsScreen(
                     isTablet = false,
                     selectedTheme = selectedTheme,
                     onThemeSelected = onThemeSelected,
+                    customAccentHex = customAccentHex,
+                    onCustomColorChanged = ThemeSettingsRepository::setCustomAccentColor,
                     amoledEnabled = amoledEnabled,
                     onAmoledToggle = onAmoledToggle,
                     amoledSurfacesEnabled = amoledSurfacesEnabled,
@@ -801,6 +810,8 @@ private fun TabletSettingsScreen(
     rememberLastProfileEnabled: Boolean,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
+    customAccentHex: String,
+    onCustomColorChanged: (String) -> Unit,
     amoledEnabled: Boolean,
     onAmoledToggle: (Boolean) -> Unit,
     liquidGlassNativeTabBarSupported: Boolean,
@@ -1064,6 +1075,8 @@ private fun TabletSettingsScreen(
                     isTablet = true,
                     selectedTheme = selectedTheme,
                     onThemeSelected = onThemeSelected,
+                    customAccentHex = customAccentHex,
+                    onCustomColorChanged = ThemeSettingsRepository::setCustomAccentColor,
                     amoledEnabled = amoledEnabled,
                     onAmoledToggle = onAmoledToggle,
                     amoledSurfacesEnabled = amoledSurfacesEnabled,

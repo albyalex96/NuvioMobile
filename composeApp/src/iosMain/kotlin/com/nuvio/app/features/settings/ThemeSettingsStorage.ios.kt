@@ -12,6 +12,7 @@ import platform.Foundation.NSUserDefaults
 
 actual object ThemeSettingsStorage {
     private const val selectedThemeKey = "selected_theme"
+    private const val customAccentHexKey = "custom_accent_hex"
     private const val amoledEnabledKey = "amoled_enabled"
     private const val amoledSurfacesEnabledKey = "amoled_surfaces_enabled"
     private const val liquidGlassNativeTabBarEnabledKey = "liquid_glass_native_tab_bar_enabled"
@@ -30,6 +31,13 @@ actual object ThemeSettingsStorage {
 
     actual fun saveSelectedTheme(themeName: String) {
         NSUserDefaults.standardUserDefaults.setObject(themeName, forKey = ProfileScopedKey.of(selectedThemeKey))
+    }
+
+    actual fun loadCustomAccentHex(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(customAccentHexKey))
+
+    actual fun saveCustomAccentHex(hex: String) {
+        NSUserDefaults.standardUserDefaults.setObject(hex, forKey = ProfileScopedKey.of(customAccentHexKey))
     }
 
     actual fun loadAmoledEnabled(): Boolean? {
@@ -120,6 +128,7 @@ actual object ThemeSettingsStorage {
 
     actual fun exportToSyncPayload(): JsonObject = buildJsonObject {
         loadSelectedTheme()?.let { put(selectedThemeKey, encodeSyncString(it)) }
+        loadCustomAccentHex()?.let { put(customAccentHexKey, encodeSyncString(it)) }
         loadAmoledEnabled()?.let { put(amoledEnabledKey, encodeSyncBoolean(it)) }
         loadAmoledSurfacesEnabled()?.let { put(amoledSurfacesEnabledKey, encodeSyncBoolean(it)) }
         loadLiquidGlassNativeTabBarEnabled()?.let { put(liquidGlassNativeTabBarEnabledKey, encodeSyncBoolean(it)) }
@@ -132,6 +141,7 @@ actual object ThemeSettingsStorage {
         }
 
         payload.decodeSyncString(selectedThemeKey)?.let(::saveSelectedTheme)
+        payload.decodeSyncString(customAccentHexKey)?.let(::saveCustomAccentHex)
         payload.decodeSyncBoolean(amoledEnabledKey)?.let(::saveAmoledEnabled)
         payload.decodeSyncBoolean(amoledSurfacesEnabledKey)?.let(::saveAmoledSurfacesEnabled)
         payload.decodeSyncBoolean(liquidGlassNativeTabBarEnabledKey)?.let(::saveLiquidGlassNativeTabBarEnabled)

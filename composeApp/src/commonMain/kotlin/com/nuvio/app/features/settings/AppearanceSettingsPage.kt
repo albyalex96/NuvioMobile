@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.AppTheme
 import com.nuvio.app.core.ui.NuvioBottomSheetActionRow
 import com.nuvio.app.core.ui.NuvioBottomSheetDivider
+import com.nuvio.app.core.ui.NuvioColorPicker
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.labelRes
@@ -60,6 +61,8 @@ import nuvio.composeapp.generated.resources.settings_appearance_amoled_descripti
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_surfaces
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_surfaces_description
 import nuvio.composeapp.generated.resources.settings_appearance_continue_watching_description
+import nuvio.composeapp.generated.resources.settings_appearance_custom_color
+import nuvio.composeapp.generated.resources.settings_appearance_custom_color_description
 import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar
 import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar_description
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass
@@ -80,6 +83,8 @@ import androidx.compose.material3.rememberModalBottomSheetState
     isTablet: Boolean,
     selectedTheme: AppTheme,
     onThemeSelected: (AppTheme) -> Unit,
+    customAccentHex: String,
+    onCustomColorChanged: (String) -> Unit,
     amoledEnabled: Boolean,
     onAmoledToggle: (Boolean) -> Unit,
     amoledSurfacesEnabled: Boolean,
@@ -131,6 +136,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
                                     ThemeChip(
                                         theme = theme,
                                         isSelected = theme == selectedTheme,
+                                        customAccentHex = if (theme == AppTheme.CUSTOM) customAccentHex else null,
                                         onClick = { onThemeSelected(theme) },
                                         modifier = Modifier.weight(1f),
                                     )
@@ -140,6 +146,19 @@ import androidx.compose.material3.rememberModalBottomSheetState
                                 }
                             }
                         }
+                    }
+                }
+                if (selectedTheme == AppTheme.CUSTOM) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+                    ) {
+                        NuvioColorPicker(
+                            currentHex = customAccentHex,
+                            onColorChanged = onCustomColorChanged,
+                        )
                     }
                 }
             }
@@ -316,8 +335,9 @@ private fun ThemeChip(
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    customAccentHex: String? = null,
 ) {
-    val palette = ThemeColors.getColorPalette(theme)
+    val palette = ThemeColors.getColorPalette(theme, customAccentHex)
 
     Column(
         modifier = modifier

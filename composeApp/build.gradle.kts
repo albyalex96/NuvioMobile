@@ -39,6 +39,10 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     @get:Input
     abstract val desktopAppVersionCode: Property<Int>
 
+    @get:Optional
+    @get:OutputFile
+    abstract val xcconfigFile: RegularFileProperty
+
     @TaskAction
     fun generate() {
         val props = Properties()
@@ -155,6 +159,13 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 """.trimMargin()
             )
         }
+
+        xcconfigFile.asFile.orNull?.let { xcFile ->
+            xcFile.writeText(
+                "CURRENT_PROJECT_VERSION=${appVersionCode.get()}\n" +
+                "MARKETING_VERSION=${appVersionName.get()}\n"
+            )
+        }
     }
 }
 
@@ -170,6 +181,24 @@ fun readXcconfigValue(file: File, key: String): String? {
         }
         .firstOrNull { (entryKey, _) -> entryKey == key }
         ?.second
+}
+
+fun readVersionJsonString(file: File, key: String): String? {
+    if (!file.exists()) return null
+    val text = file.readText()
+    val regex = Regex("\"${Regex.escape(key)}\"\\s*:\\s*\"([^\"]+)\"")
+    return regex.find(text)?.groupValues?.getOrNull(1)
+}
+
+fun readVersionJsonInt(file: File, key: String): Int? {
+    if (!file.exists()) return null
+    val text = file.readText()
+    val regex = Regex("\"${Regex.escape(key)}\"\\s*:\\s*(\\d+)")
+    return regex.find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+}
+
+fun writeXcconfigValue(file: File, marketingVersion: String, currentProjectVersion: Int) {
+    file.writeText("CURRENT_PROJECT_VERSION=$currentProjectVersion\nMARKETING_VERSION=$marketingVersion\n")
 }
 
 abstract class NotarizeMacosDmgWithKeychainTask @Inject constructor(
@@ -308,12 +337,21 @@ val releaseStorePassword = supabaseProps.getProperty("NUVIO_RELEASE_STORE_PASSWO
 val releaseKeyAlias = supabaseProps.getProperty("NUVIO_RELEASE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
 val releaseKeyPassword = supabaseProps.getProperty("NUVIO_RELEASE_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
 val releaseKeystore = releaseStoreFile?.let(rootProject::file)
+val versionJsonFile = rootProject.file("version.json")
 val appVersionConfigFile = rootProject.file("iosApp/Configuration/Version.xcconfig")
-val releaseAppVersionName = readXcconfigValue(appVersionConfigFile, "MARKETING_VERSION")
-    ?: error("MARKETING_VERSION is missing from ${appVersionConfigFile.path}")
-val releaseAppVersionCode = readXcconfigValue(appVersionConfigFile, "CURRENT_PROJECT_VERSION")
-    ?.toIntOrNull()
-    ?: error("CURRENT_PROJECT_VERSION is missing or invalid in ${appVersionConfigFile.path}")
+
+val releaseAppVersionName = readVersionJsonString(versionJsonFile, "versionName")
+    ?: error("versionName is missing from version.json")
+val releaseAppVersionCode = readVersionJsonInt(versionJsonFile, "versionCode")
+    ?: error("versionCode is missing or invalid in version.json")
+
+if (appVersionConfigFile.exists()) {
+    val xcconfigName = readXcconfigValue(appVersionConfigFile, "MARKETING_VERSION")
+    val xcconfigCode = readXcconfigValue(appVersionConfigFile, "CURRENT_PROJECT_VERSION")?.toIntOrNull()
+    if (xcconfigName != releaseAppVersionName || xcconfigCode != releaseAppVersionCode) {
+        logger.warn("Version.xcconfig is out of sync with version.json. Run 'syncVersionJson' task to update.")
+    }
+}
 val iosDistribution = (
     providers.gradleProperty("nuvio.ios.distribution").orNull
         ?: System.getenv("NUVIO_IOS_DISTRIBUTION")
@@ -784,6 +822,7 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     appVersionCode.set(releaseAppVersionCode)
     desktopAppVersionName.set(desktopReleaseVersionName)
     desktopAppVersionCode.set(desktopReleaseVersionCode)
+    xcconfigFile.set(rootProject.layout.projectDirectory.file("iosApp/Configuration/Version.xcconfig"))
 }
 
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
