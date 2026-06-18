@@ -6,16 +6,21 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,29 +29,41 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.NuvioInputField
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.livetv.LiveTvChannel
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_close
 import nuvio.composeapp.generated.resources.compose_player_channels
 import nuvio.composeapp.generated.resources.compose_player_playing
+import nuvio.composeapp.generated.resources.live_tv_link_copied
+import nuvio.composeapp.generated.resources.live_tv_search_placeholder
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerLiveChannelsPanel(
     visible: Boolean,
@@ -57,6 +74,18 @@ fun PlayerLiveChannelsPanel(
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val clipboardManager = LocalClipboardManager.current
+    val linkCopiedText = stringResource(Res.string.live_tv_link_copied)
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredChannels = remember(channels, searchQuery) {
+        if (searchQuery.isBlank()) {
+            channels
+        } else {
+            val query = searchQuery.trim().lowercase()
+            channels.filter { it.name.lowercase().contains(query) }
+        }
+    }
 
     AnimatedVisibility(
         visible = visible,
@@ -113,19 +142,46 @@ fun PlayerLiveChannelsPanel(
                             )
                         }
 
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            NuvioInputField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = stringResource(Res.string.live_tv_search_placeholder),
+                                trailingContent = if (searchQuery.isNotBlank()) {
+                                    {
+                                        IconButton(onClick = { searchQuery = "" }) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Close,
+                                                contentDescription = stringResource(Res.string.live_tv_search_placeholder),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
                         LazyColumn(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 16.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp),
                         ) {
                             items(
-                                items = channels,
+                                items = filteredChannels,
                                 key = { channel -> channel.id },
                             ) { channel ->
                                 LiveChannelRow(
                                     channel = channel,
                                     isCurrent = channel.streamUrl == currentStreamUrl,
                                     onClick = { onChannelSelected(channel) },
+                                    onLongClick = {
+                                        clipboardManager.setText(AnnotatedString(channel.streamUrl))
+                                        NuvioToastController.show(linkCopiedText)
+                                    },
                                 )
                             }
                         }
@@ -136,11 +192,13 @@ fun PlayerLiveChannelsPanel(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LiveChannelRow(
     channel: LiveTvChannel,
     isCurrent: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val cardShape = RoundedCornerShape(12.dp)
@@ -160,7 +218,10 @@ private fun LiveChannelRow(
                     Modifier
                 },
             )
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

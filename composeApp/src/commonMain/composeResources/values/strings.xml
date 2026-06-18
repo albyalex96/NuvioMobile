@@ -700,6 +700,8 @@
     <string name="live_tv_settings_playlist_label">M3U playlist URL</string>
     <string name="live_tv_settings_playlist_placeholder">https://example.com/playlist.m3u8</string>
     <string name="live_tv_settings_description">Channels from this playlist will appear in the Live TV tab.</string>
+    <string name="live_tv_search_placeholder">Search channels...</string>
+    <string name="live_tv_link_copied">Link copied</string>
     <string name="settings_debrid_section_title">Connected Services</string>
     <string name="settings_debrid_experimental_notice">These integrations are experimental and may be kept, changed, or removed later.</string>
     <string name="settings_debrid_cloud_library">Cloud library</string>

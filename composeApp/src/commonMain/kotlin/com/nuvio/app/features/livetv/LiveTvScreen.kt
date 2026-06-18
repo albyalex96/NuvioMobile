@@ -1,7 +1,8 @@
 package com.nuvio.app.features.livetv
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,18 +29,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.NuvioInputField
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.home.components.HomeEmptyStateCard
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -47,12 +55,15 @@ import nuvio.composeapp.generated.resources.action_retry
 import nuvio.composeapp.generated.resources.live_tv_channel_group_default
 import nuvio.composeapp.generated.resources.live_tv_empty_message
 import nuvio.composeapp.generated.resources.live_tv_empty_title
+import nuvio.composeapp.generated.resources.live_tv_link_copied
 import nuvio.composeapp.generated.resources.live_tv_load_failed
 import nuvio.composeapp.generated.resources.live_tv_no_playlist_message
 import nuvio.composeapp.generated.resources.live_tv_no_playlist_title
+import nuvio.composeapp.generated.resources.live_tv_search_placeholder
 import nuvio.composeapp.generated.resources.live_tv_title
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LiveTvScreen(
     modifier: Modifier = Modifier,
@@ -64,6 +75,18 @@ fun LiveTvScreen(
         LiveTvRepository.uiState
     }.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    val clipboardManager = LocalClipboardManager.current
+    val linkCopiedText = stringResource(Res.string.live_tv_link_copied)
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredChannels = remember(uiState.channels, searchQuery) {
+        if (searchQuery.isBlank()) {
+            uiState.channels
+        } else {
+            val query = searchQuery.trim().lowercase()
+            uiState.channels.filter { it.name.lowercase().contains(query) }
+        }
+    }
 
     LaunchedEffect(scrollToTopRequests) {
         scrollToTopRequests.collect {
@@ -95,6 +118,28 @@ fun LiveTvScreen(
                         }
                     },
                 )
+                if (uiState.hasPlaylist) {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        NuvioInputField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = stringResource(Res.string.live_tv_search_placeholder),
+                            trailingContent = if (searchQuery.isNotBlank()) {
+                                {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Close,
+                                            contentDescription = stringResource(Res.string.live_tv_search_placeholder),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(6.dp))
             }
         }
@@ -135,7 +180,7 @@ fun LiveTvScreen(
                 }
             }
 
-            uiState.channels.isEmpty() -> {
+            uiState.channels.isEmpty() || filteredChannels.isEmpty() -> {
                 item {
                     HomeEmptyStateCard(
                         modifier = Modifier.padding(horizontal = 16.dp),
@@ -149,17 +194,23 @@ fun LiveTvScreen(
 
             else -> {
                 liveTvChannelList(
-                    channels = uiState.channels,
+                    channels = filteredChannels,
                     onChannelClick = onChannelClick,
+                    onChannelLongClick = { channel ->
+                        clipboardManager.setText(AnnotatedString(channel.streamUrl))
+                        NuvioToastController.show(linkCopiedText)
+                    },
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 private fun LazyListScope.liveTvChannelList(
     channels: List<LiveTvChannel>,
     onChannelClick: (LiveTvChannel) -> Unit,
+    onChannelLongClick: (LiveTvChannel) -> Unit,
 ) {
     items(
         items = channels,
@@ -168,14 +219,17 @@ private fun LazyListScope.liveTvChannelList(
         LiveTvChannelRow(
             channel = channel,
             onClick = { onChannelClick(channel) },
+            onLongClick = { onChannelLongClick(channel) },
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LiveTvChannelRow(
     channel: LiveTvChannel,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -183,7 +237,10 @@ private fun LiveTvChannelRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
