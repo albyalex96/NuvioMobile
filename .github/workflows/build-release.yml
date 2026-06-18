@@ -1,4 +1,4 @@
-name: Build Release
+name: Build All Releases (Windows, Android Mobile)
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
@@ -37,6 +37,16 @@ jobs:
         with:
           ref: ${{ steps.resolve_branch.outputs.branch }}
           fetch-depth: 0
+          lfs: false
+
+      - name: Read version.json
+        id: version
+        run: |
+          VERSION_NAME=$(jq -r '.versionName' version.json)
+          VERSION_CODE=$(jq -r '.versionCode' version.json)
+          echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION_NAME (code $VERSION_CODE)"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -75,6 +85,7 @@ jobs:
           BRANCH_NAME="${{ steps.resolve_branch.outputs.branch }}"
           BRANCH_LOWER=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9]/-/g')
           echo "name=${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
+          echo "tag=v${{ steps.version.outputs.name }}-android-${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
 
       - name: Generate Changelog
         id: changelog
@@ -96,7 +107,7 @@ jobs:
           fi
 
           {
-            echo "## 📦 Nuvio Release Build #${{ github.run_number }}"
+            echo "## 📦 Nuvio v${{ steps.version.outputs.name }}"
             echo ""
             echo "**Branch target:** \`${{ steps.resolve_branch.outputs.branch }}\`"
             if [ -n "$PREV_TAG" ]; then
@@ -114,11 +125,19 @@ jobs:
         run: |
           ./gradlew :composeApp:assembleFullRelease
 
+      - name: Rename APK
+        run: |
+          APK_DIR="composeApp/build/outputs/apk"
+          find "$APK_DIR" -name "*.apk" | while read apk; do
+            DIR=$(dirname "$apk")
+            mv "$apk" "$DIR/NuvioEnhanced-${{ steps.version.outputs.name }}.apk"
+          done
+
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}"
-          name: "Nuvio Build - ${{ steps.resolve_branch.outputs.branch }} #${{ github.run_number }}"
+          tag_name: "${{ steps.flavor.outputs.tag }}"
+          name: "Nuvio v${{ steps.version.outputs.name }} - ${{ steps.resolve_branch.outputs.branch }}"
           body_path: release_body.md
           draft: false
           prerelease: false
@@ -131,12 +150,163 @@ jobs:
       - name: Send ntfy Notification
         run: |
           curl \
-            -H "Title: 🎉 Build Completata con Successo!" \
+            -H "Title: 🎉 Android Build Completata!" \
             -H "Priority: high" \
             -H "Tags: rocket,android" \
-            -H "Click: https://github.com/${{ github.repository }}/releases/tag/v1.0.${{ github.run_number }}-${{ steps.flavor.outputs.name }}" \
-            -d "La build per **Nuvio** (#${{ github.run_number }}) sul branch *${{ steps.resolve_branch.outputs.branch }}* è pronta! 🚀
-
-            Flavor: ${{ steps.flavor.outputs.name }}
-            Il file APK è stato caricato correttamente nella Release." \
+            -H "Click: https://github.com/${{ github.repository }}/releases/tag/${{ steps.flavor.outputs.tag }}" \
+            -d "Build **Android v${{ steps.version.outputs.name }}** su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 APK caricato." \
             https://ntfy.sh/nuvio_builds
+
+  build-desktop:
+    runs-on: windows-latest
+    needs: build-android
+
+    steps:
+      - name: Resolve target branch
+        id: resolve_branch
+        run: |
+          $inputBranch = "${{ github.event.inputs.target_branch }}"
+          if ([string]::IsNullOrEmpty($inputBranch)) {
+            $chosenBranch = "${{ github.ref_name }}"
+          } else {
+            $chosenBranch = $inputBranch
+          }
+          echo "branch=$chosenBranch" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "Selected branch: $chosenBranch"
+
+      - name: Checkout target branch code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve_branch.outputs.branch }}
+          fetch-depth: 0
+          lfs: false
+
+      - name: Read version.json
+        id: version
+        shell: pwsh
+        run: |
+          $json = Get-Content -Raw version.json | ConvertFrom-Json
+          echo "name=$($json.versionName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "code=$($json.versionCode)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Version: $($json.versionName) (code $($json.versionCode))"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Write local.properties
+        shell: pwsh
+        run: |
+          @"
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          TRAKT_CLIENT_ID=${{ secrets.TRAKT_CLIENT_ID }}
+          TRAKT_CLIENT_SECRET=${{ secrets.TRAKT_CLIENT_SECRET }}
+          TRAKT_REDIRECT_URI=${{ secrets.TRAKT_REDIRECT_URI }}
+          INTRODB_API_URL=${{ secrets.INTRODB_API_URL }}/
+          TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
+          DONATIONS_BASE_URL=https://donations.nuvioapp.space/
+          DONATIONS_DONATE_URL=https://ko-fi.com/tapframe
+          CONTRIBUTIONS_URL=${{ secrets.CONTRIBUTION_URL }}
+          DIRECT_DEBRID_API_BASE_URL=https://api.torbox.app/v1/api
+          "@ | Out-File -FilePath local.properties -Encoding utf8
+
+      - name: Install WebView2 SDK (NuGet)
+        shell: pwsh
+        run: |
+          nuget install Microsoft.Web.WebView2 -OutputDirectory $env:UserProfile\.nuget\packages
+          echo "WebView2 SDK installed"
+
+      - name: Download libmpv-2.dll
+        shell: pwsh
+        run: |
+          $dllDir = "composeApp/src/desktopMain/native/windows/runtime"
+          New-Item -ItemType Directory -Force -Path $dllDir | Out-Null
+          $dllPath = Join-Path $dllDir "libmpv-2.dll"
+          Write-Host "Downloading libmpv-2.dll from NuvioDesktop..."
+          Invoke-WebRequest -Uri "https://github.com/NuvioMedia/NuvioDesktop/raw/refs/heads/Dev/composeApp/src/desktopMain/native/windows/runtime/libmpv-2.dll" -OutFile $dllPath -UseBasicParsing
+          $size = (Get-Item $dllPath).Length
+          Write-Host "Downloaded: $([math]::Round($size/1MB, 1)) MB"
+
+      - name: Set flavor tag name
+        id: flavor
+        shell: pwsh
+        run: |
+          $branchName = "${{ steps.resolve_branch.outputs.branch }}"
+          $branchLower = $branchName.ToLower() -replace '[^a-zA-Z0-9]', '-'
+          echo "name=${branchLower}-full" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "msi-tag=v${{ steps.version.outputs.name }}-windows-${branchLower}-full" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Build Windows MSI
+        shell: pwsh
+        run: |
+          ./gradlew :composeApp:packageReleaseMsi
+
+      - name: Locate MSI artifact
+        id: msi
+        shell: pwsh
+        run: |
+          $releaseMsiDir = "composeApp/build/compose/release-msis"
+          $binaryDir = "composeApp/build/compose/binaries/main-release/msi"
+          if (Test-Path $releaseMsiDir) {
+            $msi = Get-ChildItem -Path $releaseMsiDir -Filter "*.msi" | Select-Object -First 1
+            if ($msi) {
+              echo "msi-path=$($msi.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+              echo "msi-name=$($msi.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+              Write-Host "Found MSI at: $($msi.FullName)"
+              exit 0
+            }
+          }
+          if (Test-Path $binaryDir) {
+            $msi = Get-ChildItem -Path $binaryDir -Filter "*.msi" | Select-Object -First 1
+            if ($msi) {
+              echo "msi-path=$($msi.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+              echo "msi-name=$($msi.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+              Write-Host "Found MSI at: $($msi.FullName)"
+              exit 0
+            }
+          }
+          Write-Host "No MSI found in expected paths"
+          Get-ChildItem -Recurse -Path "composeApp/build" -Filter "*.msi" | ForEach-Object {
+            Write-Host "  Found: $($_.FullName)"
+          }
+          exit 1
+
+      - name: Upload MSI to Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $androidTag = "${{ steps.flavor.outputs.tag }}"
+          $msiPath = "${{ steps.msi.outputs.msi-path }}"
+          $msiName = "${{ steps.msi.outputs.msi-name }}"
+
+          Write-Host "Uploading $msiPath to tag $androidTag as $msiName..."
+
+          $maxRetries = 30
+          $retry = 0
+          while ($retry -lt $maxRetries) {
+            $release = gh release view "$androidTag" --json id 2>$null
+            if ($release) {
+              Write-Host "Release found, uploading..."
+              gh release upload "$androidTag" "$msiPath" --clobber
+              Write-Host "MSI uploaded successfully!"
+              exit 0
+            }
+            $retry++
+            Write-Host "Release not yet created, retry $retry/$maxRetries..."
+            Start-Sleep -Seconds 10
+          }
+          Write-Host "Timeout waiting for Android release"
+          exit 1
+
+      - name: Send ntfy Notification
+        shell: pwsh
+        run: |
+          $androidTag = "${{ steps.flavor.outputs.tag }}"
+          curl.exe -H "Title: 🎉 Desktop Build Completata!" -H "Priority: high" -H "Tags: rocket,windows" -H "Click: https://github.com/${{ github.repository }}/releases/tag/$androidTag" -d "Build **Desktop Windows v${{ steps.version.outputs.name }}** su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 MSI caricato." https://ntfy.sh/nuvio_builds
