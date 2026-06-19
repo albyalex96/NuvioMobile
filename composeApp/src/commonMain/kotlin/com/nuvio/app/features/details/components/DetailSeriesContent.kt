@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -674,6 +675,49 @@ private fun EpisodeHorizontalCard(
     }
     val runtimeLabel = remember(video.runtime) { video.runtime?.takeIf { it > 0 }?.let(::formatEpisodeRuntime) }
     var expanded by remember { mutableStateOf(false) }
+
+    val imageUrl = video.thumbnail ?: fallbackImage
+    val shouldBlurArtwork = blurUnwatchedEpisodes && !isWatched
+
+    @Composable
+    fun MetaRow() {
+        if (runtimeLabel != null || ratingLabel != null || formattedDate != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                runtimeLabel?.let { runtime ->
+                    Text(
+                        text = runtime,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = metrics.metaTextSize),
+                        color = if (expanded) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.78f),
+                        maxLines = 1,
+                    )
+                }
+                ratingLabel?.let { rating ->
+                    ImdbEpisodeRatingBadge(
+                        rating = rating,
+                        logoWidth = metrics.imdbLogoWidth,
+                        logoHeight = metrics.imdbLogoHeight,
+                        textSize = metrics.metaTextSize,
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                formattedDate?.let { date ->
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = metrics.metaTextSize),
+                        color = if (expanded) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.78f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.End,
+                    )
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .width(metrics.cardWidth)
@@ -691,154 +735,187 @@ private fun EpisodeHorizontalCard(
                 onLongClick = onLongPress,
             ),
     ) {
-        val imageUrl = video.thumbnail ?: fallbackImage
-        val shouldBlurArtwork = blurUnwatchedEpisodes && !isWatched
-        if (imageUrl != null) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = video.title,
+        Column {
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
-                contentScale = ContentScale.Crop,
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.10f),
-                            Color.Black.copy(alpha = 0.42f),
-                            Color.Black.copy(alpha = 0.78f),
-                        ),
-                    ),
-                ),
-        )
-
-        NuvioAnimatedWatchedBadge(
-            isVisible = isWatched,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(metrics.contentPadding),
-        )
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .padding(
-                    start = metrics.contentPadding,
-                    end = metrics.contentPadding,
-                    top = metrics.contentPadding,
-                    bottom = metrics.contentBottomPadding,
-                ),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            EpisodeCodeBadge(
-                text = video.episodeBadge(),
-                textSize = metrics.badgeTextSize,
-                radius = metrics.badgeRadius,
-                horizontalPadding = metrics.badgeHorizontalPadding,
-                verticalPadding = metrics.badgeVerticalPadding,
-                backgroundAlpha = 0.42f,
-            )
-
-            Text(
-                text = video.title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = metrics.titleTextSize,
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = metrics.titleLineHeight,
-                ),
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            if (!video.overview.isNullOrBlank()) {
-                Text(
-                    text = video.overview,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = metrics.bodyTextSize,
-                        lineHeight = metrics.bodyLineHeight,
-                    ),
-                    color = Color.White.copy(alpha = 0.86f),
-                    maxLines = if (expanded) Int.MAX_VALUE else metrics.overviewMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    IconButton(
-                        onClick = { expanded = !expanded },
-                        modifier = Modifier.size(20.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                            contentDescription = if (expanded) "Collapse" else "Expand",
-                            tint = Color.White.copy(alpha = 0.6f),
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
+                    .fillMaxWidth()
+                    .heightIn(min = metrics.cardHeight),
+            ) {
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = video.title,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
+                        contentScale = ContentScale.Crop,
+                    )
                 }
-            }
 
-            if (runtimeLabel != null || ratingLabel != null || formattedDate != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    runtimeLabel?.let { runtime ->
-                        Text(
-                            text = runtime,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = metrics.metaTextSize),
-                            color = Color.White.copy(alpha = 0.78f),
-                            maxLines = 1,
-                        )
-                    }
-                    ratingLabel?.let { rating ->
-                        ImdbEpisodeRatingBadge(
-                            rating = rating,
-                            logoWidth = metrics.imdbLogoWidth,
-                            logoHeight = metrics.imdbLogoHeight,
-                            textSize = metrics.metaTextSize,
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    formattedDate?.let { date ->
-                        Text(
-                            text = date,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = metrics.metaTextSize),
-                            color = Color.White.copy(alpha = 0.78f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.End,
-                        )
-                    }
-                }
-            }
-        }
-
-        progressEntry
-            ?.takeIf { it.durationMs > 0L && !it.isCompleted }
-            ?.let { entry ->
-                NuvioProgressBar(
-                    progress = entry.progressFraction,
+                Box(
                     modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .padding(horizontal = metrics.contentPadding, vertical = 8.dp),
-                    height = 4.dp,
-                    trackColor = Color.White.copy(alpha = 0.22f),
-                    fillColor = MaterialTheme.colorScheme.primary,
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.10f),
+                                    Color.Black.copy(alpha = 0.42f),
+                                    Color.Black.copy(alpha = 0.78f),
+                                ),
+                            ),
+                        ),
                 )
+
+                NuvioAnimatedWatchedBadge(
+                    isVisible = isWatched,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(metrics.contentPadding),
+                )
+
+                EpisodeCodeBadge(
+                    text = video.episodeBadge(),
+                    textSize = metrics.badgeTextSize,
+                    radius = metrics.badgeRadius,
+                    horizontalPadding = metrics.badgeHorizontalPadding,
+                    verticalPadding = metrics.badgeVerticalPadding,
+                    backgroundAlpha = 0.42f,
+                )
+
+                if (!expanded) {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .padding(
+                                start = metrics.contentPadding,
+                                end = metrics.contentPadding,
+                                top = metrics.contentPadding,
+                                bottom = metrics.contentBottomPadding,
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = video.title,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontSize = metrics.titleTextSize,
+                                fontWeight = FontWeight.ExtraBold,
+                                lineHeight = metrics.titleLineHeight,
+                            ),
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+
+                        if (!video.overview.isNullOrBlank()) {
+                            Text(
+                                text = video.overview,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = metrics.bodyTextSize,
+                                    lineHeight = metrics.bodyLineHeight,
+                                ),
+                                color = Color.White.copy(alpha = 0.86f),
+                                maxLines = metrics.overviewMaxLines,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                            ) {
+                                IconButton(
+                                    onClick = { expanded = !expanded },
+                                    modifier = Modifier.size(20.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ExpandMore,
+                                        contentDescription = "Expand",
+                                        tint = Color.White.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                        }
+
+                        MetaRow()
+                    }
+                }
             }
+
+            if (expanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = metrics.contentPadding,
+                            end = metrics.contentPadding,
+                            top = 12.dp,
+                            bottom = metrics.contentBottomPadding,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = video.title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = metrics.titleTextSize,
+                            fontWeight = FontWeight.ExtraBold,
+                            lineHeight = metrics.titleLineHeight,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    if (!video.overview.isNullOrBlank()) {
+                        Text(
+                            text = video.overview,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = metrics.bodyTextSize,
+                                lineHeight = metrics.bodyLineHeight,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = Int.MAX_VALUE,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            IconButton(
+                                onClick = { expanded = !expanded },
+                                modifier = Modifier.size(20.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.ExpandLess,
+                                    contentDescription = "Collapse",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                    }
+
+                    MetaRow()
+                }
+            }
+        }
+
+        if (!expanded) {
+            progressEntry
+                ?.takeIf { it.durationMs > 0L && !it.isCompleted }
+                ?.let { entry ->
+                    NuvioProgressBar(
+                        progress = entry.progressFraction,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .padding(horizontal = metrics.contentPadding, vertical = 8.dp),
+                        height = 4.dp,
+                        trackColor = Color.White.copy(alpha = 0.22f),
+                        fillColor = MaterialTheme.colorScheme.primary,
+                    )
+                }
+        }
     }
 }
 
@@ -1062,6 +1139,61 @@ private fun EpisodeListCard(
         video.released?.let { formatDateForDisplay(it, dateFormatOption) }
     }
     var expanded by remember { mutableStateOf(false) }
+
+    val imageUrl = video.thumbnail ?: fallbackImage
+    val shouldBlurArtwork = blurUnwatchedEpisodes && !isWatched
+
+    @Composable
+    fun DateAndRatingRow() {
+        if (formattedDate != null || ratingLabel != null) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                formattedDate?.let { date ->
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontSize = sizing.metaTextSize,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                ratingLabel?.let { rating ->
+                    ImdbEpisodeRatingBadge(
+                        rating = rating,
+                        logoWidth = 24.dp,
+                        logoHeight = 12.dp,
+                        textSize = sizing.metaTextSize,
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun ExpandButton() {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            IconButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.size(24.dp),
+            ) {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -1079,152 +1211,196 @@ private fun EpisodeListCard(
                 onLongClick = onLongPress,
             ),
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            // Image area - fixed width matching card height per spec
-            Box(
-                modifier = Modifier
-                    .width(sizing.imageWidth)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = sizing.cardRadius, bottomStart = sizing.cardRadius)),
-            ) {
-                val imageUrl = video.thumbnail ?: fallbackImage
-                val shouldBlurArtwork = blurUnwatchedEpisodes && !isWatched
-                if (imageUrl != null) {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = video.title,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface),
-                    )
-                }
-
-                EpisodeCodeBadge(
-                    text = video.episodeBadge(),
-                    textSize = sizing.badgeTextSize,
-                    radius = sizing.badgeRadius,
-                    horizontalPadding = sizing.badgeHorizontalPadding,
-                    verticalPadding = sizing.badgeVerticalPadding,
-                    backgroundAlpha = 0.85f,
+        if (!expanded) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = 8.dp, top = 8.dp),
-                )
-
-                NuvioAnimatedWatchedBadge(
-                    isVisible = isWatched,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(
-                        start = sizing.contentHorizontalPadding,
-                        end = sizing.contentHorizontalPadding,
-                        top = sizing.contentVerticalPadding,
-                        bottom = sizing.contentVerticalPadding,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(sizing.contentSpacing),
-            ) {
-                Text(
-                    text = video.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = sizing.titleTextSize,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = sizing.titleLineHeight,
-                        letterSpacing = 0.sp,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = sizing.titleMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                if (formattedDate != null || ratingLabel != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        formattedDate?.let { date ->
-                            Text(
-                                text = date,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontSize = sizing.metaTextSize,
-                                    fontWeight = FontWeight.Medium,
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        ratingLabel?.let { rating ->
-                            ImdbEpisodeRatingBadge(
-                                rating = rating,
-                                logoWidth = 24.dp,
-                                logoHeight = 12.dp,
-                                textSize = sizing.metaTextSize,
-                            )
-                        }
+                        .width(sizing.imageWidth)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(topStart = sizing.cardRadius, bottomStart = sizing.cardRadius)),
+                ) {
+                    if (imageUrl != null) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = video.title,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surface),
+                        )
                     }
+
+                    EpisodeCodeBadge(
+                        text = video.episodeBadge(),
+                        textSize = sizing.badgeTextSize,
+                        radius = sizing.badgeRadius,
+                        horizontalPadding = sizing.badgeHorizontalPadding,
+                        verticalPadding = sizing.badgeVerticalPadding,
+                        backgroundAlpha = 0.85f,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(start = 8.dp, top = 8.dp),
+                    )
+
+                    NuvioAnimatedWatchedBadge(
+                        isVisible = isWatched,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                    )
                 }
 
-                if (!video.overview.isNullOrBlank()) {
-                    Text(
-                        text = video.overview,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = sizing.bodyTextSize,
-                            lineHeight = sizing.bodyLineHeight,
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(
+                            start = sizing.contentHorizontalPadding,
+                            end = sizing.contentHorizontalPadding,
+                            top = sizing.contentVerticalPadding,
+                            bottom = sizing.contentVerticalPadding,
                         ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = if (expanded) Int.MAX_VALUE else sizing.overviewMaxLines,
+                    verticalArrangement = Arrangement.spacedBy(sizing.contentSpacing),
+                ) {
+                    Text(
+                        text = video.title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = sizing.titleTextSize,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = sizing.titleLineHeight,
+                            letterSpacing = 0.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = sizing.titleMaxLines,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        IconButton(
-                            onClick = { expanded = !expanded },
-                            modifier = Modifier.size(24.dp),
-                        ) {
-                            Icon(
-                                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                                contentDescription = if (expanded) "Collapse" else "Expand",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
+
+                    DateAndRatingRow()
+
+                    if (!video.overview.isNullOrBlank()) {
+                        Text(
+                            text = video.overview,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = sizing.bodyTextSize,
+                                lineHeight = sizing.bodyLineHeight,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = sizing.overviewMaxLines,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        ExpandButton()
+                    }
+                }
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = sizing.imageWidth * 0.66f)
+                        .clip(RoundedCornerShape(topStart = sizing.cardRadius, topEnd = sizing.cardRadius)),
+                ) {
+                    if (imageUrl != null) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = video.title,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surface),
+                        )
+                    }
+
+                    EpisodeCodeBadge(
+                        text = video.episodeBadge(),
+                        textSize = sizing.badgeTextSize,
+                        radius = sizing.badgeRadius,
+                        horizontalPadding = sizing.badgeHorizontalPadding,
+                        verticalPadding = sizing.badgeVerticalPadding,
+                        backgroundAlpha = 0.85f,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(start = 8.dp, top = 8.dp),
+                    )
+
+                    NuvioAnimatedWatchedBadge(
+                        isVisible = isWatched,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = sizing.contentHorizontalPadding,
+                            end = sizing.contentHorizontalPadding,
+                            top = sizing.contentVerticalPadding,
+                            bottom = sizing.contentVerticalPadding,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(sizing.contentSpacing),
+                ) {
+                    Text(
+                        text = video.title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = sizing.titleTextSize,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = sizing.titleLineHeight,
+                            letterSpacing = 0.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = Int.MAX_VALUE,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    DateAndRatingRow()
+
+                    if (!video.overview.isNullOrBlank()) {
+                        Text(
+                            text = video.overview,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = sizing.bodyTextSize,
+                                lineHeight = sizing.bodyLineHeight,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = Int.MAX_VALUE,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        ExpandButton()
                     }
                 }
             }
         }
 
-        progressEntry
-            ?.takeIf { it.durationMs > 0L && !it.isCompleted }
-            ?.let { entry ->
-                NuvioProgressBar(
-                    progress = entry.progressFraction,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .width(sizing.imageWidth - 24.dp)
-                        .padding(start = 12.dp, bottom = 10.dp),
-                    height = 5.dp,
-                    trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f),
-                    fillColor = MaterialTheme.colorScheme.primary,
-                )
-            }
+        if (!expanded) {
+            progressEntry
+                ?.takeIf { it.durationMs > 0L && !it.isCompleted }
+                ?.let { entry ->
+                    NuvioProgressBar(
+                        progress = entry.progressFraction,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .width(sizing.imageWidth - 24.dp)
+                            .padding(start = 12.dp, bottom = 10.dp),
+                        height = 5.dp,
+                        trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.14f),
+                        fillColor = MaterialTheme.colorScheme.primary,
+                    )
+                }
+        }
     }
 }
 
