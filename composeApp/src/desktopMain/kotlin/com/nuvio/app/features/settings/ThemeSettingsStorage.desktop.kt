@@ -55,6 +55,13 @@ internal actual object ThemeSettingsStorage {
         // No-op on desktop (language change requires app restart)
     }
 
+    actual fun loadCustomAccentHex(): String? =
+        store.getString("custom_accent_hex")
+
+    actual fun saveCustomAccentHex(hex: String) {
+        store.putString("custom_accent_hex", hex)
+    }
+
     actual fun exportToSyncPayload(): JsonObject {
         val map = mutableMapOf<String, String>()
         loadSelectedTheme()?.let { map["selected_theme"] = it }
@@ -63,6 +70,7 @@ internal actual object ThemeSettingsStorage {
         loadLiquidGlassNativeTabBarEnabled()?.let { map["liquid_glass_native_tab_bar_enabled"] = it.toString() }
         loadGlassNavBarEnabled()?.let { map["glass_nav_bar_enabled"] = it.toString() }
         loadSelectedAppLanguage()?.let { map["selected_app_language"] = it }
+        loadCustomAccentHex()?.let { map["custom_accent_hex"] = it }
         return json.decodeFromString(json.encodeToString(map))
     }
 
@@ -73,5 +81,6 @@ internal actual object ThemeSettingsStorage {
         payload["liquid_glass_native_tab_bar_enabled"]?.let { saveLiquidGlassNativeTabBarEnabled(it.toString().toBooleanStrictOrNull() ?: return@let) }
         payload["glass_nav_bar_enabled"]?.let { saveGlassNavBarEnabled(it.toString().toBooleanStrictOrNull() ?: return@let) }
         payload["selected_app_language"]?.let { saveSelectedAppLanguage(it.toString()) }
+        payload["custom_accent_hex"]?.let { saveCustomAccentHex(it.toString()) }
     }
 }

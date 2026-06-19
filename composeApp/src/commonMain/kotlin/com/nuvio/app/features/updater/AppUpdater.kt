@@ -190,9 +190,13 @@ private object AppUpdaterRepository {
             return true
         }
 
+        val channelHyphened = channel.replace("/", "-")
         return listOf(tagName, name)
             .filterNotNull()
-            .any { value -> value.contains(channel, ignoreCase = true) }
+            .any { value ->
+                value.contains(channel, ignoreCase = true) ||
+                    value.contains(channelHyphened, ignoreCase = true)
+            }
     }
 
     private fun chooseBestApkAsset(assets: List<GitHubAssetDto>): GitHubAssetDto? {

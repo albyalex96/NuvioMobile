@@ -3,6 +3,7 @@ package com.nuvio.app.core.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,8 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,8 +37,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -231,6 +234,11 @@ private fun ColorSlider(
     gradientStops: List<Pair<Float, Color>>,
     thumbColor: Color,
 ) {
+    val fraction = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    var widthPx by remember { mutableStateOf(0f) }
+    val thumbRadius = 14.dp
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -250,21 +258,49 @@ private fun ColorSlider(
                 .weight(1f)
                 .height(48.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(
-                    Brush.horizontalGradient(*gradientStops.toTypedArray())
-                ),
-            contentAlignment = Alignment.Center,
+                .onSizeChanged { widthPx = it.width.toFloat() }
+                .pointerInput(valueRange) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            val f = (offset.x / size.width).coerceIn(0f, 1f)
+                            val newValue = valueRange.start + f * (valueRange.endInclusive - valueRange.start)
+                            onValueChange(newValue)
+                        },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val f = (change.position.x / size.width).coerceIn(0f, 1f)
+                            val newValue = valueRange.start + f * (valueRange.endInclusive - valueRange.start)
+                            onValueChange(newValue)
+                        },
+                    )
+                },
         ) {
-            Slider(
-                value = value,
-                onValueChange = onValueChange,
-                valueRange = valueRange,
-                modifier = Modifier.fillMaxSize(),
-                colors = SliderDefaults.colors(
-                    thumbColor = thumbColor,
-                    activeTrackColor = Color.Transparent,
-                    inactiveTrackColor = Color.Transparent,
-                ),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .align(Alignment.Center)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        Brush.horizontalGradient(*gradientStops.toTypedArray())
+                    ),
+            )
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(
+                        x = with(density) {
+                            val totalDp = widthPx.toDp()
+                            val usable = totalDp - thumbRadius * 2
+                            if (usable > 0.dp) usable * fraction else 0.dp
+                        },
+                        y = 0.dp,
+                    )
+                    .size(thumbRadius * 2)
+                    .clip(CircleShape)
+                    .background(thumbColor)
+                    .border(2.dp, Color.White, CircleShape),
             )
         }
     }

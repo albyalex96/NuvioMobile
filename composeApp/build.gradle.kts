@@ -340,16 +340,16 @@ val releaseKeystore = releaseStoreFile?.let(rootProject::file)
 val versionJsonFile = rootProject.file("version.json")
 val appVersionConfigFile = rootProject.file("iosApp/Configuration/Version.xcconfig")
 
-val releaseAppVersionName = readVersionJsonString(versionJsonFile, "versionName")
-    ?: error("versionName is missing from version.json")
-val releaseAppVersionCode = readVersionJsonInt(versionJsonFile, "versionCode")
-    ?: error("versionCode is missing or invalid in version.json")
+val releaseAppVersionName = readVersionJsonString(versionJsonFile, "version")
+    ?: error("\"version\" is missing from version.json")
+val releaseAppVersionCode = releaseAppVersionName.replace(".", "").toIntOrNull()
+    ?: error("versionCode could not be derived from \"$releaseAppVersionName\" in version.json")
 
 if (appVersionConfigFile.exists()) {
     val xcconfigName = readXcconfigValue(appVersionConfigFile, "MARKETING_VERSION")
     val xcconfigCode = readXcconfigValue(appVersionConfigFile, "CURRENT_PROJECT_VERSION")?.toIntOrNull()
     if (xcconfigName != releaseAppVersionName || xcconfigCode != releaseAppVersionCode) {
-        logger.warn("Version.xcconfig is out of sync with version.json. Run 'syncVersionJson' task to update.")
+        logger.warn("Version.xcconfig is out of sync with version.json. Build will auto-sync.")
     }
 }
 val iosDistribution = (
