@@ -1,4 +1,4 @@
-name: Build All Releases (Windows, Android Mobile)
+name: [AE] Build All Releases (Windows, Android Mobile) 
 
 on:
   workflow_dispatch:
@@ -79,14 +79,6 @@ jobs:
           printf 'CONTRIBUTIONS_URL=%s\n' "${{ secrets.CONTRIBUTION_URL }}" >> local.properties
           printf 'DIRECT_DEBRID_API_BASE_URL=%s\n' "https://api.torbox.app/v1/api" >> local.properties
 
-      - name: Set flavor tag name
-        id: flavor
-        run: |
-          BRANCH_NAME="${{ steps.resolve_branch.outputs.branch }}"
-          BRANCH_LOWER=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9]/-/g')
-          echo "name=${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
-          echo "tag=v${{ steps.version.outputs.name }}-android-${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
-
       - name: Generate Changelog
         id: changelog
         env:
@@ -95,10 +87,8 @@ jobs:
           PREV_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
 
           if [ -n "$PREV_TAG" ]; then
-            echo "Release precedente trovata: $PREV_TAG"
             COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
           else
-            echo "Nessuna release precedente, prendo gli ultimi 20 commit"
             COMMITS=$(git log HEAD --pretty=format:"- %s (%h)" --no-merges -n 20)
           fi
 
@@ -107,15 +97,6 @@ jobs:
           fi
 
           {
-            echo "## 📦 Nuvio v${{ steps.version.outputs.name }}"
-            echo ""
-            echo "**Branch target:** \`${{ steps.resolve_branch.outputs.branch }}\`"
-            if [ -n "$PREV_TAG" ]; then
-              echo "**Previous Version:** \`$PREV_TAG\`"
-            fi
-            echo ""
-            echo "---"
-            echo ""
             echo "## 🔨 Changes"
             echo ""
             echo "$COMMITS"
@@ -134,18 +115,22 @@ jobs:
           done
 
       - name: Create GitHub Release and Upload APK
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: "${{ steps.flavor.outputs.tag }}"
-          name: "Nuvio v${{ steps.version.outputs.name }} - ${{ steps.resolve_branch.outputs.branch }}"
-          body_path: release_body.md
-          draft: false
-          prerelease: false
-          target_commitish: ${{ steps.resolve_branch.outputs.branch }}
-          files: |
-            composeApp/build/outputs/apk/**/*.apk
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="v${{ steps.version.outputs.name }}"
+
+          if gh release view "$RELEASE_TAG" --json id &>/dev/null; then
+            echo "Release tag $RELEASE_TAG already exists, uploading APK..."
+            find composeApp/build/outputs/apk -name "*.apk" -exec gh release upload "$RELEASE_TAG" {} --clobber \;
+          else
+            echo "Creating release $RELEASE_TAG..."
+            gh release create "$RELEASE_TAG" \
+              --title "Nuvio v${{ steps.version.outputs.name }}" \
+              --notes-file release_body.md \
+              --target ${{ steps.resolve_branch.outputs.branch }}
+            find composeApp/build/outputs/apk -name "*.apk" -exec gh release upload "$RELEASE_TAG" {} --clobber \;
+          fi
 
       - name: Send ntfy Notification
         run: |
@@ -153,8 +138,8 @@ jobs:
             -H "Title: 🎉 Android Build Completata!" \
             -H "Priority: high" \
             -H "Tags: rocket,android" \
-            -H "Click: https://github.com/${{ github.repository }}/releases/tag/${{ steps.flavor.outputs.tag }}" \
-            -d "Build **Android v${{ steps.version.outputs.name }}** su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 APK caricato." \
+            -H "Click: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.name }}" \
+            -d "Build **Android v${{ steps.version.outputs.name }}** pronta! 🚀 APK caricato." \
             https://ntfy.sh/nuvio_builds
 
   build-desktop:
@@ -233,15 +218,6 @@ jobs:
           $size = (Get-Item $dllPath).Length
           Write-Host "Downloaded: $([math]::Round($size/1MB, 1)) MB"
 
-      - name: Set flavor tag name
-        id: flavor
-        shell: pwsh
-        run: |
-          $branchName = "${{ steps.resolve_branch.outputs.branch }}"
-          $branchLower = $branchName.ToLower() -replace '[^a-zA-Z0-9]', '-'
-          echo "name=${branchLower}-full" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          echo "msi-tag=v${{ steps.version.outputs.name }}-windows-${branchLower}-full" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
       - name: Build Windows MSI
         shell: pwsh
         run: |
@@ -282,24 +258,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $androidTag = "${{ steps.flavor.outputs.tag }}"
+          $releaseTag = "v${{ steps.version.outputs.name }}"
           $msiPath = "${{ steps.msi.outputs.msi-path }}"
-          $msiName = "${{ steps.msi.outputs.msi-name }}"
 
-          Write-Host "Uploading $msiPath to tag $androidTag as $msiName..."
+          Write-Host "Uploading $msiPath to tag $releaseTag..."
 
           $maxRetries = 30
           $retry = 0
           while ($retry -lt $maxRetries) {
-            $release = gh release view "$androidTag" --json id 2>$null
+            $release = gh release view "$releaseTag" --json id 2>$null
             if ($release) {
               Write-Host "Release found, uploading..."
-              gh release upload "$androidTag" "$msiPath" --clobber
-              Write-Host "MSI uploaded successfully!"
-              exit 0
+              gh release upload "$releaseTag" "$msiPath" --clobber
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "MSI uploaded successfully!"
+                exit 0
+              }
+              Write-Host "Upload failed, retrying..."
+            } else {
+              Write-Host "Release not yet created, retry $retry/$maxRetries..."
             }
             $retry++
-            Write-Host "Release not yet created, retry $retry/$maxRetries..."
             Start-Sleep -Seconds 10
           }
           Write-Host "Timeout waiting for Android release"
@@ -308,5 +287,4 @@ jobs:
       - name: Send ntfy Notification
         shell: pwsh
         run: |
-          $androidTag = "${{ steps.flavor.outputs.tag }}"
-          curl.exe -H "Title: 🎉 Desktop Build Completata!" -H "Priority: high" -H "Tags: rocket,windows" -H "Click: https://github.com/${{ github.repository }}/releases/tag/$androidTag" -d "Build **Desktop Windows v${{ steps.version.outputs.name }}** su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 MSI caricato." https://ntfy.sh/nuvio_builds
+          curl.exe -H "Title: 🎉 Desktop Build Completata!" -H "Priority: high" -H "Tags: rocket,windows" -H "Click: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.name }}" -d "Build **Desktop Windows v${{ steps.version.outputs.name }}** pronta! 🚀 MSI caricato." https://ntfy.sh/nuvio_builds
