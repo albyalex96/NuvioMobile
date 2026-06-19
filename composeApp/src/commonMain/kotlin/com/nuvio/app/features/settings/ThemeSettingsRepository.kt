@@ -1,5 +1,6 @@
 package com.nuvio.app.features.settings
 
+import com.nuvio.app.core.format.DateFormatOption
 import com.nuvio.app.core.ui.AppTheme
 import com.nuvio.app.core.ui.NativeTabBridge
 import com.nuvio.app.core.ui.ThemeColors
@@ -29,6 +30,9 @@ object ThemeSettingsRepository {
     private val _selectedAppLanguage = MutableStateFlow(AppLanguage.ENGLISH)
     val selectedAppLanguage: StateFlow<AppLanguage> = _selectedAppLanguage.asStateFlow()
 
+    private val _dateFormatOption = MutableStateFlow(DateFormatOption.YEAR_MONTH_DAY_TEXT)
+    val dateFormatOption: StateFlow<DateFormatOption> = _dateFormatOption.asStateFlow()
+
     private var hasLoaded = false
 
     fun ensureLoaded() {
@@ -51,6 +55,7 @@ object ThemeSettingsRepository {
         NativeTabBridge.publishAccentColor(nativeTabAccentHex(AppTheme.WHITE, "#1E88E5"))
         NativeTabBridge.publishLiquidGlassEnabled(false)
         _selectedAppLanguage.value = AppLanguage.ENGLISH
+        _dateFormatOption.value = DateFormatOption.YEAR_MONTH_DAY_TEXT
     }
 
     private fun loadFromDisk() {
@@ -77,6 +82,9 @@ object ThemeSettingsRepository {
         val appLanguage = AppLanguage.fromCode(ThemeSettingsStorage.loadSelectedAppLanguage())
         ThemeSettingsStorage.applySelectedAppLanguage(appLanguage.code)
         _selectedAppLanguage.value = appLanguage
+        _dateFormatOption.value = ThemeSettingsStorage.loadDateFormatOption()
+            ?.let { runCatching { DateFormatOption.valueOf(it) }.getOrNull() }
+            ?: DateFormatOption.YEAR_MONTH_DAY_TEXT
     }
 
     fun setTheme(theme: AppTheme) {
@@ -136,6 +144,13 @@ object ThemeSettingsRepository {
         ThemeSettingsStorage.saveSelectedAppLanguage(language.code)
         ThemeSettingsStorage.applySelectedAppLanguage(language.code)
         _selectedAppLanguage.value = language
+    }
+
+    fun setDateFormatOption(format: DateFormatOption) {
+        ensureLoaded()
+        if (_dateFormatOption.value == format) return
+        _dateFormatOption.value = format
+        ThemeSettingsStorage.saveDateFormatOption(format.name)
     }
 }
 

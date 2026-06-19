@@ -36,6 +36,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,7 +66,9 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.core.format.formatDateForDisplay
 import com.nuvio.app.core.format.formatReleaseDateForDisplay
+import com.nuvio.app.core.format.rememberDateFormatOption
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
 import com.nuvio.app.core.ui.NuvioAnimatedWatchedBadge
 import com.nuvio.app.core.ui.NuvioProgressBar
@@ -661,12 +668,16 @@ private fun EpisodeHorizontalCard(
 ) {
     val cardShape = RoundedCornerShape(metrics.cornerRadius)
     val ratingLabel = remember(imdbRating) { imdbRating?.takeIf { it > 0.0 }?.let(::formatEpisodeRating) }
-    val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
+    val dateFormatOption = rememberDateFormatOption()
+    val formattedDate = remember(video.released, dateFormatOption) {
+        video.released?.let { formatDateForDisplay(it, dateFormatOption) }
+    }
     val runtimeLabel = remember(video.runtime) { video.runtime?.takeIf { it > 0 }?.let(::formatEpisodeRuntime) }
+    var expanded by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .width(metrics.cardWidth)
-            .height(metrics.cardHeight)
+            .animateContentSize(animationSpec = tween(300))
             .clip(cardShape)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
             .border(
@@ -756,9 +767,25 @@ private fun EpisodeHorizontalCard(
                         lineHeight = metrics.bodyLineHeight,
                     ),
                     color = Color.White.copy(alpha = 0.86f),
-                    maxLines = metrics.overviewMaxLines,
+                    maxLines = if (expanded) Int.MAX_VALUE else metrics.overviewMaxLines,
                     overflow = TextOverflow.Ellipsis,
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    IconButton(
+                        onClick = { expanded = !expanded },
+                        modifier = Modifier.size(20.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = if (expanded) "Collapse" else "Expand",
+                            tint = Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
             }
 
             if (runtimeLabel != null || ratingLabel != null || formattedDate != null) {
@@ -1030,11 +1057,15 @@ private fun EpisodeListCard(
 ) {
     val cardShape = RoundedCornerShape(sizing.cardRadius)
     val ratingLabel = remember(imdbRating) { imdbRating?.takeIf { it > 0.0 }?.let(::formatEpisodeRating) }
-    val formattedDate = remember(video.released) { video.released?.let { formatReleaseDateForDisplay(it) } }
+    val dateFormatOption = rememberDateFormatOption()
+    val formattedDate = remember(video.released, dateFormatOption) {
+        video.released?.let { formatDateForDisplay(it, dateFormatOption) }
+    }
+    var expanded by remember { mutableStateOf(false) }
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(sizing.cardHeight)
+            .animateContentSize(animationSpec = tween(300))
             .clip(cardShape)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
             .border(
@@ -1099,7 +1130,6 @@ private fun EpisodeListCard(
 
             Column(
                 modifier = Modifier
-                    .fillMaxHeight()
                     .weight(1f)
                     .padding(
                         start = sizing.contentHorizontalPadding,
@@ -1158,9 +1188,25 @@ private fun EpisodeListCard(
                             lineHeight = sizing.bodyLineHeight,
                         ),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = sizing.overviewMaxLines,
+                        maxLines = if (expanded) Int.MAX_VALUE else sizing.overviewMaxLines,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        IconButton(
+                            onClick = { expanded = !expanded },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(
+                                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                contentDescription = if (expanded) "Collapse" else "Expand",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
                 }
             }
         }

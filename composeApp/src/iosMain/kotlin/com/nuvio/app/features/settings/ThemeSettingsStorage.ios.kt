@@ -18,6 +18,7 @@ actual object ThemeSettingsStorage {
     private const val liquidGlassNativeTabBarEnabledKey = "liquid_glass_native_tab_bar_enabled"
     private const val glassNavBarEnabledKey = "glass_nav_bar_enabled"
     private const val selectedAppLanguageKey = "selected_app_language"
+    private const val dateFormatOptionKey = "date_format_option"
     private val profileScopedSyncKeys = listOf(
         selectedThemeKey,
         amoledEnabledKey,
@@ -124,6 +125,13 @@ actual object ThemeSettingsStorage {
             forKey = "AppleLanguages",
         )
         NSUserDefaults.standardUserDefaults.synchronize()
+    }
+
+    actual fun loadDateFormatOption(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(dateFormatOptionKey)
+
+    actual fun saveDateFormatOption(format: String) {
+        NSUserDefaults.standardUserDefaults.setObject(format, forKey = dateFormatOptionKey)
     }
 
     actual fun exportToSyncPayload(): JsonObject = buildJsonObject {

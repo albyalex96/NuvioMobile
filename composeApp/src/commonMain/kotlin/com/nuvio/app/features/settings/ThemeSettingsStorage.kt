@@ -18,6 +18,8 @@ internal expect object ThemeSettingsStorage {
     fun loadSelectedAppLanguage(): String?
     fun saveSelectedAppLanguage(languageCode: String)
     fun applySelectedAppLanguage(languageCode: String)
+    fun loadDateFormatOption(): String?
+    fun saveDateFormatOption(format: String)
     fun exportToSyncPayload(): JsonObject
     fun replaceFromSyncPayload(payload: JsonObject)
 }

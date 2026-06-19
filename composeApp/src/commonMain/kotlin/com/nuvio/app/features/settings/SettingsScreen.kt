@@ -136,6 +136,7 @@ fun SettingsScreen(
         val liquidGlassNativeTabBarSupported = remember { isLiquidGlassNativeTabBarSupported() }
         val glassNavBarEnabled by remember { ThemeSettingsRepository.glassNavBarEnabled }.collectAsStateWithLifecycle()
         val selectedAppLanguage by remember { ThemeSettingsRepository.selectedAppLanguage }.collectAsStateWithLifecycle()
+        val dateFormatOption by remember { ThemeSettingsRepository.dateFormatOption }.collectAsStateWithLifecycle()
         val tmdbSettings by remember {
             TmdbSettingsRepository.ensureLoaded()
             TmdbSettingsRepository.uiState
@@ -291,6 +292,8 @@ fun SettingsScreen(
                 onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                 selectedAppLanguage = selectedAppLanguage,
                 onAppLanguageSelected = ThemeSettingsRepository::setAppLanguage,
+                selectedDateFormatOption = dateFormatOption,
+                onDateFormatOptionSelected = ThemeSettingsRepository::setDateFormatOption,
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
@@ -361,6 +364,8 @@ fun SettingsScreen(
                 onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                 selectedAppLanguage = selectedAppLanguage,
                 onAppLanguageSelected = ThemeSettingsRepository::setAppLanguage,
+                selectedDateFormatOption = dateFormatOption,
+                onDateFormatOptionSelected = ThemeSettingsRepository::setDateFormatOption,
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
@@ -435,6 +440,8 @@ private fun MobileSettingsScreen(
     onGlassNavBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
+    selectedDateFormatOption: com.nuvio.app.core.format.DateFormatOption,
+    onDateFormatOptionSelected: (com.nuvio.app.core.format.DateFormatOption) -> Unit,
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
@@ -626,6 +633,8 @@ private fun MobileSettingsScreen(
                     onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                     selectedAppLanguage = selectedAppLanguage,
                     onAppLanguageSelected = onAppLanguageSelected,
+                    selectedDateFormatOption = selectedDateFormatOption,
+                    onDateFormatOptionSelected = onDateFormatOptionSelected,
                     onContinueWatchingClick = onContinueWatchingClick,
                     onPosterCustomizationClick = { onPageChange(SettingsPage.PosterCustomization) },
                 )
@@ -821,6 +830,8 @@ private fun TabletSettingsScreen(
     onGlassNavBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
+    selectedDateFormatOption: com.nuvio.app.core.format.DateFormatOption,
+    onDateFormatOptionSelected: (com.nuvio.app.core.format.DateFormatOption) -> Unit,
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
@@ -1090,6 +1101,8 @@ private fun TabletSettingsScreen(
                     onGlassNavBarToggle = ThemeSettingsRepository::setGlassNavBar,
                     selectedAppLanguage = selectedAppLanguage,
                     onAppLanguageSelected = onAppLanguageSelected,
+                    selectedDateFormatOption = selectedDateFormatOption,
+                    onDateFormatOptionSelected = onDateFormatOptionSelected,
                 )
                 SettingsPage.Advanced -> advancedSettingsContent(
                     isTablet = true,

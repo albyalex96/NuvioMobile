@@ -1052,18 +1052,11 @@ fun publishWindowsMsiOutput(release: Boolean) {
 
     val distributionName = if (release) "main-release" else "main"
     val outputDir = layout.buildDirectory.dir("compose/binaries/$distributionName/msi").get().asFile
-    val finalMsi = outputDir.resolve("NuvioEnhanced-Windows-$windowsPlayerBridgeArch-$desktopReleaseVersionName.msi")
-    val defaultMsi = outputDir.resolve("NuvioEnhanced-$desktopReleasePackageVersion.msi")
-    val sourceMsi = defaultMsi.takeIf { it.exists() }
-        ?: finalMsi.takeIf { it.exists() }
+    val sourceMsi = outputDir.listFiles()?.firstOrNull { it.extension == "msi" }
         ?: error("Expected Windows MSI output in ${outputDir.absolutePath}")
 
-    if (sourceMsi.canonicalFile != finalMsi.canonicalFile) {
-        sourceMsi.copyTo(finalMsi, overwrite = true)
-    }
-
-    logger.lifecycle("Windows MSI artifact: ${finalMsi.absolutePath}")
-    publishWindowsMsiArtifact(finalMsi)
+    logger.lifecycle("Windows MSI artifact: ${sourceMsi.absolutePath}")
+    publishWindowsMsiArtifact(sourceMsi)
 }
 
 fun publishWindowsMsiArtifact(msi: File) {

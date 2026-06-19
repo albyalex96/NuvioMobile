@@ -45,7 +45,8 @@ import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
 import coil3.compose.AsyncImage
-import com.nuvio.app.core.format.formatReleaseDateForDisplay
+import com.nuvio.app.core.format.formatDateForDisplay
+import com.nuvio.app.core.format.rememberDateFormatOption
 import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.NuvioAnimatedBookmarkedBadge
 import com.nuvio.app.core.ui.NuvioPosterWatchedOverlay
@@ -331,7 +332,7 @@ private fun CatalogPosterTile(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            val detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it) }
+            val detail = item.releaseInfo?.let { formatDateForDisplay(it, rememberDateFormatOption()) }
             if (detail != null) {
                 Text(
                     text = detail,

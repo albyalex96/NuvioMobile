@@ -574,6 +574,8 @@
     <string name="settings_appearance_amoled_surfaces_description">Also turn all surfaces and cards pure black for maximum power savings.</string>
     <string name="settings_appearance_app_language">App Language</string>
     <string name="settings_appearance_app_language_sheet_title">Choose Language</string>
+    <string name="settings_appearance_date_format">Date Format</string>
+    <string name="settings_appearance_date_format_sheet_title">Choose Date Format</string>
     <string name="settings_appearance_continue_watching_description">Settings for the Continue Watching section.</string>
     <string name="settings_appearance_liquid_glass">Liquid Glass</string>
     <string name="settings_appearance_liquid_glass_description">Use the native iPhone tab bar on iOS 26 and later. Instant profile switching from the tab bar is unavailable while this is on.</string>

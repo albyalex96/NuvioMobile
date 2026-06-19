@@ -5,7 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nuvio.app.core.format.formatReleaseDateForDisplay
+import com.nuvio.app.core.format.formatDateForDisplay
+import com.nuvio.app.core.format.rememberDateFormatOption
 import com.nuvio.app.core.ui.NuvioPosterCard
 import com.nuvio.app.core.ui.NuvioPosterShape
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
@@ -43,7 +44,7 @@ fun HomePosterCard(
         imageUrl = if (isLandscapeMode) (item.banner ?: item.poster) else item.poster,
         modifier = modifier,
         shape = if (isLandscapeMode) NuvioPosterShape.Landscape else item.posterShape.toNuvioPosterShape(),
-        detailLine = if (isLandscapeMode || posterCardStyle.hideLabelsEnabled) null else item.releaseInfo?.let { formatReleaseDateForDisplay(it) },
+        detailLine = if (isLandscapeMode || posterCardStyle.hideLabelsEnabled) null else item.releaseInfo?.let { formatDateForDisplay(it, rememberDateFormatOption()) },
         showTitleBelow = !posterCardStyle.hideLabelsEnabled,
         bottomLeftLogoUrl = if (isLandscapeMode) item.logo else null,
         bottomLeftText = if (isLandscapeMode && item.logo.isNullOrBlank() && !posterCardStyle.hideLabelsEnabled) item.name else null,

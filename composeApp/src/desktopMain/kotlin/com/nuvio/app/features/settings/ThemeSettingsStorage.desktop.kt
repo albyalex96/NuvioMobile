@@ -55,6 +55,13 @@ internal actual object ThemeSettingsStorage {
         // No-op on desktop (language change requires app restart)
     }
 
+    actual fun loadDateFormatOption(): String? =
+        store.getString("date_format_option")
+
+    actual fun saveDateFormatOption(format: String) {
+        store.putString("date_format_option", format)
+    }
+
     actual fun loadCustomAccentHex(): String? =
         store.getString("custom_accent_hex")
 

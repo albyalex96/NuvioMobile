@@ -50,7 +50,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.nuvio.app.core.format.formatReleaseDateForDisplay
+import com.nuvio.app.core.format.formatDateForDisplay
+import com.nuvio.app.core.format.rememberDateFormatOption
 import com.nuvio.app.features.home.MetaPreview
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -410,7 +411,7 @@ private fun HeroContentBlock(
             }
             item.releaseInfo?.takeIf { it.isNotBlank() }?.let { info ->
                 HeroMetaDot()
-                HeroMetaText(text = formatReleaseDateForDisplay(info))
+                HeroMetaText(text = formatDateForDisplay(info, rememberDateFormatOption()))
             }
         }
     }

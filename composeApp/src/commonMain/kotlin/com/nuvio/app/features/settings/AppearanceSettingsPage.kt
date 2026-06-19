@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.Tune
@@ -41,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.format.DateFormatOption
+import com.nuvio.app.core.format.formatPreview
 import com.nuvio.app.core.ui.AppTheme
 import com.nuvio.app.core.ui.NuvioBottomSheetActionRow
 import com.nuvio.app.core.ui.NuvioBottomSheetDivider
@@ -71,6 +74,8 @@ import nuvio.composeapp.generated.resources.settings_appearance_poster_customiza
 import nuvio.composeapp.generated.resources.settings_appearance_section_display
 import nuvio.composeapp.generated.resources.settings_appearance_section_home
 import nuvio.composeapp.generated.resources.settings_appearance_section_theme
+import nuvio.composeapp.generated.resources.settings_appearance_date_format
+import nuvio.composeapp.generated.resources.settings_appearance_date_format_sheet_title
 
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -96,6 +101,8 @@ import androidx.compose.material3.rememberModalBottomSheetState
     onGlassNavBarToggle: (Boolean) -> Unit,
     selectedAppLanguage: AppLanguage,
     onAppLanguageSelected: (AppLanguage) -> Unit,
+    selectedDateFormatOption: DateFormatOption,
+    onDateFormatOptionSelected: (DateFormatOption) -> Unit,
     onContinueWatchingClick: () -> Unit,
     onPosterCustomizationClick: () -> Unit,
 ) {
@@ -166,6 +173,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
     }
     item {
         var showLanguageSheet by remember { mutableStateOf(false) }
+        var showDateFormatSheet by remember { mutableStateOf(false) }
         SettingsSection(
             title = stringResource(Res.string.settings_appearance_section_display),
             isTablet = isTablet,
@@ -214,6 +222,14 @@ import androidx.compose.material3.rememberModalBottomSheetState
                     isTablet = isTablet,
                     onClick = { showLanguageSheet = true },
                 )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.settings_appearance_date_format),
+                    description = selectedDateFormatOption.formatPreview(),
+                    icon = Icons.Rounded.DateRange,
+                    isTablet = isTablet,
+                    onClick = { showDateFormatSheet = true },
+                )
             }
         }
 
@@ -225,6 +241,17 @@ import androidx.compose.material3.rememberModalBottomSheetState
                     showLanguageSheet = false
                 },
                 onDismiss = { showLanguageSheet = false },
+            )
+        }
+
+        if (showDateFormatSheet) {
+            DateFormatBottomSheet(
+                selectedFormat = selectedDateFormatOption,
+                onFormatSelected = {
+                    onDateFormatOptionSelected(it)
+                    showDateFormatSheet = false
+                },
+                onDismiss = { showDateFormatSheet = false },
             )
         }
     }
@@ -405,5 +432,65 @@ private fun ThemeChip(
                 .clip(RoundedCornerShape(2.dp))
                 .background(palette.focusRing),
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateFormatBottomSheet(
+    selectedFormat: DateFormatOption,
+    onFormatSelected: (DateFormatOption) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+
+    NuvioModalBottomSheet(
+        onDismissRequest = {
+            coroutineScope.launch {
+                dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+            }
+        },
+        sheetState = sheetState,
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+        ) {
+            item {
+                Text(
+                    text = stringResource(Res.string.settings_appearance_date_format_sheet_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                )
+            }
+
+            itemsIndexed(DateFormatOption.entries) { index, option ->
+                if (index > 0) {
+                    NuvioBottomSheetDivider()
+                }
+                NuvioBottomSheetActionRow(
+                    title = option.formatPreview(),
+                    onClick = {
+                        onFormatSelected(option)
+                        coroutineScope.launch {
+                            dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+                        }
+                    },
+                    trailingContent = {
+                        if (option == selectedFormat) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(Res.string.cd_selected),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
+                )
+            }
+        }
     }
 }

@@ -32,7 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.network.NetworkCondition
-import com.nuvio.app.core.format.formatReleaseDateForDisplay
+import com.nuvio.app.core.format.formatDateForDisplay
+import com.nuvio.app.core.format.rememberDateFormatOption
 import com.nuvio.app.core.ui.NuvioDropdownChip
 import com.nuvio.app.core.ui.NuvioDropdownOption
 import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
@@ -268,7 +269,7 @@ private fun DiscoverPosterTile(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            val detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it) }
+            val detail = item.releaseInfo?.let { formatDateForDisplay(it, rememberDateFormatOption()) }
             if (detail != null) {
                 Text(
                     text = detail,

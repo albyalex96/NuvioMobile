@@ -309,6 +309,8 @@
   <string name="settings_appearance_amoled_surfaces_description">Rendi nere anche tutte le superfici e le card per il massimo risparmio energetico.</string>
   <string name="settings_appearance_app_language">Lingua app</string>
   <string name="settings_appearance_app_language_sheet_title">Scegli lingua</string>
+  <string name="settings_appearance_date_format">Formato data</string>
+  <string name="settings_appearance_date_format_sheet_title">Scegli formato data</string>
   <string name="settings_appearance_continue_watching_description">Mostra, nascondi e personalizza lo stile della riga "Continua a guardare".</string>
   <string name="settings_appearance_poster_customization_description">Regola la larghezza delle locandine e i preset del raggio degli angoli.</string>
   <string name="settings_appearance_glass_navbar">Barra di navigazione vetrosa</string>
