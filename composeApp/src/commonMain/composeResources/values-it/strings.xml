@@ -1264,6 +1264,17 @@
   <string name="settings_simkl_attribution_body">Nuvio può connettersi a SIMKL per la sincronizzazione dello stato di visione tra dispositivi. SIMKL è un marchio di SIMKL. Nuvio non è affiliato né approvato da SIMKL.</string>
   <string name="settings_opensubtitles_attribution_title">OpenSubtitles</string>
   <string name="settings_opensubtitles_attribution_body">Nuvio può utilizzare OpenSubtitles per la ricerca e il download automatico dei sottotitoli. OpenSubtitles è un servizio di OpenSubtitles.org. Nuvio non è affiliato né approvato da OpenSubtitles.</string>
+  <string name="settings_opensubtitles_enable">OpenSubtitles</string>
+  <string name="settings_opensubtitles_enable_description">Cerca e scarica automaticamente i sottotitoli da OpenSubtitles durante la riproduzione</string>
+  <string name="settings_opensubtitles_add_api_key_first">Inserisci una chiave API per abilitare OpenSubtitles</string>
+  <string name="settings_opensubtitles_section_attribution">Informazioni</string>
+  <string name="settings_opensubtitles_section_credentials">Credenziali</string>
+  <string name="settings_opensubtitles_section_languages">Lingue</string>
+  <string name="settings_opensubtitles_personal_api_key">Chiave API personale</string>
+  <string name="settings_opensubtitles_api_key_label">Chiave API</string>
+  <string name="settings_opensubtitles_api_key_hint">Inserisci la tua chiave API di OpenSubtitles.com per abilitare la ricerca dei sottotitoli</string>
+  <string name="settings_opensubtitles_languages">Lingue preferite</string>
+  <string name="settings_opensubtitles_languages_description">Seleziona le lingue per la ricerca automatica dei sottotitoli</string>
   <string name="settings_subdl_attribution_title">SubDL</string>
   <string name="settings_subdl_attribution_body">Nuvio può utilizzare SubDL per la scoperta e la gestione dei sottotitoli. SubDL è un servizio di SubDL.com. Nuvio non è affiliato né approvato da SubDL.</string>
   <string name="settings_licenses_attributions_mpvkit_title">MPVKit</string>

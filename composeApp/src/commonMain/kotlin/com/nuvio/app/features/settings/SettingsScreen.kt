@@ -68,6 +68,8 @@ import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.mdblist.MdbListSettings
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSettings
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSettingsRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsUiState
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.profiles.ProfileRepository
@@ -144,6 +146,10 @@ fun SettingsScreen(
         val mdbListSettings by remember {
             MdbListSettingsRepository.ensureLoaded()
             MdbListSettingsRepository.uiState
+        }.collectAsStateWithLifecycle()
+        val openSubtitlesSettings by remember {
+            OpenSubtitlesSettingsRepository.ensureLoaded()
+            OpenSubtitlesSettingsRepository.uiState
         }.collectAsStateWithLifecycle()
         val debridSettings by remember {
             DebridSettingsRepository.ensureLoaded()
@@ -297,6 +303,7 @@ fun SettingsScreen(
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
+                openSubtitlesSettings = openSubtitlesSettings,
                 debridSettings = debridSettings,
                 liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
@@ -369,6 +376,7 @@ fun SettingsScreen(
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
+                openSubtitlesSettings = openSubtitlesSettings,
                 debridSettings = debridSettings,
                 liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
@@ -445,6 +453,7 @@ private fun MobileSettingsScreen(
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
+    openSubtitlesSettings: OpenSubtitlesSettings,
     debridSettings: DebridSettings,
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
@@ -714,6 +723,7 @@ private fun MobileSettingsScreen(
                 )
                 SettingsPage.OpenSubtitles -> openSubtitlesSettingsContent(
                     isTablet = false,
+                    settings = openSubtitlesSettings,
                 )
                 SettingsPage.Subdl -> subdlSettingsContent(
                     isTablet = false,
@@ -835,6 +845,7 @@ private fun TabletSettingsScreen(
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
+    openSubtitlesSettings: OpenSubtitlesSettings,
     debridSettings: DebridSettings,
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
@@ -1180,6 +1191,7 @@ private fun TabletSettingsScreen(
                 )
                 SettingsPage.OpenSubtitles -> openSubtitlesSettingsContent(
                     isTablet = true,
+                    settings = openSubtitlesSettings,
                 )
                 SettingsPage.Subdl -> subdlSettingsContent(
                     isTablet = true,

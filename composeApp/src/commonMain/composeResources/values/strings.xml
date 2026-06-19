@@ -512,6 +512,17 @@
     <string name="settings_simkl_attribution_body">Nuvio can connect to SIMKL for watch status synchronization across devices. SIMKL is a trademark of SIMKL. Nuvio is not affiliated with or endorsed by SIMKL.</string>
     <string name="settings_opensubtitles_attribution_title">OpenSubtitles</string>
     <string name="settings_opensubtitles_attribution_body">Nuvio can use OpenSubtitles for automatic subtitle search and download. OpenSubtitles is a service of OpenSubtitles.org. Nuvio is not affiliated with or endorsed by OpenSubtitles.</string>
+    <string name="settings_opensubtitles_enable">OpenSubtitles</string>
+    <string name="settings_opensubtitles_enable_description">Automatically search and download subtitles from OpenSubtitles when playing a video</string>
+    <string name="settings_opensubtitles_add_api_key_first">Enter an API key to enable OpenSubtitles</string>
+    <string name="settings_opensubtitles_section_attribution">About</string>
+    <string name="settings_opensubtitles_section_credentials">Credentials</string>
+    <string name="settings_opensubtitles_section_languages">Languages</string>
+    <string name="settings_opensubtitles_personal_api_key">Personal API Key</string>
+    <string name="settings_opensubtitles_api_key_label">API Key</string>
+    <string name="settings_opensubtitles_api_key_hint">Enter your OpenSubtitles.com API key to enable subtitle search</string>
+    <string name="settings_opensubtitles_languages">Preferred Languages</string>
+    <string name="settings_opensubtitles_languages_description">Select the languages for automatic subtitle search</string>
     <string name="settings_subdl_attribution_title">SubDL</string>
     <string name="settings_subdl_attribution_body">Nuvio can use SubDL for subtitle discovery and management. SubDL is a service of SubDL.com. Nuvio is not affiliated with or endorsed by SubDL.</string>
     <string name="compose_trakt_list_picker_loading">Loading your Trakt lists…</string>

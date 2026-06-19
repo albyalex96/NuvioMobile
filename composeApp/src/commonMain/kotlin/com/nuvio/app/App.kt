@@ -202,6 +202,7 @@ import com.nuvio.app.features.streams.StreamsRepository
 import com.nuvio.app.features.streams.StreamsScreen
 import com.nuvio.app.features.tmdb.TmdbService
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesRepository
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktListTab
 import com.nuvio.app.features.trakt.TraktScrobbleRepository
@@ -2172,12 +2173,21 @@ private fun MainAppContent(
                                 streamType = stream.streamType,
                             )
                         }
+                        val openSubtitlesSubs = try {
+                            OpenSubtitlesRepository.searchAndPrepareSubtitles(
+                                imdbId = effectiveVideoId,
+                                type = launch.type,
+                                seasonNumber = launch.seasonNumber,
+                                episodeNumber = launch.episodeNumber,
+                            )
+                        } catch (_: Exception) { emptyList() }
+                        val mergedSubtitles = stream.externalSubtitles + openSubtitlesSubs
                         val playerLaunch = PlayerLaunch(
                                 title = launch.title,
                                 sourceUrl = sourceUrl,
                                 sourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                                 sourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
-                                externalSubtitles = stream.externalSubtitles,
+                                externalSubtitles = mergedSubtitles,
                                 streamType = stream.streamType,
                                 logo = launch.logo,
                                 poster = launch.poster,
@@ -2299,12 +2309,23 @@ private fun MainAppContent(
                                 streamType = stream.streamType,
                             )
                         }
+                        val openSubtitlesSubs = try {
+                            kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.Default) {
+                                OpenSubtitlesRepository.searchAndPrepareSubtitles(
+                                    imdbId = effectiveVideoId,
+                                    type = launch.type,
+                                    seasonNumber = launch.seasonNumber,
+                                    episodeNumber = launch.episodeNumber,
+                                )
+                            }
+                        } catch (_: Exception) { emptyList() }
+                        val mergedSubtitles = stream.externalSubtitles + openSubtitlesSubs
                         val playerLaunch = PlayerLaunch(
                             title = launch.title,
                             sourceUrl = sourceUrl,
                             sourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                             sourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
-                            externalSubtitles = stream.externalSubtitles,
+                            externalSubtitles = mergedSubtitles,
                             streamType = stream.streamType,
                             logo = launch.logo,
                             poster = launch.poster,
