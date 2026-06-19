@@ -151,7 +151,11 @@ data class WatchProgressPlaybackSession(
     val lastStreamSubtitle: String? = null,
     val pauseDescription: String? = null,
     val lastSourceUrl: String? = null,
-)
+) {
+    fun isLiveContent(): Boolean =
+        contentType.equals("live", ignoreCase = true) ||
+            parentMetaType.equals("live", ignoreCase = true)
+}
 
 data class ContinueWatchingItem(
     val parentMetaId: String,

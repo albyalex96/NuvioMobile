@@ -828,6 +828,9 @@ object WatchProgressRepository {
     ) {
         val positionMs = snapshot.positionMs.coerceAtLeast(0L)
         val durationMs = snapshot.durationMs.coerceAtLeast(0L)
+        if (session.isLiveContent()) {
+            return
+        }
         val isCompleted = isWatchProgressComplete(
             positionMs = positionMs,
             durationMs = durationMs,
