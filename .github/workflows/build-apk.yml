@@ -245,7 +245,7 @@ jobs:
       - name: Build Windows MSI
         shell: pwsh
         run: |
-          ./gradlew :composeApp:packageReleaseMsi
+           ./gradlew :composeApp:packageReleaseMsi --no-configuration-cache
 
       - name: Locate MSI artifact
         id: msi
