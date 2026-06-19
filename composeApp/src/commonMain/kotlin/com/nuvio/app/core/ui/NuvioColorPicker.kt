@@ -175,7 +175,15 @@ fun NuvioColorPicker(
         ColorSlider(
             label = "H",
             value = hsv[0],
-            onValueChange = { hsv = floatArrayOf(it, hsv[1], hsv[2]); updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
+            onValueChange = {
+                val newHsv = floatArrayOf(it, hsv[1], hsv[2])
+                val newColor = Color.fromHsv(newHsv[0], newHsv[1], newHsv[2])
+                val newHex = newColor.toRgbHex()
+                hsv = newHsv
+                hexInput = newHex.removePrefix("#")
+                isHexValid = true
+                onColorChanged(newHex)
+            },
             valueRange = 0f..360f,
             gradientStops = listOf(
                 0f to Color.Red,
@@ -194,7 +202,15 @@ fun NuvioColorPicker(
         ColorSlider(
             label = "S",
             value = hsv[1],
-            onValueChange = { hsv = floatArrayOf(hsv[0], it, hsv[2]); updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
+            onValueChange = {
+                val newHsv = floatArrayOf(hsv[0], it, hsv[2])
+                val newColor = Color.fromHsv(newHsv[0], newHsv[1], newHsv[2])
+                val newHex = newColor.toRgbHex()
+                hsv = newHsv
+                hexInput = newHex.removePrefix("#")
+                isHexValid = true
+                onColorChanged(newHex)
+            },
             valueRange = 0f..100f,
             gradientStops = listOf(
                 0f to Color(0xFF666666),
@@ -208,7 +224,15 @@ fun NuvioColorPicker(
         ColorSlider(
             label = "V",
             value = hsv[2],
-            onValueChange = { hsv = floatArrayOf(hsv[0], hsv[1], it); updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
+            onValueChange = {
+                val newHsv = floatArrayOf(hsv[0], hsv[1], it)
+                val newColor = Color.fromHsv(newHsv[0], newHsv[1], newHsv[2])
+                val newHex = newColor.toRgbHex()
+                hsv = newHsv
+                hexInput = newHex.removePrefix("#")
+                isHexValid = true
+                onColorChanged(newHex)
+            },
             valueRange = 0f..100f,
             gradientStops = listOf(
                 0f to Color.Black,
