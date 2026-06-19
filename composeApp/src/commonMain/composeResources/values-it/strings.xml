@@ -2024,4 +2024,9 @@
     <string name="settings_integrations_section_lists">Liste</string>
     <string name="settings_integrations_section_subtitles">Sottotitoli</string>
     <string name="settings_integrations_section_extra">Extra</string>
+    <string name="settings_downloads_location_title">Posizione Download</string>
+    <string name="settings_downloads_location_private">Archivio Interno (Privato)</string>
+    <string name="settings_downloads_location_reset">Ripristina Predefiniti</string>
+    <string name="downloads_error_cannot_write_location">Impossibile scrivere nella posizione di download selezionata</string>
+    <string name="settings_account_sync_backend">Backend di sincronizzazione</string>
 </resources>
