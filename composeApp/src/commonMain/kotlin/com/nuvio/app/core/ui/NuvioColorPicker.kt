@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -188,6 +189,7 @@ fun NuvioColorPicker(
                 0.833f to Color.Magenta,
                 1f to Color.Red,
             ),
+            thumbColor = Color.fromHsv(hsv[0], 100f, 100f),
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -201,6 +203,7 @@ fun NuvioColorPicker(
                 0f to Color(0xFF666666),
                 1f to Color.fromHsv(hsv[0], 100f, hsv[2].coerceAtLeast(30f)),
             ),
+            thumbColor = currentColor,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -214,6 +217,7 @@ fun NuvioColorPicker(
                 0f to Color.Black,
                 1f to Color.fromHsv(hsv[0], hsv[1], 100f),
             ),
+            thumbColor = currentColor,
         )
     }
 }
@@ -225,6 +229,7 @@ private fun ColorSlider(
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
     gradientStops: List<Pair<Float, Color>>,
+    thumbColor: Color,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -240,29 +245,23 @@ private fun ColorSlider(
             textAlign = TextAlign.Center,
         )
 
-        Box(modifier = Modifier.weight(1f)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(24.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            *gradientStops.toTypedArray()
-                        )
-                    ),
-            )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.horizontalGradient(*gradientStops.toTypedArray())
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
             Slider(
                 value = value,
                 onValueChange = onValueChange,
                 valueRange = valueRange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 colors = SliderDefaults.colors(
-                    thumbColor = Color.fromHsv(
-                        if (label == "H") value else 0f,
-                        if (label == "S") value else 0f,
-                        if (label == "V") value else 1f,
-                    ),
+                    thumbColor = thumbColor,
                     activeTrackColor = Color.Transparent,
                     inactiveTrackColor = Color.Transparent,
                 ),
