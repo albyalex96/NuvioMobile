@@ -181,7 +181,7 @@ fun NuvioColorPicker(
         ColorSlider(
             label = "H",
             value = hsv[0],
-            onValueChange = { hsv[0] = it; updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
+            onValueChange = { hsv = floatArrayOf(it, hsv[1], hsv[2]); updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
             valueRange = 0f..360f,
             gradientStops = listOf(
                 0f to Color.Red,
@@ -200,7 +200,7 @@ fun NuvioColorPicker(
         ColorSlider(
             label = "S",
             value = hsv[1],
-            onValueChange = { hsv[1] = it; updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
+            onValueChange = { hsv = floatArrayOf(hsv[0], it, hsv[2]); updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
             valueRange = 0f..100f,
             gradientStops = listOf(
                 0f to Color(0xFF666666),
@@ -214,7 +214,7 @@ fun NuvioColorPicker(
         ColorSlider(
             label = "V",
             value = hsv[2],
-            onValueChange = { hsv[2] = it; updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
+            onValueChange = { hsv = floatArrayOf(hsv[0], hsv[1], it); updateFromHex(currentColor.toRgbHex().removePrefix("#")) },
             valueRange = 0f..100f,
             gradientStops = listOf(
                 0f to Color.Black,
