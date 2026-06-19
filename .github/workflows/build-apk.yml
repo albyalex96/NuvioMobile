@@ -1,4 +1,4 @@
-name: Build All Releases ( Windows, Android Mobile ) 
+name: Build All Releases (Windows, Android Mobile)
 
 on:
   workflow_dispatch:
@@ -39,6 +39,14 @@ jobs:
           fetch-depth: 0
           lfs: false
 
+      - name: Read version.json
+        id: version
+        run: |
+          VERSION_NAME=$(jq -r '.version' version.json)
+          echo "name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "code=$(echo "$VERSION_NAME" | tr -d '.')" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION_NAME"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -76,7 +84,7 @@ jobs:
           BRANCH_NAME="${{ steps.resolve_branch.outputs.branch }}"
           BRANCH_LOWER=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-zA-Z0-9]/-/g')
           echo "name=${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
-          echo "tag=v1.0.${{ github.run_number }}-android-${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
+          echo "tag=v${{ steps.version.outputs.name }}-android-${BRANCH_LOWER}-full" >> $GITHUB_OUTPUT
 
       - name: Generate Changelog
         id: changelog
@@ -98,7 +106,7 @@ jobs:
           fi
 
           {
-            echo "## 📦 Nuvio Release Build #${{ github.run_number }}"
+            echo "## 📦 Nuvio v${{ steps.version.outputs.name }}"
             echo ""
             echo "**Branch target:** \`${{ steps.resolve_branch.outputs.branch }}\`"
             if [ -n "$PREV_TAG" ]; then
@@ -116,11 +124,19 @@ jobs:
         run: |
           ./gradlew :composeApp:assembleFullRelease
 
+      - name: Rename APK
+        run: |
+          APK_DIR="composeApp/build/outputs/apk"
+          find "$APK_DIR" -name "*.apk" | while read apk; do
+            DIR=$(dirname "$apk")
+            mv "$apk" "$DIR/NuvioEnhanced-${{ steps.version.outputs.name }}.apk"
+          done
+
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "${{ steps.flavor.outputs.tag }}"
-          name: "Nuvio Build - ${{ steps.resolve_branch.outputs.branch }} #${{ github.run_number }}"
+          name: "Nuvio v${{ steps.version.outputs.name }} - ${{ steps.resolve_branch.outputs.branch }}"
           body_path: release_body.md
           draft: false
           prerelease: false
@@ -137,7 +153,7 @@ jobs:
             -H "Priority: high" \
             -H "Tags: rocket,android" \
             -H "Click: https://github.com/${{ github.repository }}/releases/tag/${{ steps.flavor.outputs.tag }}" \
-            -d "Build **Android** (#${{ github.run_number }}) su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 APK caricato." \
+            -d "Build **Android v${{ steps.version.outputs.name }}** su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 APK caricato." \
             https://ntfy.sh/nuvio_builds
 
   build-desktop:
@@ -163,6 +179,16 @@ jobs:
           ref: ${{ steps.resolve_branch.outputs.branch }}
           fetch-depth: 0
           lfs: false
+
+      - name: Read version.json
+        id: version
+        shell: pwsh
+        run: |
+          $json = Get-Content -Raw version.json | ConvertFrom-Json
+          $version = $json.version
+          echo "name=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "code=$($version -replace '\.', '')" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Version: $version"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -214,7 +240,7 @@ jobs:
           $branchName = "${{ steps.resolve_branch.outputs.branch }}"
           $branchLower = $branchName.ToLower() -replace '[^a-zA-Z0-9]', '-'
           echo "name=${branchLower}-full" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          echo "msi-tag=v1.0.${{ github.run_number }}-windows-${branchLower}-full" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          echo "msi-tag=v${{ steps.version.outputs.name }}-windows-${branchLower}-full" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Build Windows MSI
         shell: pwsh
@@ -256,13 +282,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $androidTag = "v1.0.${{ github.run_number }}-android-${{ steps.flavor.outputs.name }}"
+          $androidTag = "${{ steps.flavor.outputs.tag }}"
           $msiPath = "${{ steps.msi.outputs.msi-path }}"
           $msiName = "${{ steps.msi.outputs.msi-name }}"
 
           Write-Host "Uploading $msiPath to tag $androidTag as $msiName..."
 
-          # Wait for Android release to be created, then upload
           $maxRetries = 30
           $retry = 0
           while ($retry -lt $maxRetries) {
@@ -283,5 +308,5 @@ jobs:
       - name: Send ntfy Notification
         shell: pwsh
         run: |
-          $androidTag = "v1.0.${{ github.run_number }}-android-${{ steps.flavor.outputs.name }}"
-          curl.exe -H "Title: 🎉 Desktop Build Completata!" -H "Priority: high" -H "Tags: rocket,windows" -H "Click: https://github.com/${{ github.repository }}/releases/tag/$androidTag" -d "Build **Desktop Windows** (#${{ github.run_number }}) su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 MSI caricato." https://ntfy.sh/nuvio_builds
+          $androidTag = "${{ steps.flavor.outputs.tag }}"
+          curl.exe -H "Title: 🎉 Desktop Build Completata!" -H "Priority: high" -H "Tags: rocket,windows" -H "Click: https://github.com/${{ github.repository }}/releases/tag/$androidTag" -d "Build **Desktop Windows v${{ steps.version.outputs.name }}** su *${{ steps.resolve_branch.outputs.branch }}* pronta! 🚀 MSI caricato." https://ntfy.sh/nuvio_builds
