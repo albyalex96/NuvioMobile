@@ -78,6 +78,7 @@ import nuvio.composeapp.generated.resources.trakt_days_format
 import nuvio.composeapp.generated.resources.trakt_library_source_dialog_subtitle
 import nuvio.composeapp.generated.resources.trakt_library_source_dialog_title
 import nuvio.composeapp.generated.resources.trakt_library_source_nuvio
+import nuvio.composeapp.generated.resources.trakt_library_source_mal
 import nuvio.composeapp.generated.resources.trakt_library_source_nuvio_selected
 import nuvio.composeapp.generated.resources.trakt_library_source_subtitle
 import nuvio.composeapp.generated.resources.trakt_library_source_title
@@ -340,6 +341,7 @@ private fun TraktInfoRow(
 private fun librarySourceModeLabel(source: LibrarySourceMode): String =
     when (source) {
         LibrarySourceMode.TRAKT -> stringResource(Res.string.trakt_library_source_trakt)
+        LibrarySourceMode.MAL -> stringResource(Res.string.trakt_library_source_mal)
         LibrarySourceMode.LOCAL -> stringResource(Res.string.trakt_library_source_nuvio)
     }
 
@@ -400,7 +402,7 @@ private fun LibrarySourceModeDialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    listOf(LibrarySourceMode.TRAKT, LibrarySourceMode.LOCAL).forEach { source ->
+                    listOf(LibrarySourceMode.TRAKT, LibrarySourceMode.MAL, LibrarySourceMode.LOCAL).forEach { source ->
                         TraktDialogOption(
                             label = librarySourceModeLabel(source),
                             selected = source == selectedSource,

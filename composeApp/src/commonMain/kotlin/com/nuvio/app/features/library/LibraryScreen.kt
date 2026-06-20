@@ -127,6 +127,7 @@ fun LibraryScreen(
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val isTraktSource = uiState.sourceMode == LibrarySourceMode.TRAKT
+    val isMalSource = uiState.sourceMode == LibrarySourceMode.MAL
     val retryLibraryLoad: () -> Unit = {
         NetworkStatusRepository.requestRefresh(force = true)
         coroutineScope.launch {
@@ -134,7 +135,7 @@ fun LibraryScreen(
         }
     }
 
-    LaunchedEffect(networkStatusUiState.condition, isTraktSource) {
+    LaunchedEffect(networkStatusUiState.condition, isTraktSource, isMalSource) {
         when (networkStatusUiState.condition) {
             NetworkCondition.NoInternet,
             NetworkCondition.ServersUnreachable,
@@ -145,7 +146,7 @@ fun LibraryScreen(
             NetworkCondition.Online -> {
                 if (!observedOfflineState) return@LaunchedEffect
                 observedOfflineState = false
-                if (isTraktSource) {
+                if (isTraktSource || isMalSource) {
                     coroutineScope.launch {
                         LibraryRepository.pullFromServer(ProfileRepository.activeProfileId)
                     }
@@ -192,6 +193,8 @@ fun LibraryScreen(
                             stringResource(Res.string.library_title)
                         } else if (isTraktSource) {
                             stringResource(Res.string.library_trakt_title)
+                        } else if (isMalSource) {
+                            stringResource(Res.string.library_mal_title)
                         } else {
                             stringResource(Res.string.library_title)
                         },
@@ -258,10 +261,10 @@ fun LibraryScreen(
                         } else {
                             HomeEmptyStateCard(
                                 modifier = Modifier.padding(horizontal = 16.dp),
-                                title = if (isTraktSource) {
-                                    stringResource(Res.string.library_trakt_load_failed)
-                                } else {
-                                    stringResource(Res.string.library_load_failed)
+                                title = when {
+                                    isTraktSource -> stringResource(Res.string.library_trakt_load_failed)
+                                    isMalSource -> stringResource(Res.string.library_mal_load_failed)
+                                    else -> stringResource(Res.string.library_load_failed)
                                 },
                                 message = uiState.errorMessage.orEmpty(),
                                 actionLabel = stringResource(Res.string.action_retry),
@@ -273,7 +276,7 @@ fun LibraryScreen(
 
                 uiState.sections.isEmpty() -> {
                     item {
-                        if (networkStatusUiState.isOfflineLike && isTraktSource) {
+                        if (networkStatusUiState.isOfflineLike && (isTraktSource || isMalSource)) {
                             NuvioNetworkOfflineCard(
                                 condition = networkStatusUiState.condition,
                                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -282,15 +285,15 @@ fun LibraryScreen(
                         } else {
                             HomeEmptyStateCard(
                                 modifier = Modifier.padding(horizontal = 16.dp),
-                                title = if (isTraktSource) {
-                                    stringResource(Res.string.library_trakt_empty_title)
-                                } else {
-                                    stringResource(Res.string.library_empty_title)
+                                title = when {
+                                    isTraktSource -> stringResource(Res.string.library_trakt_empty_title)
+                                    isMalSource -> stringResource(Res.string.library_mal_empty_title)
+                                    else -> stringResource(Res.string.library_empty_title)
                                 },
-                                message = if (isTraktSource) {
-                                    stringResource(Res.string.library_trakt_empty_message)
-                                } else {
-                                    stringResource(Res.string.library_empty_message)
+                                message = when {
+                                    isTraktSource -> stringResource(Res.string.library_trakt_empty_message)
+                                    isMalSource -> stringResource(Res.string.library_mal_empty_message)
+                                    else -> stringResource(Res.string.library_empty_message)
                                 },
                             )
                         }

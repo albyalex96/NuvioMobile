@@ -15,6 +15,9 @@ import com.nuvio.app.features.trakt.TraktMembershipChanges
 import com.nuvio.app.features.trakt.TraktSettingsRepository
 import com.nuvio.app.features.trakt.effectiveLibrarySourceMode as resolveEffectiveLibrarySourceMode
 import com.nuvio.app.features.trakt.shouldUseTraktLibrary
+import com.nuvio.app.features.mal.MalAuthRepository
+import com.nuvio.app.features.mal.MalLibraryRepository
+import com.nuvio.app.features.mal.MalLibraryItem
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +43,11 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.library_local_tab_title
+import nuvio.composeapp.generated.resources.library_mal_status_watching
+import nuvio.composeapp.generated.resources.library_mal_status_completed
+import nuvio.composeapp.generated.resources.library_mal_status_on_hold
+import nuvio.composeapp.generated.resources.library_mal_status_dropped
+import nuvio.composeapp.generated.resources.library_mal_status_plan_to_watch
 import nuvio.composeapp.generated.resources.library_other
 import nuvio.composeapp.generated.resources.trakt_lists_update_failed
 import org.jetbrains.compose.resources.StringResource
@@ -108,6 +116,9 @@ object LibraryRepository {
                         TraktLibraryRepository.preloadListTabsAsync()
                         publish()
                         refreshTraktLibraryAsync()
+                    } else if (source == LibrarySourceMode.MAL) {
+                        publish()
+                        refreshMalLibraryAsync()
                     } else {
                         publish()
                     }
@@ -120,12 +131,30 @@ object LibraryRepository {
                 }
             }
         }
+        syncScope.launch {
+            MalAuthRepository.isAuthenticated.collectLatest { authenticated ->
+                if (authenticated && isMalLibrarySourceActive()) {
+                    runCatching { MalLibraryRepository.refreshNow() }
+                        .onFailure { log.e(it) { "Failed to refresh MAL library after auth change" } }
+                }
+                publish()
+            }
+        }
+        syncScope.launch {
+            MalLibraryRepository.uiState.collectLatest {
+                if (MalAuthRepository.isAuthenticated.value) {
+                    publish()
+                }
+            }
+        }
     }
 
     fun ensureLoaded() {
         TraktAuthRepository.ensureLoaded()
         TraktSettingsRepository.ensureLoaded()
         TraktLibraryRepository.ensureLoaded()
+        MalAuthRepository.ensureLoaded()
+        MalLibraryRepository.ensureLoaded()
         if (hasLoaded) return
         loadFromDisk(ProfileRepository.activeProfileId)
         if (TraktAuthRepository.isAuthenticated.value) {
@@ -133,6 +162,9 @@ object LibraryRepository {
             if (isTraktLibrarySourceActive()) {
                 refreshTraktLibraryAsync()
             }
+        }
+        if (isMalLibrarySourceActive()) {
+            refreshMalLibraryAsync()
         }
     }
 
@@ -145,11 +177,16 @@ object LibraryRepository {
         loadFromDisk(profileId)
         TraktAuthRepository.onProfileChanged()
         TraktLibraryRepository.onProfileChanged()
+        MalAuthRepository.onProfileChanged()
+        MalLibraryRepository.onProfileChanged()
         if (TraktAuthRepository.isAuthenticated.value) {
             TraktLibraryRepository.preloadListTabsAsync()
             if (isTraktLibrarySourceActive()) {
                 refreshTraktLibraryAsync()
             }
+        }
+        if (isMalLibrarySourceActive()) {
+            refreshMalLibraryAsync()
         }
     }
 
@@ -162,6 +199,8 @@ object LibraryRepository {
         hasCompletedInitialNuvioSyncPull = false
         TraktAuthRepository.clearLocalState()
         TraktLibraryRepository.clearLocalState()
+        MalAuthRepository.clearLocalState()
+        MalLibraryRepository.clearLocalState()
         _uiState.value = LibraryUiState()
     }
 
@@ -187,6 +226,14 @@ object LibraryRepository {
         if (isTraktLibrarySourceActive()) {
             runCatching { TraktLibraryRepository.refreshNow() }
                 .onFailure { e -> log.e(e) { "Failed to pull Trakt library" } }
+            hasCompletedInitialNuvioSyncPull = true
+            publish()
+            return
+        }
+
+        if (isMalLibrarySourceActive()) {
+            runCatching { MalLibraryRepository.refreshNow() }
+                .onFailure { e -> log.e(e) { "Failed to pull MAL library" } }
             hasCompletedInitialNuvioSyncPull = true
             publish()
             return
@@ -281,6 +328,10 @@ object LibraryRepository {
             return false
         }
 
+        if (isMalLibrarySourceActive()) {
+            return MalLibraryRepository.uiState.value.allItems.any { "mal:${it.id}" == id }
+        }
+
         return if (type != null) {
             itemsById.containsKey(libraryItemKey(id, type))
         } else {
@@ -293,6 +344,11 @@ object LibraryRepository {
 
         if (isTraktLibrarySourceActive()) {
             return TraktLibraryRepository.uiState.value.allItems.firstOrNull { it.id == id }
+        }
+
+        if (isMalLibrarySourceActive()) {
+            val malItem = MalLibraryRepository.uiState.value.allItems.firstOrNull { "mal:${it.id}" == id }
+            return malItem?.toLibraryItem()
         }
 
         return itemsById.values.firstOrNull { it.id == id }
@@ -427,6 +483,30 @@ object LibraryRepository {
             return
         }
 
+        if (isMalLibrarySourceActive()) {
+            val malState = MalLibraryRepository.uiState.value
+            val sectionOrder = listOf("watching", "completed", "plan_to_watch", "on_hold", "dropped")
+            val sections = sectionOrder.mapNotNull { status ->
+                val statusItems = malState.entriesByStatus[status].orEmpty()
+                if (statusItems.isEmpty()) return@mapNotNull null
+                LibrarySection(
+                    type = "mal:$status",
+                    displayTitle = malStatusDisplayTitle(status),
+                    items = statusItems.map { it.toLibraryItem() },
+                )
+            }
+
+            _uiState.value = LibraryUiState(
+                sourceMode = LibrarySourceMode.MAL,
+                items = malState.allItems.map { it.toLibraryItem() },
+                sections = sections,
+                isLoaded = malState.hasLoaded,
+                isLoading = malState.isLoading,
+                errorMessage = malState.errorMessage,
+            )
+            return
+        }
+
         val items = itemsById.values
             .sortedByDescending { it.savedAtEpochMs }
         val sections = items
@@ -447,6 +527,34 @@ object LibraryRepository {
             isLoaded = true,
             isLoading = false,
             errorMessage = null,
+        )
+    }
+
+    private fun malStatusDisplayTitle(status: String): String = runBlocking {
+        when (status) {
+            "watching" -> getString(Res.string.library_mal_status_watching)
+            "completed" -> getString(Res.string.library_mal_status_completed)
+            "on_hold" -> getString(Res.string.library_mal_status_on_hold)
+            "dropped" -> getString(Res.string.library_mal_status_dropped)
+            "plan_to_watch" -> getString(Res.string.library_mal_status_plan_to_watch)
+            else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
+        }
+    }
+
+    private fun MalLibraryItem.toLibraryItem(): LibraryItem {
+        val itemId = "mal:${id}"
+        val now = LibraryClock.nowEpochMs()
+        return LibraryItem(
+            id = itemId,
+            type = "anime-series",
+            name = title,
+            poster = posterUrl,
+            description = synopsis,
+            releaseInfo = numEpisodes?.let { "$it episodes" },
+            imdbRating = meanScore?.let { "%.1f".format(it) },
+            genres = genres,
+            posterShape = PosterShape.Poster,
+            savedAtEpochMs = updatedAtEpochMs ?: now,
         )
     }
 
@@ -474,14 +582,33 @@ object LibraryRepository {
         return TraktSettingsRepository.uiState.value.librarySourceMode
     }
 
-    private fun effectiveLibrarySourceMode(): LibrarySourceMode =
-        resolveEffectiveLibrarySourceMode(
-            isAuthenticated = TraktAuthRepository.isAuthenticated.value,
-            source = selectedLibrarySourceMode(),
-        )
+    private fun effectiveLibrarySourceMode(): LibrarySourceMode {
+        val source = selectedLibrarySourceMode()
+        if (source == LibrarySourceMode.TRAKT && TraktAuthRepository.isAuthenticated.value) {
+            return LibrarySourceMode.TRAKT
+        }
+        if (source == LibrarySourceMode.MAL) {
+            MalAuthRepository.ensureLoaded()
+            if (MalAuthRepository.isAuthenticated.value) {
+                return LibrarySourceMode.MAL
+            }
+        }
+        return LibrarySourceMode.LOCAL
+    }
 
     private fun isTraktLibrarySourceActive(): Boolean =
         effectiveLibrarySourceMode() == LibrarySourceMode.TRAKT
+
+    private fun isMalLibrarySourceActive(): Boolean =
+        effectiveLibrarySourceMode() == LibrarySourceMode.MAL
+
+    private fun refreshMalLibraryAsync() {
+        syncScope.launch {
+            runCatching { MalLibraryRepository.refreshNow() }
+                .onFailure { e -> log.e(e) { "Failed to refresh MAL library" } }
+            publish()
+        }
+    }
 }
 
 internal const val LOCAL_LIBRARY_LIST_KEY = "local"

@@ -1041,6 +1041,15 @@
   <string name="library_trakt_empty_title">La tua libreria Trakt è vuota</string>
   <string name="library_trakt_load_failed">Impossibile caricare la libreria Trakt</string>
   <string name="library_trakt_title">Libreria Trakt</string>
+  <string name="library_mal_title">Libreria MAL</string>
+  <string name="library_mal_empty_title">La tua libreria MAL è vuota</string>
+  <string name="library_mal_empty_message">Connetti MyAnimeList e aggiungi anime alla tua lista per vederli qui.</string>
+  <string name="library_mal_load_failed">Impossibile caricare la libreria MAL</string>
+  <string name="library_mal_status_watching">In visione</string>
+  <string name="library_mal_status_completed">Completati</string>
+  <string name="library_mal_status_on_hold">In pausa</string>
+  <string name="library_mal_status_dropped">Abbandonati</string>
+  <string name="library_mal_status_plan_to_watch">Da guardare</string>
   <string name="media_anime">Anime</string>
   <string name="media_channels">Canali</string>
   <string name="media_movies">Film</string>
@@ -1256,6 +1265,12 @@
   <string name="settings_licenses_attributions_introdb_body">Nuvio utilizza l'API di IntroDB per i timestamp di intro, riassunti, titoli di coda e anteprime forniti dalla community e utilizzati dai controlli di salto. Nuvio non è affiliato né approvato da IntroDB.</string>
   <string name="settings_mal_attribution_title">MyAnimeList</string>
   <string name="settings_mal_attribution_body">Nuvio può connettersi a MyAnimeList per la sincronizzazione della watchlist anime, punteggi e tracciamento dei progressi. MyAnimeList è un marchio di MyAnimeList Co., Ltd. Nuvio non è affiliato né approvato da MyAnimeList.</string>
+  <string name="settings_mal_connect">Accedi con MyAnimeList</string>
+  <string name="settings_mal_disconnect">Disconnetti</string>
+  <string name="settings_mal_finish_sign_in">Completa l'accesso nel browser</string>
+  <string name="settings_mal_not_configured">ID client MyAnimeList non configurato. Aggiungi MAL_CLIENT_ID in local.properties.</string>
+  <string name="settings_mal_connected_as">Connesso come %1$s</string>
+  <string name="settings_mal_section_authentication">Autenticazione</string>
   <string name="settings_kitsu_attribution_title">Kitsu</string>
   <string name="settings_kitsu_attribution_body">Nuvio può connettersi a Kitsu per il tracciamento degli anime e le funzionalità della community. Kitsu è un marchio di Kitsu, Inc. Nuvio non è affiliato né approvato da Kitsu.</string>
   <string name="settings_anilist_attribution_title">AniList</string>
@@ -1368,6 +1383,7 @@
   <string name="trakt_library_source_dialog_subtitle">Scegli dove salvare e gestire gli elementi della tua libreria</string>
   <string name="trakt_library_source_trakt">Trakt</string>
   <string name="trakt_library_source_nuvio">Libreria Nuvio</string>
+  <string name="trakt_library_source_mal">MyAnimeList</string>
   <string name="trakt_library_source_trakt_selected">Libreria Trakt selezionata</string>
   <string name="trakt_library_source_nuvio_selected">Libreria Nuvio selezionata</string>
   <string name="trakt_watch_progress_title">Progressi di visione</string>

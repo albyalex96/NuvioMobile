@@ -504,6 +504,12 @@
     <string name="settings_licenses_attributions_exoplayer_license">Licensed under the Apache License, Version 2.0.</string>
     <string name="settings_mal_attribution_title">MyAnimeList</string>
     <string name="settings_mal_attribution_body">Nuvio can connect to MyAnimeList for anime watchlist synchronization, scores, and progress tracking. MyAnimeList is a trademark of MyAnimeList Co., Ltd. Nuvio is not affiliated with or endorsed by MyAnimeList.</string>
+    <string name="settings_mal_connect">Sign in with MyAnimeList</string>
+    <string name="settings_mal_disconnect">Disconnect</string>
+    <string name="settings_mal_finish_sign_in">Complete sign-in in your browser</string>
+    <string name="settings_mal_not_configured">MyAnimeList client ID not configured. Add MAL_CLIENT_ID to local.properties.</string>
+    <string name="settings_mal_connected_as">Connected as %1$s</string>
+    <string name="settings_mal_section_authentication">Authentication</string>
     <string name="settings_kitsu_attribution_title">Kitsu</string>
     <string name="settings_kitsu_attribution_body">Nuvio can connect to Kitsu for anime tracking and community features. Kitsu is a trademark of Kitsu, Inc. Nuvio is not affiliated with or endorsed by Kitsu.</string>
     <string name="settings_anilist_attribution_title">AniList</string>
@@ -1094,6 +1100,7 @@
     <string name="trakt_library_source_dialog_subtitle">Choose where to save and manage your library items</string>
     <string name="trakt_library_source_trakt">Trakt</string>
     <string name="trakt_library_source_nuvio">Nuvio Library</string>
+    <string name="trakt_library_source_mal">MyAnimeList</string>
     <string name="trakt_library_source_trakt_selected">Trakt library selected</string>
     <string name="trakt_library_source_nuvio_selected">Nuvio library selected</string>
     <string name="trakt_watch_progress_title">Watch Progress</string>
@@ -1600,6 +1607,15 @@
     <string name="library_trakt_empty_title">Your Trakt library is empty</string>
     <string name="library_trakt_load_failed">Couldn't load Trakt library</string>
     <string name="library_trakt_title">Trakt Library</string>
+    <string name="library_mal_title">MAL Library</string>
+    <string name="library_mal_empty_title">Your MAL library is empty</string>
+    <string name="library_mal_empty_message">Connect MyAnimeList and add anime to your list to see them here.</string>
+    <string name="library_mal_load_failed">Couldn't load MAL library</string>
+    <string name="library_mal_status_watching">Watching</string>
+    <string name="library_mal_status_completed">Completed</string>
+    <string name="library_mal_status_on_hold">On Hold</string>
+    <string name="library_mal_status_dropped">Dropped</string>
+    <string name="library_mal_status_plan_to_watch">Plan to Watch</string>
     <string name="cloud_library_connect_action">Connect account</string>
     <string name="cloud_library_connect_message">Connect an account in Connected Services settings to browse playable files from your cloud library.</string>
     <string name="cloud_library_connect_title">No cloud account connected</string>

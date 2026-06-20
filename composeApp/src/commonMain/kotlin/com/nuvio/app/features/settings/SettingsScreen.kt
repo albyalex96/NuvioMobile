@@ -78,6 +78,8 @@ import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktCommentsSettings
 import com.nuvio.app.features.trakt.TraktSettingsRepository
 import com.nuvio.app.features.trakt.TraktSettingsUiState
+import com.nuvio.app.features.mal.MalAuthRepository
+import com.nuvio.app.features.mal.MalAuthUiState
 import com.nuvio.app.features.tmdb.TmdbSettings
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
@@ -158,6 +160,10 @@ fun SettingsScreen(
         val traktAuthUiState by remember {
             TraktAuthRepository.ensureLoaded()
             TraktAuthRepository.uiState
+        }.collectAsStateWithLifecycle()
+        val malAuthUiState by remember {
+            MalAuthRepository.ensureLoaded()
+            MalAuthRepository.uiState
         }.collectAsStateWithLifecycle()
         val traktCommentsEnabled by remember {
             TraktCommentsSettings.ensureLoaded()
@@ -307,6 +313,7 @@ fun SettingsScreen(
                 debridSettings = debridSettings,
                 liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
+                malAuthUiState = malAuthUiState,
                 traktCommentsEnabled = traktCommentsEnabled,
                 traktSettingsUiState = traktSettingsUiState,
                 homescreenHeroEnabled = homescreenSettingsUiState.heroEnabled,
@@ -317,7 +324,6 @@ fun SettingsScreen(
                 continueWatchingPreferencesUiState = continueWatchingPreferencesUiState,
                 posterCardStyleUiState = posterCardStyleUiState,
                 onSwitchProfile = onSwitchProfile,
-                onAccountClick = onAccountClick,
                 onHomescreenClick = onHomescreenClick,
                 onMetaScreenClick = onMetaScreenClick,
                 onContinueWatchingClick = onContinueWatchingClick,
@@ -380,6 +386,7 @@ fun SettingsScreen(
                 debridSettings = debridSettings,
                 liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
+                malAuthUiState = malAuthUiState,
                 traktCommentsEnabled = traktCommentsEnabled,
                 traktSettingsUiState = traktSettingsUiState,
                 homescreenHeroEnabled = homescreenSettingsUiState.heroEnabled,
@@ -396,7 +403,6 @@ fun SettingsScreen(
                 onAddonsClick = onAddonsClick,
                 onPluginsClick = onPluginsClick,
                 onDownloadsClick = onDownloadsClick,
-                onAccountClick = onAccountClick,
                 onSupportersContributorsClick = onSupportersContributorsClick,
                 onLicensesAttributionsClick = onLicensesAttributionsClick,
                 onCheckForUpdatesClick = onCheckForUpdatesClick,
@@ -457,6 +463,7 @@ private fun MobileSettingsScreen(
     debridSettings: DebridSettings,
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
+    malAuthUiState: MalAuthUiState,
     traktCommentsEnabled: Boolean,
     traktSettingsUiState: TraktSettingsUiState,
     homescreenHeroEnabled: Boolean,
@@ -711,6 +718,7 @@ private fun MobileSettingsScreen(
                 )
                 SettingsPage.Mal -> malSettingsContent(
                     isTablet = false,
+                    uiState = malAuthUiState,
                 )
                 SettingsPage.Kitsu -> kitsuSettingsContent(
                     isTablet = false,
@@ -849,6 +857,7 @@ private fun TabletSettingsScreen(
     debridSettings: DebridSettings,
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
+    malAuthUiState: MalAuthUiState,
     traktCommentsEnabled: Boolean,
     traktSettingsUiState: TraktSettingsUiState,
     homescreenHeroEnabled: Boolean,
@@ -1179,6 +1188,7 @@ private fun TabletSettingsScreen(
                 )
                 SettingsPage.Mal -> malSettingsContent(
                     isTablet = true,
+                    uiState = malAuthUiState,
                 )
                 SettingsPage.Kitsu -> kitsuSettingsContent(
                     isTablet = true,
