@@ -52,23 +52,6 @@ internal fun LazyListScope.integrationsContent(
     onLiveTvClick: () -> Unit,
 ) {
     item {
-        val aiAssistantSettings by AiAssistantSettingsRepository.uiState.collectAsState()
-        SettingsSection(
-            title = stringResource(Res.string.settings_integrations_section_extra),
-            isTablet = isTablet,
-        ) {
-            SettingsGroup(isTablet = isTablet) {
-                SettingsNavigationRow(
-                    title = stringResource(Res.string.compose_settings_page_ai_assistant),
-                    description = stringResource(Res.string.settings_integrations_ai_description),
-                    icon = Icons.Rounded.AutoAwesome,
-                    isTablet = isTablet,
-                    onClick = onAiAssistantClick,
-                )
-            }
-        }
-    }
-    item {
         SettingsSection(
             title = stringResource(Res.string.settings_integrations_section_metadata),
             isTablet = isTablet,
@@ -165,11 +148,20 @@ internal fun LazyListScope.integrationsContent(
         }
     }
     item {
+        val aiAssistantSettings by AiAssistantSettingsRepository.uiState.collectAsState()
         SettingsSection(
             title = stringResource(Res.string.settings_integrations_section_extra),
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_ai_assistant),
+                    description = stringResource(Res.string.settings_integrations_ai_description),
+                    icon = Icons.Rounded.AutoAwesome,
+                    isTablet = isTablet,
+                    onClick = onAiAssistantClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_live_tv),
                     description = stringResource(Res.string.settings_integrations_live_tv_description),
