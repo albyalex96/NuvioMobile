@@ -2089,4 +2089,13 @@
     <string name="sponsorblock_skip_interaction">Skip Interaction</string>
     <string name="sponsorblock_skip_filler">Skip Filler</string>
     <string name="sponsorblock_skip_music_offtopic">Skip Non-Music</string>
+    <string name="mal_update_status">MAL Status</string>
+    <string name="mal_status_dialog_title">MyAnimeList Status</string>
+    <string name="mal_status_dialog_status">Status</string>
+    <string name="mal_status_dialog_score">Score</string>
+    <string name="mal_status_dialog_episodes">Episodes Watched</string>
+    <string name="mal_status_dialog_save">Save</string>
+    <string name="mal_status_dialog_saving">Saving…</string>
+    <string name="mal_status_dialog_saved">Status updated on MyAnimeList</string>
+    <string name="mal_status_dialog_failed">Failed to update MAL status</string>
 </resources>

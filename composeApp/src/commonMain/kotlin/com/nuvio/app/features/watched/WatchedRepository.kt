@@ -6,6 +6,7 @@ import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktSettingsRepository
 import com.nuvio.app.features.trakt.WatchProgressSource
+import com.nuvio.app.features.mal.MalSyncRepository
 import com.nuvio.app.features.trakt.shouldUseTraktProgress
 import com.nuvio.app.features.watching.sync.SupabaseWatchedSyncAdapter
 import com.nuvio.app.features.watching.sync.TraktWatchedSyncAdapter
@@ -294,6 +295,18 @@ object WatchedRepository {
         persist()
         if (syncRemote) {
             pushMarksToServer(timestampedItems, traktHistorySync)
+        }
+        syncScope.launch {
+            timestampedItems.forEach { watchedItem ->
+                val episode = watchedItem.episode ?: return@forEach
+                MalSyncRepository.syncWatchedEpisodeCount(
+                    contentId = watchedItem.id,
+                    currentEpisodeNumber = episode,
+                    name = watchedItem.name,
+                    releaseInfo = watchedItem.releaseInfo,
+                    mediaType = watchedItem.type,
+                )
+            }
         }
     }
 

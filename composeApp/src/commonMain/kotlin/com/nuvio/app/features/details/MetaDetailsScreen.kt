@@ -23,7 +23,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -33,11 +35,21 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,6 +100,10 @@ import com.nuvio.app.features.details.components.TrailerPlayerPopup
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.library.toLibraryItem
+import com.nuvio.app.features.mal.MalAuthRepository
+import com.nuvio.app.features.mal.MalConnectionMode
+import com.nuvio.app.features.mal.MalLibraryRepository
+import com.nuvio.app.features.mal.MalSyncRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.streams.StreamAutoPlayPolicy
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
@@ -143,6 +159,10 @@ fun MetaDetailsScreen(
     val traktAuthUiState by remember {
         TraktAuthRepository.ensureLoaded()
         TraktAuthRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val malAuthUiState by remember {
+        MalAuthRepository.ensureLoaded()
+        MalAuthRepository.uiState
     }.collectAsStateWithLifecycle()
     val traktSettingsUiState by remember {
         TraktSettingsRepository.ensureLoaded()
@@ -364,6 +384,37 @@ fun MetaDetailsScreen(
                         item = metaPreview,
                     )
                 }
+                val fastMalId = remember(meta) { MalSyncRepository.extractMalId(meta.id) }
+                var malMalId by remember(meta.id, meta.name) { mutableStateOf(fastMalId) }
+                LaunchedEffect(meta.id, meta.name) {
+                    if (fastMalId == null) {
+                        malMalId = MalSyncRepository.resolveMalId(
+                            contentId = meta.id,
+                            name = meta.name,
+                            releaseInfo = meta.releaseInfo,
+                            mediaType = meta.type,
+                        )
+                    }
+                }
+                val malCanUpdate = malMalId != null && malAuthUiState.mode == MalConnectionMode.CONNECTED
+                val malLibraryItem by remember(malMalId, libraryUiState.sourceMode) {
+                    mutableStateOf(
+                        if (malMalId != null) {
+                            MalLibraryRepository.ensureLoaded()
+                            MalLibraryRepository.uiState.value.allItems.firstOrNull { it.id == malMalId }
+                        } else null
+                    )
+                }
+                var showMalStatusDialog by remember(type, id) { mutableStateOf(false) }
+                var malSelectedStatus by remember(type, id) { mutableStateOf(
+                    malLibraryItem?.listStatus ?: "watching"
+                ) }
+                var malSelectedScore by remember(type, id) { mutableStateOf(
+                    malLibraryItem?.userScore ?: 0
+                ) }
+                var malSelectedEpisodes by remember(type, id) { mutableStateOf(
+                    malLibraryItem?.episodesWatched ?: 0
+                ) }
                 val openLibraryListPicker = remember(meta) {
                     {
                         val libraryItem = meta.toLibraryItem(savedAtEpochMs = 0L)
@@ -900,6 +951,9 @@ fun MetaDetailsScreen(
                                 onOpenMeta = onOpenMeta,
                                 onCastClick = onCastClick,
                                 onCompanyClick = onCompanyClick,
+                                onMalStatusClick = if (malCanUpdate) {
+                                    { showMalStatusDialog = true }
+                                } else null,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
                             )
@@ -1142,6 +1196,26 @@ fun MetaDetailsScreen(
                             },
                         )
 
+                        if (showMalStatusDialog) {
+                            MalStatusDialog(
+                                initialStatus = malSelectedStatus,
+                                initialScore = malSelectedScore,
+                                initialEpisodes = malSelectedEpisodes,
+                                totalEpisodes = malLibraryItem?.numEpisodes,
+                                onDismiss = { showMalStatusDialog = false },
+                                onSave = { status, score, episodes ->
+                                    showMalStatusDialog = false
+                                    val malId = malMalId ?: return@MalStatusDialog
+                                    MalSyncRepository.updateAnimeStatus(
+                                        malId = malId,
+                                        status = status,
+                                        numWatchedEpisodes = episodes,
+                                        score = score,
+                                    )
+                                },
+                            )
+                        }
+
                         selectedComment?.let { comment ->
                             val commentIndex = comments.indexOfFirst { it.id == comment.id }.coerceAtLeast(0)
                             CommentDetailSheet(
@@ -1323,6 +1397,7 @@ private fun LazyListScope.configuredMetaSectionItems(
     onOpenMeta: ((MetaPreview) -> Unit)?,
     onCastClick: ((MetaPerson, String?) -> Unit)?,
     onCompanyClick: ((MetaCompany, String) -> Unit)?,
+    onMalStatusClick: (() -> Unit)? = null,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
@@ -1398,6 +1473,7 @@ private fun LazyListScope.configuredMetaSectionItems(
                     onOpenMeta = onOpenMeta,
                     onCastClick = onCastClick,
                     onCompanyClick = onCompanyClick,
+                    onMalStatusClick = onMalStatusClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
                 )
@@ -1546,6 +1622,7 @@ private fun ConfiguredMetaSections(
     onOpenMeta: ((MetaPreview) -> Unit)?,
     onCastClick: ((MetaPerson, String?) -> Unit)?,
     onCompanyClick: ((MetaCompany, String) -> Unit)?,
+    onMalStatusClick: (() -> Unit)? = null,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
@@ -1571,9 +1648,8 @@ private fun ConfiguredMetaSections(
     fun RenderSection(key: MetaScreenSectionKey, showHeader: Boolean = true) {
         when (key) {
             MetaScreenSectionKey.ACTIONS -> {
-                DetailActionButtons(
-                    playLabel = playButtonLabel,
-                    secondaryActions = listOf(
+                val malActions = buildList {
+                    add(
                         DetailSecondaryAction(
                             label = if (isWatched) {
                                 stringResource(Res.string.hero_mark_unwatched)
@@ -1588,6 +1664,8 @@ private fun ConfiguredMetaSections(
                             isActive = isWatched,
                             onClick = onWatchedClick,
                         ),
+                    )
+                    add(
                         DetailSecondaryAction(
                             label = if (isSaved) {
                                 stringResource(Res.string.hero_remove_from_library)
@@ -1603,7 +1681,21 @@ private fun ConfiguredMetaSections(
                             onClick = onSaveClick,
                             onLongClick = onSaveLongClick,
                         ),
-                    ),
+                    )
+                    if (onMalStatusClick != null) {
+                        add(
+                            DetailSecondaryAction(
+                                label = stringResource(Res.string.mal_update_status),
+                                icon = Icons.Default.Bookmark,
+                                isActive = false,
+                                onClick = onMalStatusClick,
+                            ),
+                        )
+                    }
+                }
+                DetailActionButtons(
+                    playLabel = playButtonLabel,
+                    secondaryActions = malActions,
                     isTablet = isTablet,
                     onPlayClick = onPrimaryPlayClick,
                     onPlayLongClick = if (showManualPlayOption) onPrimaryPlayLongClick else null,
@@ -1806,3 +1898,183 @@ private fun detailTabletContentMaxWidth(maxWidth: Dp, isTablet: Boolean): Dp =
     } else {
         (maxWidth * 0.6f).coerceIn(520.dp, 680.dp)
     }
+
+private val malStatusOptions = listOf(
+    "watching" to "Watching",
+    "completed" to "Completed",
+    "on_hold" to "On Hold",
+    "dropped" to "Dropped",
+    "plan_to_watch" to "Plan to Watch",
+)
+
+private val malScoreOptions = (0..10).map { it.toString() }
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun MalStatusDialog(
+    initialStatus: String,
+    initialScore: Int,
+    initialEpisodes: Int,
+    totalEpisodes: Int?,
+    onDismiss: () -> Unit,
+    onSave: (status: String, score: Int?, episodes: Int) -> Unit,
+) {
+    var selectedStatus by remember { mutableStateOf(initialStatus) }
+    var selectedScore by remember { mutableStateOf(initialScore) }
+    var selectedEpisodes by remember { mutableStateOf(initialEpisodes.toString()) }
+    var statusExpanded by remember { mutableStateOf(false) }
+    var scoreExpanded by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    BasicAlertDialog(
+        onDismissRequest = { if (!isSaving) onDismiss() },
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 8.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.mal_status_dialog_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+
+                // Status dropdown
+                Column {
+                    Text(
+                        text = stringResource(Res.string.mal_status_dialog_status),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Box {
+                        OutlinedTextField(
+                            value = malStatusOptions.firstOrNull { it.first == selectedStatus }?.second
+                                ?: selectedStatus,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = if (statusExpanded) Icons.Default.ArrowDropUp
+                                    else Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth().clickable { statusExpanded = !statusExpanded },
+                        )
+                        DropdownMenu(
+                            expanded = statusExpanded,
+                            onDismissRequest = { statusExpanded = false },
+                        ) {
+                            malStatusOptions.forEach { (value, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        selectedStatus = value
+                                        statusExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Score dropdown
+                Column {
+                    Text(
+                        text = stringResource(Res.string.mal_status_dialog_score),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Box {
+                        OutlinedTextField(
+                            value = selectedScore.toString(),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = if (scoreExpanded) Icons.Default.ArrowDropUp
+                                    else Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth().clickable { scoreExpanded = !scoreExpanded },
+                        )
+                        DropdownMenu(
+                            expanded = scoreExpanded,
+                            onDismissRequest = { scoreExpanded = false },
+                        ) {
+                            malScoreOptions.forEach { scoreStr ->
+                                DropdownMenuItem(
+                                    text = { Text(scoreStr) },
+                                    onClick = {
+                                        selectedScore = scoreStr.toIntOrNull() ?: 0
+                                        scoreExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Episodes watched
+                Column {
+                    Text(
+                        text = stringResource(Res.string.mal_status_dialog_episodes),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = selectedEpisodes,
+                        onValueChange = { newValue ->
+                            val filtered = newValue.filter { it.isDigit() }
+                            val num = filtered.toIntOrNull()
+                            if (num != null && totalEpisodes != null && num > totalEpisodes) return@OutlinedTextField
+                            selectedEpisodes = filtered
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        enabled = !isSaving,
+                    ) {
+                        Text(stringResource(Res.string.action_cancel))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            isSaving = true
+                            val episodesNum = selectedEpisodes.toIntOrNull() ?: return@Button
+                            val scoreVal = if (selectedScore == 0) null else selectedScore
+                            onSave(selectedStatus, scoreVal, episodesNum)
+                        },
+                        enabled = !isSaving && selectedEpisodes.toIntOrNull() != null,
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                        }
+                        Text(
+                            if (isSaving) stringResource(Res.string.mal_status_dialog_saving)
+                            else stringResource(Res.string.mal_status_dialog_save)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

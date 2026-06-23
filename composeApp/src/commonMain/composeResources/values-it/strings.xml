@@ -2056,4 +2056,13 @@
     <string name="settings_downloads_location_reset">Ripristina Predefiniti</string>
     <string name="downloads_error_cannot_write_location">Impossibile scrivere nella posizione di download selezionata</string>
     <string name="settings_account_sync_backend">Backend di sincronizzazione</string>
+    <string name="mal_update_status">Stato MAL</string>
+    <string name="mal_status_dialog_title">Stato MyAnimeList</string>
+    <string name="mal_status_dialog_status">Stato</string>
+    <string name="mal_status_dialog_score">Voto</string>
+    <string name="mal_status_dialog_episodes">Episodi visti</string>
+    <string name="mal_status_dialog_save">Salva</string>
+    <string name="mal_status_dialog_saving">Salvataggio…</string>
+    <string name="mal_status_dialog_saved">Stato aggiornato su MyAnimeList</string>
+    <string name="mal_status_dialog_failed">Aggiornamento stato MAL fallito</string>
 </resources>
