@@ -35,7 +35,7 @@ actual object ThemeSettingsStorage {
 
     fun initialize(context: Context) {
         preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
-        applySelectedAppLanguage(loadSelectedAppLanguage() ?: AppLanguage.ENGLISH.code)
+        applySelectedAppLanguage(loadSelectedAppLanguage() ?: AppLanguage.DEVICE.code)
     }
 
     actual fun loadSelectedTheme(): String? =
@@ -126,9 +126,13 @@ actual object ThemeSettingsStorage {
     }
 
     actual fun applySelectedAppLanguage(languageCode: String) {
-        AppCompatDelegate.setApplicationLocales(
-            LocaleListCompat.forLanguageTags(languageCode),
-        )
+        if (languageCode.equals("device", ignoreCase = true)) {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+        } else {
+            AppCompatDelegate.setApplicationLocales(
+                LocaleListCompat.forLanguageTags(languageCode),
+            )
+        }
     }
 
     actual fun loadDateFormatOption(): String? =
@@ -161,6 +165,6 @@ actual object ThemeSettingsStorage {
         payload.decodeSyncBoolean(amoledSurfacesEnabledKey)?.let(::saveAmoledSurfacesEnabled)
         payload.decodeSyncBoolean(liquidGlassNativeTabBarEnabledKey)?.let(::saveLiquidGlassNativeTabBarEnabled)
         payload.decodeSyncBoolean(glassNavBarEnabledKey)?.let(::saveGlassNavBarEnabled)
-        applySelectedAppLanguage(loadSelectedAppLanguage() ?: AppLanguage.ENGLISH.code)
+        applySelectedAppLanguage(loadSelectedAppLanguage() ?: AppLanguage.DEVICE.code)
     }
 }

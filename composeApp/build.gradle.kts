@@ -34,6 +34,21 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     abstract val appVersionCode: Property<Int>
 
     @get:Input
+    abstract val supabaseUrl: Property<String>
+
+    @get:Input
+    abstract val supabaseAnonKey: Property<String>
+
+    @get:Input
+    abstract val nuvioSupabaseUrl: Property<String>
+
+    @get:Input
+    abstract val nuvioSupabaseAnonKey: Property<String>
+
+    @get:Input
+    abstract val syncBackendManifestUrl: Property<String>
+
+    @get:Input
     abstract val desktopAppVersionName: Property<String>
 
     @get:Input
@@ -56,8 +71,10 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.core.network
                 |
                 |object SupabaseConfig {
-                |    const val URL = "${props.getProperty("SUPABASE_URL", "")}" 
-                |    const val ANON_KEY = "${props.getProperty("SUPABASE_ANON_KEY", "")}" 
+                |    const val URL = "${supabaseUrl.get()}"
+                |    const val ANON_KEY = "${supabaseAnonKey.get()}"
+                |    const val NUVIO_URL = "${nuvioSupabaseUrl.get()}"
+                |    const val NUVIO_ANON_KEY = "${nuvioSupabaseAnonKey.get()}"
                 |}
                 """.trimMargin()
             )
@@ -66,7 +83,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.core.network
                 |
                 |object SyncBackendBootstrapConfig {
-                |    const val SWITCH_MANIFEST_URL = "${props.getProperty("SYNC_BACKEND_MANIFEST_URL", "")}" 
+                |    const val SWITCH_MANIFEST_URL = "${syncBackendManifestUrl.get()}"
                 |}
                 """.trimMargin()
             )
@@ -387,14 +404,50 @@ val generatedRuntimeConfigDir = layout.buildDirectory.dir("generated/runtime-con
 val requestedGradleTasks = gradle.startParameter.taskNames.map { taskName ->
     taskName.substringAfterLast(':').lowercase()
 }
-val isAndroidAppBundleBuild = requestedGradleTasks.any { taskName ->
-    taskName == "bundle" ||
-        taskName == "bundlerelease" ||
-        taskName == "bundledebug" ||
-        taskName.startsWith("bundleplaystore") ||
-        taskName.startsWith("bundlefull") ||
-        taskName.endsWith("bundle")
+val requestedAndroidDistributions = requestedGradleTasks.mapNotNull { taskName ->
+    when {
+        "playstore" in taskName -> "playstore"
+        "full" in taskName -> "full"
+        else -> null
+    }
+}.toSet()
+require(requestedAndroidDistributions.size <= 1) {
+    "Build Android full and playstore distributions separately, or set -Pnuvio.android.distribution=full|playstore."
 }
+val configuredAndroidDistribution = providers.gradleProperty("nuvio.android.distribution").orNull
+    ?: supabaseProps.getProperty("NUVIO_ANDROID_DISTRIBUTION")
+val isAmbiguousAndroidPackageTask = requestedGradleTasks.any { taskName ->
+    taskName == "build" ||
+        taskName.startsWith("assemble") ||
+        taskName.startsWith("bundle")
+} && requestedAndroidDistributions.isEmpty()
+require(configuredAndroidDistribution != null || !isAmbiguousAndroidPackageTask) {
+    "Set -Pnuvio.android.distribution=full|playstore for aggregate Android assemble/bundle tasks."
+}
+val androidDistribution = (
+    configuredAndroidDistribution
+        ?: requestedAndroidDistributions.singleOrNull()
+        ?: "playstore"
+    ).trim().lowercase()
+require(androidDistribution == "playstore" || androidDistribution == "full") {
+    "nuvio.android.distribution must be 'playstore' or 'full'."
+}
+val androidDistributionSourceDir = if (androidDistribution == "full") {
+    "src/androidFull/kotlin"
+} else {
+    "src/androidPlaystore/kotlin"
+}
+val runtimeLocalProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use(::load)
+    }
+}
+
+fun runtimeConfigValue(key: String, fallback: String = ""): String =
+    runtimeLocalProperties.getProperty(key)?.trim()?.takeIf { it.isNotBlank() }
+        ?: providers.environmentVariable(key).orNull?.trim()?.takeIf { it.isNotBlank() }
+        ?: fallback
 
 fun localOrEnvProperty(name: String): String? =
     (
@@ -834,6 +887,11 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
     appVersionName.set(releaseAppVersionName)
     appVersionCode.set(releaseAppVersionCode)
+    supabaseUrl.set(runtimeConfigValue("SUPABASE_URL"))
+    supabaseAnonKey.set(runtimeConfigValue("SUPABASE_ANON_KEY"))
+    nuvioSupabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
+    nuvioSupabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
+    syncBackendManifestUrl.set(runtimeConfigValue("SYNC_BACKEND_MANIFEST_URL"))
     desktopAppVersionName.set(desktopReleaseVersionName)
     desktopAppVersionCode.set(desktopReleaseVersionCode)
     xcconfigFile.set(rootProject.layout.projectDirectory.file("iosApp/Configuration/Version.xcconfig"))
@@ -894,34 +952,42 @@ kotlin {
         val commonMain by getting {
             kotlin.srcDir(generatedRuntimeConfigDir)
         }
-        androidMain.dependencies {
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.appcompat)
-            implementation(libs.androidx.documentfile)
-            implementation(libs.androidx.activity.compose)
-            implementation(libs.androidx.core.splashscreen)
-            implementation(libs.androidx.work.runtime)
-            implementation(libs.coil.gif)
-            implementation("androidx.recyclerview:recyclerview:1.4.0")
-            implementation("com.squareup.okhttp3:okhttp:4.12.0")
-            implementation(libs.okhttp.dnsoverhttps)
-            implementation("com.google.code.gson:gson:2.11.0")
-            implementation("io.github.peerless2012:ass-media:0.4.0-beta01")
-            implementation(libs.ktor.client.android)
-            implementation(libs.androidx.media3.exoplayer.hls)
-            implementation(libs.androidx.media3.exoplayer.dash)
-            implementation(libs.androidx.media3.exoplayer.smoothstreaming)
-            implementation(libs.androidx.media3.exoplayer.rtsp)
-            implementation(libs.androidx.media3.datasource)
-            implementation(libs.androidx.media3.datasource.okhttp)
-            implementation(libs.androidx.media3.decoder)
-            implementation(libs.androidx.media3.session)
-            implementation(libs.androidx.media3.common)
-            implementation(libs.androidx.media3.container)
-            implementation(libs.androidx.media3.extractor)
-            implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
-            implementation(libs.play.services.cast.framework)
-            implementation(libs.androidx.mediarouter)
+        androidMain {
+            kotlin.srcDir(project.file(androidDistributionSourceDir))
+            if (androidDistribution == "full") {
+                kotlin.srcDir(fullCommonSourceDir)
+            }
+
+            dependencies {
+                implementation(libs.compose.uiToolingPreview)
+                implementation(libs.androidx.appcompat)
+                implementation(libs.androidx.documentfile)
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.androidx.core.splashscreen)
+                implementation(libs.androidx.work.runtime)
+                implementation(libs.coil.gif)
+                implementation("androidx.recyclerview:recyclerview:1.4.0")
+                implementation("com.squareup.okhttp3:okhttp:4.12.0")
+                implementation(libs.okhttp.dnsoverhttps)
+                implementation("com.google.code.gson:gson:2.11.0")
+                implementation("io.github.peerless2012:ass-media:0.4.0-beta01")
+                implementation(libs.ktor.client.android)
+                implementation(libs.androidx.media3.exoplayer.hls)
+                implementation(libs.androidx.media3.exoplayer.dash)
+                implementation(libs.androidx.media3.exoplayer.smoothstreaming)
+                implementation(libs.androidx.media3.exoplayer.rtsp)
+                implementation(libs.androidx.media3.datasource)
+                implementation(libs.androidx.media3.datasource.okhttp)
+                implementation(libs.androidx.media3.decoder)
+                implementation(libs.androidx.media3.session)
+                implementation(libs.androidx.media3.common)
+                implementation(libs.androidx.media3.container)
+                implementation(libs.androidx.media3.extractor)
+                implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
+                implementation(libs.play.services.cast.framework)
+                implementation(libs.androidx.mediarouter)
+                implementation(libs.mpv.android.lib)
+            }
         }
         val desktopMain by getting {
             kotlin.srcDir(fullPluginSourceDir)
@@ -934,9 +1000,15 @@ kotlin {
             }
         }
         commonMain.dependencies {
-            implementation(libs.coil.compose)
-            implementation(libs.coil.network.ktor3)
-            implementation(libs.coil.svg)
+            implementation("io.coil-kt.coil3:coil-compose:${libs.versions.coil.get()}") {
+                exclude(group = "org.jetbrains.skiko", module = "skiko")
+            }
+            implementation("io.coil-kt.coil3:coil-network-ktor3:${libs.versions.coil.get()}") {
+                exclude(group = "org.jetbrains.skiko", module = "skiko")
+            }
+            implementation("io.coil-kt.coil3:coil-svg:${libs.versions.coil.get()}") {
+                exclude(group = "org.jetbrains.skiko", module = "skiko")
+            }
             implementation("dev.chrisbanes.haze:haze:1.7.2")
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -948,6 +1020,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.atomicfu)
             implementation(libs.androidx.navigation.compose)
             implementation(libs.kermit)
             implementation(libs.supabase.postgrest)
@@ -1151,14 +1224,8 @@ afterEvaluate {
         add("fullImplementation", libs.cloudstream.library)
     }
 }
-
 configurations.matching { it.name == "iosMainImplementation" }.configureEach {
     project.dependencies.add(name, libs.ktor.client.darwin)
-}
-
-dependencies {
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
-    debugImplementation(libs.compose.uiTooling)
 }
 
 configurations.all {
@@ -1236,4 +1303,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

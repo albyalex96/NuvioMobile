@@ -10,6 +10,13 @@ internal actual fun publishNativeSelectedTab(tabName: String) {}
 
 internal actual fun publishNativeTabAccentColor(hexColor: String) {}
 
+internal actual fun publishNativeTabTitles(
+    home: String,
+    search: String,
+    library: String,
+    profile: String,
+) {}
+
 internal actual fun publishNativeProfileTabIcon(
     name: String?,
     avatarColorHex: String?,

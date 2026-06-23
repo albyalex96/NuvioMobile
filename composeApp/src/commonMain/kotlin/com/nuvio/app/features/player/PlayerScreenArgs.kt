@@ -4,6 +4,7 @@ import androidx.compose.ui.Modifier
 import com.nuvio.app.features.streams.StreamSubtitle
 
 internal data class PlayerScreenArgs(
+    val profileId: Int,
     val title: String,
     val sourceUrl: String,
     val sourceAudioUrl: String?,
@@ -40,4 +41,5 @@ internal data class PlayerScreenArgs(
     val initialPositionMs: Long,
     val initialProgressFraction: Float?,
     val externalSubtitles: List<StreamSubtitle> = emptyList(),
+    val contentLanguage: String? = null,
 )

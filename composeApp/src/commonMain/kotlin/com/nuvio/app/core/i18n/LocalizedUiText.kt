@@ -131,11 +131,11 @@ fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?, format: Episod
 
 fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
     if (seasonNumber != null && episodeNumber != null) {
-        resourceString("Up Next • S${seasonNumber}E${episodeNumber}") {
+        resourceString("Next Up • S${seasonNumber}E${episodeNumber}") {
             getString(Res.string.continue_watching_up_next_episode, seasonNumber, episodeNumber)
         }
     } else {
-        resourceString("Up Next") { getString(Res.string.continue_watching_up_next) }
+        resourceString("Next Up") { getString(Res.string.continue_watching_up_next) }
     }
 
 fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: EpisodeCodeFormat): String =

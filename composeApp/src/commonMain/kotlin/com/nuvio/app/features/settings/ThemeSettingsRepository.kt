@@ -27,7 +27,7 @@ object ThemeSettingsRepository {
     private val _glassNavBarEnabled = MutableStateFlow(false)
     val glassNavBarEnabled: StateFlow<Boolean> = _glassNavBarEnabled.asStateFlow()
 
-    private val _selectedAppLanguage = MutableStateFlow(AppLanguage.ENGLISH)
+    private val _selectedAppLanguage = MutableStateFlow(AppLanguage.DEVICE)
     val selectedAppLanguage: StateFlow<AppLanguage> = _selectedAppLanguage.asStateFlow()
 
     private val _dateFormatOption = MutableStateFlow(DateFormatOption.YEAR_MONTH_DAY_TEXT)
@@ -54,7 +54,7 @@ object ThemeSettingsRepository {
         _glassNavBarEnabled.value = false
         NativeTabBridge.publishAccentColor(nativeTabAccentHex(AppTheme.WHITE, "#1E88E5"))
         NativeTabBridge.publishLiquidGlassEnabled(false)
-        _selectedAppLanguage.value = AppLanguage.ENGLISH
+        _selectedAppLanguage.value = AppLanguage.DEVICE
         _dateFormatOption.value = DateFormatOption.YEAR_MONTH_DAY_TEXT
     }
 

@@ -5,13 +5,14 @@ import androidx.compose.ui.Modifier
 
 @Composable
 fun PlayerScreen(
+    profileId: Int,
     title: String,
     sourceUrl: String,
     sourceAudioUrl: String? = null,
     streamType: String? = null,
     sourceHeaders: Map<String, String> = emptyMap(),
     sourceResponseHeaders: Map<String, String> = emptyMap(),
-
+    externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList(),
     providerName: String,
     streamTitle: String,
     streamSubtitle: String?,
@@ -38,10 +39,11 @@ fun PlayerScreen(
     torrentTrackers: List<String> = emptyList(),
     initialPositionMs: Long = 0L,
     initialProgressFraction: Float? = null,
-    externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList(),
+    contentLanguage: String? = null,
 ) {
     PlayerScreenContent(
         PlayerScreenArgs(
+            profileId = profileId,
             title = title,
             sourceUrl = sourceUrl,
             sourceAudioUrl = sourceAudioUrl,
@@ -75,6 +77,7 @@ fun PlayerScreen(
             torrentTrackers = torrentTrackers,
             initialPositionMs = initialPositionMs,
             initialProgressFraction = initialProgressFraction,
+            contentLanguage = contentLanguage,
         )
     )
 }

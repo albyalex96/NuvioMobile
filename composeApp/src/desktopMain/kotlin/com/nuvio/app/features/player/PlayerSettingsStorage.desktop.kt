@@ -59,6 +59,14 @@ internal actual object PlayerSettingsStorage {
     actual fun saveStreamReuseLastLinkEnabled(enabled: Boolean) { store.putBoolean("stream_reuse_last_link_enabled", enabled) }
     actual fun loadStreamReuseLastLinkCacheHours(): Int? = store.getInt("stream_reuse_last_link_cache_hours")
     actual fun saveStreamReuseLastLinkCacheHours(hours: Int) { store.putInt("stream_reuse_last_link_cache_hours", hours) }
+    actual fun loadAndroidPlaybackEngine(): String? = null
+    actual fun saveAndroidPlaybackEngine(engine: String) {}
+    actual fun loadAndroidLibmpvVideoOutput(): String? = null
+    actual fun saveAndroidLibmpvVideoOutput(output: String) {}
+    actual fun loadAndroidLibmpvHardwareDecodingEnabled(): Boolean? = null
+    actual fun saveAndroidLibmpvHardwareDecodingEnabled(enabled: Boolean) {}
+    actual fun loadAndroidLibmpvYuv420pEnabled(): Boolean? = null
+    actual fun saveAndroidLibmpvYuv420pEnabled(enabled: Boolean) {}
     actual fun loadDecoderPriority(): Int? = store.getInt("decoder_priority")
     actual fun saveDecoderPriority(priority: Int) { store.putInt("decoder_priority", priority) }
     actual fun loadMapDV7ToHevc(): Boolean? = store.getBoolean("map_dv7_to_hevc")
