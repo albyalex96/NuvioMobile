@@ -247,6 +247,16 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 onDismiss = { showCastPicker = false },
             )
         }
+
+        LiveTvChannelsPanel(
+            visible = showLiveTvChannelsPanel,
+            currentStreamUrl = activeSourceUrl,
+            onChannelSelected = { channel -> switchToLiveTvChannel(channel) },
+            onDismiss = {
+                showLiveTvChannelsPanel = false
+                controlsVisible = true
+            },
+        )
     }
 }
 
@@ -302,6 +312,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
             },
             onSourcesClick = if (activeVideoId != null) { { openSourcesPanel() } } else null,
             onEpisodesClick = if (isSeries) { { openEpisodesPanel() } } else null,
+            onLiveChannelsClick = if (activeProviderAddonId == "live-tv") { { showLiveTvChannelsPanel = true } } else null,
             onOpenInExternalPlayer = args.onOpenInExternalPlayer?.let { openExternal ->
                 {
                     val loadedSubtitles = addonSubtitles

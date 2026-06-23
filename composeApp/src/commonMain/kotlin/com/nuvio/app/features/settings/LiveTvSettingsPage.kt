@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.livetv.LiveTvUiState
+import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_save
 import nuvio.composeapp.generated.resources.live_tv_settings_description
@@ -41,8 +43,12 @@ internal fun LazyListScope.liveTvSettingsContent(
             SettingsGroup(isTablet = isTablet) {
                 LiveTvPlaylistUrlRow(
                     isTablet = isTablet,
-                    value = uiState.playlistUrl,
-                    onUrlCommitted = LiveTvRepository::savePlaylistUrl,
+                    value = uiState.sourceUrl,
+                    onUrlCommitted = { url ->
+                        if (url.isNotBlank()) {
+                            LiveTvRepository.load(url)
+                        }
+                    },
                 )
             }
         }
@@ -53,12 +59,13 @@ internal fun LazyListScope.liveTvSettingsContent(
 private fun LiveTvPlaylistUrlRow(
     isTablet: Boolean,
     value: String,
-    onUrlCommitted: (String) -> Unit,
+    onUrlCommitted: suspend (String) -> Unit,
 ) {
     val horizontalPadding = if (isTablet) 20.dp else 16.dp
     val verticalPadding = if (isTablet) 16.dp else 14.dp
     var draft by rememberSaveable(value) { mutableStateOf(value) }
     val normalizedDraft = draft.trim()
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -98,7 +105,7 @@ private fun LiveTvPlaylistUrlRow(
             Button(
                 onClick = {
                     draft = normalizedDraft
-                    onUrlCommitted(normalizedDraft)
+                    scope.launch { onUrlCommitted(normalizedDraft) }
                 },
                 enabled = normalizedDraft != value,
             ) {

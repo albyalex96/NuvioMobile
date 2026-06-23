@@ -241,7 +241,7 @@ object ProfileSettingsSync {
                     episodeReleaseAlertsEnabled = EpisodeReleaseNotificationsRepository.uiState.value.isEnabled,
                 ),
                 top10CatalogSettingsPayload = Top10CatalogStorage.loadPayload().orEmpty().trim(),
-                liveTvPlaylistUrl = LiveTvStorage.loadPlaylistUrl().orEmpty().trim(),
+                liveTvPlaylistUrl = LiveTvStorage.loadSourceUrl().orEmpty().trim(),
                 streamsAppearanceDisplayMode = StreamsAppearanceRepository.uiState.value.displayMode.name,
             ),
         )
@@ -290,8 +290,8 @@ object ProfileSettingsSync {
         Top10CatalogStorage.savePayload(blob.features.top10CatalogSettingsPayload)
         Top10CatalogRepository.onProfileChanged()
 
-        LiveTvStorage.savePlaylistUrl(blob.features.liveTvPlaylistUrl)
-        LiveTvRepository.onProfileChanged()
+        LiveTvStorage.saveSourceUrl(blob.features.liveTvPlaylistUrl)
+        LiveTvRepository.ensureLoaded()
 
         StreamsAppearanceRepository.setDisplayMode(DisplayMode.fromString(blob.features.streamsAppearanceDisplayMode))
     }
@@ -340,7 +340,7 @@ object ProfileSettingsSync {
         "trakt_comments=${TraktCommentsSettings.enabled.value}",
         "episode_release_alerts=${EpisodeReleaseNotificationsRepository.uiState.value.isEnabled}",
         "top10_catalog=${Top10CatalogRepository.uiState.value}",
-        "live_tv=${LiveTvRepository.uiState.value.playlistUrl}",
+        "live_tv=${LiveTvRepository.uiState.value.sourceUrl}",
     ).joinToString(separator = "||")
 }
 

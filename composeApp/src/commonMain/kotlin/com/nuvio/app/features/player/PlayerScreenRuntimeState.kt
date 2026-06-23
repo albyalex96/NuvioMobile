@@ -205,6 +205,8 @@ internal class PlayerScreenRuntime(
     var castController by mutableStateOf<CastController?>(null)
     var showCastPicker by mutableStateOf(false)
 
+    var showLiveTvChannelsPanel by mutableStateOf(false)
+
     var lastSyncedSettingsResizeMode: PlayerResizeMode? = null
     var lastResetPlaybackIdentity: String? = null
     var lastResetVideoIdentity: String? = null

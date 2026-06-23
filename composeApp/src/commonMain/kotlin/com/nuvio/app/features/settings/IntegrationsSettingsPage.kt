@@ -2,8 +2,14 @@ package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.LiveTv
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.nuvio.app.features.ai.AiAssistantSettings
+import com.nuvio.app.features.ai.AiAssistantSettingsRepository
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.compose_settings_page_ai_assistant
 import nuvio.composeapp.generated.resources.compose_settings_page_anilist
 import nuvio.composeapp.generated.resources.compose_settings_page_kitsu
 import nuvio.composeapp.generated.resources.compose_settings_page_live_tv
@@ -15,6 +21,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_subdl
 import nuvio.composeapp.generated.resources.compose_settings_page_tmdb_enrichment
 import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.compose_settings_root_trakt_description
+import nuvio.composeapp.generated.resources.settings_integrations_ai_description
 import nuvio.composeapp.generated.resources.settings_integrations_anilist_description
 import nuvio.composeapp.generated.resources.settings_integrations_kitsu_description
 import nuvio.composeapp.generated.resources.settings_integrations_live_tv_description
@@ -32,6 +39,7 @@ import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.integrationsContent(
     isTablet: Boolean,
+    onAiAssistantClick: () -> Unit,
     onTraktClick: () -> Unit,
     onMalClick: () -> Unit,
     onKitsuClick: () -> Unit,
@@ -43,6 +51,23 @@ internal fun LazyListScope.integrationsContent(
     onMdbListClick: () -> Unit,
     onLiveTvClick: () -> Unit,
 ) {
+    item {
+        val aiAssistantSettings by AiAssistantSettingsRepository.uiState.collectAsState()
+        SettingsSection(
+            title = stringResource(Res.string.settings_integrations_section_extra),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_ai_assistant),
+                    description = stringResource(Res.string.settings_integrations_ai_description),
+                    icon = Icons.Rounded.AutoAwesome,
+                    isTablet = isTablet,
+                    onClick = onAiAssistantClick,
+                )
+            }
+        }
+    }
     item {
         SettingsSection(
             title = stringResource(Res.string.settings_integrations_section_metadata),

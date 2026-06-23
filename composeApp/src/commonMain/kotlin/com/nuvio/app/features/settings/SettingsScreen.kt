@@ -60,6 +60,8 @@ import com.nuvio.app.core.ui.PosterCardStyleRepository
 import com.nuvio.app.core.ui.PosterCardStyleUiState
 import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.ai.AiAssistantSettings
+import com.nuvio.app.features.ai.AiAssistantSettingsRepository
 import com.nuvio.app.features.debrid.DebridSettings
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSettingsItem
@@ -150,6 +152,10 @@ fun SettingsScreen(
         val mdbListSettings by remember {
             MdbListSettingsRepository.ensureLoaded()
             MdbListSettingsRepository.uiState
+        }.collectAsStateWithLifecycle()
+        val aiAssistantSettings by remember {
+            AiAssistantSettingsRepository.ensureLoaded()
+            AiAssistantSettingsRepository.uiState
         }.collectAsStateWithLifecycle()
         val openSubtitlesSettings by remember {
             OpenSubtitlesSettingsRepository.ensureLoaded()
@@ -315,6 +321,7 @@ fun SettingsScreen(
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
+                aiAssistantSettings = aiAssistantSettings,
                 openSubtitlesSettings = openSubtitlesSettings,
                 debridSettings = debridSettings,
                 liveTvUiState = liveTvUiState,
@@ -392,6 +399,7 @@ fun SettingsScreen(
                 episodeReleaseNotificationsUiState = episodeReleaseNotificationsUiState,
                 tmdbSettings = tmdbSettings,
                 mdbListSettings = mdbListSettings,
+                aiAssistantSettings = aiAssistantSettings,
                 openSubtitlesSettings = openSubtitlesSettings,
                 debridSettings = debridSettings,
                 liveTvUiState = liveTvUiState,
@@ -473,6 +481,7 @@ private fun MobileSettingsScreen(
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
+    aiAssistantSettings: AiAssistantSettings,
     openSubtitlesSettings: OpenSubtitlesSettings,
     debridSettings: DebridSettings,
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
@@ -723,6 +732,7 @@ private fun MobileSettingsScreen(
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = false,
+                    onAiAssistantClick = { onPageChange(SettingsPage.AiAssistant) },
                     onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                     onMalClick = { onPageChange(SettingsPage.Mal) },
                     onKitsuClick = { onPageChange(SettingsPage.Kitsu) },
@@ -733,6 +743,10 @@ private fun MobileSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
+                )
+                SettingsPage.AiAssistant -> aiAssistantSettingsContent(
+                    isTablet = false,
+                    settings = aiAssistantSettings,
                 )
                 SettingsPage.Mal -> malSettingsContent(
                     isTablet = false,
@@ -875,6 +889,7 @@ private fun TabletSettingsScreen(
     episodeReleaseNotificationsUiState: EpisodeReleaseNotificationsUiState,
     tmdbSettings: TmdbSettings,
     mdbListSettings: MdbListSettings,
+    aiAssistantSettings: AiAssistantSettings,
     openSubtitlesSettings: OpenSubtitlesSettings,
     debridSettings: DebridSettings,
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
@@ -1201,6 +1216,7 @@ private fun TabletSettingsScreen(
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = true,
+                    onAiAssistantClick = { onPageChange(SettingsPage.AiAssistant) },
                     onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                     onMalClick = { onPageChange(SettingsPage.Mal) },
                     onKitsuClick = { onPageChange(SettingsPage.Kitsu) },
@@ -1211,6 +1227,10 @@ private fun TabletSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
+                )
+                SettingsPage.AiAssistant -> aiAssistantSettingsContent(
+                    isTablet = true,
+                    settings = aiAssistantSettings,
                 )
                 SettingsPage.Mal -> malSettingsContent(
                     isTablet = true,

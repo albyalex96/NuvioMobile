@@ -33,10 +33,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -85,6 +88,9 @@ import com.nuvio.app.features.details.components.DetailTrailersSection
 import com.nuvio.app.features.details.components.EpisodeWatchedActionSheet
 import com.nuvio.app.features.details.components.SeasonWatchedActionSheet
 import com.nuvio.app.features.details.components.TrailerPlayerPopup
+import com.nuvio.app.features.details.components.AiAssistantSheet
+import com.nuvio.app.features.ai.AiAssistantSettings
+import com.nuvio.app.features.ai.AiAssistantSettingsRepository
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.library.toLibraryItem
@@ -192,6 +198,11 @@ fun MetaDetailsScreen(
     var pickerError by remember(type, id) { mutableStateOf<String?>(null) }
     var episodeImdbRatings by remember(type, id) { mutableStateOf<Map<Pair<Int, Int>, Double>>(emptyMap()) }
     var deferredMetaWorkAllowed by remember(type, id) { mutableStateOf(false) }
+    var showAiAssistantSheet by remember(type, id) { mutableStateOf(false) }
+    val aiAssistantSettings by remember {
+        AiAssistantSettingsRepository.ensureLoaded()
+        AiAssistantSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
 
     val shouldShowComments = commentsEnabled &&
         traktAuthUiState.mode == TraktConnectionMode.CONNECTED &&
@@ -953,6 +964,21 @@ fun MetaDetailsScreen(
                             modifier = Modifier.zIndex(2f),
                         )
 
+                        val normalizedType = type.trim().lowercase()
+                        if (aiAssistantSettings.enabled && normalizedType in listOf("movie", "film", "series", "show", "tv", "tvshow")) {
+                            SmallFloatingActionButton(
+                                onClick = { showAiAssistantSheet = true },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 18.dp, bottom = 88.dp)
+                                    .zIndex(2f),
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ) {
+                                Icon(Icons.Rounded.AutoAwesome, contentDescription = "AI Assistant")
+                            }
+                        }
+
                         selectedEpisodeForActions?.let { selectedEpisode ->
                             val isSelectedEpisodeWatched = remember(meta, selectedEpisode, watchedUiState.watchedKeys, progressByVideoId) {
                                 isEpisodeWatchedForActions(
@@ -1177,6 +1203,14 @@ fun MetaDetailsScreen(
                                     }
                                 },
                                 onDismiss = { selectedComment = null },
+                            )
+                        }
+
+                        if (showAiAssistantSheet) {
+                            AiAssistantSheet(
+                                meta = meta,
+                                settings = aiAssistantSettings,
+                                onDismiss = { showAiAssistantSheet = false },
                             )
                         }
                     }

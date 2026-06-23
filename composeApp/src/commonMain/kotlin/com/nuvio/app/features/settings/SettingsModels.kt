@@ -18,6 +18,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_content_discov
 import nuvio.composeapp.generated.resources.compose_settings_page_debrid
 import nuvio.composeapp.generated.resources.compose_settings_page_continue_watching
 import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
+import nuvio.composeapp.generated.resources.compose_settings_page_ai_assistant
 import nuvio.composeapp.generated.resources.compose_settings_page_integrations
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_live_tv
@@ -152,6 +153,11 @@ internal enum class SettingsPage(
         titleRes = Res.string.compose_settings_page_integrations,
         category = SettingsCategory.General,
         parentPage = Root,
+    ),
+    AiAssistant(
+        titleRes = Res.string.compose_settings_page_ai_assistant,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
     ),
     TmdbEnrichment(
         titleRes = Res.string.compose_settings_page_tmdb_enrichment,
