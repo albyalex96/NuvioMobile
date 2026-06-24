@@ -31,3 +31,4 @@ AGENTS.md
 iosApp/Pods/
 composeApp/src/desktopMain/native/windows/runtime/libmpv-2.dll
 server
+iosApp/Configuration/Version.xcconfig

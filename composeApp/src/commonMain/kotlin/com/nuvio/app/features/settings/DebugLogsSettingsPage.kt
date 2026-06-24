@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
@@ -265,7 +266,7 @@ private fun DebugLogTextPanel(
     val verticalScrollState = rememberScrollState()
     val horizontalScrollState = rememberScrollState()
 
-    val heightModifier = if (isEmpty) Modifier else Modifier.heightIn(min = 200.dp, max = 400.dp)
+    val heightModifier = if (isEmpty) Modifier.height(200.dp) else Modifier.height(400.dp)
 
     Box(
         modifier = Modifier
