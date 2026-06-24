@@ -15,6 +15,7 @@ import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.player.desktop.DesktopHostOs
 import com.nuvio.app.features.player.desktop.DesktopPlayerLaunchShield
 import com.nuvio.app.features.player.desktop.NativePlayerController
@@ -160,10 +161,12 @@ private fun NativePlayerSurface(
             if (err.isNotBlank() && err != lastError) {
                 lastError = err
                 println("[NuvioDesktopPlayer] mpv error: $err")
+                InAppLogger.error("Player/Desktop", "mpv error: $err")
                 latestOnErrorVal.value(err)
             }
             if (!snapshot.isLoading && !snapshot.isPlaying && !snapshot.isEnded && snapshot.durationMs > 0) {
                 println("[NuvioDesktopPlayer] stalled: pos=${snapshot.positionMs} dur=${snapshot.durationMs} playing=${snapshot.isPlaying} ended=${snapshot.isEnded} err=${err}")
+                InAppLogger.warn("Player/Desktop", "stalled: pos=${snapshot.positionMs} dur=${snapshot.durationMs} playing=${snapshot.isPlaying} ended=${snapshot.isEnded} err=${err}")
             }
             delay(500L)
         }
@@ -181,6 +184,7 @@ private fun NativePlayerSurface(
         delay(500L)
         externalSubtitles.forEach { sub ->
             println("[NuvioDesktopPlayer] loading external subtitle: ${sub.url}")
+            InAppLogger.info("Player/Desktop", "loading external subtitle: ${sub.url}")
             controller.setSubtitleUri(sub.url)
         }
     }

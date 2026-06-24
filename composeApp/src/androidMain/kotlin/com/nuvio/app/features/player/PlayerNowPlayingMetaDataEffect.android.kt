@@ -17,6 +17,7 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
 import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -267,6 +268,7 @@ private suspend fun loadArtworkBitmap(
         source?.let { bitmap -> renderArtworkBitmap(bitmap, shape) }
     }.onFailure { error ->
         Log.w(TAG, "Unable to load Now Playing artwork", error)
+        InAppLogger.warn("Player/Android", "Unable to load Now Playing artwork: ${error.message}")
     }.getOrNull()
 }
 
@@ -436,6 +438,7 @@ private object AndroidNowPlayingNotification {
             notificationManager.notify(NOTIFICATION_ID, notification)
         }.onFailure { error ->
             Log.w(TAG, "Unable to show Now Playing notification", error)
+            InAppLogger.warn("Player/Android", "Unable to show Now Playing notification: ${error.message}")
         }
     }
 

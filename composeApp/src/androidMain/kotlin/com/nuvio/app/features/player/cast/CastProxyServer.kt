@@ -2,6 +2,7 @@ package com.nuvio.app.features.player.cast
 
 import android.util.Base64
 import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.player.PlayerPlaybackNetworking
 import okhttp3.Request
 import java.io.BufferedOutputStream
@@ -32,10 +33,12 @@ internal class CastProxyServer {
     fun prepare(originalUrl: String, headers: Map<String, String>): String? {
         if (!ensureStarted()) {
             Log.w(TAG, "proxy server failed to start; casting with direct (unauthenticated) URL")
+            InAppLogger.warn("Cast", "proxy server failed to start; casting with direct (unauthenticated) URL")
             return null
         }
         val ip = lanIpv4() ?: run {
             Log.w(TAG, "no reachable LAN IPv4 found; casting with direct (unauthenticated) URL")
+            InAppLogger.warn("Cast", "no reachable LAN IPv4 found; casting with direct (unauthenticated) URL")
             return null
         }
         val sessionId = "s${sessionCounter.incrementAndGet()}"
@@ -64,7 +67,7 @@ internal class CastProxyServer {
             Thread({ acceptLoop(socket) }, "cast-proxy").apply { isDaemon = true; start() }
             Log.i(TAG, "proxy listening on :$port")
             true
-        }.onFailure { Log.w(TAG, "proxy start failed: ${it.message}") }.getOrDefault(false)
+        }.onFailure { Log.w(TAG, "proxy start failed: ${it.message}"); InAppLogger.warn("Cast", "proxy start failed: ${it.message}") }.getOrDefault(false)
     }
 
     private fun acceptLoop(socket: ServerSocket) {
@@ -138,6 +141,7 @@ internal class CastProxyServer {
             PlayerPlaybackNetworking.sharedPlaybackClient().newCall(builder.build()).execute()
         } catch (e: Exception) {
             Log.w(TAG, "upstream fetch failed: ${e.message}")
+            InAppLogger.warn("Cast", "upstream fetch failed: ${e.message}")
             writeHead(output, 502, mapOf("Content-Length" to "0"))
             return
         }

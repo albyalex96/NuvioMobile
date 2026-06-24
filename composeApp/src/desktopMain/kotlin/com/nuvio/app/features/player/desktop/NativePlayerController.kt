@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player.desktop
 
+import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.player.AudioTrack
 import com.nuvio.app.features.player.PlayerEngineController
 import com.nuvio.app.features.player.PlayerPlaybackSnapshot
@@ -90,12 +91,15 @@ internal class NativePlayerController(
                 )
                 if (handle == 0L) error("Native player did not return a handle.")
                 println("[NuvioDesktopPlayer] native player created, handle=$handle")
+                InAppLogger.info("Player/Desktop", "native player created, handle=$handle")
                 if (pending.playWhenReady) {
                     NativePlayerBridge.setPaused(handle, false)
                     println("[NuvioDesktopPlayer] explicit play() after attach")
+                    InAppLogger.info("Player/Desktop", "explicit play() after attach")
                 }
             }.onFailure { error ->
                 println("[NuvioDesktopPlayer] ERROR creating native player: ${error.message}")
+                InAppLogger.error("Player/Desktop", "ERROR creating native player: ${error.message}")
                 pending.onError(error.message)
             }
         }

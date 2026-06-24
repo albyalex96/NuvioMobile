@@ -3,6 +3,7 @@ package com.nuvio.app.features.player.cast
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -145,6 +146,7 @@ internal class AndroidCastController(
         val route = mediaRouter.routes.firstOrNull { it.id == device.id }
         if (route == null) {
             Log.w(TAG, "connect: no route for device ${device.id}")
+            InAppLogger.warn("Cast", "connect: no route for device ${device.id}")
             return
         }
         mediaRouter.selectRoute(route)
@@ -159,6 +161,7 @@ internal class AndroidCastController(
         val client = castContext.sessionManager.currentCastSession?.remoteMediaClient
         if (client == null) {
             Log.w(TAG, "loadMedia: no remote media client (not connected)")
+            InAppLogger.warn("Cast", "loadMedia: no remote media client (not connected)")
             return
         }
         val metadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
@@ -359,7 +362,7 @@ actual fun rememberCastController(): CastController? {
                 .build()
             AndroidCastController(castContext, MediaRouter.getInstance(context), selector)
                 .also { Log.i(TAG, "Google Cast supported; initial castState=${castContext.castState}") }
-        }.onFailure { Log.w(TAG, "Google Cast unavailable (DLNA still available): ${it.message}") }.getOrNull()
+        }.onFailure { Log.w(TAG, "Google Cast unavailable (DLNA still available): ${it.message}"); InAppLogger.warn("Cast", "Google Cast unavailable (DLNA still available): ${it.message}") }.getOrNull()
         CombinedAndroidCastController(cast, DlnaController(context))
     }
 

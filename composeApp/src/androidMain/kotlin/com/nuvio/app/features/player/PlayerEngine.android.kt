@@ -410,6 +410,7 @@ private fun ExoPlayerSurface(
                     "Decoder failure (${error.errorCodeName}); retrying with app decoders",
                     error,
                 )
+                InAppLogger.warn("Player/Android", "Decoder failure (${error.errorCodeName}); retrying with app decoders: ${error.localizedMessage}")
                 fallbackStartPositionMs = exoPlayer.currentPosition.coerceAtLeast(0L)
                 decoderPriorityOverride = DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
                 latestOnError.value(null)
@@ -628,6 +629,7 @@ private fun ExoPlayerSurface(
                         val wasPlaying = exoPlayer.isPlaying
                         val currentMediaItem = exoPlayer.currentMediaItem ?: run {
                             Log.e(TAG, "setSubtitleUri: currentMediaItem is null, aborting")
+                            InAppLogger.error("Player/Android", "setSubtitleUri: currentMediaItem is null, aborting")
                             return@launch
                         }
                         preserveAudioSelectionForReload("setSubtitleUri")
@@ -1594,6 +1596,7 @@ private fun ExoPlayer.selectTrackByPredicate(
         return true
     }
     Log.w(TAG, "selectTrack: no group found for type=$typeName target=$targetDescription (total groups scanned=$idx)")
+    InAppLogger.warn("Player/Android", "selectTrack: no group found for type=$typeName target=$targetDescription (total groups scanned=$idx)")
     return false
 }
 

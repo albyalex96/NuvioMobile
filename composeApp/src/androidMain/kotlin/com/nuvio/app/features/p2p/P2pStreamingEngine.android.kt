@@ -2,6 +2,7 @@ package com.nuvio.app.features.p2p
 
 import android.content.Context
 import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.core.i18n.localizedP2pUnknownTorrentError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -143,6 +144,7 @@ actual object P2pStreamingEngine {
                 api.dropTorrent(it)
             } catch (e: Exception) {
                 Log.w(TAG, "Error dropping torrent", e)
+                InAppLogger.warn("P2P", "Error dropping torrent: ${e.message}")
             }
         }
 
@@ -151,6 +153,7 @@ actual object P2pStreamingEngine {
                 binary.stop()
             } catch (e: Exception) {
                 Log.w(TAG, "Error stopping TorrServer", e)
+                InAppLogger.warn("P2P", "Error stopping TorrServer: ${e.message}")
             }
         }
     }
@@ -196,6 +199,7 @@ actual object P2pStreamingEngine {
 
         if (files.isEmpty()) {
             Log.w(TAG, "No files after metadata timeout, guessing index ${requestedIdx?.plus(1) ?: 1}")
+            InAppLogger.warn("P2P", "No files after metadata timeout, guessing index ${requestedIdx?.plus(1) ?: 1}")
             return requestedIdx?.plus(1) ?: 1
         }
 
@@ -269,6 +273,7 @@ actual object P2pStreamingEngine {
                     throw e
                 } catch (e: Exception) {
                     Log.w(TAG, "Stats polling error", e)
+                    InAppLogger.warn("P2P", "Stats polling error: ${e.message}")
                 }
                 delay(1_000L)
             }
@@ -469,6 +474,7 @@ actual object P2pStreamingEngine {
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         Log.e(TAG, "addTorrent failed: ${response.code}")
+                        InAppLogger.error("P2P", "addTorrent failed: ${response.code}")
                         return@withContext null
                     }
                     val json = JSONObject(response.body?.string() ?: "{}")
@@ -478,6 +484,7 @@ actual object P2pStreamingEngine {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "addTorrent error", e)
+                InAppLogger.error("P2P", "addTorrent error: ${e.message}")
                 null
             }
         }
@@ -524,6 +531,7 @@ actual object P2pStreamingEngine {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "getTorrentStats error", e)
+                InAppLogger.warn("P2P", "getTorrentStats error: ${e.message}")
                 null
             }
         }
@@ -544,6 +552,7 @@ actual object P2pStreamingEngine {
                 Log.d(TAG, "Torrent dropped: $hash")
             } catch (e: Exception) {
                 Log.w(TAG, "dropTorrent error", e)
+                InAppLogger.warn("P2P", "dropTorrent error: ${e.message}")
             }
         }
 

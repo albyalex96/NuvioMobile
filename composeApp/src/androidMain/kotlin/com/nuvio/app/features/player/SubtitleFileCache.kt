@@ -3,6 +3,7 @@ package com.nuvio.app.features.player
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -49,10 +50,12 @@ object SubtitleFileCache {
                     input.copy(url = localUri.toString())
                 } else {
                     Log.w(TAG, "Failed to download subtitle: ${input.name}")
+                    InAppLogger.warn("Subtitles", "Failed to download subtitle: ${input.name}")
                     null
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Error caching subtitle: ${input.name}", e)
+                InAppLogger.warn("Subtitles", "Error caching subtitle: ${input.name}: ${e.message}")
                 null
             }
         }
@@ -78,6 +81,7 @@ object SubtitleFileCache {
                 okHttpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         Log.w(TAG, "HTTP ${response.code} downloading subtitle: ${input.url}")
+                        InAppLogger.warn("Subtitles", "HTTP ${response.code} downloading subtitle: ${input.url}")
                         return@withContext null
                     }
 
@@ -95,6 +99,7 @@ object SubtitleFileCache {
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to download subtitle file: ${input.url}", e)
+                InAppLogger.warn("Subtitles", "Failed to download subtitle file: ${input.url}: ${e.message}")
                 file.delete()
                 null
             }
@@ -108,6 +113,7 @@ object SubtitleFileCache {
             cacheDir?.listFiles()?.forEach { it.delete() }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to clear subtitle cache", e)
+            InAppLogger.warn("Subtitles", "Failed to clear subtitle cache: ${e.message}")
         }
     }
 

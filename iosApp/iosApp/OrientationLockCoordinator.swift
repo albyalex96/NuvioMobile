@@ -96,6 +96,7 @@ final class OrientationLockCoordinator {
                 .forEach { scene in
                     scene.requestGeometryUpdate(preferences) { error in
                         print("[OrientationLockCoordinator] Geometry update failed: \(error.localizedDescription)")
+                        InAppLogBridge.shared.warn(tag: "Orientation", message: "Geometry update failed: \(error.localizedDescription)")
                     }
                 }
             UIApplication.shared.connectedScenes

@@ -84,6 +84,7 @@ final class NuvioDlnaBridgeImpl: NSObject, NuvioCastBridge {
             group.start(queue: queue)
         } catch {
             NSLog("NuvioCastDlna: multicast unavailable (entitlement?): \(error.localizedDescription)")
+            InAppLogBridge.shared.warn(tag: "DLNA", message: "multicast unavailable (entitlement?): \(error.localizedDescription)")
         }
     }
 

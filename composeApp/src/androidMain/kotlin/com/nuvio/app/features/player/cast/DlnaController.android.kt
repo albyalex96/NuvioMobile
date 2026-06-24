@@ -3,6 +3,7 @@ package com.nuvio.app.features.player.cast
 import android.content.Context
 import android.net.wifi.WifiManager
 import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -138,7 +139,7 @@ internal class DlnaController(context: Context) : CastController {
                 }
                 withContext(Dispatchers.Main) { isCasting = true }
                 startPolling(renderer)
-            }.onFailure { Log.w(TAG, "loadMedia failed: ${it.message}") }
+            }.onFailure { Log.w(TAG, "loadMedia failed: ${it.message}"); InAppLogger.warn("DLNA", "loadMedia failed: ${it.message}") }
         }
     }
 

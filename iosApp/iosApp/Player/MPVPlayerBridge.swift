@@ -361,6 +361,7 @@ final class MPVPlayerViewController: UIViewController {
         mpv = mpv_create()
         guard mpv != nil else {
             print("[MPV] Failed to create mpv instance")
+            InAppLogBridge.shared.error(tag: "MPV/iOS", message: "Failed to create mpv instance")
             return
         }
 
@@ -966,6 +967,7 @@ final class MPVPlayerViewController: UIViewController {
                             let errorText = String(cString: mpv_error_string(endFile.error))
                             self.setPlaybackError("[mpv] \(errorText)")
                             print("[MPV] End file error: \(errorText)")
+                            InAppLogBridge.shared.error(tag: "MPV/iOS", message: "End file error: \(errorText)")
                         }
                     }
                 case MPV_EVENT_SHUTDOWN:
@@ -1058,13 +1060,17 @@ final class MPVPlayerViewController: UIViewController {
                 ?? "unknown"
             let channelCount = self.getInt("audio-out-params/channel-count")
             let codec = self.getString("audio-codec-name") ?? "unknown"
-            print("[MPV] Audio output: ao=\(currentAo), channels=\(channels), channelCount=\(channelCount), codec=\(codec)")
+            let audioLine = "[MPV] Audio output: ao=\(currentAo), channels=\(channels), channelCount=\(channelCount), codec=\(codec)"
+            print(audioLine)
+            InAppLogBridge.shared.info(tag: "MPV/iOS", message: audioLine)
         }
     }
 
     private func checkError(_ status: CInt) {
         if status < 0 {
-            print("[MPV] API error: \(String(cString: mpv_error_string(status)))")
+            let errorText = String(cString: mpv_error_string(status))
+            print("[MPV] API error: \(errorText)")
+            InAppLogBridge.shared.error(tag: "MPV/iOS", message: "API error: \(errorText)")
         }
     }
 
