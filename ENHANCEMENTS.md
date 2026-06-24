@@ -9,8 +9,9 @@ Two nested toggles that turn backgrounds pure black (`#000000`) for OLED power s
 ## GlassMorph Navigation Tab
 A translucent, glass-styled bottom navigation bar that adapts to the selected theme accent color. Gives the interface a modern, layered look while remaining functional with native tab behavior.
 
-## Live TV with Configurable M3U Playlist
+## Live TV with Configurable M3U Playlist, Search, Favorites & Category Filters
 Built-in Live TV support powered by user-provided M3U playlists. Browse channels, view EPG data where available, and watch live streams directly inside the app. Live TV playback does **not** create entries in the "Continue Watching" section.
+Channel search bar with real-time filtering, favorite channels toggle, and category/group badges for quick browsing. The header shows a dynamic channel count: total channels when no search is active, filtered results count when searching.
 
 ## Custom Theme Color Picker
 Choose any accent color for the app theme. The color picker includes:
@@ -63,3 +64,20 @@ Privacy-preserving SponsorBlock API integration that identifies and skips sponso
 
 ## Skip Segments on Timeline
 Visual markers drawn directly on the playback progress bar showing where intro, recap, and outro segments are located. Colored rounded blocks appear along the slider track, making it easy to see upcoming skip segments at a glance while scrubbing through the video.
+
+## Library Calendar
+In-app calendar view integrated into the Library section for browsing content by release date.
+
+## AI Integration
+AI assistant accessible from the settings screen and media detail pages. Ask for information about a movie or TV show — plot summaries, cast details, release info, and more — directly within the app.
+
+## In-App Debug Log Viewer
+A diagnostic log viewer accessible under Settings → Advanced → Debug Logs. Features:
+- **InAppLogger** — in-memory circular buffer (3000 entries) with `StateFlow` for real-time UI
+- **Filter chips** — filter by level (All/Debug/Info/Warn/Error)
+- **Scrollable viewer** — horizontal + vertical scrolling, copy-to-clipboard
+- **Category grouping** — tags are auto-categorized (Player, Network, Metadata, etc.)
+- **Log retention** — latest 3000 entries kept in memory
+
+### Extended Log Capture
+A custom Kermit `LogWriter` forwards all 200–400+ log calls from 47 feature files (Auth, Trakt, TMDB, Sync, Cast, P2P, etc.) to the in-app viewer without replacing platform loggers (Logcat/OSLog remain active). Platform-specific `Log.w/e`, `print()`, `NSLog()`, and `println()` calls are also bridged across Android, iOS, and Desktop.
