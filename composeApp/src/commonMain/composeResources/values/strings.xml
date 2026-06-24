@@ -739,7 +739,7 @@
     <string name="live_tv_link_copied">Link copied</string>
     <string name="live_tv_add_source">Add source</string>
     <string name="live_tv_all_channels">All channels</string>
-    <string name="live_tv_channel_count">%d channels</string>
+    <string name="live_tv_channel_count">%1$d channels</string>
     <string name="live_tv_channels">Channels</string>
     <string name="live_tv_disconnect">Disconnect</string>
     <string name="live_tv_empty_description">Enter an M3U playlist URL to start watching live TV channels.</string>

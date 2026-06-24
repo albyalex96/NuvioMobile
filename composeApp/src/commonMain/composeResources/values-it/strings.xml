@@ -2129,7 +2129,7 @@
     <string name="live_tv_add_source">Aggiungi sorgente</string>
     <string name="live_tv_all_channels">Tutti i canali</string>
     <string name="live_tv_categories">Categorie</string>
-    <string name="live_tv_channel_count">%d canali</string>
+    <string name="live_tv_channel_count">%1$d canali</string>
     <string name="live_tv_channels">Canali</string>
     <string name="live_tv_choose_category">Scegli categoria</string>
     <string name="live_tv_disconnect">Disconnetti</string>
