@@ -684,6 +684,10 @@ private fun MobileSettingsScreen(
                 SettingsPage.Advanced -> advancedSettingsContent(
                     isTablet = false,
                     rememberLastProfileEnabled = rememberLastProfileEnabled,
+                    onDebugLogsClick = { onPageChange(SettingsPage.DebugLogs) },
+                )
+                SettingsPage.DebugLogs -> debugLogsSettingsContent(
+                    isTablet = false,
                 )
                 SettingsPage.Notifications -> notificationsSettingsContent(
                     isTablet = false,
@@ -1168,6 +1172,10 @@ private fun TabletSettingsScreen(
                 SettingsPage.Advanced -> advancedSettingsContent(
                     isTablet = true,
                     rememberLastProfileEnabled = rememberLastProfileEnabled,
+                    onDebugLogsClick = { openInlinePage(SettingsPage.DebugLogs) },
+                )
+                SettingsPage.DebugLogs -> debugLogsSettingsContent(
+                    isTablet = true,
                 )
                 SettingsPage.Notifications -> notificationsSettingsContent(
                     isTablet = true,

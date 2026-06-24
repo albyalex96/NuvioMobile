@@ -81,6 +81,7 @@ import coil3.svg.SvgDecoder
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
+import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.core.deeplink.AppDeepLink
 import com.nuvio.app.core.deeplink.AppDeepLinkRepository
 import com.nuvio.app.core.network.NetworkCondition
@@ -477,6 +478,7 @@ fun App() {
     val amoledSurfacesEnabled by remember { ThemeSettingsRepository.amoledSurfacesEnabled }.collectAsStateWithLifecycle()
     NuvioTheme(appTheme = selectedTheme, customAccentHex = customAccentHex, amoled = amoledEnabled, amoledSurfaces = amoledSurfacesEnabled) {
         LaunchedEffect(Unit) {
+            InAppLogger.info("App", "Application started")
             refreshSyncBackendSelection()
             AuthRepository.initialize()
         }

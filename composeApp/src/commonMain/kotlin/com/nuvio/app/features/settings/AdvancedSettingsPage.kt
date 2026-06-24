@@ -14,15 +14,19 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.settings_advanced_clear_cw_cache
 import nuvio.composeapp.generated.resources.settings_advanced_clear_cw_cache_done
 import nuvio.composeapp.generated.resources.settings_advanced_clear_cw_cache_subtitle
+import nuvio.composeapp.generated.resources.settings_advanced_debug_logs
+import nuvio.composeapp.generated.resources.settings_advanced_debug_logs_description
 import nuvio.composeapp.generated.resources.settings_advanced_remember_last_profile
 import nuvio.composeapp.generated.resources.settings_advanced_remember_last_profile_description
 import nuvio.composeapp.generated.resources.settings_advanced_section_cache
+import nuvio.composeapp.generated.resources.settings_advanced_section_debugging
 import nuvio.composeapp.generated.resources.settings_advanced_section_startup
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.advancedSettingsContent(
     isTablet: Boolean,
     rememberLastProfileEnabled: Boolean,
+    onDebugLogsClick: () -> Unit,
 ) {
     item {
         SettingsSection(
@@ -67,6 +71,21 @@ internal fun LazyListScope.advancedSettingsContent(
                             }
                         }
                     },
+                )
+            }
+        }
+    }
+    item {
+        SettingsSection(
+            title = stringResource(Res.string.settings_advanced_section_debugging),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.settings_advanced_debug_logs),
+                    description = stringResource(Res.string.settings_advanced_debug_logs_description),
+                    isTablet = isTablet,
+                    onClick = onDebugLogsClick,
                 )
             }
         }

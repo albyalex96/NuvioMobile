@@ -976,6 +976,7 @@ final class MPVPlayerViewController: UIViewController {
                         let level = String(cString: msg.pointee.level!)
                         let text = String(cString: msg.pointee.text!)
                         self.appendPlaybackLog(prefix: prefix, level: level, text: text)
+                        InAppLogBridge.shared.mpv(platform: "iOS", prefix: prefix, level: level, message: text)
                         print("[MPV][\(prefix)] \(level): \(text)", terminator: "")
                     }
                 default:
