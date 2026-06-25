@@ -99,8 +99,14 @@ import com.nuvio.app.features.home.components.HomePosterCard
 import com.nuvio.app.features.home.components.HomeSkeletonRow
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.watched.WatchedRepository
+import com.nuvio.app.core.ui.EpisodeCodeFormat
+import com.nuvio.app.core.ui.formatEpisodeCode
+import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
+import com.nuvio.app.features.watchprogress.CachedNextUpItem
+import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import com.nuvio.app.features.watching.application.WatchingState
+import com.nuvio.app.features.watching.domain.isReleasedBy
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -138,6 +144,9 @@ fun LibraryScreen(
         HomeCatalogSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
+    val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
+    val activeProfileId = profileState.activeProfile?.profileIndex ?: 1
+    val episodeCodeFormat = rememberEpisodeCodeFormat()
     var observedOfflineState by remember { mutableStateOf(false) }
     var sourceModeName by rememberSaveable { mutableStateOf(LibraryViewMode.Saved.name) }
     val sourceMode = remember(sourceModeName) {
@@ -202,13 +211,15 @@ fun LibraryScreen(
         }
     }
 
-    LaunchedEffect(showReleaseCalendar, uiState.items) {
+    LaunchedEffect(showReleaseCalendar, uiState.items, episodeCodeFormat, activeProfileId) {
         if (!showReleaseCalendar) return@LaunchedEffect
         val itemsSnapshot = uiState.items
+        val format = episodeCodeFormat
+        val pid = activeProfileId
         releaseCalendarEvents = buildLibraryReleaseCalendarFallbackEvents(itemsSnapshot)
         releaseCalendarLoading = true
         try {
-            releaseCalendarEvents = buildLibraryReleaseCalendarEvents(itemsSnapshot)
+            releaseCalendarEvents = buildLibraryReleaseCalendarEvents(itemsSnapshot, format, pid)
         } finally {
             releaseCalendarLoading = false
         }
@@ -1872,15 +1883,58 @@ private data class LibraryCalendarMonth(
         if (month == 12) LibraryCalendarMonth(year + 1, 1) else copy(month = month + 1)
 }
 
-private suspend fun buildLibraryReleaseCalendarEvents(items: List<LibraryItem>): List<LibraryCalendarEvent> {
+private suspend fun buildLibraryReleaseCalendarEvents(
+    items: List<LibraryItem>,
+    format: EpisodeCodeFormat,
+    profileId: Int,
+): List<LibraryCalendarEvent> {
     val fallbackEvents = buildLibraryReleaseCalendarFallbackEvents(items)
     val episodeEvents = buildLibraryEpisodeCalendarEvents(items)
     val seriesWithEpisodeEvents = episodeEvents.map { it.item.id to it.item.type.lowercase() }.toSet()
-    return (episodeEvents + fallbackEvents.filterNot { event ->
+    val nextUpEvents = buildNextUpCalendarEvents(format, profileId)
+    return (episodeEvents + nextUpEvents + fallbackEvents.filterNot { event ->
         event.item.isLibrarySeries() && (event.item.id to event.item.type.lowercase()) in seriesWithEpisodeEvents
     })
         .distinctBy { it.key }
         .sortedWith(compareBy<LibraryCalendarEvent> { it.date.iso }.thenBy { it.sortTitle.lowercase() })
+}
+
+private fun buildNextUpCalendarEvents(
+    format: EpisodeCodeFormat,
+    profileId: Int,
+): List<LibraryCalendarEvent> {
+    val todayIso = CurrentDateProvider.todayIsoDate()
+    return ContinueWatchingEnrichmentCache.getNextUpSnapshot(profileId)
+        .filter { it.released != null && !isReleasedBy(todayIso, it.released) }
+        .mapNotNull { cached ->
+            val date = parseLibraryCalendarDate(cached.released) ?: return@mapNotNull null
+            val episodeCode = when {
+                cached.season != null && cached.episode != null ->
+                    formatEpisodeCode(cached.season, cached.episode, format)
+                else -> null
+            }
+            val subtitle = listOfNotNull(episodeCode, cached.episodeTitle.takeIf { !it.isNullOrBlank() })
+                .joinToString(" - ")
+                .takeIf { it.isNotBlank() }
+            LibraryCalendarEvent(
+                key = "nextup:${cached.contentId}:${cached.season ?: 0}:${cached.episode ?: 0}:${date.iso}",
+                date = date,
+                rawReleaseInfo = cached.released!!,
+                item = LibraryItem(
+                    id = cached.contentId,
+                    type = cached.contentType,
+                    name = cached.name,
+                    poster = cached.poster,
+                    banner = cached.backdrop,
+                    logo = cached.logo,
+                    savedAtEpochMs = cached.lastWatched,
+                ),
+                title = cached.name,
+                subtitle = subtitle,
+                imageUrl = cached.episodeThumbnail ?: cached.backdrop ?: cached.poster,
+                sortTitle = "${cached.name} ${cached.season ?: 0} ${cached.episode ?: 0} ${cached.episodeTitle.orEmpty()}",
+            )
+        }
 }
 
 private fun buildLibraryReleaseCalendarFallbackEvents(items: List<LibraryItem>): List<LibraryCalendarEvent> =
