@@ -102,8 +102,6 @@ import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.core.ui.EpisodeCodeFormat
 import com.nuvio.app.core.ui.formatEpisodeCode
 import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
-import com.nuvio.app.features.watchprogress.CachedNextUpItem
-import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watching.application.WatchingState
@@ -145,8 +143,6 @@ fun LibraryScreen(
         HomeCatalogSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
-    val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
-    val activeProfileId = profileState.activeProfile?.profileIndex ?: 1
     val episodeCodeFormat = rememberEpisodeCodeFormat()
     var observedOfflineState by remember { mutableStateOf(false) }
     var sourceModeName by rememberSaveable { mutableStateOf(LibraryViewMode.Saved.name) }
@@ -212,15 +208,13 @@ fun LibraryScreen(
         }
     }
 
-    LaunchedEffect(showReleaseCalendar, uiState.items, episodeCodeFormat, activeProfileId) {
+    LaunchedEffect(showReleaseCalendar, uiState.items, episodeCodeFormat) {
         if (!showReleaseCalendar) return@LaunchedEffect
         val itemsSnapshot = uiState.items
-        val format = episodeCodeFormat
-        val pid = activeProfileId
         releaseCalendarEvents = buildLibraryReleaseCalendarFallbackEvents(itemsSnapshot)
         releaseCalendarLoading = true
         try {
-            releaseCalendarEvents = buildLibraryReleaseCalendarEvents(itemsSnapshot, format, pid)
+            releaseCalendarEvents = buildLibraryReleaseCalendarEvents(itemsSnapshot, episodeCodeFormat)
         } finally {
             releaseCalendarLoading = false
         }
@@ -1887,12 +1881,11 @@ private data class LibraryCalendarMonth(
 private suspend fun buildLibraryReleaseCalendarEvents(
     items: List<LibraryItem>,
     format: EpisodeCodeFormat,
-    profileId: Int,
 ): List<LibraryCalendarEvent> {
     val fallbackEvents = buildLibraryReleaseCalendarFallbackEvents(items)
     val episodeEvents = buildLibraryEpisodeCalendarEvents(items)
     val seriesWithEpisodeEvents = episodeEvents.map { it.item.id to it.item.type.lowercase() }.toSet()
-    val nextUpEvents = buildNextUpCalendarEvents(items, format, profileId)
+    val nextUpEvents = buildNextUpCalendarEvents(items, format)
     return (episodeEvents + nextUpEvents + fallbackEvents.filterNot { event ->
         event.item.isLibrarySeries() && (event.item.id to event.item.type.lowercase()) in seriesWithEpisodeEvents
     })
@@ -1903,97 +1896,65 @@ private suspend fun buildLibraryReleaseCalendarEvents(
 private suspend fun buildNextUpCalendarEvents(
     libraryItems: List<LibraryItem>,
     format: EpisodeCodeFormat,
-    profileId: Int,
 ): List<LibraryCalendarEvent> = coroutineScope {
     val todayIso = CurrentDateProvider.todayIsoDate()
-    val events = mutableListOf<LibraryCalendarEvent>()
     val librarySeriesIds = libraryItems.filter(LibraryItem::isLibrarySeries).map { it.id }.toSet()
+    val progressState = WatchProgressRepository.uiState.value
+    val events = mutableListOf<LibraryCalendarEvent>()
 
-    val cachedNextUp = ContinueWatchingEnrichmentCache.getNextUpSnapshot(profileId)
-        .filter { it.released != null && !isReleasedBy(todayIso, it.released) }
-    if (cachedNextUp.isNotEmpty()) {
-        cachedNextUp.mapNotNullTo(events) { cached ->
-            val date = parseLibraryCalendarDate(cached.released) ?: return@mapNotNullTo null
-            val episodeCode = when {
-                cached.season != null && cached.episode != null ->
-                    formatEpisodeCode(cached.season, cached.episode, format)
-                else -> null
-            }
-            val subtitle = listOfNotNull(episodeCode, cached.episodeTitle.takeIf { !it.isNullOrBlank() })
-                .joinToString(" - ")
-                .takeIf { it.isNotBlank() }
-            LibraryCalendarEvent(
-                key = "nextup:${cached.contentId}:${cached.season ?: 0}:${cached.episode ?: 0}:${date.iso}",
-                date = date,
-                rawReleaseInfo = cached.released!!,
-                item = LibraryItem(
-                    id = cached.contentId,
-                    type = cached.contentType,
-                    name = cached.name,
-                    poster = cached.poster,
-                    banner = cached.backdrop,
-                    logo = cached.logo,
-                    savedAtEpochMs = cached.lastWatched,
-                ),
-                title = cached.name,
-                subtitle = subtitle,
-                imageUrl = cached.episodeThumbnail ?: cached.backdrop ?: cached.poster,
-                sortTitle = "${cached.name} ${cached.season ?: 0} ${cached.episode ?: 0} ${cached.episodeTitle.orEmpty()}",
-            )
+    val seriesToFetch = progressState.entries
+        .filter { entry -> entry.parentMetaId !in librarySeriesIds }
+        .groupBy { entry -> entry.parentMetaId }
+        .mapValues { (_, entries) ->
+            entries.maxBy { entry -> (entry.seasonNumber ?: 0) * 10000 + (entry.episodeNumber ?: 0) }
         }
-    } else {
-        val progressState = WatchProgressRepository.uiState.value
-        val seriesToFetch = progressState.entries
-            .filter { entry -> entry.isEffectivelyCompleted && entry.parentMetaId !in librarySeriesIds }
-            .distinctBy { entry -> entry.parentMetaId }
-            .take(10)
-        val contentTypeBySeriesId = progressState.entries
-            .distinctBy { entry -> entry.parentMetaId }
-            .associate { entry -> entry.parentMetaId to entry.parentMetaType }
+        .values
+        .take(10)
+        .toList()
 
-        seriesToFetch.chunked(4).forEach { chunk ->
-            events += chunk.map { entry ->
-                async {
-                    val type = contentTypeBySeriesId[entry.parentMetaId] ?: return@async emptyList()
-                    val details = MetaDetailsRepository.fetch(type, entry.parentMetaId) ?: return@async emptyList()
-                    val nextVideo = details.videos
-                        .filter { video -> video.released != null && !isReleasedBy(todayIso, video.released) }
-                        .minByOrNull { video -> video.released ?: "" }
-                    if (nextVideo == null) return@async emptyList()
-
-                    val date = parseLibraryCalendarDate(nextVideo.released) ?: return@async emptyList()
-                    val episodeCode = when {
-                        nextVideo.season != null && nextVideo.episode != null ->
-                            formatEpisodeCode(nextVideo.season, nextVideo.episode, format)
-                        else -> null
+    seriesToFetch.chunked(4).forEach { chunk ->
+        events += chunk.map { entry ->
+            async {
+                val details = MetaDetailsRepository.fetch(entry.parentMetaType, entry.parentMetaId) ?: return@async emptyList()
+                val nextVideo = details.videos
+                    .filter { video ->
+                        video.released != null && !isReleasedBy(todayIso, video.released) &&
+                            video.season != null && video.episode != null &&
+                            (video.season > (entry.seasonNumber ?: 0) ||
+                                (video.season == (entry.seasonNumber ?: 0) && video.episode > (entry.episodeNumber ?: 0)))
                     }
-                    val subtitle = listOfNotNull(episodeCode, nextVideo.title.takeIf { !it.isNullOrBlank() })
-                        .joinToString(" - ")
-                        .takeIf { it.isNotBlank() }
-                    val syntheticItem = LibraryItem(
-                        id = entry.parentMetaId,
-                        type = type,
-                        name = details.name,
-                        poster = details.poster,
-                        banner = details.background,
-                        logo = details.logo,
-                        savedAtEpochMs = entry.lastUpdatedEpochMs,
+                    .minByOrNull { video -> "${video.season!!.toString().padStart(4, '0')}_${video.episode!!.toString().padStart(4, '0')}_${video.released ?: ""}" }
+                val nextSeason = nextVideo?.season ?: return@async emptyList()
+                val nextEpisode = nextVideo?.episode ?: return@async emptyList()
+
+                val date = parseLibraryCalendarDate(nextVideo.released) ?: return@async emptyList()
+                val episodeCode = formatEpisodeCode(nextSeason, nextEpisode, format)
+                val subtitle = listOfNotNull(episodeCode, nextVideo.title.takeIf { !it.isNullOrBlank() })
+                    .joinToString(" - ")
+                    .takeIf { it.isNotBlank() }
+                val syntheticItem = LibraryItem(
+                    id = entry.parentMetaId,
+                    type = entry.parentMetaType,
+                    name = details.name,
+                    poster = details.poster,
+                    banner = details.background,
+                    logo = details.logo,
+                    savedAtEpochMs = entry.lastUpdatedEpochMs,
+                )
+                listOf(
+                    LibraryCalendarEvent(
+                        key = "watchprogress:${entry.parentMetaId}:${nextSeason}:${nextEpisode}:${date.iso}",
+                        date = date,
+                        rawReleaseInfo = nextVideo.released!!,
+                        item = syntheticItem,
+                        title = details.name,
+                        subtitle = subtitle,
+                        imageUrl = nextVideo.thumbnail ?: details.background ?: details.poster,
+                        sortTitle = "${details.name} ${nextSeason} ${nextEpisode} ${nextVideo.title.orEmpty()}",
                     )
-                    listOf(
-                        LibraryCalendarEvent(
-                            key = "watchprogress:${entry.parentMetaId}:${nextVideo.season ?: 0}:${nextVideo.episode ?: nextVideo.id}:${date.iso}",
-                            date = date,
-                            rawReleaseInfo = nextVideo.released!!,
-                            item = syntheticItem,
-                            title = details.name,
-                            subtitle = subtitle,
-                            imageUrl = nextVideo.thumbnail ?: details.background ?: details.poster,
-                            sortTitle = "${details.name} ${nextVideo.season ?: 0} ${nextVideo.episode ?: 0} ${nextVideo.title.orEmpty()}",
-                        )
-                    )
-                }
-            }.awaitAll().flatten()
-        }
+                )
+            }
+        }.awaitAll().flatten()
     }
 
     events
