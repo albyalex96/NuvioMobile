@@ -1,10 +1,6 @@
 package com.nuvio.app.features.downloads
 
 import com.nuvio.app.features.streams.StreamItem
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -133,10 +129,6 @@ object DownloadsRepository {
         }
 
         if (HlsPlaylistParser.isHlsUrl(sourceUrl) || HlsPlaylistParser.isHlsStream(stream.streamType)) {
-            return DownloadEnqueueResult.HlsNeedsSelection
-        }
-
-        if (DownloadsPlatformDownloader.probeHlsContentType(sourceUrl, sanitizeRequestHeaders(stream.behaviorHints.proxyHeaders?.request))) {
             return DownloadEnqueueResult.HlsNeedsSelection
         }
 
@@ -310,6 +302,7 @@ object DownloadsRepository {
             episodeTitle = episodeTitle,
             fallbackTitle = stream.streamLabel,
             sourceUrl = sourceUrl,
+            isHlsStream = false,
             nowEpochMs = now,
         )
 
@@ -448,18 +441,13 @@ object DownloadsRepository {
     }
 
     private fun startDownload(item: DownloadItem) {
-        if (item.isHls) {
-            startHlsDownload(item)
-        } else {
-            startDirectDownload(item)
-        }
-    }
-
-    private fun startDirectDownload(item: DownloadItem) {
         val request = DownloadPlatformRequest(
+            downloadId = item.id,
+            displayTitle = item.title,
             sourceUrl = item.sourceUrl,
             sourceHeaders = item.sourceHeaders,
             destinationFileName = item.fileName,
+            isHlsStream = item.isHls,
         )
 
         val handle = DownloadsPlatformDownloader.start(
@@ -484,6 +472,7 @@ object DownloadsRepository {
                     current.copy(
                         status = DownloadStatus.Completed,
                         localFileUri = localFileUri,
+                        fileName = alignFileNameExtension(current.fileName, localFileUri),
                         downloadedBytes = if (totalBytes != null && totalBytes > 0L) {
                             totalBytes
                         } else {
@@ -512,99 +501,6 @@ object DownloadsRepository {
         )
 
         activeHandles[item.id] = handle
-    }
-
-    private fun startHlsDownload(item: DownloadItem) {
-        val job = SupervisorJob()
-        val scope = CoroutineScope(job + Dispatchers.Default)
-
-        scope.launch {
-            val mediaContent = DownloadsPlatformDownloader.fetchUrlAsString(
-                url = item.sourceUrl,
-                headers = item.sourceHeaders,
-            )
-            if (mediaContent == null) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
-                mutateItem(item.id) { current ->
-                    current.copy(
-                        status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
-                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                    )
-                }
-                return@launch
-            }
-
-            val mediaPlaylist = HlsPlaylistParser.parseMediaPlaylist(mediaContent, item.sourceUrl)
-            if (mediaPlaylist.segments.isEmpty()) {
-                val errorMsg = runBlocking { getString(Res.string.download_failed) }
-                mutateItem(item.id) { current ->
-                    current.copy(
-                        status = DownloadStatus.Failed,
-                        errorMessage = errorMsg,
-                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                    )
-                }
-                return@launch
-            }
-
-            val segmentUrls = mediaPlaylist.segments.map { it.url }
-
-            val handle = DownloadsPlatformDownloader.downloadHlsSegments(
-                segmentUrls = segmentUrls,
-                sourceHeaders = item.sourceHeaders,
-                destinationFileName = item.fileName,
-                onProgress = { downloadedBytes, totalBytes ->
-                    mutateItem(item.id) { current ->
-                        if (current.status != DownloadStatus.Downloading) {
-                            current
-                        } else {
-                            current.copy(
-                                downloadedBytes = downloadedBytes.coerceAtLeast(0L),
-                                totalBytes = totalBytes?.takeIf { it > 0L },
-                                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                                errorMessage = null,
-                            )
-                        }
-                    }
-                },
-                onSuccess = { localFileUri, totalBytes ->
-                    activeHandles.remove(item.id)
-                    mutateItem(item.id) { current ->
-                        current.copy(
-                            status = DownloadStatus.Completed,
-                            localFileUri = localFileUri,
-                            downloadedBytes = if (totalBytes != null && totalBytes > 0L) {
-                                totalBytes
-                            } else {
-                                current.downloadedBytes
-                            },
-                            totalBytes = totalBytes?.takeIf { it > 0L } ?: current.totalBytes,
-                            errorMessage = null,
-                            updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                        )
-                    }
-                },
-                onFailure = { message ->
-                    activeHandles.remove(item.id)
-                    mutateItem(item.id) { current ->
-                        if (current.status != DownloadStatus.Downloading) {
-                            current
-                        } else {
-                            current.copy(
-                                status = DownloadStatus.Failed,
-                                errorMessage = message.ifBlank {
-                                    runBlocking { getString(Res.string.download_failed) }
-                                },
-                                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
-                            )
-                        }
-                    }
-                },
-            )
-
-            activeHandles[item.id] = handle
-        }
     }
 
     private fun mutateItem(downloadId: String, transform: (DownloadItem) -> DownloadItem) {
@@ -754,6 +650,7 @@ private fun buildFileName(
     episodeTitle: String?,
     fallbackTitle: String,
     sourceUrl: String,
+    isHlsStream: Boolean,
     nowEpochMs: Long,
 ): String {
     val baseTitle = if (seasonNumber != null && episodeNumber != null) {
@@ -772,7 +669,7 @@ private fun buildFileName(
         title.ifBlank { fallbackTitle }
     }
 
-    val extension = sourceUrl.fileExtensionFromUrl()
+    val extension = if (isHlsStream) "ts" else sourceUrl.fileExtensionFromUrl()
     return buildString {
         append(baseTitle.sanitizeFileName().ifBlank { "download" }.take(92))
         append('_')
@@ -842,4 +739,19 @@ private fun String.isSupportedDownloadUrl(): Boolean {
     if (normalized.endsWith(".mpd") || normalized.contains(".mpd?")) return false
     if (normalized.endsWith(".torrent") || normalized.contains(".torrent?")) return false
     return normalized.startsWith("http://") || normalized.startsWith("https://")
+}
+
+private fun alignFileNameExtension(currentFileName: String, localFileUri: String): String {
+    val resolvedExtension = localFileUri
+        .substringBefore('?')
+        .substringBefore('#')
+        .substringAfterLast('/')
+        .substringAfterLast('.', missingDelimiterValue = "")
+        .lowercase()
+        .takeIf { it.length in 2..5 && it.all(Char::isLetterOrDigit) }
+        ?: return currentFileName
+
+    if (currentFileName.endsWith(".$resolvedExtension", ignoreCase = true)) return currentFileName
+    val stem = currentFileName.substringBeforeLast('.', missingDelimiterValue = currentFileName)
+    return "$stem.$resolvedExtension"
 }

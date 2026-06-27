@@ -19,6 +19,11 @@ internal actual object DownloadsPlatformDownloader {
         onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
         onFailure: (message: String) -> Unit,
     ): DownloadsTaskHandle {
+        if (request.isHlsStream) {
+            onFailure("HLS download not supported on desktop yet.")
+            return DesktopDownloadsTaskHandle(Thread.currentThread())
+        }
+
         val t = thread(name = "download-${request.destinationFileName}", isDaemon = true) {
             try {
                 val url = URL(request.sourceUrl)
@@ -81,20 +86,5 @@ internal actual object DownloadsPlatformDownloader {
         } catch (_: Exception) {
             null
         }
-    }
-
-    actual fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean = false
-
-    actual fun downloadHlsSegments(
-        segmentUrls: List<String>,
-        sourceHeaders: Map<String, String>,
-        destinationFileName: String,
-        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
-        onFailure: (message: String) -> Unit,
-    ): DownloadsTaskHandle {
-        onFailure("HLS download not supported on desktop")
-        val t = Thread.currentThread()
-        return DesktopDownloadsTaskHandle(t)
     }
 }

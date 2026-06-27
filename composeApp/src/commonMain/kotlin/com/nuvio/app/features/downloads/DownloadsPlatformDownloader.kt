@@ -1,9 +1,12 @@
 package com.nuvio.app.features.downloads
 
 internal data class DownloadPlatformRequest(
+    val downloadId: String,
+    val displayTitle: String,
     val sourceUrl: String,
     val sourceHeaders: Map<String, String>,
     val destinationFileName: String,
+    val isHlsStream: Boolean = false,
 )
 
 internal interface DownloadsTaskHandle {
@@ -25,15 +28,4 @@ internal expect object DownloadsPlatformDownloader {
     fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String?
 
     fun fetchUrlAsString(url: String, headers: Map<String, String>): String?
-
-    fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean
-
-    fun downloadHlsSegments(
-        segmentUrls: List<String>,
-        sourceHeaders: Map<String, String>,
-        destinationFileName: String,
-        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
-        onFailure: (message: String) -> Unit,
-    ): DownloadsTaskHandle
 }

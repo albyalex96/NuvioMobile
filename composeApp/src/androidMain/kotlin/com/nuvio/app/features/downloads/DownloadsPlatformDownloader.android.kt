@@ -22,6 +22,10 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import kotlin.coroutines.coroutineContext
 
 private val downloadHttpClient = OkHttpClient.Builder()
     .dns(com.nuvio.app.core.network.AndroidDnsProvider)
@@ -62,6 +66,25 @@ internal actual object DownloadsPlatformDownloader {
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
+
+        if (request.isHlsStream) {
+            scope.launch {
+                val context = appContext
+                if (context == null) {
+                    onFailure(runBlocking { getString(Res.string.downloads_error_not_initialized) })
+                    return@launch
+                }
+                performHlsDownloadAndroid(
+                    context = context,
+                    request = request,
+                    onProgress = onProgress,
+                    onSuccess = onSuccess,
+                    onFailure = onFailure,
+                )
+            }
+            return AndroidDownloadsTaskHandle(job)
+        }
+
         var call: Call? = null
 
         scope.launch {
@@ -262,125 +285,7 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
-    actual fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean {
-        return try {
-            val requestBuilder = Request.Builder().url(url).head()
-            headers.forEach { (key, value) ->
-                requestBuilder.header(key, value)
-            }
-            val response = downloadHttpClient.newCall(requestBuilder.build()).execute()
-            response.use { resp ->
-                if (resp.isSuccessful) {
-                    val contentType = resp.header("Content-Type")
-                    HlsPlaylistParser.isHlsContentType(contentType)
-                } else false
-            }
-        } catch (_: Exception) {
-            false
-        }
-    }
 
-    actual fun downloadHlsSegments(
-        segmentUrls: List<String>,
-        sourceHeaders: Map<String, String>,
-        destinationFileName: String,
-        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
-        onFailure: (message: String) -> Unit,
-    ): DownloadsTaskHandle {
-        val job = SupervisorJob()
-        val scope = CoroutineScope(job + Dispatchers.IO)
-
-        scope.launch {
-            val context = appContext
-            if (context == null) {
-                onFailure(runBlocking { getString(Res.string.downloads_error_not_initialized) })
-                return@launch
-            }
-
-            DownloadsSettingsRepository.ensureLoaded()
-            val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
-            val customLocationUri = customLocationUriString?.let { Uri.parse(it) }
-
-            val destination: DownloadTarget
-            val tempFile: DownloadTarget
-
-            if (customLocationUri != null && customLocationUri.scheme == "content") {
-                val tree = DocumentFile.fromTreeUri(context, customLocationUri)
-                if (tree == null || !tree.canWrite()) {
-                    onFailure(runBlocking { getString(Res.string.downloads_error_cannot_write_location) })
-                    return@launch
-                }
-                destination = DocumentDownloadTarget(context, tree, destinationFileName)
-                tempFile = DocumentDownloadTarget(context, tree, "${destinationFileName}.hls.part")
-            } else {
-                val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-                destination = FileDownloadTarget(File(downloadsDir, destinationFileName))
-                tempFile = FileDownloadTarget(File(downloadsDir, "${destinationFileName}.hls.part"))
-            }
-
-            var totalDownloaded = 0L
-
-            try {
-                if (tempFile.exists()) tempFile.delete()
-                tempFile.openOutputStream(false).use { output ->
-                    for (segmentUrl in segmentUrls) {
-                        ensureActive()
-
-                        val requestBuilder = Request.Builder().url(segmentUrl)
-                        sourceHeaders.forEach { (key, value) ->
-                            requestBuilder.header(key, value)
-                        }
-
-                        val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
-                        response.use { resp ->
-                            if (!resp.isSuccessful) {
-                                error(
-                                    runBlocking {
-                                        getString(Res.string.downloads_error_http_failed, resp.code)
-                                    },
-                                )
-                            }
-
-                            val body = resp.body ?: error(
-                                runBlocking { getString(Res.string.downloads_error_empty_body) },
-                            )
-
-                            body.byteStream().use { input ->
-                                val buffer = ByteArray(16 * 1024)
-                                while (true) {
-                                    ensureActive()
-                                    val read = input.read(buffer)
-                                    if (read <= 0) break
-                                    output.write(buffer, 0, read)
-                                    totalDownloaded += read.toLong()
-                                    onProgress(totalDownloaded, null)
-                                }
-                                output.flush()
-                            }
-                        }
-                    }
-                }
-
-                if (destination.exists()) destination.delete()
-                if (!tempFile.renameTo(destination)) {
-                    tempFile.copyTo(destination)
-                    tempFile.delete()
-                }
-
-                val finalSize = destination.length()
-                onSuccess(destination.toUriString(), finalSize)
-            } catch (error: Throwable) {
-                onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
-            }
-        }
-
-        job.invokeOnCompletion {
-            // cleanup handled by the coroutine
-        }
-
-        return AndroidDownloadsTaskHandle(job)
-    }
 }
 
 private class AndroidDownloadsTaskHandle(
@@ -504,4 +409,124 @@ private fun parseContentRangeTotal(headerValue: String?): Long? {
     val totalPart = value.substring(slashIndex + 1).trim()
     if (totalPart == "*") return null
     return totalPart.toLongOrNull()?.takeIf { it > 0L }
+}
+
+private suspend fun performHlsDownloadAndroid(
+    context: Context,
+    request: DownloadPlatformRequest,
+    onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+    onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+    onFailure: (message: String) -> Unit,
+) {
+    DownloadsSettingsRepository.ensureLoaded()
+    val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
+    val customLocationUri = customLocationUriString?.let { Uri.parse(it) }
+
+    val destination: DownloadTarget
+    val tempFile: DownloadTarget
+
+    if (customLocationUri != null && customLocationUri.scheme == "content") {
+        val tree = DocumentFile.fromTreeUri(context, customLocationUri)
+        if (tree == null || !tree.canWrite()) {
+            onFailure(runBlocking { getString(Res.string.downloads_error_cannot_write_location) })
+            return
+        }
+        destination = DocumentDownloadTarget(context, tree, request.destinationFileName)
+        tempFile = DocumentDownloadTarget(context, tree, "${request.destinationFileName}.part")
+    } else {
+        val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+        destination = FileDownloadTarget(File(downloadsDir, request.destinationFileName))
+        tempFile = FileDownloadTarget(File(downloadsDir, "${request.destinationFileName}.part"))
+    }
+
+    if (tempFile.exists()) tempFile.delete()
+
+    val tempOutputStream = tempFile.openOutputStream(false)
+    val outputFileChannel = (tempOutputStream as? FileOutputStream)?.channel
+
+    val ctx = coroutineContext
+    try {
+        val outcome = downloadHlsToFile(
+            sourceUrl = request.sourceUrl,
+            httpGet = { url, range -> androidHttpGet(url, request.sourceHeaders, range) },
+            appendBytes = { bytes ->
+                tempOutputStream.write(bytes)
+                if (outputFileChannel != null) {
+                    outputFileChannel.force(false)
+                } else {
+                    tempOutputStream.flush()
+                }
+            },
+            decryptAes128Cbc = ::aes128CbcDecryptAndroid,
+            onProgress = onProgress,
+            ensureActive = { ctx.ensureActive() },
+        )
+
+        tempOutputStream.flush()
+        tempOutputStream.close()
+
+        val finalName = hlsOutputFileName(request.destinationFileName, outcome.isFmp4)
+        val finalDestination: DownloadTarget = if (customLocationUri != null && customLocationUri.scheme == "content") {
+            val tree = DocumentFile.fromTreeUri(context, customLocationUri)
+                ?: error("download location tree disappeared")
+            DocumentDownloadTarget(context, tree, finalName)
+        } else {
+            val downloadsDir = File(context.filesDir, "downloads")
+            FileDownloadTarget(File(downloadsDir, finalName))
+        }
+
+        if (finalDestination.exists()) finalDestination.delete()
+        if (!tempFile.renameTo(finalDestination)) {
+            tempFile.copyTo(finalDestination)
+            tempFile.delete()
+        }
+
+        val localFileUri = finalDestination.toUriString()
+        onSuccess(localFileUri, outcome.totalBytes)
+    } catch (_: CancellationException) {
+        tempOutputStream.closeSafe()
+        tempFile.delete()
+    } catch (error: Throwable) {
+        tempOutputStream.closeSafe()
+        onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
+    }
+}
+
+private suspend fun androidHttpGet(
+    url: String,
+    headers: Map<String, String>,
+    range: HlsByteRange?,
+): HlsHttpResult {
+    val requestBuilder = Request.Builder().url(url)
+    headers.forEach { (key, value) ->
+        requestBuilder.header(key, value)
+    }
+    if (range != null) {
+        requestBuilder.header(
+            "Range",
+            "bytes=${range.offset}-${range.offset + range.length - 1}",
+        )
+    }
+
+    val response = downloadHttpClient.newCall(requestBuilder.get().build()).execute()
+    return response.use { resp ->
+        HlsHttpResult(
+            status = resp.code,
+            body = resp.body?.bytes() ?: ByteArray(0),
+            finalUrl = resp.request.url.toString(),
+        )
+    }
+}
+
+private fun aes128CbcDecryptAndroid(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+    if (data.isEmpty()) return ByteArray(0)
+    val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+    val keySpec = SecretKeySpec(key, "AES")
+    val ivSpec = IvParameterSpec(iv)
+    cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
+    return cipher.doFinal(data)
+}
+
+private fun OutputStream.closeSafe() {
+    try { close() } catch (_: Exception) { }
 }

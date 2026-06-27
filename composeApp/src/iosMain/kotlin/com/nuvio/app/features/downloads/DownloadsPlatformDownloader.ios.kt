@@ -2,13 +2,21 @@ package com.nuvio.app.features.downloads
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.CPointer
+import kotlinx.cinterop.ULongVar
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import kotlinx.cinterop.usePinned
+import kotlinx.cinterop.value
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
@@ -37,6 +45,7 @@ import platform.Foundation.NSURLSessionDataTask
 import platform.Foundation.NSURLSessionTask
 import platform.Foundation.NSString
 import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.dataTaskWithRequest
 import platform.Foundation.setHTTPMethod
 import platform.Foundation.setValue
 import platform.Foundation.timeIntervalSince1970
@@ -50,6 +59,12 @@ import platform.posix.fclose
 import platform.posix.fflush
 import platform.posix.fopen
 import platform.posix.fwrite
+import platform.posix.memcpy
+import kotlin.coroutines.coroutineContext
+import com.nuvio.app.features.plugins.cryptointerop.CCCrypt
+import com.nuvio.app.features.plugins.cryptointerop.kCCAlgorithmAES
+import com.nuvio.app.features.plugins.cryptointerop.kCCDecrypt
+import com.nuvio.app.features.plugins.cryptointerop.kCCOptionPKCS7Padding
 
 private const val DOWNLOAD_REQUEST_TIMEOUT_SECONDS = 60.0
 private const val DOWNLOAD_RESOURCE_TIMEOUT_SECONDS = 24.0 * 60.0 * 60.0
@@ -80,6 +95,19 @@ internal actual object DownloadsPlatformDownloader {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.Default)
         val handle = IosDownloadsTaskHandle(job)
+
+        if (request.isHlsStream) {
+            scope.launch {
+                performHlsDownloadIos(
+                    request = request,
+                    handle = handle,
+                    onProgress = onProgress,
+                    onSuccess = onSuccess,
+                    onFailure = onFailure,
+                )
+            }
+            return handle
+        }
 
         scope.launch {
             val downloadsDirectory = downloadsDirectoryPath()
@@ -213,119 +241,7 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
-    actual fun probeHlsContentType(url: String, headers: Map<String, String>): Boolean {
-        return try {
-            val nativeUrl = NSURL(string = url) ?: return false
-            val request = NSMutableURLRequest(
-                uRL = nativeUrl,
-                cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
-                timeoutInterval = 15.0,
-            )
-            request.setHTTPMethod("HEAD")
-            headers.forEach { (key, value) ->
-                request.setValue(value, forHTTPHeaderField = key)
-            }
 
-            val semaphore = dispatch_semaphore_create(0)
-            var isHls = false
-
-            val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { _, response, error ->
-                if (error == null) {
-                    val httpResponse = response as? NSHTTPURLResponse
-                    val contentType = httpResponse?.valueForHTTPHeaderField("Content-Type")
-                    isHls = HlsPlaylistParser.isHlsContentType(contentType)
-                }
-                dispatch_semaphore_signal(semaphore)
-            }
-            task.resume()
-            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
-            isHls
-        } catch (_: Exception) {
-            false
-        }
-    }
-
-    actual fun downloadHlsSegments(
-        segmentUrls: List<String>,
-        sourceHeaders: Map<String, String>,
-        destinationFileName: String,
-        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
-        onFailure: (message: String) -> Unit,
-    ): DownloadsTaskHandle {
-        val job = SupervisorJob()
-        val scope = CoroutineScope(job + Dispatchers.Default)
-        val handle = IosDownloadsTaskHandle(job)
-
-        scope.launch {
-            val downloadsDirectory = downloadsDirectoryPath()
-            val destinationPath = "$downloadsDirectory/$destinationFileName"
-            val tempPath = "$downloadsDirectory/$destinationFileName.hls.part"
-            var totalDownloaded = 0L
-
-            try {
-                removePathIfExists(tempPath)
-
-                for (segmentUrl in segmentUrls) {
-                    ensureActive()
-
-                    val url = NSURL(string = segmentUrl)
-                    val request = NSMutableURLRequest(
-                        uRL = url,
-                        cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
-                        timeoutInterval = 60.0,
-                    )
-                    request.setHTTPMethod("GET")
-                    sourceHeaders.forEach { (key, value) ->
-                        request.setValue(value, forHTTPHeaderField = key)
-                    }
-
-                    val semaphore = dispatch_semaphore_create(0)
-                    var segmentError: Throwable? = null
-
-                    val task = NSURLSession.sharedSession.dataTaskWithRequest(request) { data, _, error ->
-                        if (error != null) {
-                            segmentError = IllegalStateException(error.localizedDescription)
-                        } else if (data != null) {
-                            val file = fopen(tempPath, "ab")
-                            if (file != null) {
-                                fwrite(data.bytes, 1.convert(), data.length.toLong().convert(), file)
-                                fflush(file)
-                                fclose(file)
-                                totalDownloaded += data.length.toLong()
-                                onProgress(totalDownloaded, null)
-                            }
-                        }
-                        dispatch_semaphore_signal(semaphore)
-                    }
-                    task.resume()
-                    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
-
-                    if (segmentError != null) throw segmentError!!
-                }
-
-                removePathIfExists(destinationPath)
-                val moved = NSFileManager.defaultManager.moveItemAtPath(
-                    srcPath = tempPath,
-                    toPath = destinationPath,
-                    error = null,
-                )
-                if (!moved) {
-                    error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
-                }
-
-                val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
-                val finalSize = fileSizeOrNull(destinationPath)
-                onSuccess(localFileUri, finalSize)
-            } catch (_: CancellationException) {
-                handle.cancelNativeTask()
-            } catch (error: Throwable) {
-                onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
-            }
-        }
-
-        return handle
-    }
 }
 
 private class IosDownloadsTaskHandle(
@@ -643,4 +559,174 @@ private fun parseContentRangeTotal(headerValue: String?): Long? {
     val totalPart = value.substring(slashIndex + 1).trim()
     if (totalPart == "*") return null
     return totalPart.toLongOrNull()?.takeIf { it > 0L }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private suspend fun performHlsDownloadIos(
+    request: DownloadPlatformRequest,
+    handle: IosDownloadsTaskHandle,
+    onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+    onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+    onFailure: (message: String) -> Unit,
+) {
+    val downloadsDirectory = downloadsDirectoryPath()
+    val tempPath = "$downloadsDirectory/${request.destinationFileName}.part"
+    removePathIfExists(tempPath)
+
+    val outputFile: CPointer<FILE> = fopen(tempPath, "wb") ?: run {
+        onFailure(runBlocking { getString(Res.string.downloads_error_open_partial_file_failed) })
+        return
+    }
+
+    var fileClosed = false
+    try {
+        val outcome = downloadHlsToFile(
+            sourceUrl = request.sourceUrl,
+            httpGet = { url, range -> iosHttpGet(url, request.sourceHeaders, range, handle) },
+            appendBytes = { bytes -> writeAllToFile(outputFile, bytes) },
+            decryptAes128Cbc = ::aes128CbcDecryptIos,
+            onProgress = onProgress,
+            ensureActive = { coroutineContext.ensureActive() },
+        )
+
+        fflush(outputFile)
+        fclose(outputFile)
+        fileClosed = true
+
+        val finalName = hlsOutputFileName(request.destinationFileName, outcome.isFmp4)
+        val destinationPath = "$downloadsDirectory/$finalName"
+        removePathIfExists(destinationPath)
+        val moved = NSFileManager.defaultManager.moveItemAtPath(
+            srcPath = tempPath,
+            toPath = destinationPath,
+            error = null,
+        )
+        if (!moved) {
+            error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
+        }
+
+        val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
+        onSuccess(localFileUri, outcome.totalBytes)
+    } catch (_: CancellationException) {
+        handle.cancelNativeTask()
+    } catch (error: Throwable) {
+        onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
+    } finally {
+        if (!fileClosed) {
+            fflush(outputFile)
+            fclose(outputFile)
+        }
+        removePathIfExists(tempPath)
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private suspend fun iosHttpGet(
+    url: String,
+    headers: Map<String, String>,
+    range: HlsByteRange?,
+    handle: IosDownloadsTaskHandle,
+): HlsHttpResult {
+    val nativeRequest = NSMutableURLRequest(
+        uRL = NSURL(string = url),
+        cachePolicy = NSURLRequestReloadIgnoringLocalCacheData,
+        timeoutInterval = DOWNLOAD_REQUEST_TIMEOUT_SECONDS,
+    )
+    nativeRequest.setHTTPMethod("GET")
+    headers.forEach { (key, value) ->
+        nativeRequest.setValue(value, forHTTPHeaderField = key)
+    }
+    if (range != null) {
+        nativeRequest.setValue(
+            "bytes=${range.offset}-${range.offset + range.length - 1}",
+            forHTTPHeaderField = "Range",
+        )
+    }
+
+    val configuration = NSURLSessionConfiguration.defaultSessionConfiguration().apply {
+        timeoutIntervalForRequest = DOWNLOAD_REQUEST_TIMEOUT_SECONDS
+        timeoutIntervalForResource = DOWNLOAD_RESOURCE_TIMEOUT_SECONDS
+        waitsForConnectivity = true
+    }
+    val session = NSURLSession.sessionWithConfiguration(configuration)
+    val completion = CompletableDeferred<HlsHttpResult>()
+    val task = session.dataTaskWithRequest(nativeRequest) { data: NSData?, response: NSURLResponse?, error: NSError? ->
+        if (error != null) {
+            completion.completeExceptionally(IllegalStateException(error.localizedDescription))
+        } else {
+            val httpResponse = response as? NSHTTPURLResponse
+            completion.complete(
+                HlsHttpResult(
+                    status = httpResponse?.statusCode?.toInt() ?: 0,
+                    body = data?.toByteArray() ?: ByteArray(0),
+                    finalUrl = httpResponse?.URL?.absoluteString ?: url,
+                ),
+            )
+        }
+    }
+
+    handle.attach(task, session)
+    task.resume()
+    return try {
+        completion.await()
+    } finally {
+        session.finishTasksAndInvalidate()
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun writeAllToFile(file: CPointer<FILE>, bytes: ByteArray) {
+    if (bytes.isEmpty()) return
+    bytes.usePinned { pinned ->
+        fwrite(pinned.addressOf(0), 1.convert(), bytes.size.convert(), file)
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun NSData.toByteArray(): ByteArray {
+    val size = length.toInt()
+    if (size == 0) return ByteArray(0)
+    val result = ByteArray(size)
+    result.usePinned { pinned ->
+        memcpy(pinned.addressOf(0), bytes, length)
+    }
+    return result
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun aes128CbcDecryptIos(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+    if (data.isEmpty()) return ByteArray(0)
+    val outputCapacity = data.size + 16
+    val output = ByteArray(outputCapacity)
+
+    val produced = memScoped {
+        val moved = alloc<ULongVar>()
+        val status = data.usePinned { dataPinned ->
+            key.usePinned { keyPinned ->
+                iv.usePinned { ivPinned ->
+                    output.usePinned { outputPinned ->
+                        CCCrypt(
+                            kCCDecrypt.convert(),
+                            kCCAlgorithmAES.convert(),
+                            kCCOptionPKCS7Padding.convert(),
+                            keyPinned.addressOf(0),
+                            key.size.convert(),
+                            ivPinned.addressOf(0),
+                            dataPinned.addressOf(0),
+                            data.size.convert(),
+                            outputPinned.addressOf(0),
+                            outputCapacity.convert(),
+                            moved.ptr,
+                        )
+                    }
+                }
+            }
+        }
+        if (status != 0) {
+            throw HlsDownloadException("AES-128 decryption failed (status=$status)")
+        }
+        moved.value.toInt()
+    }
+
+    return if (produced == outputCapacity) output else output.copyOf(produced)
 }
