@@ -1,7 +1,6 @@
 package com.nuvio.app.features.plugins.cloudstream
 
 import android.content.Context
-import android.util.Log
 import com.lagradost.cloudstream3.AcraApplication
 import com.lagradost.cloudstream3.app
 import com.nuvio.app.features.plugins.DexRepoInstallData
@@ -14,8 +13,6 @@ import okhttp3.OkHttpClient
 import org.conscrypt.Conscrypt
 import java.security.Security
 import java.util.concurrent.TimeUnit
-
-private const val TAG = "CS3RuntimeHooks"
 
 object CloudStreamRuntimeHooks {
 

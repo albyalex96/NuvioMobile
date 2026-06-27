@@ -1,6 +1,6 @@
 package com.nuvio.app.features.plugins.cloudstream
 
-import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -67,7 +67,7 @@ object ExternalRepoParser {
                     }
                 )
                 if (manifest.pluginLists.isNotEmpty()) {
-                    Log.d(TAG, "Parsed as repo manifest: ${manifest.name}, ${manifest.pluginLists.size} plugin lists")
+                    InAppLogger.debug(TAG, "Parsed as repo manifest: ${manifest.name}, ${manifest.pluginLists.size} plugin lists")
                     val allPlugins = coroutineScope {
                         manifest.pluginLists.map { listUrl ->
                             async {
@@ -84,7 +84,7 @@ object ExternalRepoParser {
                     )
                 }
             } catch (e: Exception) {
-                Log.d(TAG, "Not a repo manifest: ${e.message}")
+                InAppLogger.debug(TAG, "Not a repo manifest: ${e.message}")
             }
         }
 
@@ -92,7 +92,7 @@ object ExternalRepoParser {
             try {
                 val plugins = parsePluginJsonArray(trimmed)
                 if (plugins.isNotEmpty() && plugins.first().internalName.isNotBlank()) {
-                    Log.d(TAG, "Parsed as direct plugins list: ${plugins.size} plugins")
+                    InAppLogger.debug(TAG, "Parsed as direct plugins list: ${plugins.size} plugins")
                     val repoName = inferRepoName(url)
                     return@withContext ExternalRepoParseResult(
                         name = repoName,
@@ -101,7 +101,7 @@ object ExternalRepoParser {
                     )
                 }
             } catch (e: Exception) {
-                Log.d(TAG, "Not a direct plugins list: ${e.message}")
+                InAppLogger.debug(TAG, "Not a direct plugins list: ${e.message}")
             }
         }
 
@@ -113,7 +113,7 @@ object ExternalRepoParser {
         try {
             parsePluginJsonArray(body.trim())
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse plugin list from $url: ${e.message}")
+            InAppLogger.error(TAG, "Failed to parse plugin list from $url: ${e.message}")
             null
         }
     }
@@ -151,13 +151,13 @@ object ExternalRepoParser {
                 .build()
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    Log.e(TAG, "HTTP ${response.code} for $url")
+                    InAppLogger.error(TAG, "HTTP ${response.code} for $url")
                     return null
                 }
                 response.body?.string()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to fetch $url: ${e.message}")
+            InAppLogger.error(TAG, "Failed to fetch $url: ${e.message}")
             null
         }
     }

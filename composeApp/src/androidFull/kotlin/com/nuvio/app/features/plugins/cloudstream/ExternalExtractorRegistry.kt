@@ -1,6 +1,6 @@
 package com.nuvio.app.features.plugins.cloudstream
 
-import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -17,7 +17,7 @@ object ExternalExtractorRegistry {
     fun registerExtractor(extractor: ExtractorApi) {
         if (extractorApis.any { it.mainUrl == extractor.mainUrl }) return
         extractorApis.add(extractor)
-        Log.d(TAG, "Registered extractor: ${extractor.name} (${extractor.mainUrl})")
+        InAppLogger.debug(TAG, "Registered extractor: ${extractor.name} (${extractor.mainUrl})")
     }
 
     fun registerAll(extractorList: List<ExtractorApi>) {
@@ -43,15 +43,15 @@ object ExternalExtractorRegistry {
                     url
                 }
                 if (missingExtractorDomains.add(domain)) {
-                    Log.w(TAG, "No extractor registered for domain: $domain (url: $url)")
+                    InAppLogger.warn(TAG, "No extractor registered for domain: $domain (url: $url)")
                 }
             }
             result
         } catch (e: Exception) {
-            Log.e(TAG, "loadExtractor error for ${url.take(80)}: ${e.message}", e)
+            InAppLogger.error(TAG, "loadExtractor error for ${url.take(80)}: ${e.message}")
             false
         } catch (e: Error) {
-            Log.e(TAG, "loadExtractor linkage error for ${url.take(80)}: ${e.message}", e)
+            InAppLogger.error(TAG, "loadExtractor linkage error for ${url.take(80)}: ${e.message}")
             false
         }
     }
@@ -59,7 +59,7 @@ object ExternalExtractorRegistry {
     fun installGlobal() {
         if (installed) return
         installed = true
-        Log.d(TAG, "installGlobal: library extractorApis has ${extractorApis.size} built-in extractors")
+        InAppLogger.debug(TAG, "installGlobal: library extractorApis has ${extractorApis.size} built-in extractors")
     }
 
     fun getMissingExtractorDomains(): Set<String> = missingExtractorDomains.toSet()

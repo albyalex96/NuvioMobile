@@ -1,6 +1,6 @@
 package com.nuvio.app.features.plugins.cloudstream
 
-import android.util.Log
+import com.nuvio.app.core.logging.InAppLogger
 import com.lagradost.cloudstream3.AnimeLoadResponse
 import com.lagradost.cloudstream3.Episode
 import com.lagradost.cloudstream3.LoadResponse
@@ -73,21 +73,21 @@ object ExternalExtensionRunner {
 
         val api = ExternalExtensionLoader.getApi(scraperId)
         if (api == null) {
-            Log.e(TAG, "No API loaded for scraper: $scraperId")
+            InAppLogger.error(TAG, "No API loaded for scraper: $scraperId")
             return@withContext emptyList()
         }
 
         try {
             executeInternal(api, tmdbId, mediaType, season, episode)
         } catch (e: Exception) {
-            Log.e(TAG, "Extension ${api.name} failed: ${e.javaClass.simpleName}: ${e.message}", e)
+            InAppLogger.error(TAG, "Extension ${api.name} failed: ${e.javaClass.simpleName}: ${e.message}")
             emptyList()
         } catch (e: Error) {
             val missing = extractMissingClass(e)
             if (missing != null) {
-                Log.e(TAG, "Extension ${api.name} MISSING CLASS: $missing", e)
+                InAppLogger.error(TAG, "Extension ${api.name} MISSING CLASS: $missing")
             } else {
-                Log.e(TAG, "Extension ${api.name} linkage error: ${e.javaClass.simpleName}: ${e.message}", e)
+                InAppLogger.error(TAG, "Extension ${api.name} linkage error: ${e.javaClass.simpleName}: ${e.message}")
             }
             emptyList()
         }
@@ -151,7 +151,7 @@ object ExternalExtensionRunner {
                 alternativeTitles = altTitles.take(MAX_ALT_TITLES),
             )
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to fetch TMDB title info for $tmdbId: ${e.message}")
+            InAppLogger.warn(TAG, "Failed to fetch TMDB title info for $tmdbId: ${e.message}")
             null
         }
     }
@@ -173,7 +173,7 @@ object ExternalExtensionRunner {
                 val id = results?.optJSONObject(0)?.optInt("id", -1)
                 id?.takeIf { it > 0 }?.toString()
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to resolve IMDB ID $inputId to TMDB: ${e.message}")
+                InAppLogger.warn(TAG, "Failed to resolve IMDB ID $inputId to TMDB: ${e.message}")
                 null
             }
         }
@@ -193,26 +193,26 @@ object ExternalExtensionRunner {
 
         val loadJson = """{"id":$tmdbIdInt,"type":"$type"}"""
 
-        Log.d(TAG, "TmdbProvider ${api.name}: load($loadJson)")
+        InAppLogger.debug(TAG, "TmdbProvider ${api.name}: load($loadJson)")
         val loadResponse = try {
             api.load(loadJson)
         } catch (e: Exception) {
-            Log.w(TAG, "TmdbProvider ${api.name} load(json) threw: ${e.javaClass.simpleName}: ${e.message?.take(100)}")
+            InAppLogger.warn(TAG, "TmdbProvider ${api.name} load(json) threw: ${e.javaClass.simpleName}: ${e.message?.take(100)}")
             null
         } catch (e: Error) {
             val missing = extractMissingClass(e)
-            Log.w(TAG, "TmdbProvider ${api.name} load(json) error: ${missing ?: e.message?.take(100)}")
+            InAppLogger.warn(TAG, "TmdbProvider ${api.name} load(json) error: ${missing ?: e.message?.take(100)}")
             null
         }
 
         if (loadResponse != null) {
-            Log.d(TAG, "TmdbProvider ${api.name}: loaded ${loadResponse.javaClass.simpleName}")
+            InAppLogger.debug(TAG, "TmdbProvider ${api.name}: loaded ${loadResponse.javaClass.simpleName}")
             val data = extractData(loadResponse, mediaType, season, episode)
             if (data != null) {
-                Log.d(TAG, "TmdbProvider ${api.name}: loadLinks data=${data.take(200)}")
+                InAppLogger.debug(TAG, "TmdbProvider ${api.name}: loadLinks data=${data.take(200)}")
                 return executeTmdbLoadLinks(api, data)
             }
-            Log.w(TAG, "TmdbProvider ${api.name}: no data for S${season}E${episode}")
+            InAppLogger.warn(TAG, "TmdbProvider ${api.name}: no data for S${season}E${episode}")
         }
 
         val tmdbUrl = if (isMovie) {
@@ -220,23 +220,23 @@ object ExternalExtensionRunner {
         } else {
             "https://www.themoviedb.org/tv/$tmdbId"
         }
-        Log.d(TAG, "TmdbProvider ${api.name}: fallback load($tmdbUrl)")
+        InAppLogger.debug(TAG, "TmdbProvider ${api.name}: fallback load($tmdbUrl)")
         val fallbackResponse = try {
             api.load(tmdbUrl)
         } catch (e: Exception) {
-            Log.w(TAG, "TmdbProvider ${api.name} fallback load(url) threw: ${e.javaClass.simpleName}: ${e.message?.take(100)}")
+            InAppLogger.warn(TAG, "TmdbProvider ${api.name} fallback load(url) threw: ${e.javaClass.simpleName}: ${e.message?.take(100)}")
             null
         } catch (e: Error) { null }
 
         if (fallbackResponse != null) {
             val data = extractData(fallbackResponse, mediaType, season, episode)
             if (data != null) {
-                Log.d(TAG, "TmdbProvider ${api.name}: fallback loadLinks data=${data.take(200)}")
+                InAppLogger.debug(TAG, "TmdbProvider ${api.name}: fallback loadLinks data=${data.take(200)}")
                 return executeTmdbLoadLinks(api, data)
             }
         }
 
-        Log.w(TAG, "TmdbProvider ${api.name}: both load() paths failed")
+        InAppLogger.warn(TAG, "TmdbProvider ${api.name}: both load() paths failed")
         return emptyList()
     }
 
@@ -257,24 +257,24 @@ object ExternalExtensionRunner {
                 )
                 true
             } catch (e: Exception) {
-                Log.w(TAG, "TmdbProvider ${api.name} loadLinks threw: ${e.javaClass.simpleName} (${links.size} links collected)")
+                InAppLogger.warn(TAG, "TmdbProvider ${api.name} loadLinks threw: ${e.javaClass.simpleName} (${links.size} links collected)")
                 false
             } catch (e: Error) {
                 val missing = extractMissingClass(e)
-                Log.w(TAG, "TmdbProvider ${api.name} loadLinks error: ${missing ?: e.message} (${links.size} links collected)")
+                InAppLogger.warn(TAG, "TmdbProvider ${api.name} loadLinks error: ${missing ?: e.message} (${links.size} links collected)")
                 false
             }
         }
         if (completed == null) {
-            Log.w(TAG, "TmdbProvider ${api.name} loadLinks timed out at ${LOADLINKS_TIMEOUT_MS}ms (${links.size} links collected so far)")
+            InAppLogger.warn(TAG, "TmdbProvider ${api.name} loadLinks timed out at ${LOADLINKS_TIMEOUT_MS}ms (${links.size} links collected so far)")
         }
 
         if (links.isEmpty()) {
-            Log.w(TAG, "TmdbProvider ${api.name}: 0 links collected")
+            InAppLogger.warn(TAG, "TmdbProvider ${api.name}: 0 links collected")
             return emptyList()
         }
 
-        Log.d(TAG, "TmdbProvider ${api.name}: ${links.size} links, ${subtitles.size} subs")
+        InAppLogger.debug(TAG, "TmdbProvider ${api.name}: ${links.size} links, ${subtitles.size} subs")
         return links.filterValid().map { link -> link.toPluginRuntimeResult(api.name) }
     }
 
@@ -287,7 +287,7 @@ object ExternalExtensionRunner {
     ): List<PluginRuntimeResult> {
         val titleInfo = getTmdbTitleInfo(tmdbId, mediaType)
         if (titleInfo == null) {
-            Log.e(TAG, "Failed to fetch TMDB title info for $tmdbId")
+            InAppLogger.error(TAG, "Failed to fetch TMDB title info for $tmdbId")
             return emptyList()
         }
 
@@ -308,7 +308,7 @@ object ExternalExtensionRunner {
                 .forEach(::add)
         }
 
-        Log.d(TAG, "SearchBased ${api.name}: searching for \"$title\" (${candidateTitles.size} candidates)")
+        InAppLogger.debug(TAG, "SearchBased ${api.name}: searching for \"$title\" (${candidateTitles.size} candidates)")
 
         var outcome = trySearch(api, title)
         var searchResults = outcome.items
@@ -317,7 +317,7 @@ object ExternalExtensionRunner {
 
         if (searchResults.isNullOrEmpty() && !hostDead && !unsupported && title.contains(Regex("[:\\-–—]"))) {
             val simplified = title.replace(Regex("[:\\-–—]"), " ").replace(Regex("\\s+"), " ").trim()
-            Log.d(TAG, "SearchBased ${api.name}: retrying with simplified \"$simplified\"")
+            InAppLogger.debug(TAG, "SearchBased ${api.name}: retrying with simplified \"$simplified\"")
             outcome = trySearch(api, simplified)
             searchResults = outcome.items
             if (outcome.hostUnreachable) hostDead = true
@@ -327,7 +327,7 @@ object ExternalExtensionRunner {
         if (searchResults.isNullOrEmpty() && !hostDead && !unsupported) {
             val alts = candidateTitles.drop(1)
             if (alts.isNotEmpty()) {
-                Log.d(TAG, "SearchBased ${api.name}: trying ${alts.size} alt titles in parallel")
+                InAppLogger.debug(TAG, "SearchBased ${api.name}: trying ${alts.size} alt titles in parallel")
                 val altOutcomes = coroutineScope {
                     alts.map { alt -> async { alt to trySearch(api, alt) } }.awaitAll()
                 }
@@ -335,7 +335,7 @@ object ExternalExtensionRunner {
                 altOutcomes.firstOrNull { it.second.unsupported }?.let { unsupported = true }
                 if (!hostDead && !unsupported) {
                     altOutcomes.firstOrNull { !it.second.items.isNullOrEmpty() }?.let { (alt, o) ->
-                        Log.d(TAG, "SearchBased ${api.name}: alt title \"$alt\" returned ${o.items?.size ?: 0} results")
+                        InAppLogger.debug(TAG, "SearchBased ${api.name}: alt title \"$alt\" returned ${o.items?.size ?: 0} results")
                         searchResults = o.items
                     }
                 }
@@ -344,44 +344,44 @@ object ExternalExtensionRunner {
 
         if (searchResults.isNullOrEmpty()) {
             when {
-                hostDead -> Log.w(TAG, "SearchBased ${api.name}: host unreachable, skipping (primary=\"$title\")")
-                unsupported -> Log.w(TAG, "SearchBased ${api.name}: search() unsupported, skipping (primary=\"$title\")")
-                else -> Log.w(TAG, "SearchBased ${api.name}: 0 search results for any of ${candidateTitles.size} titles (primary=\"$title\")")
+                hostDead -> InAppLogger.warn(TAG, "SearchBased ${api.name}: host unreachable, skipping (primary=\"$title\")")
+                unsupported -> InAppLogger.warn(TAG, "SearchBased ${api.name}: search() unsupported, skipping (primary=\"$title\")")
+                else -> InAppLogger.warn(TAG, "SearchBased ${api.name}: 0 search results for any of ${candidateTitles.size} titles (primary=\"$title\")")
             }
             return emptyList()
         }
-        Log.d(TAG, "SearchBased ${api.name}: ${searchResults.size} results")
+        InAppLogger.debug(TAG, "SearchBased ${api.name}: ${searchResults.size} results")
 
         val bestMatch = findBestMatch(searchResults, candidateTitles, year, mediaType)
         if (bestMatch == null) {
-            Log.d(TAG, "No suitable match in ${api.name} results for: $title ($year) [candidates=${candidateTitles.size}]")
+            InAppLogger.debug(TAG, "No suitable match in ${api.name} results for: $title ($year) [candidates=${candidateTitles.size}]")
             searchResults.take(5).forEachIndexed { i, r ->
                 val sim = candidateTitles.maxOf { calculateSimilarity(r.name, it) }
-                Log.d(TAG, "  [$i] \"${r.name}\" (sim=${String.format("%.2f", sim)}, type=${r.type})")
+                InAppLogger.debug(TAG, "  [$i] \"${r.name}\" (sim=${String.format("%.2f", sim)}, type=${r.type})")
             }
             return emptyList()
         }
-        Log.d(TAG, "Best match from ${api.name}: ${bestMatch.name} (${bestMatch.url})")
+        InAppLogger.debug(TAG, "Best match from ${api.name}: ${bestMatch.name} (${bestMatch.url})")
 
         val loadResponse = try {
             api.load(bestMatch.url)
         } catch (e: Exception) {
-            Log.e(TAG, "SearchBased ${api.name} load() threw: ${e.javaClass.simpleName}: ${e.message}", e)
+            InAppLogger.error(TAG, "SearchBased ${api.name} load() threw: ${e.javaClass.simpleName}: ${e.message}")
             null
         } catch (e: Error) {
             val missing = extractMissingClass(e)
-            Log.e(TAG, "SearchBased ${api.name} load() error: ${missing ?: e.message}", e)
+            InAppLogger.error(TAG, "SearchBased ${api.name} load() error: ${missing ?: e.message}")
             null
         }
         if (loadResponse == null) {
-            Log.w(TAG, "SearchBased ${api.name}: load(${bestMatch.url}) returned null")
+            InAppLogger.warn(TAG, "SearchBased ${api.name}: load(${bestMatch.url}) returned null")
             return emptyList()
         }
-        Log.d(TAG, "SearchBased ${api.name}: loaded ${loadResponse.javaClass.simpleName}")
+        InAppLogger.debug(TAG, "SearchBased ${api.name}: loaded ${loadResponse.javaClass.simpleName}")
 
         val data = extractData(loadResponse, mediaType, season, episode)
         if (data == null) {
-            Log.d(TAG, "No data extracted from ${api.name} for S${season}E${episode}")
+            InAppLogger.debug(TAG, "No data extracted from ${api.name} for S${season}E${episode}")
             return emptyList()
         }
 
@@ -397,24 +397,24 @@ object ExternalExtensionRunner {
                     callback = { links.add(it) }
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "SearchBased ${api.name} loadLinks threw: ${e.javaClass.simpleName}: ${e.message}", e)
+                InAppLogger.error(TAG, "SearchBased ${api.name} loadLinks threw: ${e.javaClass.simpleName}: ${e.message}")
                 false
             } catch (e: Error) {
                 val missing = extractMissingClass(e)
-                Log.e(TAG, "SearchBased ${api.name} loadLinks error: ${missing ?: e.message}", e)
+                InAppLogger.error(TAG, "SearchBased ${api.name} loadLinks error: ${missing ?: e.message}")
                 false
             }
         }
         if (success == null) {
-            Log.w(TAG, "SearchBased ${api.name} loadLinks timed out at ${LOADLINKS_TIMEOUT_MS}ms (${links.size} links collected so far)")
+            InAppLogger.warn(TAG, "SearchBased ${api.name} loadLinks timed out at ${LOADLINKS_TIMEOUT_MS}ms (${links.size} links collected so far)")
         }
 
         if (success != true && links.isEmpty()) {
-            Log.w(TAG, "SearchBased ${api.name}: loadLinks returned false/null, 0 links")
+            InAppLogger.warn(TAG, "SearchBased ${api.name}: loadLinks returned false/null, 0 links")
             return emptyList()
         }
 
-        Log.d(TAG, "SearchBased ${api.name}: ${links.size} links, ${subtitles.size} subs")
+        InAppLogger.debug(TAG, "SearchBased ${api.name}: ${links.size} links, ${subtitles.size} subs")
         return links.filterValid().map { link -> link.toPluginRuntimeResult(api.name) }
     }
 
@@ -479,17 +479,17 @@ object ExternalExtensionRunner {
     private suspend fun trySearch(api: MainAPI, query: String): SearchOutcome = try {
         SearchOutcome(api.search(query, 1)?.items)
     } catch (e: java.net.UnknownHostException) {
-        Log.e(TAG, "SearchBased ${api.name} search(\"$query\") DNS fail: ${e.message}")
+        InAppLogger.error(TAG, "SearchBased ${api.name} search(\"$query\") DNS fail: ${e.message}")
         SearchOutcome(null, hostUnreachable = true)
     } catch (e: NotImplementedError) {
-        Log.e(TAG, "SearchBased ${api.name}: search() not implemented; skipping provider")
+        InAppLogger.error(TAG, "SearchBased ${api.name}: search() not implemented; skipping provider")
         SearchOutcome(null, unsupported = true)
     } catch (e: Exception) {
-        Log.e(TAG, "SearchBased ${api.name} search(\"$query\") threw: ${e.javaClass.simpleName}: ${e.message}", e)
+        InAppLogger.error(TAG, "SearchBased ${api.name} search(\"$query\") threw: ${e.javaClass.simpleName}: ${e.message}")
         SearchOutcome(null)
     } catch (e: Error) {
         val missing = extractMissingClass(e)
-        Log.e(TAG, "SearchBased ${api.name} search(\"$query\") error: ${missing ?: e.message}", e)
+        InAppLogger.error(TAG, "SearchBased ${api.name} search(\"$query\") error: ${missing ?: e.message}")
         SearchOutcome(null)
     }
 
@@ -615,7 +615,7 @@ object ExternalExtensionRunner {
                 !url.startsWith("http://") && !url.startsWith("https://") -> false
                 else -> true
             }.also { valid ->
-                if (!valid) Log.w(TAG, "Filtered invalid link: source=${link.source}, url=${url.take(60)}")
+                if (!valid) InAppLogger.warn(TAG, "Filtered invalid link: source=${link.source}, url=${url.take(60)}")
             }
         }
     }
