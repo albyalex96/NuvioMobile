@@ -61,7 +61,7 @@ internal actual object DownloadsPlatformDownloader {
     actual fun start(
         request: DownloadPlatformRequest,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+        onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
@@ -201,7 +201,7 @@ internal actual object DownloadsPlatformDownloader {
                     }
 
                     val finalSize = destination.length()
-                    onSuccess(destination.toUriString(), totalBytes ?: finalSize)
+                    onSuccess(destination.toUriString(), totalBytes ?: finalSize, null)
                 }
             } catch (error: Throwable) {
                 onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
@@ -415,46 +415,30 @@ private suspend fun performHlsDownloadAndroid(
     context: Context,
     request: DownloadPlatformRequest,
     onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-    onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+    onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
     onFailure: (message: String) -> Unit,
 ) {
     DownloadsSettingsRepository.ensureLoaded()
     val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
     val customLocationUri = customLocationUriString?.let { Uri.parse(it) }
 
-    val destination: DownloadTarget
-    val tempFile: DownloadTarget
+    val (videoTarget, videoTemp) = createHlsTargets(context, customLocationUri, request.destinationFileName)
+    if (videoTemp.exists()) videoTemp.delete()
 
-    if (customLocationUri != null && customLocationUri.scheme == "content") {
-        val tree = DocumentFile.fromTreeUri(context, customLocationUri)
-        if (tree == null || !tree.canWrite()) {
-            onFailure(runBlocking { getString(Res.string.downloads_error_cannot_write_location) })
-            return
-        }
-        destination = DocumentDownloadTarget(context, tree, request.destinationFileName)
-        tempFile = DocumentDownloadTarget(context, tree, "${request.destinationFileName}.part")
-    } else {
-        val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
-        destination = FileDownloadTarget(File(downloadsDir, request.destinationFileName))
-        tempFile = FileDownloadTarget(File(downloadsDir, "${request.destinationFileName}.part"))
-    }
-
-    if (tempFile.exists()) tempFile.delete()
-
-    val tempOutputStream = tempFile.openOutputStream(false)
-    val outputFileChannel = (tempOutputStream as? FileOutputStream)?.channel
+    val videoTempOut = videoTemp.openOutputStream(false)
+    val videoChannel = (videoTempOut as? FileOutputStream)?.channel
 
     val ctx = coroutineContext
     try {
-        val outcome = downloadHlsToFile(
+        val videoOutcome = downloadHlsToFile(
             sourceUrl = request.sourceUrl,
             httpGet = { url, range -> androidHttpGet(url, request.sourceHeaders, range) },
             appendBytes = { bytes ->
-                tempOutputStream.write(bytes)
-                if (outputFileChannel != null) {
-                    outputFileChannel.force(false)
+                videoTempOut.write(bytes)
+                if (videoChannel != null) {
+                    videoChannel.force(false)
                 } else {
-                    tempOutputStream.flush()
+                    videoTempOut.flush()
                 }
             },
             decryptAes128Cbc = ::aes128CbcDecryptAndroid,
@@ -462,33 +446,155 @@ private suspend fun performHlsDownloadAndroid(
             ensureActive = { ctx.ensureActive() },
         )
 
-        tempOutputStream.flush()
-        tempOutputStream.close()
+        videoTempOut.flush()
+        videoTempOut.close()
 
-        val finalName = hlsOutputFileName(request.destinationFileName, outcome.isFmp4)
-        val finalDestination: DownloadTarget = if (customLocationUri != null && customLocationUri.scheme == "content") {
-            val tree = DocumentFile.fromTreeUri(context, customLocationUri)
-                ?: error("download location tree disappeared")
-            DocumentDownloadTarget(context, tree, finalName)
-        } else {
-            val downloadsDir = File(context.filesDir, "downloads")
-            FileDownloadTarget(File(downloadsDir, finalName))
+        val finalVideoName = hlsOutputFileName(request.destinationFileName, videoOutcome.isFmp4)
+        val videoFinal = resolveHlsTarget(context, customLocationUri, finalVideoName)
+        if (videoFinal.exists()) videoFinal.delete()
+        if (!videoTemp.renameTo(videoFinal)) {
+            videoTemp.copyTo(videoFinal)
+            videoTemp.delete()
         }
 
-        if (finalDestination.exists()) finalDestination.delete()
-        if (!tempFile.renameTo(finalDestination)) {
-            tempFile.copyTo(finalDestination)
-            tempFile.delete()
+        val videoUri = videoFinal.toUriString()
+        var audioUri: String? = null
+        var subtitleUri: String? = null
+
+        if (!request.hlsAudioUrl.isNullOrBlank()) {
+            try {
+                val audioFinalName = hlsCompanionFileName(finalVideoName, "audio", "mp4")
+                val audioTempName = hlsCompanionFileName(request.destinationFileName, "audio", "part")
+                audioUri = downloadSingleHlsTrackAndroid(
+                    context = context,
+                    customLocationUri = customLocationUri,
+                    url = request.hlsAudioUrl,
+                    headers = request.sourceHeaders,
+                    finalName = audioFinalName,
+                    tempName = audioTempName,
+                    onProgress = onProgress,
+                    ctx = ctx,
+                )
+            } catch (_: CancellationException) {
+                throw CancellationException()
+            } catch (e: Throwable) {
+                audioUri = null
+            }
         }
 
-        val localFileUri = finalDestination.toUriString()
-        onSuccess(localFileUri, outcome.totalBytes)
+        if (!request.hlsSubtitleUrl.isNullOrBlank()) {
+            try {
+                val subFinalName = hlsCompanionFileName(finalVideoName, "subs", "vtt")
+                val subTempName = hlsCompanionFileName(request.destinationFileName, "subs", "part")
+                subtitleUri = downloadSingleHlsTrackAndroid(
+                    context = context,
+                    customLocationUri = customLocationUri,
+                    url = request.hlsSubtitleUrl,
+                    headers = request.sourceHeaders,
+                    finalName = subFinalName,
+                    tempName = subTempName,
+                    onProgress = onProgress,
+                    ctx = ctx,
+                )
+            } catch (_: CancellationException) {
+                throw CancellationException()
+            } catch (e: Throwable) {
+                subtitleUri = null
+            }
+        }
+
+        onSuccess(videoUri, videoOutcome.totalBytes, HlsCompanionOutcome(audioUri, subtitleUri))
     } catch (_: CancellationException) {
-        tempOutputStream.closeSafe()
-        tempFile.delete()
+        videoTempOut.closeSafe()
+        videoTemp.delete()
     } catch (error: Throwable) {
-        tempOutputStream.closeSafe()
+        videoTempOut.closeSafe()
         onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
+    }
+}
+
+private suspend fun downloadSingleHlsTrackAndroid(
+    context: Context,
+    customLocationUri: Uri?,
+    url: String,
+    headers: Map<String, String>,
+    finalName: String,
+    tempName: String,
+    onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+    ctx: kotlin.coroutines.CoroutineContext,
+): String {
+    val (finalTarget, tempTarget) = createHlsTargets(context, customLocationUri, tempName)
+    if (tempTarget.exists()) tempTarget.delete()
+
+    val out = tempTarget.openOutputStream(false)
+    val channel = (out as? FileOutputStream)?.channel
+
+    try {
+        val outcome = downloadHlsToFile(
+            sourceUrl = url,
+            httpGet = { u, range -> androidHttpGet(u, headers, range) },
+            appendBytes = { bytes ->
+                out.write(bytes)
+                if (channel != null) {
+                    channel.force(false)
+                } else {
+                    out.flush()
+                }
+            },
+            decryptAes128Cbc = ::aes128CbcDecryptAndroid,
+            onProgress = { _, _ -> },
+            ensureActive = { ctx.ensureActive() },
+        )
+
+        out.flush()
+        out.close()
+
+        val actualFinalName = hlsOutputFileName(finalName, outcome.isFmp4)
+        val actualFinal = resolveHlsTarget(context, customLocationUri, actualFinalName)
+        if (actualFinal.exists()) actualFinal.delete()
+        if (!tempTarget.renameTo(actualFinal)) {
+            tempTarget.copyTo(actualFinal)
+            tempTarget.delete()
+        }
+        return actualFinal.toUriString()
+    } catch (e: Throwable) {
+        out.closeSafe()
+        tempTarget.delete()
+        throw e
+    }
+}
+
+private fun createHlsTargets(
+    context: Context,
+    customLocationUri: Uri?,
+    fileName: String,
+): Pair<DownloadTarget, DownloadTarget> {
+    return if (customLocationUri != null && customLocationUri.scheme == "content") {
+        val tree = DocumentFile.fromTreeUri(context, customLocationUri)
+            ?: error("Cannot access custom download location")
+        val dest = DocumentDownloadTarget(context, tree, fileName)
+        val temp = DocumentDownloadTarget(context, tree, "$fileName.part")
+        dest to temp
+    } else {
+        val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+        val dest = FileDownloadTarget(File(downloadsDir, fileName))
+        val temp = FileDownloadTarget(File(downloadsDir, "$fileName.part"))
+        dest to temp
+    }
+}
+
+private fun resolveHlsTarget(
+    context: Context,
+    customLocationUri: Uri?,
+    fileName: String,
+): DownloadTarget {
+    return if (customLocationUri != null && customLocationUri.scheme == "content") {
+        val tree = DocumentFile.fromTreeUri(context, customLocationUri)
+            ?: error("download location tree disappeared")
+        DocumentDownloadTarget(context, tree, fileName)
+    } else {
+        val downloadsDir = File(context.filesDir, "downloads")
+        FileDownloadTarget(File(downloadsDir, fileName))
     }
 }
 

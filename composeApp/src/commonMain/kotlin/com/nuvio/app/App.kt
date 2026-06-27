@@ -137,6 +137,7 @@ import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.debrid.toastMessage
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.downloads.DownloadsScreen
+import com.nuvio.app.features.streams.StreamSubtitle
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.details.MetaDetailsScreen
 import com.nuvio.app.features.details.MetaPerson
@@ -1253,13 +1254,24 @@ private fun MainAppContent(
                 )
                 val localSourceUrl = downloadedItem?.let(DownloadsRepository::playableLocalFileUri)
                 if (!localSourceUrl.isNullOrBlank()) {
+                    val audioSourceUrl = downloadedItem?.hlsAudioLocalFileUri
+                        ?.let(DownloadsRepository::resolveCompanionUri)
+                    val subtitleSourceUrl = downloadedItem?.hlsSubtitleLocalFileUri
+                        ?.let(DownloadsRepository::resolveCompanionUri)
+                    val externalSubtitles = if (subtitleSourceUrl != null) {
+                        listOf(StreamSubtitle(url = subtitleSourceUrl, language = "", name = "Downloaded"))
+                    } else {
+                        emptyList()
+                    }
+
                     val playerLaunch = PlayerLaunch(
                         profileId = activePlaybackProfileId,
                         title = title,
                         sourceUrl = localSourceUrl,
+                        sourceAudioUrl = audioSourceUrl,
                         sourceHeaders = emptyMap(),
                         sourceResponseHeaders = emptyMap(),
-                        externalSubtitles = emptyList(),
+                        externalSubtitles = externalSubtitles,
                         logo = logo,
                         poster = poster,
                         background = background,
@@ -2742,13 +2754,24 @@ private fun MainAppContent(
                                 ?.let(WatchProgressRepository::progressForVideo)
                                 ?.takeIf { it.isResumable }
 
+                            val audioSourceUrl = item.hlsAudioLocalFileUri
+                                ?.let(DownloadsRepository::resolveCompanionUri)
+                            val subtitleSourceUrl = item.hlsSubtitleLocalFileUri
+                                ?.let(DownloadsRepository::resolveCompanionUri)
+                            val externalSubtitles = if (subtitleSourceUrl != null) {
+                                listOf(StreamSubtitle(url = subtitleSourceUrl, language = "", name = "Downloaded"))
+                            } else {
+                                emptyList()
+                            }
+
                             val playerLaunch = PlayerLaunch(
                                 profileId = activePlaybackProfileId,
                                 title = item.title,
                                 sourceUrl = sourceUrl,
+                                sourceAudioUrl = audioSourceUrl,
                                 sourceHeaders = emptyMap(),
                                 sourceResponseHeaders = emptyMap(),
-                                externalSubtitles = emptyList(),
+                                externalSubtitles = externalSubtitles,
                                 streamType = null,
                                 logo = item.logo,
                                 poster = item.poster,

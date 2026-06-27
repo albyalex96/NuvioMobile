@@ -102,6 +102,13 @@ object DownloadsRepository {
         return resolvedUri
     }
 
+    fun resolveCompanionUri(companionUri: String): String? {
+        return DownloadsPlatformDownloader.resolveLocalFileUri(
+            localFileUri = companionUri,
+            destinationFileName = companionUri.substringAfterLast('/').takeIf { it.isNotBlank() }.orEmpty(),
+        )
+    }
+
     fun enqueueFromStream(
         contentType: String,
         videoId: String,
@@ -448,6 +455,8 @@ object DownloadsRepository {
             sourceHeaders = item.sourceHeaders,
             destinationFileName = item.fileName,
             isHlsStream = item.isHls,
+            hlsAudioUrl = item.hlsAudioUrl,
+            hlsSubtitleUrl = item.hlsSubtitleUrl,
         )
 
         val handle = DownloadsPlatformDownloader.start(
@@ -466,7 +475,7 @@ object DownloadsRepository {
                     }
                 }
             },
-            onSuccess = { localFileUri, totalBytes ->
+            onSuccess = { localFileUri, totalBytes, companion ->
                 activeHandles.remove(item.id)
                 mutateItem(item.id) { current ->
                     current.copy(
@@ -479,6 +488,10 @@ object DownloadsRepository {
                             current.downloadedBytes
                         },
                         totalBytes = totalBytes?.takeIf { it > 0L } ?: current.totalBytes,
+                        hlsAudioLocalFileUri = companion?.audioLocalFileUri
+                            ?: current.hlsAudioLocalFileUri,
+                        hlsSubtitleLocalFileUri = companion?.subtitleLocalFileUri
+                            ?: current.hlsSubtitleLocalFileUri,
                         errorMessage = null,
                         updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                     )

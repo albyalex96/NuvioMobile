@@ -330,7 +330,8 @@ internal fun PlayerScreenRuntime.switchToDownloadedEpisode(downloadItem: Downloa
     val epResumePositionMs = epEntry?.lastPositionMs?.takeIf { it > 0L } ?: 0L
 
     activeSourceUrl = localFileUri
-    activeSourceAudioUrl = null
+    activeSourceAudioUrl = downloadItem.hlsAudioLocalFileUri
+        ?.let(DownloadsRepository::resolveCompanionUri)
     activeSourceHeaders = emptyMap()
     activeSourceResponseHeaders = emptyMap()
     activeStreamType = null

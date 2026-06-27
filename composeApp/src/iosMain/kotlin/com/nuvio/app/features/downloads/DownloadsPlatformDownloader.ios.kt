@@ -89,7 +89,7 @@ internal actual object DownloadsPlatformDownloader {
     actual fun start(
         request: DownloadPlatformRequest,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+        onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
@@ -566,23 +566,111 @@ private suspend fun performHlsDownloadIos(
     request: DownloadPlatformRequest,
     handle: IosDownloadsTaskHandle,
     onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-    onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+    onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
     onFailure: (message: String) -> Unit,
 ) {
     val downloadsDirectory = downloadsDirectoryPath()
-    val tempPath = "$downloadsDirectory/${request.destinationFileName}.part"
-    removePathIfExists(tempPath)
+    val ctx = coroutineContext
 
-    val outputFile: CPointer<FILE> = fopen(tempPath, "wb") ?: run {
-        onFailure(runBlocking { getString(Res.string.downloads_error_open_partial_file_failed) })
+    val videoPath: String
+    val videoOutcome: HlsDownloadOutcome
+    try {
+        val tmp = downloadSingleHlsTrackIos(
+            downloadsDirectory = downloadsDirectory,
+            url = request.sourceUrl,
+            headers = request.sourceHeaders,
+            handle = handle,
+            tempName = "${request.destinationFileName}.part",
+            finalName = request.destinationFileName,
+            onProgress = onProgress,
+        )
+        videoPath = tmp.first
+        videoOutcome = tmp.second
+    } catch (_: CancellationException) {
+        handle.cancelNativeTask()
+        return
+    } catch (error: Throwable) {
+        onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
         return
     }
+
+    val finalVideoName = hlsOutputFileName(request.destinationFileName, videoOutcome.isFmp4)
+    val videoDestinationPath = "$downloadsDirectory/$finalVideoName"
+    val videoUri = NSURL.fileURLWithPath(videoDestinationPath).absoluteString ?: "file://$videoDestinationPath"
+
+    var audioUri: String? = null
+    var subtitleUri: String? = null
+
+    if (!request.hlsAudioUrl.isNullOrBlank()) {
+        try {
+            val audioTemp = hlsCompanionFileName(request.destinationFileName, "audio", "part")
+            val audioFinal = hlsCompanionFileName(finalVideoName, "audio", "mp4")
+            val (_, audioOutcome) = downloadSingleHlsTrackIos(
+                downloadsDirectory = downloadsDirectory,
+                url = request.hlsAudioUrl,
+                headers = request.sourceHeaders,
+                handle = handle,
+                tempName = audioTemp,
+                finalName = audioFinal,
+                onProgress = { _, _ -> },
+            )
+            val audioActual = hlsOutputFileName(audioFinal, audioOutcome.isFmp4)
+            audioUri = NSURL.fileURLWithPath("$downloadsDirectory/$audioActual").absoluteString
+                ?: "file://$downloadsDirectory/$audioActual"
+        } catch (_: CancellationException) {
+            throw CancellationException()
+        } catch (_: Throwable) {
+            audioUri = null
+        }
+    }
+
+    if (!request.hlsSubtitleUrl.isNullOrBlank()) {
+        try {
+            val subTemp = hlsCompanionFileName(request.destinationFileName, "subs", "part")
+            val subFinal = hlsCompanionFileName(finalVideoName, "subs", "vtt")
+            val (_, subOutcome) = downloadSingleHlsTrackIos(
+                downloadsDirectory = downloadsDirectory,
+                url = request.hlsSubtitleUrl,
+                headers = request.sourceHeaders,
+                handle = handle,
+                tempName = subTemp,
+                finalName = subFinal,
+                onProgress = { _, _ -> },
+            )
+            val subActual = hlsOutputFileName(subFinal, subOutcome.isFmp4)
+            subtitleUri = NSURL.fileURLWithPath("$downloadsDirectory/$subActual").absoluteString
+                ?: "file://$downloadsDirectory/$subActual"
+        } catch (_: CancellationException) {
+            throw CancellationException()
+        } catch (_: Throwable) {
+            subtitleUri = null
+        }
+    }
+
+    onSuccess(videoUri, videoOutcome.totalBytes, HlsCompanionOutcome(audioUri, subtitleUri))
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private suspend fun downloadSingleHlsTrackIos(
+    downloadsDirectory: String,
+    url: String,
+    headers: Map<String, String>,
+    handle: IosDownloadsTaskHandle,
+    tempName: String,
+    finalName: String,
+    onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+): Pair<String, HlsDownloadOutcome> {
+    val tempPath = "$downloadsDirectory/$tempName"
+    removePathIfExists(tempPath)
+
+    val outputFile: CPointer<FILE> = fopen(tempPath, "wb")
+        ?: error(runBlocking { getString(Res.string.downloads_error_open_partial_file_failed) })
 
     var fileClosed = false
     try {
         val outcome = downloadHlsToFile(
-            sourceUrl = request.sourceUrl,
-            httpGet = { url, range -> iosHttpGet(url, request.sourceHeaders, range, handle) },
+            sourceUrl = url,
+            httpGet = { u, range -> iosHttpGet(u, headers, range, handle) },
             appendBytes = { bytes -> writeAllToFile(outputFile, bytes) },
             decryptAes128Cbc = ::aes128CbcDecryptIos,
             onProgress = onProgress,
@@ -593,8 +681,8 @@ private suspend fun performHlsDownloadIos(
         fclose(outputFile)
         fileClosed = true
 
-        val finalName = hlsOutputFileName(request.destinationFileName, outcome.isFmp4)
-        val destinationPath = "$downloadsDirectory/$finalName"
+        val finalVideoName = hlsOutputFileName(finalName, outcome.isFmp4)
+        val destinationPath = "$downloadsDirectory/$finalVideoName"
         removePathIfExists(destinationPath)
         val moved = NSFileManager.defaultManager.moveItemAtPath(
             srcPath = tempPath,
@@ -605,12 +693,7 @@ private suspend fun performHlsDownloadIos(
             error(runBlocking { getString(Res.string.downloads_error_finalize_file_failed) })
         }
 
-        val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
-        onSuccess(localFileUri, outcome.totalBytes)
-    } catch (_: CancellationException) {
-        handle.cancelNativeTask()
-    } catch (error: Throwable) {
-        onFailure(error.message ?: runBlocking { getString(Res.string.download_failed) })
+        return destinationPath to outcome
     } finally {
         if (!fileClosed) {
             fflush(outputFile)

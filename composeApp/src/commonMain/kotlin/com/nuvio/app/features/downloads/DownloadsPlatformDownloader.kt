@@ -7,6 +7,13 @@ internal data class DownloadPlatformRequest(
     val sourceHeaders: Map<String, String>,
     val destinationFileName: String,
     val isHlsStream: Boolean = false,
+    val hlsAudioUrl: String? = null,
+    val hlsSubtitleUrl: String? = null,
+)
+
+internal data class HlsCompanionOutcome(
+    val audioLocalFileUri: String?,
+    val subtitleLocalFileUri: String?,
 )
 
 internal interface DownloadsTaskHandle {
@@ -17,7 +24,7 @@ internal expect object DownloadsPlatformDownloader {
     fun start(
         request: DownloadPlatformRequest,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+        onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
     ): DownloadsTaskHandle
 

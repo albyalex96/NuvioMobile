@@ -16,7 +16,7 @@ internal actual object DownloadsPlatformDownloader {
     actual fun start(
         request: DownloadPlatformRequest,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-        onSuccess: (localFileUri: String, totalBytes: Long?) -> Unit,
+        onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
     ): DownloadsTaskHandle {
         if (request.isHlsStream) {
@@ -50,7 +50,7 @@ internal actual object DownloadsPlatformDownloader {
                         }
                     }
                 }
-                onSuccess(destFile.toURI().toString(), totalBytes)
+                onSuccess(destFile.toURI().toString(), totalBytes, null)
             } catch (e: Exception) {
                 if (!Thread.currentThread().isInterrupted) {
                     onFailure(e.message ?: "Unknown error")

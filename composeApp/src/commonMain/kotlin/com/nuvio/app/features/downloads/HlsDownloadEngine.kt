@@ -158,3 +158,9 @@ internal fun hlsOutputFileName(baseFileName: String, isFmp4: Boolean): String {
     val stem = if (dotIndex > 0) baseFileName.substring(0, dotIndex) else baseFileName
     return "$stem.$extension"
 }
+
+internal fun hlsCompanionFileName(baseFileName: String, suffix: String, extension: String): String {
+    val dotIndex = baseFileName.lastIndexOf('.')
+    val stem = if (dotIndex > 0) baseFileName.substring(0, dotIndex) else baseFileName
+    return "${stem}_$suffix.$extension"
+}
