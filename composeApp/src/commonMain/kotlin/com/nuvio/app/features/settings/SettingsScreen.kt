@@ -747,6 +747,7 @@ private fun MobileSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
+                    onDebridClick = { onPageChange(SettingsPage.Debrid) },
                 )
                 SettingsPage.AiAssistant -> aiAssistantSettingsContent(
                     isTablet = false,
@@ -1235,6 +1236,7 @@ private fun TabletSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
+                    onDebridClick = { onPageChange(SettingsPage.Debrid) },
                 )
                 SettingsPage.AiAssistant -> aiAssistantSettingsContent(
                     isTablet = true,

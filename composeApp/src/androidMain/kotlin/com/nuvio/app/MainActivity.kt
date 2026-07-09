@@ -14,6 +14,7 @@ import com.nuvio.app.core.network.CloudflareSolver
 import com.nuvio.app.core.deeplink.handleAppUrl
 import com.nuvio.app.core.network.SyncBackendStorage
 import com.nuvio.app.core.storage.PlatformLocalAccountDataCleaner
+import com.nuvio.app.core.sync.SyncClientIdentityStorage
 import com.nuvio.app.features.addons.AddonStorage
 import com.nuvio.app.features.collection.CollectionMobileSettingsStorage
 import com.nuvio.app.features.collection.CollectionStorage
@@ -126,6 +127,7 @@ class MainActivity : AppCompatActivity() {
         PlatformLocalAccountDataCleaner.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.initialize(applicationContext)
         StreamsAppearanceStorage.initialize(applicationContext)
+        SyncClientIdentityStorage.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.bindActivity(this)
         handleIncomingAppIntent(intent)
 

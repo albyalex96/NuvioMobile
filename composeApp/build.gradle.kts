@@ -49,6 +49,18 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     abstract val syncBackendManifestUrl: Property<String>
 
     @get:Input
+    abstract val supabaseFallbackUrl: Property<String>
+
+    @get:Input
+    abstract val sentryDsn: Property<String>
+
+    @get:Input
+    abstract val sentryEnvironment: Property<String>
+
+    @get:Input
+    abstract val realtimeSyncEnabled: Property<Boolean>
+
+    @get:Input
     abstract val desktopAppVersionName: Property<String>
 
     @get:Input
@@ -75,6 +87,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |    const val ANON_KEY = "${supabaseAnonKey.get()}"
                 |    const val NUVIO_URL = "${nuvioSupabaseUrl.get()}"
                 |    const val NUVIO_ANON_KEY = "${nuvioSupabaseAnonKey.get()}"
+                |    const val FALLBACK_URL = "${supabaseFallbackUrl.get()}"
                 |}
                 """.trimMargin()
             )
@@ -84,6 +97,33 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |
                 |object SyncBackendBootstrapConfig {
                 |    const val SWITCH_MANIFEST_URL = "${syncBackendManifestUrl.get()}"
+                |}
+                """.trimMargin()
+            )
+        }
+
+        outDir.resolve("com/nuvio/app/core/diagnostics").apply {
+            mkdirs()
+            resolve("SentryConfig.kt").writeText(
+                """
+                |package com.nuvio.app.core.diagnostics
+                |
+                |object SentryConfig {
+                |    const val DSN = "${sentryDsn.get()}"
+                |    const val ENVIRONMENT = "${sentryEnvironment.get()}"
+                |}
+                """.trimMargin()
+            )
+        }
+
+        outDir.resolve("com/nuvio/app/core/sync").apply {
+            mkdirs()
+            resolve("RealtimeSyncConfig.kt").writeText(
+                """
+                |package com.nuvio.app.core.sync
+                |
+                |object RealtimeSyncConfig {
+                |    const val ENABLED = ${realtimeSyncEnabled.get()}
                 |}
                 """.trimMargin()
             )
@@ -448,6 +488,13 @@ fun runtimeConfigValue(key: String, fallback: String = ""): String =
     runtimeLocalProperties.getProperty(key)?.trim()?.takeIf { it.isNotBlank() }
         ?: providers.environmentVariable(key).orNull?.trim()?.takeIf { it.isNotBlank() }
         ?: fallback
+
+fun runtimeConfigBoolean(key: String, default: Boolean): Boolean =
+    when (runtimeConfigValue(key).lowercase()) {
+        "1", "true", "yes", "y", "on" -> true
+        "0", "false", "no", "n", "off" -> false
+        else -> default
+    }
 
 fun localOrEnvProperty(name: String): String? =
     (
@@ -891,6 +938,16 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     supabaseAnonKey.set(runtimeConfigValue("SUPABASE_ANON_KEY"))
     nuvioSupabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
     nuvioSupabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
+    supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))
+    sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
+    sentryEnvironment.set(
+        when {
+            requestedGradleTasks.any { "benchmark" in it } -> "benchmark"
+            requestedGradleTasks.any { "debug" in it } -> "debug"
+            else -> "production"
+        }
+    )
+    realtimeSyncEnabled.set(runtimeConfigBoolean("NUVIO_REALTIME_SYNC_ENABLED", true))
     syncBackendManifestUrl.set(runtimeConfigValue("SYNC_BACKEND_MANIFEST_URL"))
     desktopAppVersionName.set(desktopReleaseVersionName)
     desktopAppVersionCode.set(desktopReleaseVersionCode)
@@ -1026,6 +1083,7 @@ kotlin {
             implementation(libs.supabase.postgrest)
             implementation(libs.supabase.auth)
             implementation(libs.supabase.functions)
+            implementation(libs.supabase.realtime)
             implementation(libs.reorderable)
         }
         commonTest.dependencies {

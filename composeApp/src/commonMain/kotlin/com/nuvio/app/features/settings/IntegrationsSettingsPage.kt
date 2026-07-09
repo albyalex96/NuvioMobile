@@ -3,6 +3,7 @@ package com.nuvio.app.features.settings
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -11,6 +12,7 @@ import com.nuvio.app.features.ai.AiAssistantSettingsRepository
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_ai_assistant
 import nuvio.composeapp.generated.resources.compose_settings_page_anilist
+import nuvio.composeapp.generated.resources.compose_settings_page_debrid
 import nuvio.composeapp.generated.resources.compose_settings_page_kitsu
 import nuvio.composeapp.generated.resources.compose_settings_page_live_tv
 import nuvio.composeapp.generated.resources.compose_settings_page_mal
@@ -23,6 +25,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.compose_settings_root_trakt_description
 import nuvio.composeapp.generated.resources.settings_integrations_ai_description
 import nuvio.composeapp.generated.resources.settings_integrations_anilist_description
+import nuvio.composeapp.generated.resources.settings_integrations_debrid_description
 import nuvio.composeapp.generated.resources.settings_integrations_kitsu_description
 import nuvio.composeapp.generated.resources.settings_integrations_live_tv_description
 import nuvio.composeapp.generated.resources.settings_integrations_mal_description
@@ -50,6 +53,7 @@ internal fun LazyListScope.integrationsContent(
     onTmdbClick: () -> Unit,
     onMdbListClick: () -> Unit,
     onLiveTvClick: () -> Unit,
+    onDebridClick: () -> Unit,
 ) {
     item {
         SettingsSection(
@@ -168,6 +172,14 @@ internal fun LazyListScope.integrationsContent(
                     icon = Icons.Rounded.LiveTv,
                     isTablet = isTablet,
                     onClick = onLiveTvClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_debrid),
+                    description = stringResource(Res.string.settings_integrations_debrid_description),
+                    icon = Icons.Rounded.Cloud,
+                    isTablet = isTablet,
+                    onClick = onDebridClick,
                 )
             }
         }

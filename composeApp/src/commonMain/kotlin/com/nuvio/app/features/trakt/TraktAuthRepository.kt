@@ -65,6 +65,17 @@ object TraktAuthRepository {
         return _uiState.value
     }
 
+    fun currentStateForSync(): TraktAuthState {
+        ensureLoaded()
+        return authState.copy()
+    }
+
+    fun replaceStateFromSync(state: TraktAuthState) {
+        authState = state.copy(pendingAuthorizationState = null, pendingAuthorizationStartedAtMillis = null)
+        persist()
+        publish()
+    }
+
     fun hasRequiredCredentials(): Boolean =
         TraktConfig.CLIENT_ID.isNotBlank() && TraktConfig.CLIENT_SECRET.isNotBlank()
 

@@ -111,7 +111,7 @@ internal fun StreamItem.localAvailabilityHash(): String? =
     infoHash
         ?.trim()
         ?.lowercase()
-        ?.takeIf { (isInstalledAddonStream || addonId.startsWith("plugin:") || addonId.startsWith("plugin-repo:")) && needsLocalDebridResolve && it.isNotBlank() }
+        ?.takeIf { isInstalledAddonStream && needsLocalDebridResolve && it.isNotBlank() }
 
 private fun List<AddonStreamGroup>.updateAvailabilityStatus(
     eligibleGroupIds: Set<String>?,

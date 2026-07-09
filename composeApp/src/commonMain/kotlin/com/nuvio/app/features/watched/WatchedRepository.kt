@@ -164,6 +164,10 @@ object WatchedRepository {
         }
     }
 
+    suspend fun forceSnapshotRefreshFromServer(profileId: Int) {
+        pullFromServer(profileId)
+    }
+
     private suspend fun pullFullFromAdapter(
         adapter: WatchedSyncAdapter,
         profileId: Int,
