@@ -3,7 +3,6 @@ package com.nuvio.app.features.addons
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import com.nuvio.app.core.diagnostics.SentryNetworkBreadcrumbInterceptor
 import com.nuvio.app.core.network.IPv4FirstDns
 import com.nuvio.app.core.network.CloudflareSolver
 import com.nuvio.app.core.network.isCloudflareChallenge
@@ -92,7 +91,6 @@ private val addonHttpClient = OkHttpClient.Builder()
     .writeTimeout(60, TimeUnit.SECONDS)
     .followRedirects(true)
     .followSslRedirects(true)
-    .addInterceptor(SentryNetworkBreadcrumbInterceptor())
     .proxy(Proxy.NO_PROXY)
     .addInterceptor(CloudflareKillerInterceptor())
     .build()
