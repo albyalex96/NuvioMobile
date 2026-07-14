@@ -55,8 +55,12 @@ import com.nuvio.app.core.ui.ThemeColors
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.cd_selected
+import nuvio.composeapp.generated.resources.collections_header
 import nuvio.composeapp.generated.resources.compose_settings_page_continue_watching
+import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
+import nuvio.composeapp.generated.resources.compose_settings_page_meta_screen
 import nuvio.composeapp.generated.resources.compose_settings_page_poster_customization
+import nuvio.composeapp.generated.resources.compose_settings_page_streams
 import nuvio.composeapp.generated.resources.settings_appearance_app_language
 import nuvio.composeapp.generated.resources.settings_appearance_app_language_sheet_title
 import nuvio.composeapp.generated.resources.settings_appearance_amoled_black
@@ -76,7 +80,10 @@ import nuvio.composeapp.generated.resources.settings_appearance_section_home
 import nuvio.composeapp.generated.resources.settings_appearance_section_theme
 import nuvio.composeapp.generated.resources.settings_appearance_date_format
 import nuvio.composeapp.generated.resources.settings_appearance_date_format_sheet_title
-
+import nuvio.composeapp.generated.resources.settings_content_discovery_collections_description
+import nuvio.composeapp.generated.resources.settings_content_discovery_homescreen_description
+import nuvio.composeapp.generated.resources.settings_content_discovery_meta_screen_description
+import nuvio.composeapp.generated.resources.compose_settings_root_streams_description
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -103,6 +110,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
     onAppLanguageSelected: (AppLanguage) -> Unit,
     selectedDateFormatOption: DateFormatOption,
     onDateFormatOptionSelected: (DateFormatOption) -> Unit,
+    onHomescreenClick: () -> Unit,
+    onMetaScreenClick: () -> Unit,
+    onStreamsClick: () -> Unit,
+    onCollectionsClick: () -> Unit,
     onContinueWatchingClick: () -> Unit,
     onPosterCustomizationClick: () -> Unit,
 ) {
@@ -218,7 +229,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
                 SettingsNavigationRow(
                     title = stringResource(Res.string.settings_appearance_app_language),
                     description = stringResource(selectedAppLanguage.labelRes),
-                    icon = Icons.Rounded.Language,
                     isTablet = isTablet,
                     onClick = { showLanguageSheet = true },
                 )
@@ -263,9 +273,22 @@ import androidx.compose.material3.rememberModalBottomSheetState
         ) {
             SettingsGroup(isTablet = isTablet) {
                 SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_homescreen),
+                    description = stringResource(Res.string.settings_content_discovery_homescreen_description),
+                    isTablet = isTablet,
+                    onClick = onHomescreenClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.collections_header),
+                    description = stringResource(Res.string.settings_content_discovery_collections_description),
+                    isTablet = isTablet,
+                    onClick = onCollectionsClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_continue_watching),
                     description = stringResource(Res.string.settings_appearance_continue_watching_description),
-                    icon = Icons.Rounded.Style,
                     isTablet = isTablet,
                     onClick = onContinueWatchingClick,
                 )
@@ -273,11 +296,40 @@ import androidx.compose.material3.rememberModalBottomSheetState
                 SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_poster_customization),
                     description = stringResource(Res.string.settings_appearance_poster_customization_description),
-                    icon = Icons.Rounded.Tune,
                     isTablet = isTablet,
                     onClick = onPosterCustomizationClick,
                 )
 
+            }
+        }
+    }
+    item {
+        SettingsSection(
+            title = stringResource(Res.string.compose_settings_page_streams),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_streams),
+                    description = stringResource(Res.string.compose_settings_root_streams_description),
+                    isTablet = isTablet,
+                    onClick = onStreamsClick,
+                )
+            }
+        }
+    }
+    item {
+        SettingsSection(
+            title = stringResource(Res.string.compose_settings_page_meta_screen),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_meta_screen),
+                    description = stringResource(Res.string.settings_content_discovery_meta_screen_description),
+                    isTablet = isTablet,
+                    onClick = onMetaScreenClick,
+                )
             }
         }
     }

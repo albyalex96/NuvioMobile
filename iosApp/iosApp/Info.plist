@@ -18,6 +18,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>nuvio</string>
+				<string>stremio</string>
 			</array>
 		</dict>
 	</array>
@@ -32,6 +33,10 @@
 		<string>vlc-x-callback</string>
 		<string>outplayer</string>
 		<string>open-vidhub</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
 	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>

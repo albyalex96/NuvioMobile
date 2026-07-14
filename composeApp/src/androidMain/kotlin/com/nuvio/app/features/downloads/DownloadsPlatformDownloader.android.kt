@@ -1,7 +1,9 @@
 package com.nuvio.app.features.downloads
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -285,7 +287,41 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
+    actual fun openDownloadsDirectory(): Boolean {
+        val context = appContext ?: return false
+        val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+        val uri = runCatching {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                downloadsDir,
+            )
+        }.getOrNull() ?: return false
 
+        val intents = listOf(
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "resource/folder")
+            },
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "vnd.android.document/directory")
+            },
+            Intent(Intent.ACTION_VIEW).apply {
+                data = uri
+            },
+        )
+
+        return intents.any { intent ->
+            intent.addCategory(Intent.CATEGORY_DEFAULT)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+
+            runCatching {
+                context.startActivity(intent)
+                true
+            }.getOrDefault(false)
+        }
+    }
 }
 
 private class AndroidDownloadsTaskHandle(

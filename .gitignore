@@ -32,3 +32,7 @@ iosApp/Pods/
 composeApp/src/desktopMain/native/windows/runtime/libmpv-2.dll
 server
 iosApp/Configuration/Version.xcconfig
+PERFORMANCE_FINDINGS.md
+
+# Local MPVKit iOS build environment (sparse APFS image, see MPVKit docs)
+.mpvkit-build.sparseimage

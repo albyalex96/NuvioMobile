@@ -40,11 +40,11 @@ object SyncClientIdentity {
         length in 16..96 && all { it.isLetterOrDigit() || it == '-' || it == '_' }
 }
 
-fun JsonObjectBuilder.putSyncOriginClientId() {
+internal fun JsonObjectBuilder.putSyncOriginClientId() {
     put(ORIGIN_CLIENT_ID_PARAM, SyncClientIdentity.currentClientId())
 }
 
-expect object SyncClientIdentityStorage {
+internal expect object SyncClientIdentityStorage {
     fun loadClientId(): String?
     fun saveClientId(clientId: String)
 }

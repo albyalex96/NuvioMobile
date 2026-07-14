@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import com.nuvio.app.core.logging.InAppLogger
 import androidx.core.content.FileProvider
+import com.nuvio.app.core.diagnostics.SentryNetworkBreadcrumbInterceptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -20,7 +21,11 @@ object SubtitleFileCache {
     private const val SUBTITLE_CACHE_DIR = "subtitles"
 
     private var appContext: Context? = null
-    private val okHttpClient: OkHttpClient by lazy { OkHttpClient() }
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(SentryNetworkBreadcrumbInterceptor())
+            .build()
+    }
 
     fun initialize(context: Context) {
         appContext = context.applicationContext

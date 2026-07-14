@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
@@ -44,6 +45,7 @@ import com.nuvio.app.core.share.SharePlatform
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.features.settings.DownloadsSettingsScreen
+import com.nuvio.app.core.ui.NuvioToastController
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -51,14 +53,18 @@ import org.jetbrains.compose.resources.stringResource
 fun DownloadsScreen(
     onBack: () -> Unit,
     onOpenDownload: (DownloadItem) -> Unit,
+    initialShowId: String? = null,
+    onNavigateToShow: ((showId: String, title: String) -> Unit)? = null,
+    onBackFromShow: (() -> Unit)? = null,
 ) {
     val uiState by remember {
         DownloadsRepository.ensureLoaded()
         DownloadsRepository.uiState
     }.collectAsStateWithLifecycle()
 
-    var selectedShowId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedShowId by rememberSaveable(initialShowId) { mutableStateOf(initialShowId) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    val openDownloadsDirectoryFailedText = stringResource(Res.string.downloads_open_directory_failed)
 
     val completedEpisodes = remember(uiState.items) {
         uiState.completedItems
@@ -89,7 +95,7 @@ fun DownloadsScreen(
                 },
                 onBack = {
                     if (selectedShowId != null) {
-                        selectedShowId = null
+                        onBackFromShow?.invoke() ?: run { selectedShowId = null }
                     } else {
                         onBack()
                     }
@@ -103,6 +109,18 @@ fun DownloadsScreen(
                             )
                         }
                     }
+                    IconButton(
+                        onClick = {
+                            if (!DownloadsPlatformDownloader.openDownloadsDirectory()) {
+                                NuvioToastController.show(openDownloadsDirectoryFailedText)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Folder,
+                            contentDescription = stringResource(Res.string.downloads_open_directory),
+                        )
+                    }
                 },
             )
         }
@@ -111,7 +129,9 @@ fun DownloadsScreen(
             downloadsRootContent(
                 uiState = uiState,
                 onOpenDownload = onOpenDownload,
-                onOpenShow = { showId -> selectedShowId = showId },
+                onOpenShow = { showId, title ->
+                    onNavigateToShow?.invoke(showId, title) ?: run { selectedShowId = showId }
+                },
             )
         } else {
             downloadsShowContent(
@@ -126,7 +146,7 @@ fun DownloadsScreen(
 private fun LazyListScope.downloadsRootContent(
     uiState: DownloadsUiState,
     onOpenDownload: (DownloadItem) -> Unit,
-    onOpenShow: (String) -> Unit,
+    onOpenShow: (showId: String, title: String) -> Unit,
 ) {
     val activeItems = uiState.activeItems
     val completedMovies = uiState.completedItems.filterNot(DownloadItem::isEpisode)
@@ -192,7 +212,7 @@ private fun LazyListScope.downloadsRootContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 6.dp)
-                    .clickable { onOpenShow(item.parentMetaId) },
+                    .clickable { onOpenShow(item.parentMetaId, item.title) },
                 shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.surfaceContainer,
             ) {
