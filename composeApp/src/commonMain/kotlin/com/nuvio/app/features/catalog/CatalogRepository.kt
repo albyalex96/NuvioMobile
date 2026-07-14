@@ -167,7 +167,7 @@ object CatalogRepository {
                                 .orEmpty()
                                 .map { it.toMetaPreview() }
                         }
-                        CatalogPage(items = items, rawItemCount = items.size)
+                        CatalogPage(items = items, rawItemCount = items.size, nextSkip = null)
                     }
                 }.withUnreleasedFilter(request.hideUnreleasedContent)
             }.fold(

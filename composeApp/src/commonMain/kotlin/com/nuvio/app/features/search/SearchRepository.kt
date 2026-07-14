@@ -32,6 +32,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -40,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -151,10 +153,10 @@ object SearchRepository {
                 for (result in resultChannel) {
                     results[result.index] = result
                     val sections = results.orderedSections()
-                    if (allSections.isNotEmpty()) {
+                    if (sections.isNotEmpty()) {
                         _uiState.value = SearchUiState(
                             isLoading = true,
-                            sections = allSections,
+                            sections = sections,
                         )
                     }
                 }
@@ -209,12 +211,7 @@ object SearchRepository {
 
     fun refreshDiscover(addons: List<ManagedAddon>) {
         val activeAddons = addons.enabledAddons().filter { it.manifest != null }
-        val cloudPlugins = if (normalizedQuery.length >= CLOUDSTREAM_SEARCH_MIN_QUERY_LENGTH) {
-            CloudStreamRepository.uiState.value.plugins.filter(CloudStreamPluginItem::isRunnable)
-        } else {
-            emptyList()
-        }
-        if (activeAddons.isEmpty() && cloudPlugins.isEmpty()) {
+        if (activeAddons.isEmpty()) {
             activeDiscoverJob?.cancel()
             discoverSources = emptyList()
             lastDiscoverHideUnreleasedContent = null
