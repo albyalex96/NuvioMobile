@@ -109,6 +109,7 @@ fun HomeScreen(
 ) {
     LaunchedEffect(Unit) {
         AddonRepository.initialize()
+        CloudStreamRepository.initialize()
         CollectionRepository.initialize()
         ContinueWatchingPreferencesRepository.ensureLoaded()
         WatchedRepository.ensureLoaded()
@@ -118,6 +119,7 @@ fun HomeScreen(
 
     val addonsUiState by AddonRepository.uiState.collectAsStateWithLifecycle()
     val homeUiState by HomeRepository.uiState.collectAsStateWithLifecycle()
+    val cloudStreamUiState by CloudStreamRepository.uiState.collectAsStateWithLifecycle()
     val homeSettingsUiState by remember {
         HomeCatalogSettingsRepository.snapshot()
         HomeCatalogSettingsRepository.uiState
@@ -447,7 +449,7 @@ fun HomeScreen(
             .sorted()
     }
 
-    val catalogRefreshKey = remember(availableManifests) {
+    val catalogRefreshKey = remember(availableManifests, cloudStreamUiState.registryRevision) {
         availableManifests
             .map { manifest ->
                 buildString {
@@ -458,7 +460,7 @@ fun HomeScreen(
                     })
                 }
             }
-            .sorted()
+            .sorted() + "cloudstream:${cloudStreamUiState.registryRevision}:${cloudStreamUiState.plugins.count { it.isRunnable }}"
     }
 
     LaunchedEffect(catalogRefreshKey) {

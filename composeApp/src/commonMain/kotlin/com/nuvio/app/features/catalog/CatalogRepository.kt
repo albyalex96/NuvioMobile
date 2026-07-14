@@ -1,5 +1,7 @@
 package com.nuvio.app.features.catalog
 
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.toMetaPreview
 import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
 import com.nuvio.app.features.collection.catalogRouteKey
@@ -149,6 +151,24 @@ object CatalogRepository {
                     )
 
                     is CatalogTarget.Library -> error(getString(Res.string.catalog_load_failed))
+
+                    is CatalogTarget.CloudStream -> {
+                        val pageNumber = requestedSkip.takeIf { it > 0 } ?: 1
+                        val items = if (!target.searchQuery.isNullOrBlank()) {
+                            CloudStreamRepository.search(target.searchQuery, target.providerId)
+                                .firstOrNull()
+                                ?.getOrThrow()
+                                .orEmpty()
+                                .map { it.toMetaPreview() }
+                        } else {
+                            CloudStreamRepository.getMainPage(target.providerId, pageNumber).getOrThrow()
+                                .firstOrNull { it.first == target.categoryName }
+                                ?.second
+                                .orEmpty()
+                                .map { it.toMetaPreview() }
+                        }
+                        CatalogPage(items = items, rawItemCount = items.size)
+                    }
                 }.withUnreleasedFilter(request.hideUnreleasedContent)
             }.fold(
                 onSuccess = { page ->

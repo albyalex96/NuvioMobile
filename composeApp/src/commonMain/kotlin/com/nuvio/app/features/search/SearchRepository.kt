@@ -14,6 +14,10 @@ import com.nuvio.app.features.catalog.fetchCatalogPage
 import com.nuvio.app.features.catalog.mergeCatalogItems
 import com.nuvio.app.features.catalog.nextCatalogPaginationState
 import com.nuvio.app.features.catalog.supportsPagination
+import com.nuvio.app.features.cloudstream.CloudStreamPluginItem
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.CloudStreamSearchRouteIndex
+import com.nuvio.app.features.cloudstream.toMetaPreview
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSection
 import com.nuvio.app.features.home.MetaPreview
@@ -28,7 +32,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.joinAll
+ kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -48,6 +52,7 @@ object SearchRepository {
     private var lastDiscoverHideUnreleasedContent: Boolean? = null
 
     fun search(query: String, addons: List<ManagedAddon>) {
+        CloudStreamRepository.initialize()
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) {
             clear()
@@ -55,7 +60,12 @@ object SearchRepository {
         }
 
         val activeAddons = addons.enabledAddons().filter { it.manifest != null }
-        if (activeAddons.isEmpty()) {
+        val cloudPlugins = if (normalizedQuery.length >= CLOUDSTREAM_SEARCH_MIN_QUERY_LENGTH) {
+            CloudStreamRepository.uiState.value.plugins.filter(CloudStreamPluginItem::isRunnable)
+        } else {
+            emptyList()
+        }
+        if (activeAddons.isEmpty() && cloudPlugins.isEmpty()) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -68,7 +78,7 @@ object SearchRepository {
             addons = activeAddons,
             query = normalizedQuery,
         )
-        if (requests.isEmpty()) {
+        if (requests.isEmpty() && cloudPlugins.isEmpty()) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -87,6 +97,10 @@ object SearchRepository {
                     "${request.addon.manifestUrl}:${request.type}:${request.catalogId}"
                 },
             )
+            append('|')
+            append(CloudStreamRepository.uiState.value.registryRevision)
+            append('|')
+            append(cloudPlugins.joinToString(separator = ",") { it.metadata.id.value })
         }
         if (requestKey == lastRequestKey) return
         lastRequestKey = requestKey
@@ -130,10 +144,10 @@ object SearchRepository {
                 for (result in resultChannel) {
                     results[result.index] = result
                     val sections = results.orderedSections()
-                    if (sections.isNotEmpty()) {
+                    if (allSections.isNotEmpty()) {
                         _uiState.value = SearchUiState(
                             isLoading = true,
-                            sections = sections,
+                            sections = allSections,
                         )
                     }
                 }
@@ -142,16 +156,26 @@ object SearchRepository {
                 resultChannel.close()
             }
 
+            val cloudSections = cloudSearchSections(normalizedQuery, cloudPlugins) { section ->
+                _uiState.update { current ->
+                    current.copy(
+                        isLoading = true,
+                        sections = (current.sections + section).distinctBy(HomeCatalogSection::key),
+                    )
+                }
+            }
+
             val completedResults = results.filterNotNull()
             val sections = results.orderedSections()
+            val allSections = sections + cloudSections
             val firstFailure = completedResults.firstNotNullOfOrNull { it.error?.message }
             val allFailed = completedResults.isNotEmpty() && completedResults.all { it.error != null }
 
             _uiState.value = SearchUiState(
                 isLoading = false,
-                sections = sections,
+                sections = allSections,
                 emptyStateReason = when {
-                    sections.isNotEmpty() -> null
+                    allSections.isNotEmpty() -> null
                     allFailed -> SearchEmptyStateReason.RequestFailed
                     else -> SearchEmptyStateReason.NoResults
                 },
@@ -178,7 +202,12 @@ object SearchRepository {
 
     fun refreshDiscover(addons: List<ManagedAddon>) {
         val activeAddons = addons.enabledAddons().filter { it.manifest != null }
-        if (activeAddons.isEmpty()) {
+        val cloudPlugins = if (normalizedQuery.length >= CLOUDSTREAM_SEARCH_MIN_QUERY_LENGTH) {
+            CloudStreamRepository.uiState.value.plugins.filter(CloudStreamPluginItem::isRunnable)
+        } else {
+            emptyList()
+        }
+        if (activeAddons.isEmpty() && cloudPlugins.isEmpty()) {
             activeDiscoverJob?.cancel()
             discoverSources = emptyList()
             lastDiscoverHideUnreleasedContent = null
@@ -581,6 +610,71 @@ private fun List<MetaPreview>.previewNames(limit: Int = 5): String {
 
 private fun String.displayLabel(): String =
     localizedMediaTypeLabel(this)
+
+
+private const val CLOUDSTREAM_SEARCH_MIN_QUERY_LENGTH = 3
+private const val CLOUDSTREAM_SEARCH_CONCURRENCY = 8
+private const val CLOUDSTREAM_SEARCH_PROVIDER_TIMEOUT_MS = 15_000L
+
+private suspend fun SearchRepository.cloudSearchSections(
+    query: String,
+    plugins: List<CloudStreamPluginItem>,
+    onSection: (HomeCatalogSection) -> Unit,
+): List<HomeCatalogSection> = coroutineScope {
+    val semaphore = Semaphore(CLOUDSTREAM_SEARCH_CONCURRENCY)
+    val sectionMutex = Mutex()
+    val sectionsByProviderId = mutableMapOf<String, HomeCatalogSection>()
+
+    plugins.map { plugin ->
+        async {
+            val section = semaphore.withPermit {
+                withTimeoutOrNull(CLOUDSTREAM_SEARCH_PROVIDER_TIMEOUT_MS) {
+                    plugin.toCloudSearchSection(query)
+                }
+            } ?: return@async
+
+            sectionMutex.withLock {
+                sectionsByProviderId[plugin.metadata.id.value] = section
+            }
+            onSection(section)
+        }
+    }.awaitAll()
+
+    plugins.mapNotNull { plugin -> sectionsByProviderId[plugin.metadata.id.value] }
+}
+
+private suspend fun CloudStreamPluginItem.toCloudSearchSection(
+    query: String,
+): HomeCatalogSection? {
+    val result = CloudStreamRepository.search(query, metadata.id.value)
+        .firstOrNull()
+        ?.getOrNull()
+        .orEmpty()
+    if (result.isEmpty()) return null
+    CloudStreamSearchRouteIndex.remember(
+        providerId = metadata.id.value,
+        query = query,
+        items = result,
+    )
+    val previews = result.map { it.toMetaPreview() }
+    val contentType = result.first().type.nuvioType
+    return HomeCatalogSection(
+        key = "cloudstream:${metadata.id.storageKey}:search:${query.lowercase()}",
+        title = "${metadata.name} · CloudStream",
+        subtitle = metadata.language?.uppercase() ?: "CloudStream",
+        addonName = metadata.name,
+        target = CatalogTarget.CloudStream(
+            providerId = metadata.id.value,
+            categoryName = "search",
+            searchQuery = query,
+            contentType = contentType,
+            supportsPagination = false,
+        ),
+        items = previews,
+        availableItemCount = previews.size,
+        hasMore = false,
+    )
+}
 
 private fun String.typeSortKey(): String =
     when (lowercase()) {

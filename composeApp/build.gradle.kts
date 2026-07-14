@@ -1279,7 +1279,7 @@ afterEvaluate {
         add("fullImplementation", libs.jackson.module.kotlin)
         add("fullImplementation", libs.nicehttp)
         add("fullImplementation", libs.conscrypt.android)
-        add("fullImplementation", libs.cloudstream.library)
+        add("fullImplementation", files("libs/cloudstream-runtime-api-4.8.0-3496e5f.aar"))
     }
 }
 configurations.matching { it.name == "iosMainImplementation" }.configureEach {
