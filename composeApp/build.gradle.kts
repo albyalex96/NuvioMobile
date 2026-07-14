@@ -1258,6 +1258,13 @@ afterEvaluate {
         add("fullImplementation", libs.nicehttp)
         add("fullImplementation", libs.conscrypt.android)
         add("fullImplementation", files("libs/cloudstream-runtime-api-4.8.0-3496e5f.aar"))
+        add("fullImplementation", "me.xdrop:fuzzywuzzy:1.4.0")
+        add("fullImplementation", "com.uwetrottmann.tmdb2:tmdb-java:2.13.0")
+        add("fullImplementation", "dev.whyoleg.cryptography:cryptography-core:0.6.0")
+        add("fullImplementation", "dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
+        add("fullImplementation", "com.github.teamnewpipe:NewPipeExtractor:v0.26.3") {
+            exclude(group = "org.mozilla", module = "rhino-engine")
+        }
     }
 }
 configurations.matching { it.name == "iosMainImplementation" }.configureEach {
