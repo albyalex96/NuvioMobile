@@ -213,7 +213,6 @@ fun NuvioPosterCard(
             }
 
             NuvioPosterWatchedOverlay(isWatched = isWatched)
-            NuvioPosterBookmarkedOverlay(isSaved = isSaved)
         }
         if (shouldShowTitleBelow) {
             Text(

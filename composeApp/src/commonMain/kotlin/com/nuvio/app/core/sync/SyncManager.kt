@@ -256,7 +256,7 @@ object SyncManager {
                 accountScopeJob = SupervisorJob()
                 accountScope = CoroutineScope(accountScopeJob + Dispatchers.Default)
             }
-
+        }
         previousAccountJob.cancel()
         val foregroundJob = synchronized(pullStateLock) {
             foregroundPullJob.also {

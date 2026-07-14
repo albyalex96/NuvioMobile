@@ -7,20 +7,20 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.Proxy
 
-internal actual object SyncBackendStorage {
+internal object SyncBackendStorage {
     private const val KEY_SELECTION_PAYLOAD = "nuvio_sync_backend_selection_payload_v1"
 
     private val store = DesktopStorage.store("nuvio_sync_backend")
 
-    actual fun loadSelectionPayload(): String? =
+    fun loadSelectionPayload(): String? =
         store.getString(KEY_SELECTION_PAYLOAD)
 
-    actual fun saveSelectionPayload(payload: String) {
+    fun saveSelectionPayload(payload: String) {
         store.putString(KEY_SELECTION_PAYLOAD, payload)
     }
 }
 
-internal actual suspend fun fetchSyncBackendManifestText(url: String): String =
+internal suspend fun fetchSyncBackendManifestText(url: String): String =
     withContext(Dispatchers.IO) {
         val connection = URL(url).openConnection(Proxy.NO_PROXY) as HttpURLConnection
         connection.connectTimeout = 10_000

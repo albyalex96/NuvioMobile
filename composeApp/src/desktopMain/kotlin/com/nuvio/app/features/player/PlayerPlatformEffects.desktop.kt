@@ -16,10 +16,13 @@ actual fun EnterImmersivePlayerMode(keepScreenAwake: Boolean) {
 @Composable
 actual fun ManagePlayerPictureInPicture(
     isPlaying: Boolean,
-    playerSize: IntSize,
+    videoSize: IntSize,
 ) {
     // No-op on desktop (PiP not supported)
 }
+
+@Composable
+actual fun rememberIsInPictureInPicture(): Boolean = false
 
 @Composable
 actual fun rememberPlayerGestureController(): PlayerGestureController? = null

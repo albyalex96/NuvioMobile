@@ -293,7 +293,6 @@ fun HomeScreen(
     val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
     val activeProfileId = profileState.activeProfile?.profileIndex ?: 1
     val episodeCodeFormat = rememberEpisodeCodeFormat()
-    val cwCacheClearVersion by ContinueWatchingEnrichmentCache.cacheCleared.collectAsStateWithLifecycle()
     val cwCacheGeneration by ContinueWatchingEnrichmentCache.generation.collectAsStateWithLifecycle()
     var hasUserScrolledContinueWatching by remember(activeProfileId) { mutableStateOf(false) }
 

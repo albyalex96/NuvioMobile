@@ -133,7 +133,10 @@ import com.nuvio.app.features.auth.AuthScreen
 import com.nuvio.app.features.addons.AddAddonResult
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.catalog.CatalogRepository
-import androidx.navigation.NavType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
+
 import com.nuvio.app.features.catalog.CatalogScreen
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.catalog.CatalogTargetKind
@@ -267,29 +270,6 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.features.streams.StreamsAppearanceRepository
 import com.nuvio.app.features.streams.StreamsAppearanceSettings
-@Serializable
-object TabsRoute
-
-@Serializable
-data class DetailRoute(val type: String, val id: String)
-
-@Serializable
-data class PersonDetailRoute(
-    val personId: Int,
-    val personName: String,
-    val personPhoto: String? = null,
-    val castAvatarTransitionKey: String? = null,
-    val preferCrew: Boolean = false,
-)
-
-@Serializable
-data class EntityBrowseRoute(
-    val entityKind: String,
-    val entityId: Int,
-    val entityName: String,
-    val sourceType: String = "tv",
-)
-
 private val navigationSavedStateConfiguration = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
@@ -328,53 +308,6 @@ private data class PendingP2pStreamOpen(
     val isAutoPlay: Boolean,
 )
 
-@Serializable
-object HomescreenSettingsRoute
-
-@Serializable
-object MetaScreenSettingsRoute
-
-@Serializable
-object ContinueWatchingSettingsRoute
-
-@Serializable
-object DownloadsSettingsRoute
-
-@Serializable
-object AddonsSettingsRoute
-
-@Serializable
-object PluginsSettingsRoute
-
-@Serializable
-object AccountSettingsRoute
-
-@Serializable
-object SupportersContributorsSettingsRoute
-
-@Serializable
-object LicensesAttributionsSettingsRoute
-
-@Serializable
-object CollectionsRoute
-
-@Serializable
-data class CollectionEditorRoute(val collectionId: String? = null)
-
-@Serializable
-data class FolderDetailRoute(val collectionId: String, val folderId: String)
-
-@Serializable
-object Top10CatalogSettingsRoute
-@Serializable
-data class StreamRoute(
-    val launchId: Long,
-)
-
-@Serializable
-data class CatalogRoute(
-    val launchId: Long,
-)
 private data class CatalogLaunch(
     val title: String,
     val subtitle: String,
@@ -586,7 +519,6 @@ fun App(
             if (!ownsAppRuntime) return@LaunchedEffect
             Logger.addLogWriter(InAppLogWriter())
             InAppLogger.info("App", "Application started")
-            refreshSyncBackendSelection()
             AuthRepository.initialize()
         }
 
@@ -3321,10 +3253,10 @@ private fun MainAppContent(
                         },
                     )
                 }
-                composable<Top10CatalogSettingsRoute> { backStackEntry ->
+                entry<Top10CatalogSettingsRoute> { route ->
                     val onBack = rememberGuardedPopBackStack(
                         navController = navController,
-                        backStackEntry = backStackEntry,
+                        route = route,
                     )
                     Top10CatalogSettingsScreen(
                         onBack = onBack,

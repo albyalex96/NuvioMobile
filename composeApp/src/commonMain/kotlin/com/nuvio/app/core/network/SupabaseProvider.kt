@@ -13,54 +13,44 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.takeFrom
 
 object SupabaseProvider {
-    private var _client: SupabaseClient? = null
-
     @OptIn(SupabaseInternal::class)
-    val client: SupabaseClient
-        get() {
-            _client?.let { return it }
-            val userAgent = "NuvioMobile/${AppVersionConfig.VERSION_NAME.ifBlank { "dev" }}"
-            val newClient = createSupabaseClient(
-                supabaseUrl = SupabaseConfig.URL,
-                supabaseKey = SupabaseConfig.ANON_KEY,
-            ) {
-                httpConfig {
-                    if (SupabaseEndpointConfig.hasFallback) {
-                        install(HttpRequestRetry) {
-                            retryOnExceptionIf(maxRetries = 1) { request, cause ->
-                                SupabaseEndpointConfig.shouldRetryWithFallback(
-                                    requestUrl = request.url.buildString(),
-                                    cause = cause,
-                                )
-                            }
-                            retryIf(maxRetries = 1) { request, response ->
-                                SupabaseEndpointConfig.shouldRetryWithFallback(
-                                    requestUrl = request.url.toString(),
-                                    statusCode = response.status.value,
-                                )
-                            }
-                            modifyRequest { request ->
-                                SupabaseEndpointConfig.fallbackUrlFor(request.url.buildString())?.let { fallbackUrl ->
-                                    request.url.takeFrom(fallbackUrl)
-                                }
-                            }
-                            constantDelay(millis = 100)
+    val client by lazy {
+        val userAgent = "NuvioMobile/${AppVersionConfig.VERSION_NAME.ifBlank { "dev" }}"
+        createSupabaseClient(
+            supabaseUrl = SupabaseConfig.URL,
+            supabaseKey = SupabaseConfig.ANON_KEY,
+        ) {
+            httpConfig {
+                if (SupabaseEndpointConfig.hasFallback) {
+                    install(HttpRequestRetry) {
+                        retryOnExceptionIf(maxRetries = 1) { request, cause ->
+                            SupabaseEndpointConfig.shouldRetryWithFallback(
+                                requestUrl = request.url.buildString(),
+                                cause = cause,
+                            )
                         }
-                    }
-                    defaultRequest {
-                        headers.append(HttpHeaders.UserAgent, userAgent)
+                        retryIf(maxRetries = 1) { request, response ->
+                            SupabaseEndpointConfig.shouldRetryWithFallback(
+                                requestUrl = request.url.toString(),
+                                statusCode = response.status.value,
+                            )
+                        }
+                        modifyRequest { request ->
+                            SupabaseEndpointConfig.fallbackUrlFor(request.url.buildString())?.let { fallbackUrl ->
+                                request.url.takeFrom(fallbackUrl)
+                            }
+                        }
+                        constantDelay(millis = 100)
                     }
                 }
-                install(Auth)
-                install(Postgrest)
-                install(Functions)
-                install(Realtime)
+                defaultRequest {
+                    headers.append(HttpHeaders.UserAgent, userAgent)
+                }
             }
-            _client = newClient
-            return newClient
+            install(Auth)
+            install(Postgrest)
+            install(Functions)
+            install(Realtime)
         }
-
-    fun rebuildClient() {
-        _client = null
     }
 }

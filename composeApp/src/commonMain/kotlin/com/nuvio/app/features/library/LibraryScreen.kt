@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.Refresh
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -388,7 +389,6 @@ fun LibraryScreen(
                     )
                 }
             }
-        }
         }
     }
 
@@ -2140,6 +2140,8 @@ private fun isoEpochDay(date: String): Long {
     val dayOfYear = (153L * adjustedMonth + 2L) / 5L + day - 1L
     val dayOfEra = yearOfEra * 365L + yearOfEra / 4L - yearOfEra / 100L + dayOfYear
     return era * 146_097L + dayOfEra - 719_468L
+}
+
 private data class LibraryDisplayEntry(
     val globalKey: String,
     val item: LibraryItem,

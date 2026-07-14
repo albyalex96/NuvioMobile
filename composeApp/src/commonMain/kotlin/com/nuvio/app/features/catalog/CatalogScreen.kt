@@ -51,7 +51,6 @@ import coil3.compose.AsyncImage
 import com.nuvio.app.core.format.formatDateForDisplay
 import com.nuvio.app.core.format.rememberDateFormatOption
 import com.nuvio.app.core.ui.NuvioBackButton
-import com.nuvio.app.core.ui.NuvioAnimatedBookmarkedBadge
 import com.nuvio.app.core.ui.NuvioPosterWatchedOverlay
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
 import com.nuvio.app.core.ui.posterCardClickable
@@ -338,12 +337,6 @@ private fun CatalogPosterTile(
                 )
             }
             NuvioPosterWatchedOverlay(isWatched = isWatched)
-            NuvioAnimatedBookmarkedBadge(
-                isVisible = isSaved,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(6.dp),
-            )
         }
         if (!hideLabels) {
             Text(

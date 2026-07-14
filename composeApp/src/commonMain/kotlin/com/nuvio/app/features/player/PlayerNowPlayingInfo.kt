@@ -1,11 +1,5 @@
 package com.nuvio.app.features.player
 
-data class PlayerNowPlayingInfo(
-    val title: String,
-    val subtitle: String? = null,
-    val artworkUrl: String? = null,
-)
-
 internal interface NowPlayingMetadataController {
     fun updateNowPlayingMetadata(info: PlayerNowPlayingInfo)
     fun clearNowPlayingInfo()

@@ -981,9 +981,6 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        androidResources.enable = true
-        withHostTest {}
     }
 
     jvm("desktop") {

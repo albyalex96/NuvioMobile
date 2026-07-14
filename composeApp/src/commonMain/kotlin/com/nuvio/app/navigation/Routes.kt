@@ -147,3 +147,6 @@ data class PlayerRoute(
     override val hidesNavigationBar: Boolean
         get() = true
 }
+
+@Serializable
+data object Top10CatalogSettingsRoute : AppRoute
