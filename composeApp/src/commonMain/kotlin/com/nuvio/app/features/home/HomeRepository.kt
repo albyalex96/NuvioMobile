@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 
@@ -522,7 +523,7 @@ object HomeRepository {
                             sections += HomeCatalogSection(
                                 key = "cloudstream:${plugin.metadata.id.storageKey}:${categoryName.hashCode()}",
                                 title = categoryName,
-                                subtitle = "${plugin.metadata.name} · CloudStream",
+                                subtitle = "${plugin.metadata.name} ï¿½ CloudStream",
                                 addonName = plugin.metadata.name,
                                 target = CatalogTarget.CloudStream(
                                     providerId = plugin.metadata.id.value,

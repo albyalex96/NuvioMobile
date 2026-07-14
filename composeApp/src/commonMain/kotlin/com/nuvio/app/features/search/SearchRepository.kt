@@ -32,8 +32,15 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
- kotlinx.coroutines.joinAll
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeoutOrNull
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
@@ -660,7 +667,7 @@ private suspend fun CloudStreamPluginItem.toCloudSearchSection(
     val contentType = result.first().type.nuvioType
     return HomeCatalogSection(
         key = "cloudstream:${metadata.id.storageKey}:search:${query.lowercase()}",
-        title = "${metadata.name} · CloudStream",
+        title = "${metadata.name} ï¿½ CloudStream",
         subtitle = metadata.language?.uppercase() ?: "CloudStream",
         addonName = metadata.name,
         target = CatalogTarget.CloudStream(
