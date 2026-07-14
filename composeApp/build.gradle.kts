@@ -1274,6 +1274,7 @@ if (isMacHost) {
 afterEvaluate {
     dependencies {
         add("fullImplementation", files("libs/quickjs-kt-android-1.0.5-nuvio.aar"))
+        add("fullImplementation", "androidx.annotation:annotation:1.10.0")
         add("fullImplementation", libs.ksoup)
         add("fullImplementation", libs.jackson.databind)
         add("fullImplementation", libs.jackson.module.kotlin)
