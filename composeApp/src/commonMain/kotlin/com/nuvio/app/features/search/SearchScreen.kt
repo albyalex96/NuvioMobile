@@ -184,9 +184,8 @@ fun SearchScreen(
             .filter { it && discoverUiState.canLoadMore && !discoverUiState.isLoading }
             .collect {
                 SearchRepository.loadMoreDiscover()
-        }
+            }
     }
-}
 
     LaunchedEffect(query, lastRequestedQuery, uiState.isLoading, uiState.sections) {
         val normalizedQuery = query.trim()
@@ -522,3 +521,4 @@ private fun SearchRecentRow(
             )
         }
     }
+}
