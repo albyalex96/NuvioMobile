@@ -81,6 +81,22 @@ actual suspend fun httpGetTextWithHeaders(url: String, headers: Map<String, Stri
 actual suspend fun httpPostJsonWithHeaders(url: String, body: String, headers: Map<String, String>): String =
     executeTextRequest("POST", url, mapOf("Accept" to "application/json", "Content-Type" to "application/json") + headers, body)
 
+actual suspend fun httpGetBytesWithHeaders(
+    url: String,
+    headers: Map<String, String>,
+): ByteArray = withContext(Dispatchers.IO) {
+    val conn = URL(url).openConnection() as HttpURLConnection
+    conn.requestMethod = "GET"
+    conn.connectTimeout = 60000
+    conn.readTimeout = 60000
+    headers.forEach { (key, value) -> conn.setRequestProperty(key, value) }
+    try {
+        conn.inputStream.readBytes()
+    } finally {
+        conn.disconnect()
+    }
+}
+
 actual suspend fun httpRequestRaw(
     method: String,
     url: String,

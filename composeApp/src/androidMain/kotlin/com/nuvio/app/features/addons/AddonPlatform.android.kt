@@ -262,6 +262,16 @@ actual suspend fun httpGetTextWithHeaders(
         headers = mapOf("Accept" to "application/json") + headers,
     )
 
+actual suspend fun httpGetBytesWithHeaders(
+    url: String,
+    headers: Map<String, String>,
+): ByteArray = withContext(Dispatchers.IO) {
+    val builder = Request.Builder().url(url)
+    headers.forEach { (key, value) -> builder.header(key, value) }
+    val response = addonHttpClient.newCall(builder.build()).execute()
+    response.use { it.body?.bytes() ?: byteArrayOf() }
+}
+
 actual suspend fun httpPostJsonWithHeaders(
     url: String,
     body: String,

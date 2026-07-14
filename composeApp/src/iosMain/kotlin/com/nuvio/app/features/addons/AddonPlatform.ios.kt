@@ -155,6 +155,24 @@ actual suspend fun httpGetTextWithHeaders(
             payload
         }
 
+actual suspend fun httpGetBytesWithHeaders(
+    url: String,
+    headers: Map<String, String>,
+): ByteArray =
+    addonHttpClient
+        .get(url) {
+            headers.forEach { (key, value) ->
+                header(key, value)
+            }
+            applyCustomUserAgent(headers)
+        }
+        .let { response ->
+            if (!response.status.isSuccess()) {
+                error("HTTP ${response.status.value}")
+            }
+            response.body.readBytes()
+        }
+
 actual suspend fun httpPostJsonWithHeaders(
     url: String,
     body: String,
