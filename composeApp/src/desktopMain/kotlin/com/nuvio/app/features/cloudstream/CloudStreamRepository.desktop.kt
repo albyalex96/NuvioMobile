@@ -12,6 +12,7 @@ actual object CloudStreamRepository {
     actual fun onProfileChanged(profileId: Int) = Unit
     actual fun clearLocalState() = Unit
     actual fun acceptSecurityWarning() = Unit
+    actual fun toggleGroupByRepository() = Unit
 
     actual suspend fun addRepository(rawUrl: String): AddCloudStreamRepositoryResult =
         AddCloudStreamRepositoryResult.Error("CloudStream not supported on desktop")

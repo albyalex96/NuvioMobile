@@ -1,16 +1,26 @@
 package com.nuvio.app.features.plugins
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Visibility
@@ -20,6 +30,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,8 +47,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +61,7 @@ import com.nuvio.app.core.ui.NuvioInputField
 import com.nuvio.app.core.ui.NuvioPrimaryButton
 import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.NuvioSurfaceCard
+import com.nuvio.app.features.streams.StreamSourcePreferencesRepository
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.plugins.runtime.PluginRuntime
 import kotlinx.coroutines.launch
@@ -64,6 +80,8 @@ import nuvio.composeapp.generated.resources.plugins_button_testing
 import nuvio.composeapp.generated.resources.plugins_cd_delete_repo
 import nuvio.composeapp.generated.resources.plugins_cd_refresh_repo
 import nuvio.composeapp.generated.resources.plugins_empty_providers
+import nuvio.composeapp.generated.resources.plugins_quality_filtering_desc
+import nuvio.composeapp.generated.resources.plugins_quality_filtering_empty
 import nuvio.composeapp.generated.resources.plugins_empty_repos_subtitle
 import nuvio.composeapp.generated.resources.plugins_empty_repos_title
 import nuvio.composeapp.generated.resources.plugins_enable_globally_desc
@@ -78,7 +96,14 @@ import nuvio.composeapp.generated.resources.plugins_provider_no_description
 import nuvio.composeapp.generated.resources.plugins_provider_version
 import nuvio.composeapp.generated.resources.plugins_repo_fallback_label
 import nuvio.composeapp.generated.resources.plugins_repo_version
+import nuvio.composeapp.generated.resources.plugins_repository_filter_all
+import nuvio.composeapp.generated.resources.plugins_repository_filter_count
+import nuvio.composeapp.generated.resources.plugins_repository_filter_desc
+import nuvio.composeapp.generated.resources.plugins_repository_filter_disable_visible
+import nuvio.composeapp.generated.resources.plugins_repository_filter_enable_visible
 import nuvio.composeapp.generated.resources.plugins_section_add_repo
+import nuvio.composeapp.generated.resources.plugins_section_quality_filtering
+import nuvio.composeapp.generated.resources.plugins_section_repository_control
 import nuvio.composeapp.generated.resources.plugins_section_installed_repos
 import nuvio.composeapp.generated.resources.plugins_section_overview
 import nuvio.composeapp.generated.resources.plugins_section_providers
@@ -86,8 +111,11 @@ import nuvio.composeapp.generated.resources.plugins_test_error_title
 import nuvio.composeapp.generated.resources.plugins_test_failed
 import nuvio.composeapp.generated.resources.plugins_test_results_count
 import nuvio.composeapp.generated.resources.plugins_tmdb_required_message
+import nuvio.composeapp.generated.resources.streams_pin_source_title
+import nuvio.composeapp.generated.resources.streams_unpin_source_title
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PluginsSettingsPageContent(
     modifier: Modifier = Modifier,
@@ -101,6 +129,10 @@ fun PluginsSettingsPageContent(
         TmdbSettingsRepository.ensureLoaded()
         TmdbSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
+    val sourcePreferences by remember {
+        StreamSourcePreferencesRepository.ensureLoaded()
+        StreamSourcePreferencesRepository.uiState
+    }.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
 
     var repositoryUrl by rememberSaveable { mutableStateOf("") }
@@ -109,12 +141,18 @@ fun PluginsSettingsPageContent(
 
     var testingScraperId by remember { mutableStateOf<String?>(null) }
     val testResults = remember { mutableStateMapOf<String, List<PluginRuntimeResult>>() }
+    var selectedRepositoryUrl by rememberSaveable { mutableStateOf<String?>(null) }
 
     var configuringScraper by remember { mutableStateOf<PluginScraper?>(null) }
     var configuringLayout by remember { mutableStateOf<String?>(null) }
 
     val sortedRepos = remember(uiState.repositories) {
         uiState.repositories.sortedBy { it.name.lowercase() }
+    }
+    LaunchedEffect(sortedRepos, selectedRepositoryUrl) {
+        if (selectedRepositoryUrl != null && sortedRepos.none { it.manifestUrl == selectedRepositoryUrl }) {
+            selectedRepositoryUrl = null
+        }
     }
     val hasTmdbApiKey = tmdbSettings.hasApiKey
     val repositoryNameByUrl = remember(sortedRepos) {
@@ -128,17 +166,34 @@ fun PluginsSettingsPageContent(
             ),
         )
     }
+    val visibleScrapers = remember(sortedScrapers, selectedRepositoryUrl) {
+        selectedRepositoryUrl
+            ?.let { selectedUrl -> sortedScrapers.filter { it.repositoryUrl == selectedUrl } }
+            ?: sortedScrapers
+    }
+    val pinnedSourceIds = remember(sourcePreferences.pinnedSources) {
+        sourcePreferences.pinnedSources
+            .map { it.id }
+            .toSet()
+    }
 
     val repoFallbackLabel = stringResource(Res.string.plugins_repo_fallback_label)
     val testFailedDefault = stringResource(Res.string.plugins_test_failed)
     val testErrorTitle = stringResource(Res.string.plugins_test_error_title)
     val installedTemplate = stringResource(Res.string.plugins_message_installed)
     val enterRepoUrlError = stringResource(Res.string.plugins_error_enter_repo_url)
+    val pinSourceContentDescription = stringResource(Res.string.streams_pin_source_title)
+    val unpinSourceContentDescription = stringResource(Res.string.streams_unpin_source_title)
 
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        CloudStreamSettingsSection()
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
         NuvioSectionLabel(stringResource(Res.string.plugins_section_overview))
         NuvioSurfaceCard {
             Row(
@@ -222,6 +277,108 @@ fun PluginsSettingsPageContent(
                 Switch(
                     checked = uiState.groupStreamsByRepository,
                     onCheckedChange = { PluginRepository.setGroupStreamsByRepository(it) },
+                )
+            }
+        }
+
+        NuvioSectionLabel(stringResource(Res.string.plugins_section_repository_control))
+        NuvioSurfaceCard {
+            Text(
+                text = stringResource(Res.string.plugins_repository_filter_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                PluginRepositoryFilterChip(
+                    label = stringResource(Res.string.plugins_repository_filter_all),
+                    countLabel = stringResource(
+                        Res.string.plugins_repository_filter_count,
+                        sortedScrapers.count { it.enabled },
+                        sortedScrapers.size,
+                    ),
+                    selected = selectedRepositoryUrl == null,
+                    onClick = { selectedRepositoryUrl = null },
+                )
+                sortedRepos.forEach { repo ->
+                    val repoScrapers = sortedScrapers.filter { it.repositoryUrl == repo.manifestUrl }
+                    val repoSourceId = repo.pluginRepositorySourceId()
+                    PluginRepositoryFilterChip(
+                        label = repo.name,
+                        countLabel = stringResource(
+                            Res.string.plugins_repository_filter_count,
+                            repoScrapers.count { it.enabled },
+                            repoScrapers.size,
+                        ),
+                        selected = selectedRepositoryUrl == repo.manifestUrl,
+                        isPinned = uiState.groupStreamsByRepository &&
+                            repoSourceId in pinnedSourceIds,
+                        onClick = { selectedRepositoryUrl = repo.manifestUrl },
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    enabled = visibleScrapers.any { it.manifestEnabled && !it.enabled },
+                    onClick = {
+                        selectedRepositoryUrl
+                            ?.let { PluginRepository.toggleRepositoryScrapers(it, true) }
+                            ?: PluginRepository.toggleAllScrapers(true)
+                    },
+                ) {
+                    Text(stringResource(Res.string.plugins_repository_filter_enable_visible))
+                }
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    enabled = visibleScrapers.any { it.manifestEnabled && it.enabled },
+                    onClick = {
+                        selectedRepositoryUrl
+                            ?.let { PluginRepository.toggleRepositoryScrapers(it, false) }
+                            ?: PluginRepository.toggleAllScrapers(false)
+                    },
+                ) {
+                    Text(stringResource(Res.string.plugins_repository_filter_disable_visible))
+                }
+            }
+        }
+
+        NuvioSectionLabel(stringResource(Res.string.plugins_section_quality_filtering))
+        NuvioSurfaceCard {
+            Text(
+                text = stringResource(Res.string.plugins_quality_filtering_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                PluginQualityFilterOptions.forEach { option ->
+                    val excluded = option.id in uiState.excludedQualities
+                    PluginQualityFilterChip(
+                        option = option,
+                        excluded = excluded,
+                        onClick = { PluginRepository.setQualityExcluded(option.id, !excluded) },
+                    )
+                }
+            }
+            if (uiState.excludedQualities.isEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(Res.string.plugins_quality_filtering_empty),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -374,7 +531,7 @@ fun PluginsSettingsPageContent(
         }
 
         NuvioSectionLabel(stringResource(Res.string.plugins_section_providers))
-        if (sortedScrapers.isEmpty()) {
+        if (visibleScrapers.isEmpty()) {
             NuvioSurfaceCard {
                 Text(
                     text = stringResource(Res.string.plugins_empty_providers),
@@ -383,11 +540,14 @@ fun PluginsSettingsPageContent(
                 )
             }
         } else {
-            sortedScrapers.forEach { scraper ->
+            visibleScrapers.forEach { scraper ->
                 val scraperResults = testResults[scraper.id]
                 val isTestingThisScraper = testingScraperId == scraper.id
                 val repositoryName = repositoryNameByUrl[scraper.repositoryUrl]
                     ?: scraper.repositoryUrl.fallbackRepositoryLabel(repoFallbackLabel)
+                val sourceId = scraper.pluginSourceId(groupByRepository = uiState.groupStreamsByRepository)
+                val sourceName = if (uiState.groupStreamsByRepository) repositoryName else scraper.name
+                val isPinnedSource = sourceId in pinnedSourceIds
 
                 NuvioSurfaceCard {
                     Row(
@@ -406,20 +566,20 @@ fun PluginsSettingsPageContent(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
+                                PinnedSourceLabel(
                                     text = repositoryName,
+                                    pinned = isPinnedSource && uiState.groupStreamsByRepository,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(
+                                PinnedSourceLabel(
                                     text = scraper.name,
+                                    pinned = isPinnedSource && !uiState.groupStreamsByRepository,
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
                                     text = scraper.description.ifBlank {
@@ -433,6 +593,26 @@ fun PluginsSettingsPageContent(
                             }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            NuvioIconActionButton(
+                                icon = Icons.Rounded.PushPin,
+                                contentDescription = if (isPinnedSource) {
+                                    unpinSourceContentDescription
+                                } else {
+                                    pinSourceContentDescription
+                                },
+                                tint = if (isPinnedSource) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                onClick = {
+                                    if (isPinnedSource) {
+                                        StreamSourcePreferencesRepository.unpinSource(sourceId)
+                                    } else {
+                                        StreamSourcePreferencesRepository.pinSource(sourceId, sourceName)
+                                    }
+                                },
+                            )
                             if (scraper.hasSettings) {
                                 IconButton(onClick = {
                                     coroutineScope.launch {
@@ -560,6 +740,146 @@ fun PluginsSettingsPageContent(
     }
 }
 
+@Composable
+private fun PluginRepositoryFilterChip(
+    label: String,
+    countLabel: String,
+    selected: Boolean,
+    isPinned: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        color = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(
+            1.dp,
+            if (selected) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.82f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            },
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                if (isPinned) {
+                    Icon(
+                        imageVector = Icons.Rounded.PushPin,
+                        contentDescription = null,
+                        modifier = Modifier.size(13.dp),
+                    )
+                }
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        textDecoration = if (isPinned) TextDecoration.Underline else TextDecoration.None,
+                    ),
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = countLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PinnedSourceLabel(
+    text: String,
+    pinned: Boolean,
+    style: TextStyle,
+    color: Color,
+    maxLines: Int,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        if (pinned) {
+            Icon(
+                imageVector = Icons.Rounded.PushPin,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+        Text(
+            text = text,
+            style = style.copy(
+                fontWeight = if (pinned) FontWeight.Bold else style.fontWeight,
+                textDecoration = if (pinned) TextDecoration.Underline else TextDecoration.None,
+            ),
+            color = color,
+            maxLines = maxLines,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun PluginQualityFilterChip(
+    option: PluginQualityFilterOption,
+    excluded: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.clickable(onClick = onClick),
+        color = if (excluded) {
+            MaterialTheme.colorScheme.error.copy(alpha = 0.18f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f)
+        },
+        contentColor = if (excluded) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        shape = RoundedCornerShape(999.dp),
+        border = BorderStroke(
+            1.dp,
+            if (excluded) {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.66f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            },
+        ),
+    ) {
+        Text(
+            text = if (excluded) "X ${option.label}" else option.label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+    }
+}
+
 private fun String.fallbackRepositoryLabel(fallback: String): String {
     val withoutQuery = substringBefore("?")
     val withoutManifest = withoutQuery.removeSuffix("/manifest.json")
@@ -568,3 +888,13 @@ private fun String.fallbackRepositoryLabel(fallback: String): String {
         withoutManifest.substringAfterLast('/').ifBlank { fallback }
     }
 }
+
+private fun PluginRepositoryItem.pluginRepositorySourceId(): String =
+    "plugin-repo:${manifestUrl.lowercase()}"
+
+private fun PluginScraper.pluginSourceId(groupByRepository: Boolean): String =
+    if (groupByRepository) {
+        "plugin-repo:${repositoryUrl.lowercase()}"
+    } else {
+        "plugin:$id"
+    }

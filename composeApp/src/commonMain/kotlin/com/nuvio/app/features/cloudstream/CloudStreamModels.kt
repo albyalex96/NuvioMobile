@@ -212,6 +212,7 @@ internal data class StoredCloudStreamState(
     val repositories: List<StoredCloudStreamRepository> = emptyList(),
     val plugins: List<StoredCloudStreamPlugin> = emptyList(),
     val securityWarningAccepted: Boolean = false,
+    val groupByRepository: Boolean = false,
 )
 
 @Serializable

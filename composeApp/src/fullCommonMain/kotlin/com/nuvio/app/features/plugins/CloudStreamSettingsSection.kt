@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -84,6 +85,7 @@ internal fun CloudStreamSettingsSection() {
     var query by rememberSaveable { mutableStateOf("") }
     var selectedLanguage by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedType by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedRepositoryUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var message by rememberSaveable { mutableStateOf<String?>(null) }
     var bulkInstallMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var isBulkInstalling by remember { mutableStateOf(false) }
@@ -94,9 +96,10 @@ internal fun CloudStreamSettingsSection() {
     val types = remember(state.plugins) {
         state.plugins.flatMap { it.metadata.rawTvTypes }.distinct().sorted()
     }
-    val visiblePlugins = remember(state.plugins, query, selectedLanguage, selectedType) {
+    val visiblePlugins = remember(state.plugins, query, selectedLanguage, selectedType, selectedRepositoryUrl) {
         val normalizedQuery = query.trim().lowercase()
         state.plugins.filter { item ->
+            (selectedRepositoryUrl == null || item.metadata.repositoryManifestUrl == selectedRepositoryUrl) &&
             (normalizedQuery.isBlank() || listOf(
                 item.metadata.name,
                 item.metadata.internalName,
@@ -118,6 +121,20 @@ internal fun CloudStreamSettingsSection() {
     val pinnedSourceIds = remember(sourcePreferences.pinnedSources) {
         sourcePreferences.pinnedSources.map { it.id }.toSet()
     }
+    val repositoryUrlToName = remember(state.repositories) {
+        state.repositories.associate { it.manifest.sourceUrl to it.manifest.name }
+    }
+    val groupedPlugins = remember(state.plugins, state.groupByRepository, visiblePlugins) {
+        if (!state.groupByRepository) {
+            listOf(null to visiblePlugins)
+        } else {
+            visiblePlugins.groupBy { it.metadata.repositoryManifestUrl }
+                .mapValues { (_, plugins) -> plugins.sortedBy { it.metadata.name.lowercase() } }
+                .entries
+                .sortedBy { (url, _) -> repositoryUrlToName[url]?.lowercase() ?: url.lowercase() }
+                .map { (url, plugins) -> url to plugins }
+        }
+    }
 
     NuvioSectionLabel(copy.sectionTitle)
     NuvioSurfaceCard {
@@ -135,6 +152,33 @@ internal fun CloudStreamSettingsSection() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Spacer(Modifier.height(12.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = copy.groupByRepositoryTitle,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = copy.groupByRepositoryDesc,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Switch(
+                checked = state.groupByRepository,
+                onCheckedChange = { CloudStreamRepository.toggleGroupByRepository() },
+            )
+        }
     }
 
     if (!state.securityWarningAccepted) {
@@ -252,6 +296,27 @@ internal fun CloudStreamSettingsSection() {
     if (state.plugins.isNotEmpty()) {
         NuvioSurfaceCard {
             Text(copy.searchAndFilterTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            if (state.groupByRepository) {
+                Spacer(Modifier.height(10.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    CloudStreamFilterChip(
+                        label = copy.allRepositories,
+                        selected = selectedRepositoryUrl == null,
+                        onClick = { selectedRepositoryUrl = null },
+                    )
+                    state.repositories.forEach { repo ->
+                        val repoPluginCount = visiblePlugins.count { it.metadata.repositoryManifestUrl == repo.manifest.sourceUrl }
+                        CloudStreamFilterChip(
+                            label = "${repo.manifest.name} ($repoPluginCount)",
+                            selected = selectedRepositoryUrl == repo.manifest.sourceUrl,
+                            onClick = { selectedRepositoryUrl = repo.manifest.sourceUrl.takeUnless { selectedRepositoryUrl == it } },
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(10.dp))
             NuvioInputField(
                 value = query,
@@ -263,25 +328,43 @@ internal fun CloudStreamSettingsSection() {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CloudStreamFilterChip(copy.allLanguages, selectedLanguage == null) { selectedLanguage = null }
+                CloudStreamFilterChip(
+                    label = copy.allLanguages,
+                    selected = selectedLanguage == null,
+                    onClick = { selectedLanguage = null },
+                )
                 languages.forEach { language ->
-                    CloudStreamFilterChip(language.uppercase(), selectedLanguage == language) {
-                        selectedLanguage = language.takeUnless { selectedLanguage == language }
-                    }
+                    CloudStreamFilterChip(
+                        label = language.uppercase(),
+                        selected = selectedLanguage == language,
+                        onClick = { selectedLanguage = language.takeUnless { selectedLanguage == language } },
+                    )
                 }
             }
-            if (types.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    CloudStreamFilterChip(copy.allTypes, selectedType == null) { selectedType = null }
-                    types.forEach { type ->
-                        CloudStreamFilterChip(type, selectedType == type) {
-                            selectedType = type.takeUnless { selectedType == type }
-                        }
-                    }
+            Spacer(Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CloudStreamFilterChip(
+                    label = "CloudStream",
+                    selected = false,
+                    onClick = {},
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    borderColor = MaterialTheme.colorScheme.tertiary,
+                )
+                CloudStreamFilterChip(
+                    label = copy.allTypes,
+                    selected = selectedType == null,
+                    onClick = { selectedType = null },
+                )
+                types.forEach { type ->
+                    CloudStreamFilterChip(
+                        label = type,
+                        selected = selectedType == type,
+                        onClick = { selectedType = type.takeUnless { selectedType == type } },
+                    )
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -326,14 +409,20 @@ internal fun CloudStreamSettingsSection() {
         }
     }
 
-    visiblePlugins.forEach { plugin ->
-        CloudStreamPluginCard(
-            plugin = plugin,
-            securityWarningAccepted = state.securityWarningAccepted,
-            pinnedSourceIds = pinnedSourceIds,
-            copy = copy,
-            onMessage = { message = it },
-        )
+    groupedPlugins.forEach { (repoUrl, plugins) ->
+        if (state.groupByRepository && repoUrl != null) {
+            val repoName = repositoryUrlToName[repoUrl] ?: repoUrl
+            NuvioSectionLabel(repoName)
+        }
+        plugins.forEach { plugin ->
+            CloudStreamPluginCard(
+                plugin = plugin,
+                securityWarningAccepted = state.securityWarningAccepted,
+                pinnedSourceIds = pinnedSourceIds,
+                copy = copy,
+                onMessage = { message = it },
+            )
+        }
     }
 }
 
@@ -428,6 +517,7 @@ private fun CloudStreamPluginCard(
                     else -> copy.packageUnchecked
                 },
             )
+            CloudStreamTertiaryBadge(text = "CloudStream")
             NuvioInfoBadge(
                 text = when (plugin.compatibility.platformSupport) {
                     CloudStreamPlatformSupport.AndroidAndIos -> copy.androidAndIosCompatible
@@ -535,6 +625,12 @@ private class CloudStreamSettingsCopy private constructor(
         if (turkish) "Tüm diller" else "All languages"
     val allTypes: String =
         if (turkish) "Tüm türler" else "All types"
+    val allRepositories: String =
+        if (turkish) "Tüm depolar" else "All repositories"
+    val groupByRepositoryTitle: String =
+        if (turkish) "Depoya göre grupla" else "Group by repository"
+    val groupByRepositoryDesc: String =
+        if (turkish) "Eklentileri ait oldukları depoya göre grupla" else "Group plugins by their repository"
     val bulkInstallFailed: String =
         if (turkish) "Toplu kurulum tamamlanamadı." else "Bulk install could not be completed."
     val bulkInstalling: String =
@@ -690,19 +786,39 @@ private fun CloudStreamFilterChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    containerColor: androidx.compose.ui.graphics.Color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+    contentColor: androidx.compose.ui.graphics.Color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+    borderColor: androidx.compose.ui.graphics.Color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
 ) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(999.dp),
-        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-        border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+        color = containerColor,
+        contentColor = contentColor,
+        border = BorderStroke(1.dp, borderColor),
     ) {
         Text(
             label,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun CloudStreamTertiaryBadge(text: String) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary),
+    ) {
+        Text(
+            text,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
         )
     }
 }

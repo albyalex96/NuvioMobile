@@ -66,6 +66,12 @@ actual object CloudStreamRepository {
         persist()
     }
 
+    actual fun toggleGroupByRepository() {
+        initialize()
+        _uiState.update { it.copy(groupByRepository = !it.groupByRepository) }
+        persist()
+    }
+
     actual suspend fun addRepository(rawUrl: String): AddCloudStreamRepositoryResult {
         initialize()
         val manifestUrl = runCatching { resolveCloudStreamRepositoryInput(rawUrl) }
@@ -90,7 +96,13 @@ actual object CloudStreamRepository {
                 },
                 onFailure = { error ->
                     log.w(error) { "CloudStream repository install failed url=$manifestUrl" }
-                    AddCloudStreamRepositoryResult.Error(error.message ?: "Could not load CloudStream repository")
+                    val message = when {
+                        error is java.io.IOException -> "CloudStream repository not found at $manifestUrl"
+                        error.message?.contains("not found", ignoreCase = true) == true -> error.message
+                        error.message?.contains("404", ignoreCase = true) == true -> "CloudStream repository not found (HTTP 404)"
+                        else -> error.message ?: "Could not load CloudStream repository"
+                    }
+                    AddCloudStreamRepositoryResult.Error(message)
                 },
             )
     }
@@ -391,8 +403,9 @@ actual object CloudStreamRepository {
                 lastManifestError = error
                 log.w(error) { "CloudStream repository manifest failed url=$candidate" }
             }.getOrNull()
-        } ?: throw lastManifestError ?: IllegalStateException("CloudStream repository manifest could not be loaded")
+        } ?: throw lastManifestError ?: IllegalStateException("CloudStream repository manifest could not be loaded at $manifestUrl")
         var loadedListCount = 0
+        val listErrors = mutableListOf<String>()
         val lists = manifest.pluginListUrls.mapNotNull { pluginListUrl ->
             runCatching {
                 val listPayload = httpGetText(pluginListUrl)
@@ -401,9 +414,10 @@ actual object CloudStreamRepository {
                 loadedListCount += 1
             }.onFailure { error ->
                 log.w(error) { "CloudStream plugin list failed url=$pluginListUrl" }
+                listErrors.add(error.message ?: "Plugin list download failed")
             }.getOrNull()
         }
-        require(loadedListCount > 0) { "CloudStream repository plugin lists could not be loaded" }
+        require(loadedListCount > 0) { "CloudStream repository plugin lists could not be loaded: ${listErrors.joinToString("; ")}" }
         return manifest to CloudStreamRepositoryParser.mergePluginLists(lists)
     }
 
@@ -505,12 +519,14 @@ actual object CloudStreamRepository {
             plugins = plugins,
             registryRevision = 1,
             securityWarningAccepted = stored.securityWarningAccepted,
+            groupByRepository = stored.groupByRepository,
         )
     }
 
     private fun persist() {
         val current = _uiState.value
         val stored = StoredCloudStreamState(
+            groupByRepository = current.groupByRepository,
             repositories = current.repositories.map { item ->
                 StoredCloudStreamRepository(
                     manifestUrl = item.manifest.sourceUrl,
@@ -604,14 +620,16 @@ actual object CloudStreamRepository {
 
     private suspend fun resolveCloudStreamRepositoryInput(rawUrl: String): String {
         val trimmed = rawUrl.trim()
-        val expanded = when {
-            trimmed.startsWith("!", ignoreCase = false) ->
-                resolveCloudStreamShortLink("https://py.md/${trimmed.removePrefix("!")}")
-            trimmed.matches(Regex("^[a-zA-Z0-9!_-]+$")) ->
-                resolveCloudStreamShortLink("https://cutt.ly/$trimmed")
-            else -> trimmed
+        if (trimmed.startsWith("https://", ignoreCase = true) || trimmed.startsWith("http://", ignoreCase = true)) {
+            return normalizeCloudStreamRepositoryUrl(trimmed)
         }
-        return normalizeCloudStreamRepositoryUrl(expanded)
+        val shortLinkUrl = when {
+            trimmed.startsWith("!", ignoreCase = false) ->
+                "https://py.md/${trimmed.removePrefix("!")}"
+            else -> "https://cutt.ly/$trimmed"
+        }
+        val resolved = resolveCloudStreamShortLink(shortLinkUrl)
+        return normalizeCloudStreamRepositoryUrl(resolved)
     }
 
     private suspend fun resolveCloudStreamShortLink(url: String): String {
@@ -620,13 +638,8 @@ actual object CloudStreamRepository {
             url = url,
             headers = emptyMap(),
             body = "",
-            followRedirects = false,
+            followRedirects = true,
         )
-        val location = response.headers["location"]?.substringBefore(',')?.trim()
-        require(!location.isNullOrBlank()) { "CloudStream short repository link did not redirect" }
-        require(!location.startsWith("https://py.md/404") && !location.startsWith("https://cutt.ly/404")) {
-            "CloudStream short repository link was not found"
-        }
-        return location
+        return response.url
     }
 }

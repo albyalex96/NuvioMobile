@@ -136,6 +136,7 @@ actual object PluginRepository {
             _uiState.value = PluginsUiState(
                 pluginsEnabled = _uiState.value.pluginsEnabled,
                 groupStreamsByRepository = _uiState.value.groupStreamsByRepository,
+                excludedQualities = _uiState.value.excludedQualities,
                 repositories = nextRepos,
                 scrapers = nextScrapers,
             )
@@ -330,6 +331,47 @@ actual object PluginRepository {
         persist()
     }
 
+    actual fun toggleRepositoryScrapers(repositoryUrl: String, enabled: Boolean) {
+        initialize()
+        _uiState.update { state ->
+            state.copy(
+                scrapers = state.scrapers.map { scraper ->
+                    if (scraper.repositoryUrl == repositoryUrl) {
+                        scraper.copy(enabled = if (scraper.manifestEnabled) enabled else false)
+                    } else {
+                        scraper
+                    }
+                },
+            )
+        }
+        persist()
+    }
+
+    actual fun toggleAllScrapers(enabled: Boolean) {
+        initialize()
+        _uiState.update { state ->
+            state.copy(
+                scrapers = state.scrapers.map { scraper ->
+                    scraper.copy(enabled = if (scraper.manifestEnabled) enabled else false)
+                },
+            )
+        }
+        persist()
+    }
+
+    actual fun setQualityExcluded(qualityId: String, excluded: Boolean) {
+        initialize()
+        _uiState.update { state ->
+            val nextExcluded = if (excluded) {
+                state.excludedQualities + qualityId
+            } else {
+                state.excludedQualities - qualityId
+            }
+            state.copy(excludedQualities = nextExcluded)
+        }
+        persist()
+    }
+
     actual fun getEnabledScrapersForType(type: String): List<PluginScraper> {
         initialize()
         if (!_uiState.value.pluginsEnabled) return emptyList()
@@ -512,6 +554,7 @@ actual object PluginRepository {
         val payload = StoredPluginsState(
             pluginsEnabled = state.pluginsEnabled,
             groupStreamsByRepository = state.groupStreamsByRepository,
+            excludedQualities = state.excludedQualities,
             repositories = state.repositories.map { repo ->
                 StoredPluginRepository(
                     manifestUrl = repo.manifestUrl,
@@ -575,6 +618,7 @@ actual object PluginRepository {
         return PluginsUiState(
             pluginsEnabled = stored?.pluginsEnabled ?: true,
             groupStreamsByRepository = stored?.groupStreamsByRepository ?: false,
+            excludedQualities = stored?.excludedQualities.orEmpty(),
             repositories = stored?.repositories
                 ?.map {
                     PluginRepositoryItem(

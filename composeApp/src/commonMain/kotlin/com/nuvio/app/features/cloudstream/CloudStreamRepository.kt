@@ -33,6 +33,7 @@ data class CloudStreamUiState(
     val plugins: List<CloudStreamPluginItem> = emptyList(),
     val registryRevision: Long = 0L,
     val securityWarningAccepted: Boolean = false,
+    val groupByRepository: Boolean = false,
 )
 
 sealed interface AddCloudStreamRepositoryResult {
@@ -65,6 +66,8 @@ expect object CloudStreamRepository {
     fun onProfileChanged(profileId: Int)
     fun clearLocalState()
     fun acceptSecurityWarning()
+
+    fun toggleGroupByRepository()
 
     suspend fun addRepository(rawUrl: String): AddCloudStreamRepositoryResult
     fun refreshRepository(manifestUrl: String)
