@@ -96,9 +96,9 @@ actual object CloudStreamRepository {
                 },
                 onFailure = { error ->
                     log.w(error) { "CloudStream repository install failed url=$manifestUrl" }
-                    val message = when {
+                    val message: String = when {
                         error is java.io.IOException -> "CloudStream repository not found at $manifestUrl"
-                        error.message?.contains("not found", ignoreCase = true) == true -> error.message
+                        error.message?.contains("not found", ignoreCase = true) == true -> error.message ?: "Plugin not found"
                         error.message?.contains("404", ignoreCase = true) == true -> "CloudStream repository not found (HTTP 404)"
                         else -> error.message ?: "Could not load CloudStream repository"
                     }
