@@ -39,8 +39,7 @@ jackson = "2.17.0"
 cloudstream = "v4.7.0"
 nicehttp = "0.4.16"
 conscrypt = "2.5.2"
-sentry = "8.47.0"
-sentryGradle = "6.14.0"
+
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -107,7 +106,6 @@ cloudstream-library = { group = "com.github.recloudstream.cloudstream", name = "
 nicehttp = { group = "com.github.Blatzar", name = "NiceHttp", version.ref = "nicehttp" }
 conscrypt-android = { group = "org.conscrypt", name = "conscrypt-android", version.ref = "conscrypt" }
 mpv-android-lib = { module = "io.github.abdallahmehiz:mpv-android-lib", version.ref = "mpv-android-lib" }
-sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -117,4 +115,4 @@ composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMul
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-sentry-android-gradle = { id = "io.sentry.android.gradle", version.ref = "sentryGradle" }
+
