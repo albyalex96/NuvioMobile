@@ -396,9 +396,11 @@ actual object CloudStreamRepository {
         manifestUrl: String,
     ): Pair<CloudStreamRepositoryManifest, List<CloudStreamPluginMetadata>> {
         var lastManifestError: Throwable? = null
-        val manifest = cloudStreamManifestCandidates(manifestUrl).firstNotNullOfOrNull { candidate ->
+        val (manifest, inlinePlugins) = cloudStreamManifestCandidates(manifestUrl).firstNotNullOfOrNull { candidate ->
             runCatching {
-                CloudStreamRepositoryParser.parseRepository(candidate, httpGetText(candidate))
+                val payload = httpGetText(candidate)
+                val result = CloudStreamRepositoryParser.parseRepository(candidate, payload)
+                Pair(result, result.inlinePlugins)
             }.onFailure { error ->
                 lastManifestError = error
                 log.w(error) { "CloudStream repository manifest failed url=$candidate" }
@@ -406,10 +408,11 @@ actual object CloudStreamRepository {
         } ?: throw lastManifestError ?: IllegalStateException("CloudStream repository manifest could not be loaded at $manifestUrl")
         var loadedListCount = 0
         val listErrors = mutableListOf<String>()
+        val parser = CloudStreamRepositoryParser
         val lists = manifest.pluginListUrls.mapNotNull { pluginListUrl ->
             runCatching {
                 val listPayload = httpGetText(pluginListUrl)
-                CloudStreamRepositoryParser.parsePluginList(manifest.sourceUrl, pluginListUrl, listPayload)
+                parser.parsePluginList(manifest.sourceUrl, pluginListUrl, listPayload)
             }.onSuccess {
                 loadedListCount += 1
             }.onFailure { error ->
@@ -417,8 +420,10 @@ actual object CloudStreamRepository {
                 listErrors.add(error.message ?: "Plugin list download failed")
             }.getOrNull()
         }
-        require(loadedListCount > 0) { "CloudStream repository plugin lists could not be loaded: ${listErrors.joinToString("; ")}" }
-        return manifest to CloudStreamRepositoryParser.mergePluginLists(lists)
+        if (manifest.pluginListUrls.isEmpty() && inlinePlugins.isEmpty()) {
+            throw IllegalStateException("CloudStream repository plugin lists could not be loaded: ${listErrors.joinToString("; ")}")
+        }
+        return manifest to parser.mergePluginLists(lists + listOf(inlinePlugins))
     }
 
     private fun cloudStreamManifestCandidates(manifestUrl: String): List<String> {

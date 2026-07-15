@@ -22,7 +22,12 @@ object CloudStreamRepositoryParser {
             .map { resolveCloudStreamUrl(manifestUrl, it) }
             .distinct()
             .toList()
-        require(pluginLists.isNotEmpty()) { "CloudStream repository does not contain pluginLists" }
+        val inlinePlugins = dto.inlinePlugins
+            ?.mapNotNull { it.toDomainOrNull(manifestUrl, manifestUrl) }
+            .orEmpty()
+        require(pluginLists.isNotEmpty() || inlinePlugins.isNotEmpty()) {
+            "CloudStream repository does not contain pluginLists or pluginsList"
+        }
 
         return CloudStreamRepositoryManifest(
             sourceUrl = manifestUrl,
@@ -32,6 +37,7 @@ object CloudStreamRepositoryParser {
             iconUrl = dto.iconUrl?.trim()?.takeIf(String::isNotBlank)?.let { resolveCloudStreamUrl(manifestUrl, it) },
             manifestVersion = manifestVersion,
             pluginListUrls = pluginLists,
+            inlinePlugins = inlinePlugins,
         )
     }
 

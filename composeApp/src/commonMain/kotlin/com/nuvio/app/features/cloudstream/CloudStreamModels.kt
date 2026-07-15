@@ -1,5 +1,6 @@
 package com.nuvio.app.features.cloudstream
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,6 +10,8 @@ data class CloudStreamRepositoryManifestDto(
     val iconUrl: String? = null,
     val manifestVersion: Int? = null,
     val pluginLists: List<String> = emptyList(),
+    @SerialName("pluginsList")
+    val inlinePlugins: List<CloudStreamPluginMetadataDto>? = null,
 )
 
 @Serializable
@@ -36,6 +39,7 @@ data class CloudStreamRepositoryManifest(
     val iconUrl: String?,
     val manifestVersion: Int,
     val pluginListUrls: List<String>,
+    val inlinePlugins: List<CloudStreamPluginMetadata> = emptyList(),
 )
 
 data class CloudStreamPluginId(
