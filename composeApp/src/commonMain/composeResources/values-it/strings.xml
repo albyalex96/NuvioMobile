@@ -214,10 +214,10 @@
   <string name="compose_player_unlock_controls">Sblocca comandi player</string>
   <string name="player_action_cast">Trasmetti su TV</string>
   <string name="cast_picker_title">Trasmetti a</string>
-  <string name="cast_picker_searching">Ricerca dispositiviâ€¦</string>
+  <string name="cast_picker_searching">Ricerca dispositivi…</string>
   <string name="cast_picker_no_devices">Nessun dispositivo trovato. Assicurati che la TV sia sulla stessa rete Wi-Fi.</string>
   <string name="cast_picker_disconnect">Interrompi trasmissione</string>
-  <string name="cast_status_connecting">Connessione in corsoâ€¦</string>
+  <string name="cast_status_connecting">Connessione in corso…</string>
   <string name="cast_status_casting_to">Trasmissione a %1$s</string>
   <string name="compose_player_youre_watching">Stai guardando</string>
   <string name="compose_profile_add_profile">Aggiungi profilo</string>
@@ -273,7 +273,7 @@
   <string name="compose_settings_root_switch_profile_description">Passa a un profilo diverso.</string>
   <string name="compose_settings_root_switch_profile_title">Cambia profilo</string>
   <string name="compose_settings_root_trakt_description">Collega Trakt, sincronizza la lista dei desideri e salva i titoli direttamente su Trakt.</string>
-  <string name="compose_trakt_list_picker_loading">Caricamento liste Traktâ€¦</string>
+  <string name="compose_trakt_list_picker_loading">Caricamento liste Trakt…</string>
   <string name="compose_trakt_list_picker_subtitle">Scegli dove salvare questo titolo su Trakt</string>
   <string name="action_donate">Dona</string>
   <string name="cw_action_go_to_details">Vai ai dettagli</string>
@@ -729,8 +729,8 @@
   <string name="theme_color_rose">Rosa</string>
   <string name="theme_color_white">Bianco</string>
   <string name="player_next_episode">Prossimo episodio</string>
-  <string name="player_next_episode_finding_source">Ricerca sorgenteâ€¦</string>
-  <string name="player_next_episode_playing_via_countdown">In riproduzione tramite %1$s tra %2$dâ€¦</string>
+  <string name="player_next_episode_finding_source">Ricerca sorgente…</string>
+  <string name="player_next_episode_playing_via_countdown">In riproduzione tramite %1$s tra %2$d…</string>
   <string name="player_next_episode_thumbnail">Miniatura prossimo episodio</string>
   <string name="player_next_episode_unaired">Non ancora trasmesso</string>
   <string name="player_skip">Salta</string>
@@ -934,7 +934,7 @@
   <string name="provider_downloaded">Scaricato</string>
   <string name="resume_prompt_action">Riprendi</string>
   <string name="streams_active_scrapers">Scraper attivi</string>
-  <string name="streams_checking_more_addons">Controllo altri addonâ€¦</string>
+  <string name="streams_checking_more_addons">Controllo altri addon…</string>
   <string name="streams_copy_link">Copia link del flusso</string>
   <string name="streams_download_file">Scarica file</string>
   <string name="streams_empty_load_failed_message">Gli addon di streaming installati non hanno restituito una risposta valida.</string>
@@ -946,9 +946,9 @@
   <string name="streams_episode_badge">S%1$d E%2$d</string>
   <string name="streams_episode_fallback_title">Episodio</string>
   <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
-  <string name="streams_fetching">Recupero in corsoâ€¦</string>
-  <string name="streams_finding_source">Ricerca sorgenteâ€¦</string>
-  <string name="streams_finding_streams">Ricerca flussiâ€¦</string>
+  <string name="streams_fetching">Recupero in corso…</string>
+  <string name="streams_finding_source">Ricerca sorgente…</string>
+  <string name="streams_finding_streams">Ricerca flussi…</string>
   <string name="streams_link_copied">Link del flusso copiato</string>
   <string name="streams_no_direct_link">Nessun link diretto disponibile</string>
   <string name="streams_no_metadata">Nessun metadato disponibile</string>
@@ -1293,7 +1293,7 @@
   <string name="collections_editor_tmdb_subtitle_director">Regista</string>
   <string name="collections_editor_tmdb_subtitle_discover">TMDB Discover</string>
   <string name="about_licenses_attributions_subtitle">Fonti dati, ringraziamenti e licenze della piattaforma</string>
-  <string name="action_saving">Salvataggioâ€¦</string>
+  <string name="action_saving">Salvataggio…</string>
   <string name="action_validate">Convalida</string>
   <string name="addons_badge_disabled">Disattivato</string>
   <string name="collections_editor_add_trakt_source">Aggiungi lista Trakt</string>
@@ -1700,7 +1700,7 @@
 <string name="home_continue_watching_minutes_left">%1$dm rimasti</string>
 <string name="network_error_empty_response_body">Corpo della risposta vuoto</string>
 <string name="network_error_request_failed_http">Richiesta non riuscita con HTTP %1$d</string>
-<string name="streams_loading_subtitles">Caricamento dei sottotitoli dagli add-onâ€¦</string>
+<string name="streams_loading_subtitles">Caricamento dei sottotitoli dagli add-on…</string>
 <string name="updates_download_empty_body">Corpo del download vuoto</string>
 <string name="updates_download_file_missing">Il file di aggiornamento scaricato è mancante.</string>
 <string name="player_engine_unavailable_rebuild">Motore del lettore MPV non disponibile. Ricompila l'app.</string>
@@ -1746,7 +1746,7 @@
 <string name="downloads_hls_audio">Traccia Audio</string>
 <string name="downloads_hls_subtitles">Sottotitoli</string>
 <string name="downloads_hls_download">Scarica</string>
-<string name="downloads_hls_fetching">Recupero stream disponibiliâ€¦</string>
+<string name="downloads_hls_fetching">Recupero stream disponibili…</string>
 <string name="downloads_hls_select_variant">Seleziona qualità, audio e sottotitoli</string>
 <string name="player_action_submit_intro">Invia intro</string>
 <string name="player_action_video_settings">Impostazioni video</string>
@@ -1933,9 +1933,9 @@
 <string name="plugins_badge_tmdb_key_missing">Chiave API TMDB mancante</string>
 <string name="plugins_badge_tmdb_key_set">Chiave API TMDB impostata</string>
 <string name="plugins_button_install_repo">Installa repository dei plug-in</string>
-<string name="plugins_button_installing">Installazioneâ€¦</string>
+<string name="plugins_button_installing">Installazione…</string>
 <string name="plugins_button_test_provider">Testa fornitore</string>
-<string name="plugins_button_testing">Test in corsoâ€¦</string>
+<string name="plugins_button_testing">Test in corso…</string>
 <string name="plugins_cd_delete_repo">Elimina repository del plug-in</string>
 <string name="plugins_cd_refresh_repo">Aggiorna repository del plug-in</string>
 <string name="plugins_empty_providers">Nessun fornitore ancora disponibile.</string>
@@ -2012,8 +2012,8 @@
 <string name="player_torrent_buffered_status">%1$s in buffer Â· %2$s Â· %3$s</string>
 <string name="player_torrent_status">%1$s Â· %2$s</string>
 <string name="player_torrent_stats">%1$d peer Â· %2$d seed Â· %3$d%%</string>
-<string name="player_torrent_connecting_peers">Connessione ai peerâ€¦</string>
-<string name="player_torrent_starting_engine">Avvio del motore P2Pâ€¦</string>
+<string name="player_torrent_connecting_peers">Connessione ai peer…</string>
+<string name="player_torrent_starting_engine">Avvio del motore P2P…</string>
 <string name="player_error_failed_start_torrent">Impossibile avviare il torrent: %1$s</string>
 <string name="player_error_torrent">Errore torrent: %1$s</string>
 
@@ -2032,7 +2032,7 @@
     <string name="still_watching_message">Hai guardato %1$d episodi. Continuare la riproduzione?</string>
     <string name="still_watching_proceed">Procedi</string>
     <string name="still_watching_cancel">Annulla</string>
-    <string name="still_watching_timeout">Chiusura riproduzione tra %1$dâ€¦</string>
+    <string name="still_watching_timeout">Chiusura riproduzione tra %1$d…</string>
     <string name="downloads_share">Condividi</string>
     <string name="detail_more_like_this_powered_by_tmdb">Offerto da TMDB</string>
     <string name="detail_more_like_this_powered_by_trakt">Offerto da Trakt</string>
@@ -2225,7 +2225,7 @@
   <string name="settings_playback_external_player_send_skip_segments_description">Passa al player esterno i timestamp risolti di intro e outro per saltarli automaticamente. Funziona solo nei player che lo supportano; gli altri li ignorano.</string>
   <string name="settings_playback_parental_guide">Avvisi sui contenuti</string>
   <string name="settings_playback_parental_guide_description">Mostra una sovrimpressione con le indicazioni per i genitori all'avvio della riproduzione.</string>
-  <string name="streams_loading_skip_segments">Caricamento segmenti da saltareâ€¦</string>
+  <string name="streams_loading_skip_segments">Caricamento segmenti da saltare…</string>
   <string name="collections_import_error_collection_duplicate_id">L'ID collezione '%1$s' è usato più di una volta.</string>
   <string name="collections_import_error_folder_duplicate_id">L'ID cartella '%1$s' è usato più di una volta in '%2$s'.</string>
   <string name="person_detail_born">Nascita</string>

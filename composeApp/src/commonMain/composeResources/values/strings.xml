@@ -19,7 +19,7 @@
     <string name="action_resume">Resume</string>
     <string name="action_retry">Retry</string>
     <string name="action_save">Save</string>
-    <string name="action_saving">Savingâ€¦</string>
+    <string name="action_saving">Saving…</string>
     <string name="action_switch">Switch</string>
     <string name="action_validate">Validate</string>
     <string name="addon_installing">Installing</string>
@@ -404,10 +404,10 @@
     <string name="compose_player_unlock_controls">Unlock player controls</string>
     <string name="player_action_cast">Cast to TV</string>
     <string name="cast_picker_title">Cast to</string>
-    <string name="cast_picker_searching">Searching for devicesâ€¦</string>
+    <string name="cast_picker_searching">Searching for devices…</string>
     <string name="cast_picker_no_devices">No devices found. Make sure your TV is on the same Wi-Fi network.</string>
     <string name="cast_picker_disconnect">Stop casting</string>
-    <string name="cast_status_connecting">Connectingâ€¦</string>
+    <string name="cast_status_connecting">Connecting…</string>
     <string name="cast_status_casting_to">Casting to %1$s</string>
     <string name="compose_player_youre_watching">You&apos;re watching</string>
     <string name="compose_profile_add_profile">Add Profile</string>
@@ -574,7 +574,7 @@
     <string name="settings_opensubtitles_languages_description">Select the languages for automatic subtitle search</string>
     <string name="settings_subdl_attribution_title">SubDL</string>
     <string name="settings_subdl_attribution_body">Nuvio can use SubDL for subtitle discovery and management. SubDL is a service of SubDL.com. Nuvio is not affiliated with or endorsed by SubDL.</string>
-    <string name="compose_trakt_list_picker_loading">Loading your Trakt listsâ€¦</string>
+    <string name="compose_trakt_list_picker_loading">Loading your Trakt lists…</string>
     <string name="compose_trakt_list_picker_subtitle">Choose where to save this title on Trakt</string>
     <string name="action_donate">Donate</string>
     <string name="cw_action_go_to_details">Go to details</string>
@@ -1269,8 +1269,8 @@
     <string name="color_picker_hex_label">Hex</string>
     <string name="color_picker_presets">Presets</string>
     <string name="player_next_episode">Next Episode</string>
-    <string name="player_next_episode_finding_source">Finding sourceâ€¦</string>
-    <string name="player_next_episode_playing_via_countdown">Playing via %1$s in %2$dâ€¦</string>
+    <string name="player_next_episode_finding_source">Finding source…</string>
+    <string name="player_next_episode_playing_via_countdown">Playing via %1$s in %2$d…</string>
     <string name="player_next_episode_thumbnail">Next episode thumbnail</string>
     <string name="player_next_episode_unaired">Unaired</string>
     <string name="player_skip">Skip</string>
@@ -1487,7 +1487,7 @@
     <string name="provider_downloaded">Downloaded</string>
     <string name="resume_prompt_action">Resume</string>
     <string name="streams_active_scrapers">Active scrapers</string>
-    <string name="streams_checking_more_addons">Checking more addonsâ€¦</string>
+    <string name="streams_checking_more_addons">Checking more addons…</string>
     <string name="streams_copy_link">Copy stream link</string>
     <string name="streams_download_file">Download file</string>
     <string name="streams_open_external_player">Open in external player</string>
@@ -1501,11 +1501,11 @@
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Episode</string>
     <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
-    <string name="streams_fetching">Fetchingâ€¦</string>
-    <string name="streams_finding_source">Finding sourceâ€¦</string>
-    <string name="streams_loading_subtitles">Loading subtitles from addonsâ€¦</string>
-    <string name="streams_loading_skip_segments">Loading skip segmentsâ€¦</string>
-    <string name="streams_finding_streams">Finding streamsâ€¦</string>
+    <string name="streams_fetching">Fetching…</string>
+    <string name="streams_finding_source">Finding source…</string>
+    <string name="streams_loading_subtitles">Loading subtitles from addons…</string>
+    <string name="streams_loading_skip_segments">Loading skip segments…</string>
+    <string name="streams_finding_streams">Finding streams…</string>
     <string name="streams_link_copied">Stream link copied</string>
     <string name="streams_no_direct_link">No direct stream link available</string>
     <string name="streams_no_metadata">No metadata available</string>
@@ -1721,7 +1721,7 @@
     <string name="downloads_hls_audio">Audio Track</string>
     <string name="downloads_hls_subtitles">Subtitles</string>
     <string name="downloads_hls_download">Download</string>
-    <string name="downloads_hls_fetching">Fetching available streamsâ€¦</string>
+    <string name="downloads_hls_fetching">Fetching available streams…</string>
     <string name="downloads_hls_select_variant">Select quality, audio and subtitles</string>
     <string name="home_catalog_default_title">%1$s - %2$s</string>
     <string name="library_empty_message">Saved titles will appear here after you tap Save on a details screen.</string>
@@ -2058,9 +2058,9 @@
     <string name="plugins_badge_tmdb_key_missing">TMDB API key missing</string>
     <string name="plugins_badge_tmdb_key_set">TMDB API key set</string>
     <string name="plugins_button_install_repo">Install Plugin Repository</string>
-    <string name="plugins_button_installing">Installingâ€¦</string>
+    <string name="plugins_button_installing">Installing…</string>
     <string name="plugins_button_test_provider">Test Provider</string>
-    <string name="plugins_button_testing">Testingâ€¦</string>
+    <string name="plugins_button_testing">Testing…</string>
     <string name="plugins_cd_delete_repo">Delete plugin repository</string>
     <string name="plugins_cd_refresh_repo">Refresh plugin repository</string>
     <string name="plugins_empty_providers">No providers available yet.</string>
@@ -2164,8 +2164,8 @@
     <string name="player_torrent_buffered_status">%1$s buffered Â· %2$s Â· %3$s</string>
     <string name="player_torrent_status">%1$s Â· %2$s</string>
     <string name="player_torrent_stats">%1$d peers Â· %2$d seeds Â· %3$d%%</string>
-    <string name="player_torrent_connecting_peers">Connecting to peersâ€¦</string>
-    <string name="player_torrent_starting_engine">Starting P2P engineâ€¦</string>
+    <string name="player_torrent_connecting_peers">Connecting to peers…</string>
+    <string name="player_torrent_starting_engine">Starting P2P engine…</string>
     <string name="player_error_failed_start_torrent">Failed to start torrent: %1$s</string>
     <string name="player_error_torrent">Torrent error: %1$s</string>
     <string name="compose_settings_page_network">Network</string>
@@ -2223,7 +2223,7 @@
     <string name="still_watching_message">You have watched %1$d episodes. Continue playing?</string>
     <string name="still_watching_proceed">Proceed</string>
     <string name="still_watching_cancel">Cancel</string>
-    <string name="still_watching_timeout">Auto-stopping in %1$dâ€¦</string>
+    <string name="still_watching_timeout">Auto-stopping in %1$d…</string>
 
     <!-- Downloads share -->
     <string name="downloads_share">Share</string>
@@ -2275,7 +2275,7 @@
     <string name="ai_chat_title">Ask Nuvio</string>
     <string name="ai_chat_disclaimer">Ask anything about this title. Spoilers stay hidden unless you explicitly request them.</string>
     <string name="ai_chat_configure">To use the assistant, open Settings &gt; Integrations &gt; AI Assistant, choose a provider, and enter your free API key. Cerebras and Groq are recommended.</string>
-    <string name="ai_chat_hint">Ask about this titleâ€¦</string>
+    <string name="ai_chat_hint">Ask about this title…</string>
     <string name="ai_chat_prompt_recommend">Is it worth watching without spoilers?</string>
     <string name="ai_chat_prompt_explain">What should I know before watching?</string>
     <string name="ai_chat_prompt_similar">Recommend similar titles</string>
