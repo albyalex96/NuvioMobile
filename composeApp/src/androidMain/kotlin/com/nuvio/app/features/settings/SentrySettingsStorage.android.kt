@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 internal actual object SentrySettingsPlatform {
-    actual val crashReportsSupported: Boolean = true
+    actual val crashReportsSupported: Boolean = false
 }
 
 internal actual object SentrySettingsStorage {
