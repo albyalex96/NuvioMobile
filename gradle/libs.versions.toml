@@ -36,7 +36,6 @@ okhttp = "4.12.0"
 play-services-cast-framework = "21.5.0"
 androidx-mediarouter = "1.7.0"
 jackson = "2.17.0"
-cloudstream = "v4.7.0"
 nicehttp = "0.4.16"
 conscrypt = "2.5.2"
 
@@ -102,7 +101,6 @@ play-services-cast-framework = { module = "com.google.android.gms:play-services-
 androidx-mediarouter = { module = "androidx.mediarouter:mediarouter", version.ref = "androidx-mediarouter" }
 jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson" }
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
-cloudstream-library = { group = "com.github.recloudstream.cloudstream", name = "library", version.ref = "cloudstream" }
 nicehttp = { group = "com.github.Blatzar", name = "NiceHttp", version.ref = "nicehttp" }
 conscrypt-android = { group = "org.conscrypt", name = "conscrypt-android", version.ref = "conscrypt" }
 mpv-android-lib = { module = "io.github.abdallahmehiz:mpv-android-lib", version.ref = "mpv-android-lib" }

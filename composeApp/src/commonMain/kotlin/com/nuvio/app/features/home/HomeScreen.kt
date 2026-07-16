@@ -27,6 +27,7 @@ import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.CloudLibraryRepository
 import com.nuvio.app.features.cloud.CloudLibraryUiState
@@ -115,6 +116,7 @@ fun HomeScreen(
 ) {
     LaunchedEffect(Unit) {
         AddonRepository.initialize()
+        CloudStreamRepository.initialize()
         CollectionRepository.initialize()
         ContinueWatchingPreferencesRepository.ensureLoaded()
         WatchedRepository.ensureLoaded()
@@ -128,6 +130,7 @@ fun HomeScreen(
 
     val addonsUiState by AddonRepository.uiState.collectAsStateWithLifecycle()
     val homeUiState by HomeRepository.uiState.collectAsStateWithLifecycle()
+    val cloudStreamUiState by CloudStreamRepository.uiState.collectAsStateWithLifecycle()
     val homeSettingsUiState by remember {
         HomeCatalogSettingsRepository.snapshot()
         HomeCatalogSettingsRepository.uiState
@@ -502,8 +505,8 @@ fun HomeScreen(
         mutableStateOf(0)
     }
 
-    val catalogRefreshKey = remember(enabledAddons) {
-        buildHomeCatalogRefreshSignature(enabledAddons)
+    val catalogRefreshKey = remember(enabledAddons, cloudStreamUiState.registryRevision) {
+        buildHomeCatalogRefreshSignature(enabledAddons) + "cloudstream:${cloudStreamUiState.registryRevision}:${cloudStreamUiState.plugins.count { it.isRunnable }}"
     }
 
     LaunchedEffect(catalogRefreshKey) {

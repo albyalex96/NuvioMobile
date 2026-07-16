@@ -50,6 +50,7 @@ import com.nuvio.app.core.ui.nuvioConsumePointerEvents
 import com.nuvio.app.core.ui.withDuplicateSafeLazyKeys
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.components.HomeCatalogRowSection
@@ -98,6 +99,7 @@ fun SearchScreen(
 
     LaunchedEffect(Unit) {
         AddonRepository.initialize()
+        CloudStreamRepository.initialize()
         WatchedRepository.ensureLoaded()
         SearchHistoryRepository.ensureLoaded()
     }
@@ -112,6 +114,7 @@ fun SearchScreen(
     val recentSearches by SearchHistoryRepository.uiState.collectAsStateWithLifecycle()
     val watchedUiState by WatchedRepository.uiState.collectAsStateWithLifecycle()
     val fullyWatchedSeriesKeys by WatchedRepository.fullyWatchedSeriesKeys.collectAsStateWithLifecycle()
+    val cloudStreamUiState by CloudStreamRepository.uiState.collectAsStateWithLifecycle()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     var lastRequestedQuery by rememberSaveable { mutableStateOf<String?>(null) }
@@ -129,7 +132,7 @@ fun SearchScreen(
         }
     }
 
-    val addonRefreshKey = remember(addonsUiState.addons) {
+    val addonRefreshKey = remember(addonsUiState.addons, cloudStreamUiState.registryRevision) {
         addonsUiState.addons.enabledAddons().mapNotNull { addon ->
             val manifest = addon.manifest ?: return@mapNotNull null
             buildString {
@@ -148,7 +151,7 @@ fun SearchScreen(
                     "${catalog.type}:${catalog.id}:$extra"
                 })
             }
-        }
+        }.sorted() + "cloudstream:${cloudStreamUiState.registryRevision}:${cloudStreamUiState.plugins.count { it.isRunnable }}"
     }
 
     LaunchedEffect(addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) {

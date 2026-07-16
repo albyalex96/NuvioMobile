@@ -121,3 +121,19 @@ actual suspend fun httpRequestRaw(
         headers = responseHeaders,
     )
 }
+
+actual suspend fun httpGetBytesWithHeaders(
+    url: String,
+    headers: Map<String, String>,
+): ByteArray = withContext(Dispatchers.IO) {
+    val conn = URL(url).openConnection() as HttpURLConnection
+    conn.requestMethod = "GET"
+    conn.connectTimeout = 60_000
+    conn.readTimeout = 60_000
+    headers.forEach { (key, value) -> conn.setRequestProperty(key, value) }
+    try {
+        conn.inputStream.readBytes()
+    } finally {
+        conn.disconnect()
+    }
+}

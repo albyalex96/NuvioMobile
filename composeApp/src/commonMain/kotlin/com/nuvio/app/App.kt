@@ -342,6 +342,7 @@ private data class CatalogLaunch(
                 sourceKey = requireNotNull(sourceKey),
                 contentType = contentType,
             )
+            CatalogTargetKind.CLOUDSTREAM -> target as CatalogTarget.CloudStream
         }
 }
 

@@ -11,7 +11,6 @@ internal object PluginStorage {
 
     fun initialize(context: Context) {
         preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
-        com.nuvio.app.features.plugins.cloudstream.CloudStreamRuntimeHooks.setApplicationContext(context)
     }
 
     fun loadState(profileId: Int): String? =
