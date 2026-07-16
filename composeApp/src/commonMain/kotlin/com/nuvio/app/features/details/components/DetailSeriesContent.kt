@@ -787,6 +787,23 @@ private fun EpisodeHorizontalCard(
                     backgroundAlpha = 0.42f,
                 )
 
+                if (!expanded && !video.overview.isNullOrBlank()) {
+                    IconButton(
+                        onClick = { expanded = !expanded },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(metrics.contentPadding)
+                            .size(20.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ExpandMore,
+                            contentDescription = "Expand",
+                            tint = Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+
                 if (!expanded) {
                     Column(
                         modifier = Modifier
@@ -823,22 +840,6 @@ private fun EpisodeHorizontalCard(
                                 maxLines = metrics.overviewMaxLines,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End,
-                            ) {
-                                IconButton(
-                                    onClick = { expanded = !expanded },
-                                    modifier = Modifier.size(20.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.ExpandMore,
-                                        contentDescription = "Expand",
-                                        tint = Color.White.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                            }
                         }
 
                         MetaRow()
@@ -858,33 +859,23 @@ private fun EpisodeHorizontalCard(
                         ),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(
-                        text = video.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = metrics.titleTextSize,
-                            fontWeight = FontWeight.ExtraBold,
-                            lineHeight = metrics.titleLineHeight,
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-
-                    if (!video.overview.isNullOrBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
-                            text = video.overview,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = metrics.bodyTextSize,
-                                lineHeight = metrics.bodyLineHeight,
+                            text = video.title,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontSize = metrics.titleTextSize,
+                                fontWeight = FontWeight.ExtraBold,
+                                lineHeight = metrics.titleLineHeight,
                             ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = Int.MAX_VALUE,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
-                        ) {
+                        if (!video.overview.isNullOrBlank()) {
                             IconButton(
                                 onClick = { expanded = !expanded },
                                 modifier = Modifier.size(20.dp),
@@ -897,6 +888,19 @@ private fun EpisodeHorizontalCard(
                                 )
                             }
                         }
+                    }
+
+                    if (!video.overview.isNullOrBlank()) {
+                        Text(
+                            text = video.overview,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = metrics.bodyTextSize,
+                                lineHeight = metrics.bodyLineHeight,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = Int.MAX_VALUE,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
 
                     MetaRow()
@@ -1179,21 +1183,36 @@ private fun EpisodeListCard(
     }
 
     @Composable
-    fun ExpandButton() {
+    fun TitleWithExpandButton() {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(
-                onClick = { expanded = !expanded },
-                modifier = Modifier.size(24.dp),
-            ) {
-                Icon(
-                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp),
-                )
+            Text(
+                text = video.title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = sizing.titleTextSize,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = sizing.titleLineHeight,
+                    letterSpacing = 0.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = if (expanded) Int.MAX_VALUE else sizing.titleMaxLines,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (!video.overview.isNullOrBlank()) {
+                IconButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier.size(24.dp),
+                ) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
         }
     }
@@ -1271,18 +1290,7 @@ private fun EpisodeListCard(
                         ),
                     verticalArrangement = Arrangement.spacedBy(sizing.contentSpacing),
                 ) {
-                    Text(
-                        text = video.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = sizing.titleTextSize,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = sizing.titleLineHeight,
-                            letterSpacing = 0.sp,
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = sizing.titleMaxLines,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    TitleWithExpandButton()
 
                     DateAndRatingRow()
 
@@ -1297,7 +1305,6 @@ private fun EpisodeListCard(
                             maxLines = sizing.overviewMaxLines,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        ExpandButton()
                     }
                 }
             }
@@ -1357,18 +1364,7 @@ private fun EpisodeListCard(
                         ),
                     verticalArrangement = Arrangement.spacedBy(sizing.contentSpacing),
                 ) {
-                    Text(
-                        text = video.title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = sizing.titleTextSize,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = sizing.titleLineHeight,
-                            letterSpacing = 0.sp,
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = Int.MAX_VALUE,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    TitleWithExpandButton()
 
                     DateAndRatingRow()
 
@@ -1383,7 +1379,6 @@ private fun EpisodeListCard(
                             maxLines = Int.MAX_VALUE,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        ExpandButton()
                     }
                 }
             }
