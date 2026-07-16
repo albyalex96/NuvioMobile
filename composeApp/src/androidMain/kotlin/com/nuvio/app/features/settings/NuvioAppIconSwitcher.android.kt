@@ -8,7 +8,7 @@ import android.os.Looper
 import kotlin.system.exitProcess
 
 internal actual object NuvioAppIconSwitcher {
-    private const val packageName = "com.nuvioenhanced.app"
+    private const val packageName = "com.nuvio.enhanced"
     private const val defaultAlias = "$packageName.IconDefault"
 
     private val aliases = mapOf(
