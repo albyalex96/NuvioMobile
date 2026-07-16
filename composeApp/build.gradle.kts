@@ -171,6 +171,21 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
+        outDir.resolve("com/nuvio/app/features/anilist").apply {
+            mkdirs()
+            resolve("AniListConfig.kt").writeText(
+                """
+                |package com.nuvio.app.features.anilist
+                |
+                |object AniListConfig {
+                |    const val CLIENT_ID = "${props.getProperty("ANILIST_CLIENT_ID", "")}" 
+                |    const val CLIENT_SECRET = "${props.getProperty("ANILIST_CLIENT_SECRET", "")}" 
+                |    const val REDIRECT_URI = "${props.getProperty("ANILIST_REDIRECT_URI", "nuvio://auth/anilist")}" 
+                |}
+                """.trimMargin()
+            )
+        }
+
         outDir.resolve("com/nuvio/app/features/debrid").apply {
             mkdirs()
             resolve("PremiumizeConfig.kt").writeText(

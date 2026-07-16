@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,9 +32,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.rounded.Refresh
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -356,11 +361,13 @@ private fun EpisodeRow(
 ) {
     val tokens = MaterialTheme.nuvio
     val shouldBlurArtwork = blurUnwatchedEpisodes && !isWatched && !isCurrent
+    var expanded by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(tokens.shapes.compactCard)
+            .animateContentSize(animationSpec = tween(300))
             .background(
                 if (isCurrent) tokens.colors.overlaySelected else Color.Transparent,
             )
@@ -442,10 +449,24 @@ private fun EpisodeRow(
                     text = overview,
                     color = tokens.colors.textSecondary,
                     fontSize = NuvioTokens.Type.labelXs,
-                    maxLines = 2,
+                    maxLines = if (expanded) Int.MAX_VALUE else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+        }
+
+        IconButton(
+            onClick = { expanded = !expanded },
+            modifier = Modifier
+                .align(Alignment.Top)
+                .size(20.dp),
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint = tokens.colors.textMuted,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
