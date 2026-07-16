@@ -1274,12 +1274,13 @@ if (isMacHost) {
 afterEvaluate {
     dependencies {
         add("fullImplementation", files("libs/quickjs-kt-android-1.0.5-nuvio.aar"))
+        add("fullImplementation", "androidx.annotation:annotation:1.10.0")
         add("fullImplementation", libs.ksoup)
         add("fullImplementation", libs.jackson.databind)
         add("fullImplementation", libs.jackson.module.kotlin)
         add("fullImplementation", libs.nicehttp)
         add("fullImplementation", libs.conscrypt.android)
-        add("fullImplementation", libs.cloudstream.library)
+        add("fullImplementation", files("libs/cloudstream-runtime-api-4.8.0-3496e5f.aar"))
     }
 }
 configurations.matching { it.name == "iosMainImplementation" }.configureEach {
