@@ -532,7 +532,7 @@ object HomeRepository {
                             sections += HomeCatalogSection(
                                 key = "cloudstream:${plugin.metadata.id.storageKey}:${categoryName.hashCode()}",
                                 title = categoryName,
-                                subtitle = "${plugin.metadata.name} � CloudStream",
+                                subtitle = "${plugin.metadata.name} - CloudStream",
                                 addonName = plugin.metadata.name,
                                 target = CatalogTarget.CloudStream(
                                     providerId = plugin.metadata.id.value,
