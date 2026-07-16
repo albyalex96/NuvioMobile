@@ -49,7 +49,7 @@ fun PluginSettingsDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "$scraperName Settings",
+                    text = "$scraperName Impostazioni",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -121,7 +121,7 @@ fun PluginSettingsDialog(
                                                 it.jsonObject["value"]?.jsonPrimitive?.content == currentValue 
                                             }?.jsonObject?.get("label")?.jsonPrimitive?.content ?: currentValue
                                             
-                                            Text(text = selectedLabel.ifBlank { "Select option" })
+                                            Text(text = selectedLabel.ifBlank { "Seleziona opzione" })
                                             Icon(Icons.Rounded.ArrowDropDown, contentDescription = null)
                                         }
                                     }
@@ -186,10 +186,10 @@ fun PluginSettingsDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text("Annulla")
                     }
                     NuvioPrimaryButton(
-                        text = "Save",
+                        text = "Salva",
                         onClick = {
                             val result = JsonObject(currentSettings.toMap())
                             PluginStorage.saveScraperSettings(scraperId, result.toString())
