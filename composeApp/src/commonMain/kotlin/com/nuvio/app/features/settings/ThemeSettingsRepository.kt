@@ -167,6 +167,7 @@ object ThemeSettingsRepository {
         _selectedAppIconId.value = iconId
         ThemeSettingsStorage.saveSelectedAppIconId(iconId)
         NuvioAppIconSwitcher.apply(iconId)
+        NuvioAppIconSwitcher.closeAfterApply()
     }
 
     fun setAmoled(enabled: Boolean) {
