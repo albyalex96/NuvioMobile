@@ -2211,4 +2211,26 @@
   <string name="entity_browse_about">Informazioni</string>
   <string name="player_external_loading_subtitles">Caricamento sottotitoli dagli addon...</string>
   <string name="player_external_downloading_subtitles">Download dei sottotitoli...</string>
+  <string name="theme_messenger">Messenger</string>
+  <string name="theme_amethyst">Ametista</string>
+  <string name="theme_blossom">Fioritura</string>
+  <string name="theme_lagoon">Laguna</string>
+  <string name="theme_sunset">Tramonto</string>
+  <string name="settings_appearance_theme_classic">Temi classici</string>
+  <string name="settings_appearance_theme_enhanced">Temi avanzati</string>
+  <string name="settings_appearance_theme_custom_first">Primo colore</string>
+  <string name="settings_appearance_theme_custom_second">Secondo colore</string>
+  <string name="settings_appearance_theme_animation_style">Stile animazione</string>
+  <string name="theme_animation_flow">Flusso</string>
+  <string name="theme_animation_shimmer">Bagliore</string>
+  <string name="theme_animation_wave">Onda</string>
+  <string name="theme_animation_vivid_wave">Onda vivida</string>
+  <string name="theme_animation_still">Fermo</string>
+  <string name="theme_color_pink">Rosa</string>
+  <string name="theme_color_purple">Viola</string>
+  <string name="theme_color_blue">Blu</string>
+  <string name="theme_color_cyan">Ciano</string>
+  <string name="theme_color_green">Verde</string>
+  <string name="theme_color_yellow">Giallo</string>
+  <string name="theme_color_red">Rosso</string>
 </resources>

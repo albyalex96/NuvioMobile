@@ -67,11 +67,13 @@ import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.labelRes
+import com.nuvio.app.core.ui.NuvioColorPicker
 import com.nuvio.app.core.ui.ThemeAccentColor
 import com.nuvio.app.core.ui.ThemeAnimationStyle
 import com.nuvio.app.core.ui.ThemeColorPalette
 import com.nuvio.app.core.ui.ThemeColors
 import com.nuvio.app.core.ui.isEnhanced
+import com.nuvio.app.core.ui.parseHexColor
 import com.nuvio.app.core.ui.rememberAnimatedAccentBrush
 import com.nuvio.app.core.ui.toThemeHex
 import kotlinx.coroutines.launch
@@ -215,15 +217,41 @@ internal fun LazyListScope.appearanceSettingsContent(
 
                     if (selectedTheme == AppTheme.CUSTOM) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f))
+                        Text(
+                            text = "Colore primario",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         CustomThemeColorPicker(
                             label = stringResource(Res.string.settings_appearance_theme_custom_first),
                             selectedColor = customFirst,
                             onColorSelected = ThemeSettingsRepository::setCustomThemeFirstColor,
                         )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        NuvioColorPicker(
+                            currentHex = customFirst.toThemeHex(),
+                            onColorChanged = { parseHexColor(it)?.let(ThemeSettingsRepository::setCustomThemeFirstColor) },
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f))
+                        Text(
+                            text = "Colore secondario",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         CustomThemeColorPicker(
                             label = stringResource(Res.string.settings_appearance_theme_custom_second),
                             selectedColor = customSecond,
                             onColorSelected = ThemeSettingsRepository::setCustomThemeSecondColor,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        NuvioColorPicker(
+                            currentHex = customSecond.toThemeHex(),
+                            onColorChanged = { parseHexColor(it)?.let(ThemeSettingsRepository::setCustomThemeSecondColor) },
                         )
                     }
                 }
@@ -765,6 +793,125 @@ private fun ThemeGrid(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateFormatBottomSheet(
+    selectedFormat: DateFormatOption,
+    onFormatSelected: (DateFormatOption) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+
+    NuvioModalBottomSheet(
+        onDismissRequest = {
+            coroutineScope.launch {
+                dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+            }
+        },
+        sheetState = sheetState,
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+        ) {
+            item {
+                Text(
+                    text = stringResource(Res.string.settings_appearance_date_format_sheet_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                )
+            }
+
+            itemsIndexed(DateFormatOption.entries) { index, option ->
+                if (index > 0) {
+                    NuvioBottomSheetDivider()
+                }
+                NuvioBottomSheetActionRow(
+                    title = option.formatPreview(),
+                    onClick = {
+                        onFormatSelected(option)
+                        coroutineScope.launch {
+                            dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+                        }
+                    },
+                    trailingContent = {
+                        if (option == selectedFormat) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(Res.string.cd_selected),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppIconBottomSheet(
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+    val selectedIconId by remember { ThemeSettingsRepository.selectedAppIconId }.collectAsState()
+
+    NuvioModalBottomSheet(
+        onDismissRequest = {
+            coroutineScope.launch {
+                dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+            }
+        },
+        sheetState = sheetState,
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+        ) {
+            item {
+                Text(
+                    text = "App Icon",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                )
+            }
+
+            itemsIndexed(NuvioAppIconOption.entries) { index, option ->
+                if (index > 0) {
+                    NuvioBottomSheetDivider()
+                }
+                NuvioBottomSheetActionRow(
+                    title = option.id.replaceFirstChar { it.uppercase() },
+                    onClick = {
+                        ThemeSettingsRepository.setAppIcon(option.id)
+                        coroutineScope.launch {
+                            dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+                        }
+                    },
+                    trailingContent = {
+                        if (option.id == selectedIconId) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(Res.string.cd_selected),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun CustomThemeColorPicker(
     label: String,
@@ -993,125 +1140,6 @@ private fun HuePicker(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DateFormatBottomSheet(
-    selectedFormat: DateFormatOption,
-    onFormatSelected: (DateFormatOption) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val coroutineScope = rememberCoroutineScope()
-
-    NuvioModalBottomSheet(
-        onDismissRequest = {
-            coroutineScope.launch {
-                dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
-            }
-        },
-        sheetState = sheetState,
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-        ) {
-            item {
-                Text(
-                    text = stringResource(Res.string.settings_appearance_date_format_sheet_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                )
-            }
-
-            itemsIndexed(DateFormatOption.entries) { index, option ->
-                if (index > 0) {
-                    NuvioBottomSheetDivider()
-                }
-                NuvioBottomSheetActionRow(
-                    title = option.formatPreview(),
-                    onClick = {
-                        onFormatSelected(option)
-                        coroutineScope.launch {
-                            dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
-                        }
-                    },
-                    trailingContent = {
-                        if (option == selectedFormat) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = stringResource(Res.string.cd_selected),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    },
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AppIconBottomSheet(
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val coroutineScope = rememberCoroutineScope()
-    val selectedIconId by remember { ThemeSettingsRepository.selectedAppIconId }.collectAsState()
-
-    NuvioModalBottomSheet(
-        onDismissRequest = {
-            coroutineScope.launch {
-                dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
-            }
-        },
-        sheetState = sheetState,
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-        ) {
-            item {
-                Text(
-                    text = "App Icon",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                )
-            }
-
-            itemsIndexed(NuvioAppIconOption.entries) { index, option ->
-                if (index > 0) {
-                    NuvioBottomSheetDivider()
-                }
-                NuvioBottomSheetActionRow(
-                    title = option.id.replaceFirstChar { it.uppercase() },
-                    onClick = {
-                        ThemeSettingsRepository.setAppIcon(option.id)
-                        coroutineScope.launch {
-                            dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
-                        }
-                    },
-                    trailingContent = {
-                        if (option.id == selectedIconId) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = stringResource(Res.string.cd_selected),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    },
-                )
-            }
-        }
-    }
-}
-
 private data class HsvColor(
     val hue: Float,
     val saturation: Float,
@@ -1161,3 +1189,5 @@ private fun String.toColorOrNull(): Color? {
         blue = hex.substring(4, 6).toInt(16) / 255f,
     )
 }
+
+
