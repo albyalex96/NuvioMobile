@@ -7,6 +7,14 @@ internal expect object ThemeSettingsStorage {
     fun saveSelectedTheme(themeName: String)
     fun loadCustomAccentHex(): String?
     fun saveCustomAccentHex(hex: String)
+    fun loadCustomThemeFirstColor(): String?
+    fun saveCustomThemeFirstColor(hex: String)
+    fun loadCustomThemeSecondColor(): String?
+    fun saveCustomThemeSecondColor(hex: String)
+    fun loadThemeAnimationStyle(): String?
+    fun saveThemeAnimationStyle(style: String)
+    fun loadSelectedAppIconId(): String?
+    fun saveSelectedAppIconId(iconId: String)
     fun loadAmoledEnabled(): Boolean?
     fun saveAmoledEnabled(enabled: Boolean)
     fun loadAmoledSurfacesEnabled(): Boolean?

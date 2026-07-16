@@ -491,9 +491,20 @@ fun App(
         ThemeSettingsRepository.selectedTheme
     }.collectAsStateWithLifecycle()
     val customAccentHex by remember { ThemeSettingsRepository.customAccentHex }.collectAsStateWithLifecycle()
+    val customThemeFirstColor by remember { ThemeSettingsRepository.customThemeFirstColor }.collectAsStateWithLifecycle()
+    val customThemeSecondColor by remember { ThemeSettingsRepository.customThemeSecondColor }.collectAsStateWithLifecycle()
+    val themeAnimationStyle by remember { ThemeSettingsRepository.themeAnimationStyle }.collectAsStateWithLifecycle()
     val amoledEnabled by remember { ThemeSettingsRepository.amoledEnabled }.collectAsStateWithLifecycle()
     val amoledSurfacesEnabled by remember { ThemeSettingsRepository.amoledSurfacesEnabled }.collectAsStateWithLifecycle()
-    NuvioTheme(appTheme = selectedTheme, customAccentHex = customAccentHex, amoled = amoledEnabled, amoledSurfaces = amoledSurfacesEnabled) {
+    NuvioTheme(
+        appTheme = selectedTheme,
+        customAccentHex = customAccentHex,
+        customThemeFirstColor = customThemeFirstColor,
+        customThemeSecondColor = customThemeSecondColor,
+        themeAnimationStyle = themeAnimationStyle,
+        amoled = amoledEnabled,
+        amoledSurfaces = amoledSurfacesEnabled,
+    ) {
         if (bypassAppGate) {
             MainAppContent(
                 initialTab = initialTab,

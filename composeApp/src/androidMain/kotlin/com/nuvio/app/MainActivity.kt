@@ -45,6 +45,7 @@ import com.nuvio.app.features.profiles.ProfileStorage
 import com.nuvio.app.features.details.SeasonViewModeStorage
 import com.nuvio.app.features.search.SearchHistoryStorage
 import com.nuvio.app.features.settings.ThemeSettingsStorage
+import com.nuvio.app.features.settings.NuvioAppIconSwitcher
 import com.nuvio.app.features.mal.MalAuthStorage
 import com.nuvio.app.features.mal.MalLibraryStorage
 import com.nuvio.app.features.trakt.TraktAuthStorage
@@ -77,6 +78,7 @@ class MainActivity : AppCompatActivity() {
             ),
         )
         ThemeSettingsStorage.initialize(applicationContext)
+        NuvioAppIconSwitcher.initialize(applicationContext)
         super.onCreate(savedInstanceState)
         window.setBackgroundDrawableResource(R.color.nuvio_background)
         pipRemoteActionReceiver = PipRemoteActionReceiver.register(this)

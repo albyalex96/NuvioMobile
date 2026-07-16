@@ -16,6 +16,41 @@ internal actual object ThemeSettingsStorage {
         store.putString("selected_theme", themeName)
     }
 
+    actual fun loadCustomAccentHex(): String? =
+        store.getString("custom_accent_hex")
+
+    actual fun saveCustomAccentHex(hex: String) {
+        store.putString("custom_accent_hex", hex)
+    }
+
+    actual fun loadCustomThemeFirstColor(): String? =
+        store.getString("custom_theme_first_color")
+
+    actual fun saveCustomThemeFirstColor(hex: String) {
+        store.putString("custom_theme_first_color", hex)
+    }
+
+    actual fun loadCustomThemeSecondColor(): String? =
+        store.getString("custom_theme_second_color")
+
+    actual fun saveCustomThemeSecondColor(hex: String) {
+        store.putString("custom_theme_second_color", hex)
+    }
+
+    actual fun loadThemeAnimationStyle(): String? =
+        store.getString("theme_animation_style")
+
+    actual fun saveThemeAnimationStyle(style: String) {
+        store.putString("theme_animation_style", style)
+    }
+
+    actual fun loadSelectedAppIconId(): String? =
+        store.getString("selected_app_icon_id")
+
+    actual fun saveSelectedAppIconId(iconId: String) {
+        store.putString("selected_app_icon_id", iconId)
+    }
+
     actual fun loadAmoledEnabled(): Boolean? =
         store.getBoolean("amoled_enabled")
 
@@ -62,13 +97,6 @@ internal actual object ThemeSettingsStorage {
         store.putString("date_format_option", format)
     }
 
-    actual fun loadCustomAccentHex(): String? =
-        store.getString("custom_accent_hex")
-
-    actual fun saveCustomAccentHex(hex: String) {
-        store.putString("custom_accent_hex", hex)
-    }
-
     actual fun exportToSyncPayload(): JsonObject {
         val map = mutableMapOf<String, String>()
         loadSelectedTheme()?.let { map["selected_theme"] = it }
@@ -78,6 +106,9 @@ internal actual object ThemeSettingsStorage {
         loadGlassNavBarEnabled()?.let { map["glass_nav_bar_enabled"] = it.toString() }
         loadSelectedAppLanguage()?.let { map["selected_app_language"] = it }
         loadCustomAccentHex()?.let { map["custom_accent_hex"] = it }
+        loadCustomThemeFirstColor()?.let { map["custom_theme_first_color"] = it }
+        loadCustomThemeSecondColor()?.let { map["custom_theme_second_color"] = it }
+        loadThemeAnimationStyle()?.let { map["theme_animation_style"] = it }
         return json.decodeFromString(json.encodeToString(map))
     }
 
@@ -89,5 +120,8 @@ internal actual object ThemeSettingsStorage {
         payload["glass_nav_bar_enabled"]?.let { saveGlassNavBarEnabled(it.toString().toBooleanStrictOrNull() ?: return@let) }
         payload["selected_app_language"]?.let { saveSelectedAppLanguage(it.toString()) }
         payload["custom_accent_hex"]?.let { saveCustomAccentHex(it.toString()) }
+        payload["custom_theme_first_color"]?.let { saveCustomThemeFirstColor(it.toString()) }
+        payload["custom_theme_second_color"]?.let { saveCustomThemeSecondColor(it.toString()) }
+        payload["theme_animation_style"]?.let { saveThemeAnimationStyle(it.toString()) }
     }
 }

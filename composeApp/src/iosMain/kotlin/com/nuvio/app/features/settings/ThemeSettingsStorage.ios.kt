@@ -13,6 +13,10 @@ import platform.Foundation.NSUserDefaults
 actual object ThemeSettingsStorage {
     private const val selectedThemeKey = "selected_theme"
     private const val customAccentHexKey = "custom_accent_hex"
+    private const val customThemeFirstColorKey = "custom_theme_first_color"
+    private const val customThemeSecondColorKey = "custom_theme_second_color"
+    private const val themeAnimationStyleKey = "theme_animation_style"
+    private const val selectedAppIconIdKey = "selected_app_icon_id"
     private const val amoledEnabledKey = "amoled_enabled"
     private const val amoledSurfacesEnabledKey = "amoled_surfaces_enabled"
     private const val liquidGlassNativeTabBarEnabledKey = "liquid_glass_native_tab_bar_enabled"
@@ -39,6 +43,34 @@ actual object ThemeSettingsStorage {
 
     actual fun saveCustomAccentHex(hex: String) {
         NSUserDefaults.standardUserDefaults.setObject(hex, forKey = ProfileScopedKey.of(customAccentHexKey))
+    }
+
+    actual fun loadCustomThemeFirstColor(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(customThemeFirstColorKey))
+
+    actual fun saveCustomThemeFirstColor(hex: String) {
+        NSUserDefaults.standardUserDefaults.setObject(hex, forKey = ProfileScopedKey.of(customThemeFirstColorKey))
+    }
+
+    actual fun loadCustomThemeSecondColor(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(customThemeSecondColorKey))
+
+    actual fun saveCustomThemeSecondColor(hex: String) {
+        NSUserDefaults.standardUserDefaults.setObject(hex, forKey = ProfileScopedKey.of(customThemeSecondColorKey))
+    }
+
+    actual fun loadThemeAnimationStyle(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(themeAnimationStyleKey))
+
+    actual fun saveThemeAnimationStyle(style: String) {
+        NSUserDefaults.standardUserDefaults.setObject(style, forKey = ProfileScopedKey.of(themeAnimationStyleKey))
+    }
+
+    actual fun loadSelectedAppIconId(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(selectedAppIconIdKey))
+
+    actual fun saveSelectedAppIconId(iconId: String) {
+        NSUserDefaults.standardUserDefaults.setObject(iconId, forKey = ProfileScopedKey.of(selectedAppIconIdKey))
     }
 
     actual fun loadAmoledEnabled(): Boolean? {
@@ -142,6 +174,9 @@ actual object ThemeSettingsStorage {
     actual fun exportToSyncPayload(): JsonObject = buildJsonObject {
         loadSelectedTheme()?.let { put(selectedThemeKey, encodeSyncString(it)) }
         loadCustomAccentHex()?.let { put(customAccentHexKey, encodeSyncString(it)) }
+        loadCustomThemeFirstColor()?.let { put(customThemeFirstColorKey, encodeSyncString(it)) }
+        loadCustomThemeSecondColor()?.let { put(customThemeSecondColorKey, encodeSyncString(it)) }
+        loadThemeAnimationStyle()?.let { put(themeAnimationStyleKey, encodeSyncString(it)) }
         loadAmoledEnabled()?.let { put(amoledEnabledKey, encodeSyncBoolean(it)) }
         loadAmoledSurfacesEnabled()?.let { put(amoledSurfacesEnabledKey, encodeSyncBoolean(it)) }
         loadLiquidGlassNativeTabBarEnabled()?.let { put(liquidGlassNativeTabBarEnabledKey, encodeSyncBoolean(it)) }
@@ -155,6 +190,9 @@ actual object ThemeSettingsStorage {
 
         payload.decodeSyncString(selectedThemeKey)?.let(::saveSelectedTheme)
         payload.decodeSyncString(customAccentHexKey)?.let(::saveCustomAccentHex)
+        payload.decodeSyncString(customThemeFirstColorKey)?.let(::saveCustomThemeFirstColor)
+        payload.decodeSyncString(customThemeSecondColorKey)?.let(::saveCustomThemeSecondColor)
+        payload.decodeSyncString(themeAnimationStyleKey)?.let(::saveThemeAnimationStyle)
         payload.decodeSyncBoolean(amoledEnabledKey)?.let(::saveAmoledEnabled)
         payload.decodeSyncBoolean(amoledSurfacesEnabledKey)?.let(::saveAmoledSurfacesEnabled)
         payload.decodeSyncBoolean(liquidGlassNativeTabBarEnabledKey)?.let(::saveLiquidGlassNativeTabBarEnabled)

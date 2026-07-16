@@ -2268,4 +2268,27 @@
         <item quantity="one">%d title</item>
         <item quantity="other">%d titles</item>
     </plurals>
+    <string name="theme_messenger">Messenger</string>
+    <string name="theme_amethyst">Amethyst</string>
+    <string name="theme_blossom">Blossom</string>
+    <string name="theme_lagoon">Lagoon</string>
+    <string name="theme_sunset">Sunset</string>
+    <string name="settings_appearance_theme_classic">Classic themes</string>
+    <string name="settings_appearance_theme_enhanced">Enhanced themes</string>
+    <string name="settings_appearance_theme_custom_first">First color</string>
+    <string name="settings_appearance_theme_custom_second">Second color</string>
+    <string name="settings_appearance_theme_animation_style">Animation style</string>
+    <string name="theme_animation_flow">Flow</string>
+    <string name="theme_animation_shimmer">Shimmer</string>
+    <string name="theme_animation_wave">Wave</string>
+    <string name="theme_animation_vivid_wave">Vivid wave</string>
+    <string name="theme_animation_still">Still</string>
+    <string name="theme_color_pink">Pink</string>
+    <string name="theme_color_purple">Purple</string>
+    <string name="theme_color_blue">Blue</string>
+    <string name="theme_color_cyan">Cyan</string>
+    <string name="theme_color_green">Green</string>
+    <string name="theme_color_yellow">Yellow</string>
+    <string name="theme_color_red">Red</string>
+    <string name="theme_color_white">White</string>
 </resources>
