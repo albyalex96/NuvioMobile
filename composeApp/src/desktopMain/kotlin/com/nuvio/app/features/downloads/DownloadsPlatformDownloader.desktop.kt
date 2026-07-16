@@ -77,6 +77,11 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
+    actual fun openDownloadsDirectory(): Boolean {
+        val dir = File(System.getProperty("java.io.tmpdir") ?: "/tmp", "nuvio-downloads")
+        return dir.exists() || dir.mkdirs()
+    }
+
     actual fun fetchUrlAsString(url: String, headers: Map<String, String>): String? {
         return try {
             val conn = URL(url).openConnection() as HttpURLConnection

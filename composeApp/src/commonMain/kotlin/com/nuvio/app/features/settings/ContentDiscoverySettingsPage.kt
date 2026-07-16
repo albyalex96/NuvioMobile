@@ -8,17 +8,19 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Star
+import com.nuvio.app.core.build.AppFeaturePolicy
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_addons
+import nuvio.composeapp.generated.resources.compose_settings_page_plugins
+import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description
+import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description_appstore
+import nuvio.composeapp.generated.resources.settings_content_discovery_plugins_description
+import nuvio.composeapp.generated.resources.collections_header
 import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
 import nuvio.composeapp.generated.resources.compose_settings_page_meta_screen
-import nuvio.composeapp.generated.resources.compose_settings_page_plugins
-import nuvio.composeapp.generated.resources.collections_header
-import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_collections_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_homescreen_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_meta_screen_description
-import nuvio.composeapp.generated.resources.settings_content_discovery_plugins_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_home
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_sources
 import org.jetbrains.compose.resources.stringResource
@@ -42,8 +44,13 @@ internal fun LazyListScope.contentDiscoveryContent(
             SettingsGroup(isTablet = isTablet) {
                 SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_addons),
-                    description = stringResource(Res.string.settings_content_discovery_addons_description),
-                    icon = Icons.Rounded.Extension,
+                    description = stringResource(
+                        if (AppFeaturePolicy.personalMediaAddonCopyEnabled) {
+                            Res.string.settings_content_discovery_addons_description_appstore
+                        } else {
+                            Res.string.settings_content_discovery_addons_description
+                        },
+                    ),
                     isTablet = isTablet,
                     onClick = onAddonsClick,
                 )
@@ -51,7 +58,6 @@ internal fun LazyListScope.contentDiscoveryContent(
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_plugins),
                         description = stringResource(Res.string.settings_content_discovery_plugins_description),
-                        icon = Icons.Rounded.Hub,
                         isTablet = isTablet,
                         onClick = onPluginsClick,
                     )

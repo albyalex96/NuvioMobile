@@ -35,4 +35,6 @@ internal expect object DownloadsPlatformDownloader {
     fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String?
 
     fun fetchUrlAsString(url: String, headers: Map<String, String>): String?
+
+    fun openDownloadsDirectory(): Boolean
 }

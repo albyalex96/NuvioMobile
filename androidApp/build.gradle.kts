@@ -27,6 +27,10 @@ val releaseStorePassword = localProps.getProperty("NUVIO_RELEASE_STORE_PASSWORD"
 val releaseKeyAlias = localProps.getProperty("NUVIO_RELEASE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
 val releaseKeyPassword = localProps.getProperty("NUVIO_RELEASE_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
 val releaseKeystore = releaseStoreFile?.let(rootProject::file)
+fun envOrLocalProperty(key: String): String? =
+    providers.environmentVariable(key).orNull?.trim()?.takeIf { it.isNotBlank() }
+        ?: localProps.getProperty(key)?.trim()?.takeIf { it.isNotBlank() }
+
 val appVersionConfigFile = rootProject.file("iosApp/Configuration/Version.xcconfig")
 val releaseAppVersionName = readXcconfigValue(appVersionConfigFile, "MARKETING_VERSION")
     ?: error("MARKETING_VERSION is missing from ${appVersionConfigFile.path}")
@@ -110,6 +114,11 @@ android {
     }
 }
 
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.applicationId.set("com.nuviodebug.com")
+    }
+}
 dependencies {
     implementation(project(":composeApp"))
     coreLibraryDesugaring(libs.desugar.jdk.libs)

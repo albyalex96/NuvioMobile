@@ -15,11 +15,6 @@ import nuvio.composeapp.generated.resources.player_ios_preset_sdr_tone_mapped_de
 import nuvio.composeapp.generated.resources.player_ios_preset_sdr_tone_mapped_label
 import org.jetbrains.compose.resources.stringResource
 
-@Serializable
-data class PlayerRoute(
-    val launchId: Long,
-)
-
 data class PlayerLaunch(
     val profileId: Int,
     val title: String,
@@ -224,4 +219,12 @@ data class PlayerPlaybackSnapshot(
     val positionMs: Long = 0L,
     val bufferedPositionMs: Long = 0L,
     val playbackSpeed: Float = 1f,
+    val videoWidth: Int = 0,
+    val videoHeight: Int = 0,
+)
+
+data class PlayerNowPlayingInfo(
+    val title: String,
+    val subtitle: String? = null,
+    val artworkUrl: String? = null,
 )

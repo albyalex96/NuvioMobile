@@ -37,9 +37,10 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material3.CircularProgressIndicator
+import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -77,6 +78,7 @@ import com.nuvio.app.core.i18n.localizedMonthName
 import com.nuvio.app.core.i18n.localizedShortMonthName
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
+import com.nuvio.app.core.ui.DisintegratingContainer
 import com.nuvio.app.core.ui.NuvioDropdownChip
 import com.nuvio.app.core.ui.NuvioDropdownOption
 import com.nuvio.app.core.ui.NuvioScreen
@@ -208,6 +210,16 @@ fun LibraryScreen(
         }
     }
 
+    val disintegration = remember { LibraryDisintegrationHolder() }
+    val librarySectionsDisplay = if (
+        sourceMode != LibraryViewMode.Cloud && uiState.isLoaded && uiState.sections.isNotEmpty()
+    ) {
+        disintegration.sync(uiState.sections, LIBRARY_SECTION_PREVIEW_LIMIT)
+    } else {
+        disintegration.reset()
+        emptyList()
+    }
+
     LaunchedEffect(showReleaseCalendar, uiState.items, episodeCodeFormat) {
         if (!showReleaseCalendar) return@LaunchedEffect
         val itemsSnapshot = uiState.items
@@ -220,52 +232,51 @@ fun LibraryScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        NuvioScreen(
-            modifier = Modifier.fillMaxSize(),
-            horizontalPadding = 0.dp,
-            listState = listState,
-        ) {
-            stickyHeader {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(MaterialTheme.colorScheme.background)
-                            .nuvioConsumePointerEvents(),
-                    )
-                    androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        NuvioScreenHeader(
-                            title = if (sourceMode == LibraryViewMode.Cloud) {
-                                stringResource(Res.string.library_title)
-                            } else if (isTraktSource) {
-                                stringResource(Res.string.library_trakt_title)
-                            } else if (isMalSource) {
-                                stringResource(Res.string.library_mal_title)
-                            } else {
-                                stringResource(Res.string.library_title)
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            actions = {
-                                if (sourceMode != LibraryViewMode.Cloud) {
-                                    val openCalendarLabel = stringResource(Res.string.library_calendar_open)
-                                    IconButton(
-                                        onClick = { showReleaseCalendar = true },
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .semantics { contentDescription = openCalendarLabel },
-                                    ) {
-                                        LibraryCalendarGlyph(
-                                            modifier = Modifier.size(19.dp),
-                                            tint = Color.White,
-                                            cutoutColor = MaterialTheme.colorScheme.background,
-                                        )
-                                    }
+    NuvioScreen(
+        modifier = modifier,
+        horizontalPadding = 0.dp,
+        listState = listState,
+    ) {
+        stickyHeader {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(MaterialTheme.colorScheme.background)
+                        .nuvioConsumePointerEvents(),
+                )
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    NuvioScreenHeader(
+                        title = if (sourceMode == LibraryViewMode.Cloud) {
+                            stringResource(Res.string.library_title)
+                        } else if (isTraktSource) {
+                            stringResource(Res.string.library_trakt_title)
+                        } else if (isMalSource) {
+                            stringResource(Res.string.library_mal_title)
+                        } else {
+                            stringResource(Res.string.library_title)
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        actions = {
+                            if (sourceMode != LibraryViewMode.Cloud) {
+                                val openCalendarLabel = stringResource(Res.string.library_calendar_open)
+                                IconButton(
+                                    onClick = { showReleaseCalendar = true },
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .semantics { contentDescription = openCalendarLabel },
+                                ) {
+                                    LibraryCalendarGlyph(
+                                        modifier = Modifier.size(19.dp),
+                                        tint = Color.White,
+                                        cutoutColor = MaterialTheme.colorScheme.background,
+                                    )
                                 }
-                            },
-                        )
+                            }
+                        },
+                    )
                     LibrarySourceSwitch(
                         selectedMode = sourceMode,
                         onModeSelected = { mode ->
@@ -368,16 +379,16 @@ fun LibraryScreen(
 
                 else -> {
                     librarySections(
-                        sections = uiState.sections,
+                        displaySections = librarySectionsDisplay,
                         watchedKeys = watchedUiState.watchedKeys,
                         showHeaderAccent = !homeCatalogSettingsUiState.hideCatalogUnderline,
                         onPosterClick = onPosterClick,
                         onSectionViewAllClick = onSectionViewAllClick,
                         onPosterLongClick = onPosterLongClick,
+                        onDisintegrated = disintegration::onExited,
                     )
                 }
             }
-        }
         }
     }
 
@@ -658,9 +669,8 @@ private fun LibraryChip(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (loading) {
-                CircularProgressIndicator(
+                NuvioLoadingIndicator(
                     modifier = Modifier.size(12.dp),
-                    strokeWidth = 1.5.dp,
                     color = colorScheme.primary,
                 )
             }
@@ -1065,42 +1075,52 @@ private enum class LibraryViewMode {
 }
 
 private fun LazyListScope.librarySections(
-    sections: List<LibrarySection>,
+    displaySections: List<LibraryDisplaySection>,
     watchedKeys: Set<String>,
     showHeaderAccent: Boolean,
     onPosterClick: ((LibraryItem) -> Unit)?,
     onSectionViewAllClick: ((LibrarySection) -> Unit)?,
     onPosterLongClick: ((LibraryItem, LibrarySection) -> Unit)?,
+    onDisintegrated: (String) -> Unit,
 ) {
     items(
-        items = sections,
+        items = displaySections,
         key = { section -> section.type },
     ) { section ->
-        val previewItems = section.items.take(LIBRARY_SECTION_PREVIEW_LIMIT)
         NuvioShelfSection(
             title = section.displayTitle,
-            entries = previewItems,
+            entries = section.previewEntries,
             headerHorizontalPadding = 16.dp,
             rowContentPadding = PaddingValues(horizontal = 16.dp),
             showHeaderAccent = showHeaderAccent,
-            onViewAllClick = if (section.items.size > LIBRARY_SECTION_PREVIEW_LIMIT) {
-                onSectionViewAllClick?.let { { it(section) } }
-            } else {
-                null
-            },
+            onViewAllClick = section.source
+                ?.takeIf { it.items.size > LIBRARY_SECTION_PREVIEW_LIMIT }
+                ?.let { source -> onSectionViewAllClick?.let { { it(source) } } },
             viewAllPillSize = NuvioViewAllPillSize.Compact,
-            key = { item -> "${item.type}:${item.id}" },
-        ) { item ->
+            key = { entry -> entry.globalKey },
+            animatePlacement = true,
+        ) { entry ->
+            val item = entry.item
             val posterItem = item.toMetaPreview()
-            HomePosterCard(
-                item = posterItem,
-                isWatched = WatchingState.isPosterWatched(
-                    watchedKeys = watchedKeys,
+            val entrySource = entry.section
+            DisintegratingContainer(
+                disintegrating = entry.exiting,
+                onDisintegrated = { onDisintegrated(entry.globalKey) },
+            ) {
+                HomePosterCard(
                     item = posterItem,
-                ),
-                onClick = onPosterClick?.let { { it(item) } },
-                onLongClick = onPosterLongClick?.let { { it(item, section) } },
-            )
+                    isWatched = WatchingState.isPosterWatched(
+                        watchedKeys = watchedKeys,
+                        item = posterItem,
+                    ),
+                    onClick = if (entry.exiting) null else onPosterClick?.let { { it(item) } },
+                    onLongClick = if (entry.exiting || entrySource == null) {
+                        null
+                    } else {
+                        onPosterLongClick?.let { { it(item, entrySource) } }
+                    },
+                )
+            }
         }
     }
 }
@@ -2120,4 +2140,103 @@ private fun isoEpochDay(date: String): Long {
     val dayOfYear = (153L * adjustedMonth + 2L) / 5L + day - 1L
     val dayOfEra = yearOfEra * 365L + yearOfEra / 4L - yearOfEra / 100L + dayOfYear
     return era * 146_097L + dayOfEra - 719_468L
+}
+
+private data class LibraryDisplayEntry(
+    val globalKey: String,
+    val item: LibraryItem,
+    val section: LibrarySection?,
+    val exiting: Boolean,
+)
+
+private data class LibraryDisplaySection(
+    val source: LibrarySection?,
+    val type: String,
+    val displayTitle: String,
+    val previewEntries: List<LibraryDisplayEntry>,
+)
+
+private class LibraryExitingEntry(
+    val item: LibraryItem,
+    val sectionType: String,
+    val sectionTitle: String,
+    val index: Int,
+)
+
+private fun libraryGlobalKey(sectionType: String, item: LibraryItem): String =
+    "$sectionType|${item.type}|${item.id}"
+
+private class LibraryDisintegrationHolder {
+    private val exiting = LinkedHashMap<String, LibraryExitingEntry>()
+    private var previous = LinkedHashMap<String, LibraryExitingEntry>()
+    private var invalidations by mutableStateOf(0)
+
+    fun onExited(globalKey: String) {
+        if (exiting.remove(globalKey) != null) invalidations++
+    }
+
+    fun reset() {
+        exiting.clear()
+        previous = LinkedHashMap()
+    }
+
+    fun sync(sections: List<LibrarySection>, previewLimit: Int): List<LibraryDisplaySection> {
+        @Suppress("UNUSED_EXPRESSION")
+        invalidations
+
+        val current = LinkedHashMap<String, LibraryExitingEntry>()
+        sections.forEach { section ->
+            section.items.take(previewLimit).forEachIndexed { index, item ->
+                val key = libraryGlobalKey(section.type, item)
+                current[key] = LibraryExitingEntry(item, section.type, section.displayTitle, index)
+            }
+        }
+        for ((key, info) in previous) {
+            if (key !in current && key !in exiting) {
+                exiting[key] = info
+            }
+        }
+        for (key in current.keys) {
+            exiting.remove(key)
+        }
+        previous = current
+
+        val exitingBySection = exiting.values.groupBy { it.sectionType }
+        val seenTypes = HashSet<String>(sections.size)
+        val result = ArrayList<LibraryDisplaySection>(sections.size + 1)
+
+        for (section in sections) {
+            seenTypes += section.type
+            val entries = ArrayList<LibraryDisplayEntry>(previewLimit + 1)
+            section.items.take(previewLimit).forEach { item ->
+                entries += LibraryDisplayEntry(
+                    globalKey = libraryGlobalKey(section.type, item),
+                    item = item,
+                    section = section,
+                    exiting = false,
+                )
+            }
+            exitingBySection[section.type]?.sortedBy { it.index }?.forEach { ex ->
+                val key = libraryGlobalKey(section.type, ex.item)
+                if (entries.none { it.globalKey == key }) {
+                    entries.add(
+                        ex.index.coerceIn(0, entries.size),
+                        LibraryDisplayEntry(key, ex.item, section, exiting = true),
+                    )
+                }
+            }
+            result += LibraryDisplaySection(section, section.type, section.displayTitle, entries)
+        }
+
+        for ((type, list) in exitingBySection) {
+            if (type in seenTypes) continue
+            val sorted = list.sortedBy { it.index }
+            val entries = sorted.map { ex ->
+                LibraryDisplayEntry(libraryGlobalKey(type, ex.item), ex.item, section = null, exiting = true)
+            }
+            result += LibraryDisplaySection(null, type, sorted.first().sectionTitle, entries)
+        }
+
+        return result
+    }
 }

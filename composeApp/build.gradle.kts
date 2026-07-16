@@ -46,19 +46,13 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     abstract val nuvioSupabaseAnonKey: Property<String>
 
     @get:Input
-    abstract val syncBackendManifestUrl: Property<String>
-
-    @get:Input
     abstract val supabaseFallbackUrl: Property<String>
 
     @get:Input
-    abstract val sentryDsn: Property<String>
-
-    @get:Input
-    abstract val sentryEnvironment: Property<String>
-
-    @get:Input
     abstract val realtimeSyncEnabled: Property<Boolean>
+
+    @get:Input
+    abstract val syncBackendManifestUrl: Property<String>
 
     @get:Input
     abstract val desktopAppVersionName: Property<String>
@@ -91,26 +85,16 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |}
                 """.trimMargin()
             )
-            resolve("SyncBackendBootstrapConfig.kt").writeText(
-                """
-                |package com.nuvio.app.core.network
-                |
-                |object SyncBackendBootstrapConfig {
-                |    const val SWITCH_MANIFEST_URL = "${syncBackendManifestUrl.get()}"
-                |}
-                """.trimMargin()
-            )
         }
 
-        outDir.resolve("com/nuvio/app/core/diagnostics").apply {
+        outDir.resolve("com/nuvio/app/core/sync").apply {
             mkdirs()
-            resolve("SentryConfig.kt").writeText(
+            resolve("RealtimeSyncConfig.kt").writeText(
                 """
-                |package com.nuvio.app.core.diagnostics
+                |package com.nuvio.app.core.sync
                 |
-                |object SentryConfig {
-                |    const val DSN = "${sentryDsn.get()}"
-                |    const val ENVIRONMENT = "${sentryEnvironment.get()}"
+                |object RealtimeSyncConfig {
+                |    const val ENABLED = ${realtimeSyncEnabled.get()}
                 |}
                 """.trimMargin()
             )
@@ -939,14 +923,6 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     nuvioSupabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
     nuvioSupabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
     supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))
-    sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
-    sentryEnvironment.set(
-        when {
-            requestedGradleTasks.any { "benchmark" in it } -> "benchmark"
-            requestedGradleTasks.any { "debug" in it } -> "debug"
-            else -> "production"
-        }
-    )
     realtimeSyncEnabled.set(runtimeConfigBoolean("NUVIO_REALTIME_SYNC_ENABLED", true))
     syncBackendManifestUrl.set(runtimeConfigValue("SYNC_BACKEND_MANIFEST_URL"))
     desktopAppVersionName.set(desktopReleaseVersionName)
@@ -1028,7 +1004,7 @@ kotlin {
                 implementation(libs.okhttp.dnsoverhttps)
                 implementation("com.google.code.gson:gson:2.11.0")
                 implementation("io.github.peerless2012:ass-media:0.4.0-beta01")
-                implementation(libs.ktor.client.android)
+                implementation(libs.ktor.client.okhttp)
                 implementation(libs.androidx.media3.exoplayer.hls)
                 implementation(libs.androidx.media3.exoplayer.dash)
                 implementation(libs.androidx.media3.exoplayer.smoothstreaming)
@@ -1074,11 +1050,13 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compottie)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.atomicfu)
-            implementation(libs.androidx.navigation.compose)
+            implementation(libs.kmpalette.core)
+            implementation(libs.androidx.navigation3.ui)
             implementation(libs.kermit)
             implementation(libs.supabase.postgrest)
             implementation(libs.supabase.auth)
@@ -1318,6 +1296,7 @@ android {
     productFlavors {
         create("full") {
             dimension = "distribution"
+            proguardFile("proguard-cloudstream-full.pro")
         }
         create("playstore") {
             dimension = "distribution"

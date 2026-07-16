@@ -39,7 +39,7 @@ object HomeRepository {
 
     private var activeJob: Job? = null
     private var activeRequestKey: String? = null
-    private var lastRequestKey: String? = null
+    private var completedRequestKey: String? = null
     private var currentDefinitions: List<HomeCatalogDefinition> = emptyList()
     private var cachedSections: Map<String, HomeCatalogSection> = emptyMap()
     private var cachedCollectionHeroItems: List<MetaPreview> = emptyList()
@@ -56,33 +56,31 @@ object HomeRepository {
         val activeAddons = addons.enabledAddons()
         val requests = buildHomeCatalogDefinitions(activeAddons)
         currentDefinitions = requests
-        val requestKeys = requests.mapTo(mutableSetOf(), HomeCatalogDefinition::key)
-        cachedSections = cachedSections.filterKeys(requestKeys::contains)
-        val requestKey = buildString {
-            append(requests.joinToString(separator = "|") { request ->
-                "${request.manifestUrl}:${request.type}:${request.catalogId}"
-            })
-            append("|cloudstream=")
-            append(cloudState.registryRevision)
-            append(':')
-            append(cloudPlugins.joinToString(separator = ",") { it.metadata.id.value })
-        }
+        val requestCacheKeys = requests.mapTo(mutableSetOf(), HomeCatalogDefinition::cacheKey)
+        cachedSections = cachedSections.filterKeys(requestCacheKeys::contains)
+        val requestKey = requests.joinToString(separator = "|", transform = HomeCatalogDefinition::cacheKey) +
+            "|cloudstream=" + cloudState.registryRevision + ":" + cloudPlugins.joinToString(separator = ",") { it.metadata.id.value }
 
         if (!force && activeRequestKey == requestKey && _uiState.value.isLoading) return
 
-        if (!force && requestKey == lastRequestKey && requestKeys.all(cachedSections::containsKey)) {
+        if (
+            !force &&
+            requestKey == completedRequestKey &&
+            requestCacheKeys.all(cachedSections::containsKey) &&
+            requestCacheKeys.any(::hasRenderableCachedSection)
+        ) {
             if (_uiState.value.sections.isEmpty() || _uiState.value.heroItems.isEmpty()) {
                 applyCurrentSettings()
             }
             return
         }
-        lastRequestKey = requestKey
         activeRequestKey = requestKey
 
         if (requests.isEmpty() && cloudPlugins.isEmpty()) {
             activeJob?.cancel()
             activeJob = null
             activeRequestKey = null
+            completedRequestKey = requestKey
             cachedSections = emptyMap()
             lastErrorMessage = null
             publishCurrentState(
@@ -105,21 +103,21 @@ object HomeRepository {
                 snapshot = HomeCatalogSettingsRepository.snapshot(),
             )
             val top10Snapshot = Top10CatalogRepository.uiState.value
-        val top10Keys = buildSet {
-            if (top10Snapshot.enabled && top10Snapshot.hasMovieCatalog) {
-                requests.firstOrNull {
-                    it.manifestUrl == top10Snapshot.movieManifestUrl && it.catalogId == top10Snapshot.movieCatalogId
-                }?.key?.let { add(it) }
+            val top10Keys = buildSet {
+                if (top10Snapshot.enabled && top10Snapshot.hasMovieCatalog) {
+                    requests.firstOrNull {
+                        it.manifestUrl == top10Snapshot.movieManifestUrl && it.catalogId == top10Snapshot.movieCatalogId
+                    }?.key?.let { add(it) }
+                }
+                if (top10Snapshot.enabled && top10Snapshot.hasSeriesCatalog) {
+                    requests.firstOrNull {
+                        it.manifestUrl == top10Snapshot.seriesManifestUrl && it.catalogId == top10Snapshot.seriesCatalogId
+                    }?.key?.let { add(it) }
+                }
             }
-            if (top10Snapshot.enabled && top10Snapshot.hasSeriesCatalog) {
-                requests.firstOrNull {
-                    it.manifestUrl == top10Snapshot.seriesManifestUrl && it.catalogId == top10Snapshot.seriesCatalogId
-                }?.key?.let { add(it) }
+            val pendingRequests = prioritizedRequests.filter { definition ->
+                force || cachedSections[definition.cacheKey] == null || definition.key in top10Keys
             }
-        }
-        val pendingRequests = prioritizedRequests.filter { definition ->
-            force || cachedSections[definition.key] == null || definition.key in top10Keys
-        }
             if (pendingRequests.isEmpty()) {
                 publishCurrentState(
                     isLoading = false,
@@ -136,16 +134,20 @@ object HomeRepository {
             pendingRequests.chunked(HOME_CATALOG_FETCH_BATCH_SIZE).forEach { batch ->
                 if (activeRequestKey != requestKey) return@launch
                 val results = batch.map { request ->
-                    async { runCatching { request.toSection() } }
+                    async { request to runCatching { request.toSection() } }
                 }.awaitAll()
 
                 if (activeRequestKey != requestKey) return@launch
 
-                results.mapNotNull { it.getOrNull() }.forEach { section ->
-                    loadedSections[section.key] = section
+                results.mapNotNull { (request, result) ->
+                    result.getOrNull()?.let { section -> request.cacheKey to section }
+                }.forEach { (cacheKey, section) ->
+                    loadedSections[cacheKey] = section
                 }
                 if (firstErrorMessage == null) {
-                    firstErrorMessage = results.firstNotNullOfOrNull { it.exceptionOrNull()?.message }
+                    firstErrorMessage = results.firstNotNullOfOrNull { (_, result) ->
+                        result.exceptionOrNull()?.message
+                    }
                 }
                 cachedSections = loadedSections.toMap()
                 lastErrorMessage = firstErrorMessage
@@ -174,6 +176,10 @@ object HomeRepository {
 
             cachedSections = loadedSections.toMap()
             lastErrorMessage = firstErrorMessage
+            if (cachedSections.values.any { section -> section.items.isNotEmpty() }) {
+                completedRequestKey = requestKey
+            }
+            activeRequestKey = null
             publishCurrentState(
                 isLoading = false,
                 requestKey = requestKey,
@@ -189,12 +195,12 @@ object HomeRepository {
     fun applyCurrentSettings() {
         publishCurrentState(
             isLoading = _uiState.value.isLoading,
-            requestKey = activeRequestKey ?: lastRequestKey,
+            requestKey = activeRequestKey ?: completedRequestKey,
         )
         ensureCollectionHeroFallback(
             addons = AddonRepository.uiState.value.addons.enabledAddons(),
             force = false,
-            requestKey = activeRequestKey ?: lastRequestKey,
+            requestKey = activeRequestKey ?: completedRequestKey,
         )
     }
 
@@ -202,7 +208,7 @@ object HomeRepository {
         activeJob?.cancel()
         activeJob = null
         activeRequestKey = null
-        lastRequestKey = null
+        completedRequestKey = null
         currentDefinitions = emptyList()
         cachedSections = emptyMap()
         cachedCloudSections = emptyList()
@@ -214,6 +220,9 @@ object HomeRepository {
         lastErrorMessage = null
         _uiState.value = HomeUiState()
     }
+
+    private fun hasRenderableCachedSection(cacheKey: String): Boolean =
+        cachedSections[cacheKey]?.items?.isNotEmpty() == true
 
     private fun publishCurrentState(
         isLoading: Boolean,
@@ -231,7 +240,7 @@ object HomeRepository {
                 val preference = preferences[definition.key]
                 if (preference?.enabled == false) return@mapNotNull null
 
-                val section = cachedSections[definition.key]?.withReleaseFilter() ?: return@mapNotNull null
+                val section = cachedSections[definition.cacheKey]?.withReleaseFilter() ?: return@mapNotNull null
                 if (section.items.isEmpty()) return@mapNotNull null
                 val customTitle = preference?.customTitle.orEmpty()
                 section.copy(
@@ -243,7 +252,7 @@ object HomeRepository {
             val heroRandom = Random((requestKey?.hashCode() ?: 0).absoluteValue + 1)
             currentDefinitions
                 .filter { definition -> preferences[definition.key]?.heroSourceEnabled != false }
-                .mapNotNull { definition -> cachedSections[definition.key] }
+                .mapNotNull { definition -> cachedSections[definition.cacheKey] }
                 .map { section -> section.withReleaseFilter() }
                 .flatMap { section -> section.items }
                 .distinctBy { item -> "${item.type}:${item.id}" }

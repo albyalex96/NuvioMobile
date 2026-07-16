@@ -18,3 +18,23 @@
 -keep class dev.whyoleg.cryptography.** { *; }
 -keep interface dev.whyoleg.cryptography.** { *; }
 -dontwarn dev.whyoleg.cryptography.**
+
+# CloudStream providers compiled against the TMDB (uwetrottmann) client are loaded
+# dynamically via DexClassLoader and resolve these classes at runtime.
+-keep class com.uwetrottmann.tmdb2.** { *; }
+-keep interface com.uwetrottmann.tmdb2.** { *; }
+-dontwarn com.uwetrottmann.tmdb2.**
+
+# Retrofit is the transport used by the TMDB client above.
+-keep class retrofit2.** { *; }
+-keep interface retrofit2.** { *; }
+-dontwarn retrofit2.**
+-dontwarn retrofit2.**
+
+# NewPipe extractor is referenced by the bundled YoutubeExtractor provider.
+-keep class org.schabi.newpipe.extractor.** { *; }
+-keep interface org.schabi.newpipe.extractor.** { *; }
+-dontwarn org.schabi.newpipe.extractor.**
+
+# keepattributes required so dynamically loaded providers resolve generic signatures.
+-keepattributes Signature,InnerClasses,EnclosingMethod,RuntimeVisibleAnnotations,AnnotationDefault

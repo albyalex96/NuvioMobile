@@ -65,7 +65,7 @@ internal fun LazyListScope.advancedSettingsContent(
                             ContinueWatchingEnrichmentCache.clearAll(ProfileRepository.activeProfileId)
                             cleared = true
                             scope.launch {
-                                WatchProgressRepository.forceSnapshotRefreshFromServer(
+                                WatchProgressRepository.clearLocalAndForceSnapshotRefreshFromServer(
                                     ProfileRepository.activeProfileId,
                                 )
                             }

@@ -20,7 +20,10 @@ object SubtitleFileCache {
     private const val SUBTITLE_CACHE_DIR = "subtitles"
 
     private var appContext: Context? = null
-    private val okHttpClient: OkHttpClient by lazy { OkHttpClient() }
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .build()
+    }
 
     fun initialize(context: Context) {
         appContext = context.applicationContext

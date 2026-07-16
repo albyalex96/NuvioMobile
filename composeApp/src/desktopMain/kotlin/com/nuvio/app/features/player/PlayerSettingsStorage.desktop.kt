@@ -11,6 +11,8 @@ internal actual object PlayerSettingsStorage {
 
     actual fun loadShowLoadingOverlay(): Boolean? = store.getBoolean("show_loading_overlay")
     actual fun saveShowLoadingOverlay(enabled: Boolean) { store.putBoolean("show_loading_overlay", enabled) }
+    actual fun loadShowParentalGuide(): Boolean? = store.getBoolean("show_parental_guide")
+    actual fun saveShowParentalGuide(enabled: Boolean) { store.putBoolean("show_parental_guide", enabled) }
     actual fun loadResizeMode(): String? = store.getString("resize_mode")
     actual fun saveResizeMode(mode: String) { store.putString("resize_mode", mode) }
     actual fun loadHoldToSpeedEnabled(): Boolean? = store.getBoolean("hold_to_speed_enabled")
@@ -23,6 +25,8 @@ internal actual object PlayerSettingsStorage {
     actual fun saveExternalPlayerEnabled(enabled: Boolean) { store.putBoolean("external_player_enabled", enabled) }
     actual fun loadExternalPlayerForwardSubtitles(): Boolean? = store.getBoolean("external_player_forward_subtitles")
     actual fun saveExternalPlayerForwardSubtitles(enabled: Boolean) { store.putBoolean("external_player_forward_subtitles", enabled) }
+    actual fun loadExternalPlayerSendSkipSegments(): Boolean? = store.getBoolean("external_player_send_skip_segments")
+    actual fun saveExternalPlayerSendSkipSegments(enabled: Boolean) { store.putBoolean("external_player_send_skip_segments", enabled) }
     actual fun loadExternalPlayerId(): String? = store.getString("external_player_id")
     actual fun saveExternalPlayerId(playerId: String?) { store.putString("external_player_id", playerId) }
     actual fun loadPreferredAudioLanguage(): String? = store.getString("preferred_audio_language")

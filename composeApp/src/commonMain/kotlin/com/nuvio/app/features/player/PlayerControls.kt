@@ -39,7 +39,7 @@ import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.VideoLibrary
-import androidx.compose.material3.CircularProgressIndicator
+import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -172,6 +172,7 @@ internal fun PlayerControlsShell(
                 onVideoSettingsClick = onVideoSettingsClick,
                 onCastClick = onCastClick,
                 isCastConnected = isCastConnected,
+                onOpenInExternalPlayer = onOpenInExternalPlayer,
                 onBack = onBack,
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -246,6 +247,7 @@ private fun PlayerHeader(
     onVideoSettingsClick: (() -> Unit)?,
     onCastClick: (() -> Unit)?,
     isCastConnected: Boolean,
+    onOpenInExternalPlayer: (() -> Unit)?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -343,6 +345,15 @@ private fun PlayerHeader(
                             buttonSize = metrics.headerIconSize + 16.dp,
                             iconSize = metrics.headerIconSize,
                             onClick = onSubmitIntroClick,
+                        )
+                    }
+                    if (onOpenInExternalPlayer != null) {
+                        PlayerHeaderIconButton(
+                            icon = Icons.AutoMirrored.Rounded.OpenInNew,
+                            contentDescription = stringResource(Res.string.streams_open_external_player),
+                            buttonSize = metrics.headerIconSize + 16.dp,
+                            iconSize = metrics.headerIconSize,
+                            onClick = onOpenInExternalPlayer,
                         )
                     }
                     PlayerHeaderIconButton(
@@ -491,9 +502,8 @@ private fun PlayPauseControlButton(
         contentAlignment = Alignment.Center,
     ) {
         if (isBuffering) {
-            CircularProgressIndicator(
+            NuvioLoadingIndicator(
                 color = Color.White,
-                strokeWidth = 3.dp,
                 modifier = Modifier.size(metrics.playIconSize),
             )
         } else {
@@ -641,13 +651,6 @@ private fun ProgressControls(
                             label = stringResource(Res.string.player_action_volume_boost),
                             icon = Icons.Rounded.VolumeUp,
                             onClick = onVolumeBoostClick,
-                        )
-                    }
-                    if (onOpenInExternalPlayer != null) {
-                        PlayerActionPillButton(
-                            label = stringResource(Res.string.streams_open_external_player),
-                            icon = Icons.AutoMirrored.Rounded.OpenInNew,
-                            onClick = onOpenInExternalPlayer,
                         )
                     }
                 }
