@@ -50,6 +50,11 @@
 -keep class com.lagradost.api.** { *; }
 -keepclassmembers class com.lagradost.api.** { *; }
 
+# CloudStream integration runtime — UI state, serialization, plugin metadata
+-keep class com.nuvio.app.features.cloudstream.** { *; }
+-keep interface com.nuvio.app.features.cloudstream.** { *; }
+-keep enum com.nuvio.app.features.cloudstream.** { *; }
+
 # Jackson (used by CloudStream DataStore)
 -keep class com.fasterxml.jackson.** { *; }
 -keepclassmembers class com.fasterxml.jackson.** { *; }
