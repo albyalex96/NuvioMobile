@@ -39,17 +39,21 @@ jobs:
           fetch-depth: 0
           lfs: false
 
-      - name: Read version.json
-        id: version
-        run: |
-          VERSION=$(jq -r '.version // empty' version.json)
-          if [ -z "$VERSION" ]; then
-            echo "Error: version.json missing 'version' key"
-            exit 1
-          fi
-          echo "name=$VERSION" >> $GITHUB_OUTPUT
-          echo "code=$(echo "$VERSION" | tr -d '.')" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
+   - name: Genera version.json
+  run: |
+    echo '{"version": "1.0.0"}' > version.json
+
+- name: Read version.json
+  id: version
+  run: |
+    VERSION=$(jq -r '.version // empty' version.json)
+    if [ -z "$VERSION" ]; then
+      echo "Error: version.json missing 'version' key"
+      exit 1
+    fi
+    echo "name=$VERSION" >> $GITHUB_OUTPUT
+    echo "code=$(echo "$VERSION" | tr -d '.')" >> $GITHUB_OUTPUT
+    echo "Version: $VERSION"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
