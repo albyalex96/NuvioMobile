@@ -50,8 +50,11 @@ data class DownloadItem(
     val isHls: Boolean = false,
     val hlsAudioUrl: String? = null,
     val hlsSubtitleUrl: String? = null,
+    val hlsAudioUrls: List<String> = emptyList(),
+    val hlsSubtitleUrls: List<String> = emptyList(),
     val hlsAudioLocalFileUri: String? = null,
     val hlsSubtitleLocalFileUri: String? = null,
+    val hlsWarningMessage: String? = null,
 ) {
     val isEpisode: Boolean
         get() = seasonNumber != null && episodeNumber != null
@@ -108,12 +111,19 @@ enum class DownloadEnqueueResult {
 
 data class HlsDownloadSelection(
     val variantUrl: String,
-    val audioUrl: String? = null,
-    val subtitleUrl: String? = null,
+    val audioUrls: List<String> = emptyList(),
+    val subtitleUrls: List<String> = emptyList(),
+    val audioLabels: List<String> = emptyList(),
+    val subtitleLabels: List<String> = emptyList(),
     val displayQuality: String = "",
     val displayAudio: String = "",
     val displaySubtitle: String = "",
-)
+) {
+    @Deprecated("Use audioUrls instead")
+    val audioUrl: String? get() = audioUrls.firstOrNull()
+    @Deprecated("Use subtitleUrls instead")
+    val subtitleUrl: String? get() = subtitleUrls.firstOrNull()
+}
 
 data class HlsStreamMetadata(
     val masterPlaylist: HlsMasterPlaylist,

@@ -18,6 +18,7 @@ internal actual object DownloadsPlatformDownloader {
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
+        onWarning: ((message: String) -> Unit)?,
     ): DownloadsTaskHandle {
         if (request.isHlsStream) {
             onFailure("HLS download not supported on desktop yet.")

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -36,6 +37,7 @@ import com.nuvio.app.core.ui.rememberEpisodeCodeFormat
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -396,6 +398,16 @@ private fun DownloadRow(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (item.hlsWarningMessage != null) {
+                        Icon(
+                            imageVector = Icons.Rounded.Warning,
+                            contentDescription = item.hlsWarningMessage,
+                            modifier = Modifier
+                                .padding(end = 4.dp)
+                                .size(20.dp),
+                            tint = Color(0xFFFFC107),
+                        )
+                    }
                     when (item.status) {
                         DownloadStatus.Downloading -> {
                             IconButton(onClick = onPause) {

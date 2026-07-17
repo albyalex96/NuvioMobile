@@ -425,6 +425,7 @@ object HlsPlaylistParser {
                 } else {
                     value = input.substring(i, closeIdx)
                     i = closeIdx + 1
+                    if (i < len && input[i] == ',') i++
                 }
             } else {
                 val nextComma = input.indexOf(',', i)

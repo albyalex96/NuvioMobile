@@ -9,11 +9,16 @@ internal data class DownloadPlatformRequest(
     val isHlsStream: Boolean = false,
     val hlsAudioUrl: String? = null,
     val hlsSubtitleUrl: String? = null,
+    val hlsAudioUrls: List<String> = emptyList(),
+    val hlsSubtitleUrls: List<String> = emptyList(),
 )
 
 internal data class HlsCompanionOutcome(
     val audioLocalFileUri: String?,
     val subtitleLocalFileUri: String?,
+    val audioLocalFileUris: List<String> = emptyList(),
+    val subtitleLocalFileUris: List<String> = emptyList(),
+    val warningMessage: String? = null,
 )
 
 internal interface DownloadsTaskHandle {
@@ -26,6 +31,7 @@ internal expect object DownloadsPlatformDownloader {
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
+        onWarning: ((message: String) -> Unit)? = null,
     ): DownloadsTaskHandle
 
     fun removeFile(localFileUri: String?): Boolean

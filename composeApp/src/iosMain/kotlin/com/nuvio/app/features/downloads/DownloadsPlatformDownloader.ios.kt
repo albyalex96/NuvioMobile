@@ -27,6 +27,20 @@ import nuvio.composeapp.generated.resources.downloads_error_partial_file_not_ope
 import nuvio.composeapp.generated.resources.downloads_error_write_partial_file_failed
 import nuvio.composeapp.generated.resources.network_request_failed_http
 import org.jetbrains.compose.resources.getString
+import platform.AVFoundation.AVAssetExportSession
+import platform.AVFoundation.AVAssetExportSessionStatusCompleted
+import platform.AVFoundation.AVAssetExportSessionStatusFailed
+import platform.AVFoundation.AVAssetExportPresetPassthrough
+import platform.AVFoundation.AVFileTypeMPEG4
+import platform.AVFoundation.AVMediaTypeAudio
+import platform.AVFoundation.AVMediaTypeVideo
+import platform.AVFoundation.AVMutableComposition
+import platform.AVFoundation.AVURLAsset
+import platform.CoreMedia.CMTime
+import platform.CoreMedia.CMTimeMakeWithSeconds
+import platform.CoreMedia.CMTimeRangeMake
+import platform.CoreMedia.kCMTimeZero
+import platform.CoreMedia.kCMPersistentTrackID_Invalid
 import platform.Foundation.NSError
 import platform.Foundation.NSDate
 import platform.Foundation.NSData
@@ -92,6 +106,7 @@ internal actual object DownloadsPlatformDownloader {
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
         onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
+        onWarning: ((message: String) -> Unit)?,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.Default)
@@ -105,6 +120,7 @@ internal actual object DownloadsPlatformDownloader {
                     onProgress = onProgress,
                     onSuccess = onSuccess,
                     onFailure = onFailure,
+                    onWarning = onWarning,
                 )
             }
             return handle
@@ -577,6 +593,7 @@ private suspend fun performHlsDownloadIos(
     onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
     onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
     onFailure: (message: String) -> Unit,
+    onWarning: ((message: String) -> Unit)?,
 ) {
     val downloadsDirectory = downloadsDirectoryPath()
     val ctx = coroutineContext
@@ -629,6 +646,7 @@ private suspend fun performHlsDownloadIos(
         } catch (_: CancellationException) {
             throw CancellationException()
         } catch (_: Throwable) {
+            onWarning?.invoke("Audio track not found")
             audioUri = null
         }
     }
@@ -656,7 +674,30 @@ private suspend fun performHlsDownloadIos(
         }
     }
 
-    onSuccess(videoUri, videoOutcome.totalBytes, HlsCompanionOutcome(audioUri, subtitleUri))
+    val remuxedUri = if (audioUri != null && videoUri.startsWith("file:")) {
+        try {
+            val videoPath = videoUri.toLocalPath() ?: error("")
+            val audioPath = audioUri.toLocalPath() ?: error("")
+            val finalMp4Name = hlsOutputFileName(request.destinationFileName, isFmp4 = true)
+            val outputPath = "$downloadsDirectory/$finalMp4Name"
+            removePathIfExists(outputPath)
+            if (remuxToMp4Ios(videoPath, audioPath, outputPath)) {
+                removePathIfExists(videoPath)
+                removePathIfExists(audioPath)
+                NSURL.fileURLWithPath(outputPath).absoluteString
+                    ?: "file://$outputPath"
+            } else null
+        } catch (_: Exception) { null }
+    } else null
+
+    val companionWarning = if (!request.hlsAudioUrl.isNullOrBlank() && audioUri == null) {
+        "Audio track not found"
+    } else null
+    if (remuxedUri != null) {
+        onSuccess(remuxedUri, videoOutcome.totalBytes, HlsCompanionOutcome(null, subtitleUri, companionWarning))
+    } else {
+        onSuccess(videoUri, videoOutcome.totalBytes, HlsCompanionOutcome(audioUri, subtitleUri, companionWarning))
+    }
 }
 
 @OptIn(ExperimentalForeignApi::class)
@@ -763,6 +804,86 @@ private suspend fun iosHttpGet(
         completion.await()
     } finally {
         session.finishTasksAndInvalidate()
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun remuxToMp4Ios(
+    videoPath: String,
+    audioPath: String,
+    outputPath: String,
+): Boolean {
+    return try {
+        val composition = AVMutableComposition.mutableComposition()
+
+        val videoAsset = AVURLAsset.URLAssetWithURL(
+            NSURL.fileURLWithPath(videoPath),
+            null,
+        )
+        val videoTimeRange = CMTimeRangeMake(
+            kCMTimeZero,
+            videoAsset.duration,
+        )
+        val sourceVideoTracks = videoAsset.tracksWithMediaType(AVMediaTypeVideo)
+        if (sourceVideoTracks.isNotEmpty() && sourceVideoTracks.first() != null) {
+            val destVideoTrack = composition.addMutableTrackWithMediaType(
+                AVMediaTypeVideo,
+                kCMPersistentTrackID_Invalid,
+            )
+            if (destVideoTrack != null) {
+                destVideoTrack.insertTimeRange(
+                    videoTimeRange,
+                    ofTrack = sourceVideoTracks.first(),
+                    atTime = kCMTimeZero,
+                    error = null,
+                )
+            }
+        }
+
+        val audioAsset = AVURLAsset.URLAssetWithURL(
+            NSURL.fileURLWithPath(audioPath),
+            null,
+        )
+        val audioTimeRange = CMTimeRangeMake(
+            kCMTimeZero,
+            audioAsset.duration,
+        )
+        val sourceAudioTracks = audioAsset.tracksWithMediaType(AVMediaTypeAudio)
+        if (sourceAudioTracks.isNotEmpty() && sourceAudioTracks.first() != null) {
+            val destAudioTrack = composition.addMutableTrackWithMediaType(
+                AVMediaTypeAudio,
+                kCMPersistentTrackID_Invalid,
+            )
+            if (destAudioTrack != null) {
+                destAudioTrack.insertTimeRange(
+                    audioTimeRange,
+                    ofTrack = sourceAudioTracks.first(),
+                    atTime = kCMTimeZero,
+                    error = null,
+                )
+            }
+        }
+
+        val exportSession = AVAssetExportSession.exportSessionWithAsset(
+            composition,
+            presetName = AVAssetExportPresetPassthrough,
+        ) ?: return false
+
+        val semaphore = dispatch_semaphore_create(0)
+        var exportSuccess = false
+
+        removePathIfExists(outputPath)
+        exportSession.outputURL = NSURL.fileURLWithPath(outputPath)
+        exportSession.outputFileType = AVFileTypeMPEG4
+        exportSession.exportAsynchronouslyWithCompletionHandler {
+            exportSuccess = exportSession.status == AVAssetExportSessionStatusCompleted
+            dispatch_semaphore_signal(semaphore)
+        }
+
+        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
+        exportSuccess
+    } catch (_: Exception) {
+        false
     }
 }
 

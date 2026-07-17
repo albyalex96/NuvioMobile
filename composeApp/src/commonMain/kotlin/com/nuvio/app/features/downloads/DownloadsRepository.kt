@@ -1,5 +1,6 @@
 package com.nuvio.app.features.downloads
 
+import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -162,6 +163,10 @@ object DownloadsRepository {
         val headers = sanitizeRequestHeaders(stream.behaviorHints.proxyHeaders?.request)
         val content = DownloadsPlatformDownloader.fetchUrlAsString(sourceUrl, headers) ?: return null
         val master = HlsPlaylistParser.parseMasterPlaylist(content, sourceUrl)
+        InAppLogger.info("HlsSheet", "parsed ${master.audioTracks.size} audio tracks, ${master.subtitleTracks.size} subtitle tracks")
+        master.audioTracks.forEachIndexed { i, t ->
+            InAppLogger.info("HlsSheet", "  audio[$i]: name='${t.name}' uri='${t.uri}' lang='${t.language}'")
+        }
         return HlsStreamMetadata(master, sourceUrl)
     }
 
@@ -251,8 +256,10 @@ object DownloadsRepository {
             createdAtEpochMs = now,
             updatedAtEpochMs = now,
             isHls = true,
-            hlsAudioUrl = selection.audioUrl,
-            hlsSubtitleUrl = selection.subtitleUrl,
+            hlsAudioUrl = selection.audioUrls.firstOrNull(),
+            hlsSubtitleUrl = selection.subtitleUrls.firstOrNull(),
+            hlsAudioUrls = selection.audioUrls,
+            hlsSubtitleUrls = selection.subtitleUrls,
         )
 
         currentItems.add(0, item)
@@ -457,6 +464,12 @@ object DownloadsRepository {
             isHlsStream = item.isHls,
             hlsAudioUrl = item.hlsAudioUrl,
             hlsSubtitleUrl = item.hlsSubtitleUrl,
+            hlsAudioUrls = item.hlsAudioUrls.ifEmpty {
+                item.hlsAudioUrl?.let { listOf(it) }.orEmpty()
+            },
+            hlsSubtitleUrls = item.hlsSubtitleUrls.ifEmpty {
+                item.hlsSubtitleUrl?.let { listOf(it) }.orEmpty()
+            },
         )
 
         val handle = DownloadsPlatformDownloader.start(
@@ -475,6 +488,14 @@ object DownloadsRepository {
                     }
                 }
             },
+            onWarning = { message ->
+                mutateItem(item.id) { current ->
+                    current.copy(
+                        hlsWarningMessage = message,
+                        updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                    )
+                }
+            },
             onSuccess = { localFileUri, totalBytes, companion ->
                 activeHandles.remove(item.id)
                 mutateItem(item.id) { current ->
@@ -489,9 +510,13 @@ object DownloadsRepository {
                         },
                         totalBytes = totalBytes?.takeIf { it > 0L } ?: current.totalBytes,
                         hlsAudioLocalFileUri = companion?.audioLocalFileUri
+                            ?: companion?.audioLocalFileUris?.firstOrNull()
                             ?: current.hlsAudioLocalFileUri,
                         hlsSubtitleLocalFileUri = companion?.subtitleLocalFileUri
+                            ?: companion?.subtitleLocalFileUris?.firstOrNull()
                             ?: current.hlsSubtitleLocalFileUri,
+                        hlsWarningMessage = companion?.warningMessage
+                            ?: current.hlsWarningMessage,
                         errorMessage = null,
                         updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                     )

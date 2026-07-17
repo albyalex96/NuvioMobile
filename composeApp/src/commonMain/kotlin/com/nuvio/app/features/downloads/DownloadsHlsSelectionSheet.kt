@@ -1,12 +1,18 @@
 package com.nuvio.app.features.downloads
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +36,8 @@ import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.NuvioPrimaryButton
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
+import com.nuvio.app.features.player.getLanguageLabelForCode
+import com.nuvio.app.features.player.languageLabelForCode
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -95,54 +103,25 @@ fun DownloadsHlsSelectionSheet(
         }.orEmpty()
     }
 
-    val audioOptions = remember(playlist) {
-        playlist?.audioTracks?.map { track ->
-            NuvioDropdownOption(
-                key = track.uri ?: "none",
-                label = buildString {
-                    append(track.name)
-                    track.language?.let { lang ->
-                        if (lang.isNotBlank()) {
-                            append(" • ")
-                            append(lang)
-                        }
-                    }
-                },
-            )
-        }.orEmpty()
+    val audioTracks = remember(playlist) {
+        playlist?.audioTracks?.filter { it.uri != null }.orEmpty()
     }
-
-    val subtitleOptions = remember(playlist) {
-        listOf(
-            NuvioDropdownOption(key = "none", label = "None"),
-        ) + (playlist?.subtitleTracks?.map { track ->
-            NuvioDropdownOption(
-                key = track.uri ?: "none",
-                label = buildString {
-                    append(track.name)
-                    track.language?.let { lang ->
-                        if (lang.isNotBlank()) {
-                            append(" • ")
-                            append(lang)
-                        }
-                    }
-                },
-            )
-        }.orEmpty())
+    val subtitleTracks = remember(playlist) {
+        playlist?.subtitleTracks?.filter { it.uri != null }.orEmpty()
     }
 
     var selectedQualityKey by remember(qualityOptions) {
         mutableStateOf(qualityOptions.firstOrNull()?.key)
     }
-    var selectedAudioKey by remember(audioOptions) {
-        mutableStateOf(audioOptions.firstOrNull()?.key)
+    var selectedAudioKeys by remember(audioTracks) {
+        mutableStateOf(audioTracks.filter { it.isDefault }.mapNotNull { it.uri }.toSet())
     }
-    var selectedSubtitleKey by remember(subtitleOptions) {
-        mutableStateOf("none")
+    var selectedSubtitleKeys by remember(subtitleTracks) {
+        mutableStateOf(setOf<String>())
     }
 
-    val hasAudio = audioOptions.isNotEmpty()
-    val hasSubtitles = subtitleOptions.size > 1
+    val hasAudio = audioTracks.isNotEmpty()
+    val hasSubtitles = subtitleTracks.isNotEmpty()
     val canDownload = qualityOptions.isNotEmpty()
 
     NuvioModalBottomSheet(
@@ -242,15 +221,46 @@ fun DownloadsHlsSelectionSheet(
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            NuvioDropdownChip(
-                                title = stringResource(Res.string.downloads_hls_audio),
-                                label = audioOptions.firstOrNull { it.key == selectedAudioKey }?.label.orEmpty(),
-                                selectedKey = selectedAudioKey,
-                                options = audioOptions,
-                                onSelected = { option ->
-                                    selectedAudioKey = option.key
-                                },
-                            )
+                            audioTracks.forEach { track ->
+                                val isSelected = selectedAudioKeys.contains(track.uri)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedAudioKeys = if (isSelected) {
+                                                selectedAudioKeys - track.uri!!
+                                            } else {
+                                                selectedAudioKeys + track.uri!!
+                                            }
+                                        }
+                                        .padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { checked ->
+                                            selectedAudioKeys = if (checked) {
+                                                selectedAudioKeys + track.uri!!
+                                            } else {
+                                                selectedAudioKeys - track.uri!!
+                                            }
+                                        },
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = buildString {
+                                            val langLabel = languageLabelForCode(track.language)
+                                            append(langLabel)
+                                            if (track.name.isNotBlank() && !track.name.equals(track.language, ignoreCase = true) && !track.name.equals(langLabel, ignoreCase = true)) {
+                                                append(" • ")
+                                                append(track.name)
+                                            }
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
                         }
 
                         if (hasSubtitles) {
@@ -260,15 +270,46 @@ fun DownloadsHlsSelectionSheet(
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            NuvioDropdownChip(
-                                title = stringResource(Res.string.downloads_hls_subtitles),
-                                label = subtitleOptions.firstOrNull { it.key == selectedSubtitleKey }?.label.orEmpty(),
-                                selectedKey = selectedSubtitleKey,
-                                options = subtitleOptions,
-                                onSelected = { option ->
-                                    selectedSubtitleKey = option.key
-                                },
-                            )
+                            subtitleTracks.forEach { track ->
+                                val isSelected = selectedSubtitleKeys.contains(track.uri)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedSubtitleKeys = if (isSelected) {
+                                                selectedSubtitleKeys - track.uri!!
+                                            } else {
+                                                selectedSubtitleKeys + track.uri!!
+                                            }
+                                        }
+                                        .padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { checked ->
+                                            selectedSubtitleKeys = if (checked) {
+                                                selectedSubtitleKeys + track.uri!!
+                                            } else {
+                                                selectedSubtitleKeys - track.uri!!
+                                            }
+                                        },
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = buildString {
+                                            val langLabel = languageLabelForCode(track.language)
+                                            append(langLabel)
+                                            if (track.name.isNotBlank() && !track.name.equals(track.language, ignoreCase = true) && !track.name.equals(langLabel, ignoreCase = true)) {
+                                                append(" • ")
+                                                append(track.name)
+                                            }
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -277,23 +318,25 @@ fun DownloadsHlsSelectionSheet(
                             text = stringResource(Res.string.downloads_hls_download),
                             enabled = canDownload,
                             onClick = {
-                                val selectedVariant = playlist?.variants?.firstOrNull {
-                                    it.url == selectedQualityKey
-                                }
-                                val selection = HlsDownloadSelection(
-                                    variantUrl = selectedQualityKey.orEmpty(),
-                                    audioUrl = selectedAudioKey?.takeIf { it != "none" },
-                                    subtitleUrl = selectedSubtitleKey?.takeIf { it != "none" },
-                                    displayQuality = selectedVariant?.resolution
-                                        ?: formatBandwidth(selectedVariant?.bandwidth ?: 0L),
-                                    displayAudio = if (hasAudio) {
-                                        audioOptions.firstOrNull { it.key == selectedAudioKey }?.label.orEmpty()
-                                    } else "",
-                                    displaySubtitle = if (hasSubtitles && selectedSubtitleKey != "none") {
-                                        subtitleOptions.firstOrNull { it.key == selectedSubtitleKey }?.label.orEmpty()
-                                    } else "",
-                                )
                                 coroutineScope.launch {
+                                    val selectedAudioTracks = audioTracks.filter { it.uri in selectedAudioKeys }
+                                    val selectedSubtitleTracks = subtitleTracks.filter { it.uri in selectedSubtitleKeys }
+                                    val audioLabels = selectedAudioTracks.map { getLanguageLabelForCode(it.language) }
+                                    val subtitleLabels = selectedSubtitleTracks.map { getLanguageLabelForCode(it.language) }
+                                    val selectedVariant = playlist?.variants?.firstOrNull {
+                                        it.url == selectedQualityKey
+                                    }
+                                    val selection = HlsDownloadSelection(
+                                        variantUrl = selectedQualityKey.orEmpty(),
+                                        audioUrls = selectedAudioKeys.toList(),
+                                        subtitleUrls = selectedSubtitleKeys.toList(),
+                                        audioLabels = audioLabels,
+                                        subtitleLabels = subtitleLabels,
+                                        displayQuality = selectedVariant?.resolution
+                                            ?: formatBandwidth(selectedVariant?.bandwidth ?: 0L),
+                                        displayAudio = audioLabels.joinToString(", "),
+                                        displaySubtitle = subtitleLabels.joinToString(", "),
+                                    )
                                     dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = {
                                         onDownload(selection)
                                     })
