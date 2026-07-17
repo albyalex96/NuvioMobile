@@ -10,6 +10,7 @@ import com.nuvio.app.features.plugins.runtime.js.JsBindings
 import com.nuvio.app.features.plugins.runtime.js.JsRuntime
 import com.dokar.quickjs.binding.function
 import com.nuvio.app.features.plugins.runtime.network.FetchBridge
+import co.touchlab.kermit.Logger
 import com.nuvio.app.features.plugins.runtime.network.UrlBridge
 import com.nuvio.app.features.plugins.runtime.wasm.WasmBridge
 import kotlinx.coroutines.CompletableDeferred
@@ -32,6 +33,8 @@ import org.jetbrains.compose.resources.getString
 
 private const val PLUGIN_TIMEOUT_MS = 60_000L
 
+private val log = Logger.withTag("PluginRuntime")
+
 internal object PluginRuntime {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -49,15 +52,20 @@ internal object PluginRuntime {
         }.getOrElse { emptyMap() }
 
         withTimeout(PLUGIN_TIMEOUT_MS) {
-            executePluginInternal(
-                code = code,
-                tmdbId = tmdbId,
-                mediaType = mediaType,
-                season = season,
-                episode = episode,
-                scraperId = scraperId,
-                scraperSettings = scraperSettingsMap,
-            )
+            try {
+                executePluginInternal(
+                    code = code,
+                    tmdbId = tmdbId,
+                    mediaType = mediaType,
+                    season = season,
+                    episode = episode,
+                    scraperId = scraperId,
+                    scraperSettings = scraperSettingsMap,
+                )
+            } catch (e: Exception) {
+                log.e(e) { "Plugin execution CRASHED: scraperId=$scraperId, tmdbId=$tmdbId, msg=${e.message}" }
+                throw e
+            }
         }
     }
 
