@@ -2233,4 +2233,17 @@
   <string name="theme_color_green">Verde</string>
   <string name="theme_color_yellow">Giallo</string>
   <string name="theme_color_red">Rosso</string>
+  <string name="settings_appearance_app_icon">Icona app</string>
+  <string name="app_icon_name_default">Predefinita</string>
+  <string name="app_icon_name_enhanced">Avanzata</string>
+  <string name="app_icon_name_monochrome">Monocromatica</string>
+  <string name="app_icon_name_neon">Neon</string>
+  <string name="app_icon_name_gear">Ingranaggio</string>
+  <string name="app_icon_name_chrome">Cromo</string>
+  <string name="app_icon_name_aurora">Aurora</string>
+  <string name="app_icon_name_emerald">Smeraldo</string>
+  <string name="app_icon_confirm_restart">Per confermare il cambio dell'icona, è necessario procedere con il riavvio dell'app.</string>
+  <string name="app_icon_confirm_continue">Continua</string>
+  <string name="custom_theme_primary_color">Colore primario</string>
+  <string name="custom_theme_secondary_color">Colore secondario</string>
 </resources>

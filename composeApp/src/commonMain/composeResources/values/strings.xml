@@ -2291,4 +2291,17 @@
     <string name="theme_color_yellow">Yellow</string>
     <string name="theme_color_red">Red</string>
     <string name="theme_color_white">White</string>
+    <string name="settings_appearance_app_icon">App Icon</string>
+    <string name="app_icon_name_default">Default</string>
+    <string name="app_icon_name_enhanced">Enhanced</string>
+    <string name="app_icon_name_monochrome">Monochrome</string>
+    <string name="app_icon_name_neon">Neon</string>
+    <string name="app_icon_name_gear">Gear</string>
+    <string name="app_icon_name_chrome">Chrome</string>
+    <string name="app_icon_name_aurora">Aurora</string>
+    <string name="app_icon_name_emerald">Emerald</string>
+    <string name="app_icon_confirm_restart">To confirm the icon change, the app needs to restart.</string>
+    <string name="app_icon_confirm_continue">Continue</string>
+    <string name="custom_theme_primary_color">Primary Color</string>
+    <string name="custom_theme_secondary_color">Secondary Color</string>
 </resources>

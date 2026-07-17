@@ -63,6 +63,7 @@ import com.nuvio.app.core.format.DateFormatOption
 import com.nuvio.app.core.format.formatPreview
 import com.nuvio.app.core.ui.AppTheme
 import com.nuvio.app.core.ui.NuvioBottomSheetActionRow
+import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
@@ -78,6 +79,7 @@ import com.nuvio.app.core.ui.rememberAnimatedAccentBrush
 import com.nuvio.app.core.ui.toThemeHex
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.action_cancel
 import nuvio.composeapp.generated.resources.cd_selected
 import nuvio.composeapp.generated.resources.collections_header
 import nuvio.composeapp.generated.resources.compose_settings_page_continue_watching
@@ -100,6 +102,19 @@ import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar
 import nuvio.composeapp.generated.resources.settings_appearance_glass_navbar_description
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass
 import nuvio.composeapp.generated.resources.settings_appearance_liquid_glass_description
+import nuvio.composeapp.generated.resources.settings_appearance_app_icon
+import nuvio.composeapp.generated.resources.app_icon_name_default
+import nuvio.composeapp.generated.resources.app_icon_name_enhanced
+import nuvio.composeapp.generated.resources.app_icon_name_monochrome
+import nuvio.composeapp.generated.resources.app_icon_name_neon
+import nuvio.composeapp.generated.resources.app_icon_name_gear
+import nuvio.composeapp.generated.resources.app_icon_name_chrome
+import nuvio.composeapp.generated.resources.app_icon_name_aurora
+import nuvio.composeapp.generated.resources.app_icon_name_emerald
+import nuvio.composeapp.generated.resources.app_icon_confirm_restart
+import nuvio.composeapp.generated.resources.app_icon_confirm_continue
+import nuvio.composeapp.generated.resources.custom_theme_primary_color
+import nuvio.composeapp.generated.resources.custom_theme_secondary_color
 import nuvio.composeapp.generated.resources.settings_appearance_poster_customization_description
 import nuvio.composeapp.generated.resources.settings_appearance_section_display
 import nuvio.composeapp.generated.resources.settings_appearance_section_home
@@ -218,7 +233,7 @@ internal fun LazyListScope.appearanceSettingsContent(
                     if (selectedTheme == AppTheme.CUSTOM) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f))
                         Text(
-                            text = "Colore primario",
+                            text = stringResource(Res.string.custom_theme_primary_color),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
@@ -237,7 +252,7 @@ internal fun LazyListScope.appearanceSettingsContent(
                         Spacer(modifier = Modifier.height(20.dp))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.72f))
                         Text(
-                            text = "Colore secondario",
+                            text = stringResource(Res.string.custom_theme_secondary_color),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold,
@@ -320,8 +335,8 @@ internal fun LazyListScope.appearanceSettingsContent(
                 SettingsGroupDivider(isTablet = isTablet)
                 val selectedIconId by remember { ThemeSettingsRepository.selectedAppIconId }.collectAsState()
                 SettingsNavigationRow(
-                    title = "App Icon",
-                    description = selectedIconId.replaceFirstChar { it.uppercase() },
+                    title = stringResource(Res.string.settings_appearance_app_icon),
+                    description = appIconDisplayName(selectedIconId),
                     isTablet = isTablet,
                     onClick = { showAppIconSheet = true },
                 )
@@ -861,6 +876,7 @@ private fun AppIconBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val selectedIconId by remember { ThemeSettingsRepository.selectedAppIconId }.collectAsState()
+    var pendingOptionId by remember { mutableStateOf<String?>(null) }
 
     NuvioModalBottomSheet(
         onDismissRequest = {
@@ -877,7 +893,7 @@ private fun AppIconBottomSheet(
         ) {
             item {
                 Text(
-                    text = "App Icon",
+                    text = stringResource(Res.string.settings_appearance_app_icon),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
@@ -889,26 +905,68 @@ private fun AppIconBottomSheet(
                 if (index > 0) {
                     NuvioBottomSheetDivider()
                 }
-                NuvioBottomSheetActionRow(
-                    title = option.id.replaceFirstChar { it.uppercase() },
-                    onClick = {
-                        ThemeSettingsRepository.setAppIcon(option.id)
-                        coroutineScope.launch {
-                            dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
-                        }
-                    },
-                    trailingContent = {
-                        if (option.id == selectedIconId) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = stringResource(Res.string.cd_selected),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    },
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { pendingOptionId = option.id }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppIconPreview(
+                        iconId = option.id,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Text(
+                        text = appIconDisplayName(option.id),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                    )
+                    if (option.id == selectedIconId) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = stringResource(Res.string.cd_selected),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
         }
+    }
+
+    if (pendingOptionId != null) {
+        NuvioStatusModal(
+            title = stringResource(Res.string.settings_appearance_app_icon),
+            message = stringResource(Res.string.app_icon_confirm_restart),
+            isVisible = true,
+            confirmText = stringResource(Res.string.app_icon_confirm_continue),
+            dismissText = stringResource(Res.string.action_cancel),
+            onConfirm = {
+                pendingOptionId?.let { ThemeSettingsRepository.setAppIcon(it) }
+                pendingOptionId = null
+                coroutineScope.launch {
+                    dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+                }
+            },
+            onDismiss = { pendingOptionId = null },
+        )
+    }
+}
+
+@Composable
+private fun appIconDisplayName(iconId: String): String {
+    return when (iconId) {
+        "default" -> stringResource(Res.string.app_icon_name_default)
+        "enhanced" -> stringResource(Res.string.app_icon_name_enhanced)
+        "monochrome" -> stringResource(Res.string.app_icon_name_monochrome)
+        "neon" -> stringResource(Res.string.app_icon_name_neon)
+        "gear" -> stringResource(Res.string.app_icon_name_gear)
+        "chrome" -> stringResource(Res.string.app_icon_name_chrome)
+        "aurora" -> stringResource(Res.string.app_icon_name_aurora)
+        "emerald" -> stringResource(Res.string.app_icon_name_emerald)
+        else -> iconId.replaceFirstChar { it.uppercase() }
     }
 }
 

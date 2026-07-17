@@ -102,7 +102,9 @@ object ThemeSettingsRepository {
         _themeAnimationStyle.value = ThemeSettingsStorage.loadThemeAnimationStyle()
             ?.let { runCatching { ThemeAnimationStyle.valueOf(it) }.getOrNull() }
             ?: ThemeAnimationStyle.FLOW
-        _selectedAppIconId.value = ThemeSettingsStorage.loadSelectedAppIconId() ?: "default"
+        val loadedIconId = ThemeSettingsStorage.loadSelectedAppIconId() ?: "default"
+        _selectedAppIconId.value = loadedIconId
+        NuvioAppIconSwitcher.reapply(loadedIconId)
         _amoledEnabled.value = ThemeSettingsStorage.loadAmoledEnabled() ?: false
         _amoledSurfacesEnabled.value = ThemeSettingsStorage.loadAmoledSurfacesEnabled() ?: false
         val liquidGlassEnabled = ThemeSettingsStorage.loadLiquidGlassNativeTabBarEnabled() ?: false

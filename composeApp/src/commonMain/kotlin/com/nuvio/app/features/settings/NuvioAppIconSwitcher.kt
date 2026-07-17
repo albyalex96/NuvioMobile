@@ -28,5 +28,6 @@ internal data class NuvioAppIconOption(
 
 internal expect object NuvioAppIconSwitcher {
     fun apply(iconId: String): Boolean
+    fun reapply(iconId: String): Boolean
     fun closeAfterApply()
 }

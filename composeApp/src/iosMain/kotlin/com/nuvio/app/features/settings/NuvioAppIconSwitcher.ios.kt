@@ -27,5 +27,7 @@ internal actual object NuvioAppIconSwitcher {
         return true
     }
 
+    actual fun reapply(iconId: String): Boolean = apply(iconId)
+
     actual fun closeAfterApply() = Unit
 }
