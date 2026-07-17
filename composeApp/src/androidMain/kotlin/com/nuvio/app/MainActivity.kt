@@ -67,7 +67,36 @@ import com.nuvio.app.features.watchprogress.ResumePromptStorage
 import com.nuvio.app.features.watchprogress.WatchProgressStorage
 import com.nuvio.app.features.home.Top10CatalogStorage
 import com.nuvio.app.features.streams.StreamsAppearanceStorage
+import android.util.Log
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private const val CRASH_TAG = "NuvioCrash"
+
 class MainActivity : AppCompatActivity() {
+    private fun writeCrashLog(throwable: Throwable) {
+        try {
+            val dir = getExternalFilesDir(null) ?: filesDir
+            val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val file = File(dir, "crash_$dateStr.log")
+            val sb = StringBuilder()
+            sb.appendLine("=== NUVIO CRASH REPORT ===")
+            sb.appendLine("Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}")
+            sb.appendLine("Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
+            sb.appendLine("Android: ${android.os.Build.VERSION.SDK_INT}")
+            sb.appendLine("App: ${packageName}")
+            sb.appendLine()
+            sb.appendLine("Exception: ${throwable.javaClass.name}: ${throwable.message}")
+            sb.appendLine("Stack trace:")
+            sb.appendLine(throwable.stackTraceToString())
+            file.writeText(sb.toString(), Charsets.UTF_8)
+            Log.e(CRASH_TAG, "Crash log written to ${file.absolutePath}")
+        } catch (e: Exception) {
+            Log.e(CRASH_TAG, "Failed to write crash log: ${e.message}")
+        }
+    }
     private var pipRemoteActionReceiver: PipRemoteActionReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +106,9 @@ class MainActivity : AppCompatActivity() {
                 scrim = 0xFF020404.toInt(),
             ),
         )
+        Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
+            writeCrashLog(throwable)
+        }
         ThemeSettingsStorage.initialize(applicationContext)
         NuvioAppIconSwitcher.initialize(applicationContext)
         super.onCreate(savedInstanceState)

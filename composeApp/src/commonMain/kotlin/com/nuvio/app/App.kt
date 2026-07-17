@@ -2743,12 +2743,21 @@ private fun MainAppContent(
                             if (resolvingDebridStream) return
                             streamRouteScope.launch {
                                 resolvingDebridStream = true
-                                val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(
-                                    stream = stream,
-                                    season = launch.seasonNumber,
-                                    episode = launch.episodeNumber,
-                                )
-                                resolvingDebridStream = false
+                                val resolved = try {
+                                    DirectDebridPlaybackResolver.resolveToPlayableStream(
+                                        stream = stream,
+                                        season = launch.seasonNumber,
+                                        episode = launch.episodeNumber,
+                                    )
+                                } catch (error: Throwable) {
+                                    if (error is kotlinx.coroutines.CancellationException) throw error
+                                    error.message
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?.let { NuvioToastController.show(it) }
+                                    return@launch
+                                } finally {
+                                    resolvingDebridStream = false
+                                }
                                 when (resolved) {
                                     is DirectDebridPlayableResult.Success -> openSelectedStream(
                                         stream = resolved.stream,

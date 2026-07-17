@@ -1274,6 +1274,7 @@ afterEvaluate {
         add("fullImplementation", libs.nicehttp)
         add("fullImplementation", libs.conscrypt.android)
         add("fullImplementation", files("libs/cloudstream-runtime-api-4.8.0-3496e5f.aar"))
+        add("fullImplementation", "com.uwetrottmann.tmdb2:tmdb-java:2.13.0")
     }
 }
 configurations.matching { it.name == "iosMainImplementation" }.configureEach {
