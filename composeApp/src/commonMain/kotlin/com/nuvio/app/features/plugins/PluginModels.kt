@@ -2,6 +2,7 @@ package com.nuvio.app.features.plugins
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+
 @Serializable
 data class PluginManifest(
     val name: String,
@@ -29,7 +30,6 @@ data class PluginManifestScraper(
     @SerialName("supportedFormats") val supportedFormats: List<String>? = null,
     @SerialName("supportsExternalPlayer") val supportsExternalPlayer: Boolean? = null,
     val limited: Boolean? = null,
-    @SerialName("pluginType") val pluginType: String = "js",
 )
 
 data class PluginRepositoryItem(
@@ -40,7 +40,7 @@ data class PluginRepositoryItem(
     val scraperCount: Int = 0,
     val lastUpdated: Long = 0L,
     val isRefreshing: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
 
 data class PluginScraper(
@@ -58,7 +58,6 @@ data class PluginScraper(
     val contentLanguage: List<String> = emptyList(),
     val formats: List<String>? = null,
     val code: String,
-    val pluginType: String = "js",
 ) {
     fun supportsType(type: String): Boolean {
         val normalizedType = normalizePluginType(type)
@@ -93,6 +92,7 @@ data class PluginSubtitleResult(
 data class PluginsUiState(
     val pluginsEnabled: Boolean = true,
     val groupStreamsByRepository: Boolean = false,
+    val excludedQualities: Set<String> = emptySet(),
     val repositories: List<PluginRepositoryItem> = emptyList(),
     val scrapers: List<PluginScraper> = emptyList(),
 )
@@ -106,6 +106,7 @@ sealed interface AddPluginRepositoryResult {
 internal data class StoredPluginsState(
     val pluginsEnabled: Boolean = true,
     val groupStreamsByRepository: Boolean = false,
+    val excludedQualities: Set<String> = emptySet(),
     val repositories: List<StoredPluginRepository> = emptyList(),
     val scrapers: List<StoredPluginScraper> = emptyList(),
 )
@@ -136,7 +137,6 @@ internal data class StoredPluginScraper(
     val contentLanguage: List<String> = emptyList(),
     val formats: List<String>? = null,
     val code: String,
-    val pluginType: String = "js",
 )
 
 internal fun normalizePluginType(value: String): String =
@@ -145,11 +145,41 @@ internal fun normalizePluginType(value: String): String =
         else -> value.lowercase()
     }
 
-internal var dexScraper: (suspend (String, String, String, Int?, Int?) -> List<PluginRuntimeResult>)? = null
-
-internal data class DexRepoInstallData(
-    val repository: PluginRepositoryItem,
-    val scrapers: List<PluginScraper>,
+data class PluginQualityFilterOption(
+    val id: String,
+    val label: String,
+    val tokens: List<String>,
 )
 
-internal var dexRepoParser: suspend (String) -> DexRepoInstallData? = { null }
+val PluginQualityFilterOptions = listOf(
+    PluginQualityFilterOption("auto", "Auto", listOf("auto")),
+    PluginQualityFilterOption("adaptive", "Adaptive", listOf("adaptive")),
+    PluginQualityFilterOption("2160p", "2160p", listOf("2160p", "2160")),
+    PluginQualityFilterOption("4k", "4K", listOf("4k", "uhd")),
+    PluginQualityFilterOption("1080p", "1080p", listOf("1080p", "1080")),
+    PluginQualityFilterOption("720p", "720p", listOf("720p", "720")),
+    PluginQualityFilterOption("480p", "480p", listOf("480p", "480")),
+    PluginQualityFilterOption("360p", "360p", listOf("360p", "360")),
+    PluginQualityFilterOption("dv", "DV", listOf("dolby vision", "dolbyvision", " dv ", "[dv]", ".dv.")),
+    PluginQualityFilterOption("hdr", "HDR", listOf("hdr", "hdr10", "hdr10+")),
+    PluginQualityFilterOption("remux", "REMUX", listOf("remux")),
+    PluginQualityFilterOption("cam", "CAM", listOf("camrip", "hdcam", " cam ", "[cam]", ".cam.")),
+    PluginQualityFilterOption("ts", "TS", listOf("telesync", "hdts", " ts ", "[ts]", ".ts.")),
+)
+
+fun PluginRuntimeResult.isExcludedByPluginQualityFilter(excludedQualities: Set<String>): Boolean {
+    if (excludedQualities.isEmpty()) return false
+    val haystack = listOfNotNull(quality, title, name, provider, type)
+        .joinToString(separator = " ")
+        .lowercase()
+        .let { " $it " }
+
+    return PluginQualityFilterOptions
+        .asSequence()
+        .filter { it.id in excludedQualities }
+        .any { option ->
+            option.tokens.any { token ->
+                haystack.contains(token.lowercase())
+            }
+        }
+}

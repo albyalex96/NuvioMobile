@@ -27,7 +27,6 @@ object StreamParser {
             val url = obj.string("url")
             val infoHash = obj.string("infoHash")
             val externalUrl = obj.string("externalUrl")
-            val streamType = obj.string("type")
             val clientResolve = obj.objectValue("clientResolve")?.toClientResolve()
 
             // Must have at least one source or external target.
@@ -45,12 +44,11 @@ object StreamParser {
                 infoHash = infoHash,
                 fileIdx = obj.int("fileIdx"),
                 externalUrl = externalUrl,
-                streamType = normalizeStreamType(streamType),
                 sources = obj.stringList("sources"),
                 addonName = addonName,
                 addonId = addonId,
                 addonLogo = addonLogo,
-
+                streamType = normalizeStreamType(obj.string("type")),
                 clientResolve = clientResolve,
                 behaviorHints = StreamBehaviorHints(
                     bingeGroup = hintsObj?.string("bingeGroup"),

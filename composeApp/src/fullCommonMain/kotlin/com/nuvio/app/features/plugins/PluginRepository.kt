@@ -3,7 +3,6 @@ package com.nuvio.app.features.plugins
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.network.SupabaseProvider
 import com.nuvio.app.features.addons.httpGetText
-import com.nuvio.app.features.addons.httpRequestRaw
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.tmdb.TmdbService
 import com.nuvio.app.features.plugins.runtime.PluginRuntime
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -109,7 +107,7 @@ actual object PluginRepository {
                 }
                 .decodeList<PluginRow>()
 
-            val urls = rows.map { it.url }.distinct()
+            val urls = dedupeManifestUrls(rows.map { it.url })
             if (urls.isEmpty() && !pulledFromServer) {
                 val localUrls = _uiState.value.repositories.map { it.manifestUrl }
                 if (localUrls.isNotEmpty()) {
@@ -136,6 +134,7 @@ actual object PluginRepository {
             _uiState.value = PluginsUiState(
                 pluginsEnabled = _uiState.value.pluginsEnabled,
                 groupStreamsByRepository = _uiState.value.groupStreamsByRepository,
+                excludedQualities = _uiState.value.excludedQualities,
                 repositories = nextRepos,
                 scrapers = nextScrapers,
             )
@@ -154,33 +153,8 @@ actual object PluginRepository {
 
     actual suspend fun addRepository(rawUrl: String): AddPluginRepositoryResult {
         initialize()
-        val resolvedUrl = rawUrl.trim().replaceFirst("cloudstreamrepo:", "https:")
-        val trimmedUrl = if ("://" in resolvedUrl) resolvedUrl else resolveShortcode(resolvedUrl)
-
-        if (_uiState.value.repositories.any { it.manifestUrl == trimmedUrl }) {
-            return AddPluginRepositoryResult.Error(getString(Res.string.plugins_repository_already_installed))
-        }
-
-        val dexData = try {
-            withTimeout(30_000L) { dexRepoParser(trimmedUrl) }
-        } catch (error: Throwable) {
-            log.w(error) { "DEX repo parser failed for $trimmedUrl" }
-            null as DexRepoInstallData?
-        }
-        if (dexData != null) {
-            _uiState.update { state ->
-                state.copy(
-                    repositories = state.repositories + dexData.repository,
-                    scrapers = state.scrapers.filterNot { it.repositoryUrl == trimmedUrl } + dexData.scrapers,
-                )
-            }
-            persist()
-            pushToServer()
-            return AddPluginRepositoryResult.Success(dexData.repository)
-        }
-
         val manifestUrl = try {
-            normalizeManifestUrl(trimmedUrl)
+            normalizeManifestUrl(rawUrl)
         } catch (error: IllegalArgumentException) {
             return AddPluginRepositoryResult.Error(error.message ?: getString(Res.string.plugins_error_enter_valid_url))
         }
@@ -249,16 +223,6 @@ actual object PluginRepository {
             try {
                 val result = runCatching {
                     val previous = _uiState.value.scrapers.associateBy { it.id }
-                    val tryDex = previous.values.any { it.repositoryUrl == manifestUrl && it.pluginType == "dex" }
-                        || previous.values.none { it.repositoryUrl == manifestUrl }
-                    if (tryDex) {
-                        val dexData = try {
-                            dexRepoParser?.invoke(manifestUrl)
-                        } catch (_: Throwable) { null }
-                        if (dexData != null) {
-                            return@runCatching dexData.repository to dexData.scrapers
-                        }
-                    }
                     fetchRepositoryData(manifestUrl, previous)
                 }
 
@@ -318,6 +282,34 @@ actual object PluginRepository {
         persist()
     }
 
+    actual fun toggleRepositoryScrapers(repositoryUrl: String, enabled: Boolean) {
+        initialize()
+        _uiState.update { state ->
+            state.copy(
+                scrapers = state.scrapers.map { scraper ->
+                    if (scraper.repositoryUrl == repositoryUrl) {
+                        scraper.copy(enabled = if (scraper.manifestEnabled) enabled else false)
+                    } else {
+                        scraper
+                    }
+                },
+            )
+        }
+        persist()
+    }
+
+    actual fun toggleAllScrapers(enabled: Boolean) {
+        initialize()
+        _uiState.update { state ->
+            state.copy(
+                scrapers = state.scrapers.map { scraper ->
+                    scraper.copy(enabled = if (scraper.manifestEnabled) enabled else false)
+                },
+            )
+        }
+        persist()
+    }
+
     actual fun setPluginsEnabled(enabled: Boolean) {
         initialize()
         _uiState.update { it.copy(pluginsEnabled = enabled) }
@@ -327,6 +319,19 @@ actual object PluginRepository {
     actual fun setGroupStreamsByRepository(enabled: Boolean) {
         initialize()
         _uiState.update { it.copy(groupStreamsByRepository = enabled) }
+        persist()
+    }
+
+    actual fun setQualityExcluded(qualityId: String, excluded: Boolean) {
+        initialize()
+        _uiState.update { state ->
+            val nextExcluded = if (excluded) {
+                state.excludedQualities + qualityId
+            } else {
+                state.excludedQualities - qualityId
+            }
+            state.copy(excludedQualities = nextExcluded)
+        }
         persist()
     }
 
@@ -367,16 +372,6 @@ actual object PluginRepository {
             mediaType = mediaType,
         )
 
-        if (scraper.pluginType == "dex") {
-            val executor = dexScraper
-            if (executor == null) {
-                return Result.failure(IllegalArgumentException("DEX scraper not supported on this platform"))
-            }
-            return runCatching {
-                executor(scraper.id, resolvedTmdbId, normalizePluginType(mediaType), season, episode)
-            }
-        }
-      
         return runCatching {
             PluginRuntime.executePlugin(
                 code = scraper.code,
@@ -443,7 +438,6 @@ actual object PluginRepository {
                         contentLanguage = info.contentLanguage ?: emptyList(),
                         formats = info.formats ?: info.supportedFormats,
                         code = code,
-                        pluginType = info.pluginType,
                     )
                 }.getOrNull()
             }
@@ -512,6 +506,7 @@ actual object PluginRepository {
         val payload = StoredPluginsState(
             pluginsEnabled = state.pluginsEnabled,
             groupStreamsByRepository = state.groupStreamsByRepository,
+            excludedQualities = state.excludedQualities,
             repositories = state.repositories.map { repo ->
                 StoredPluginRepository(
                     manifestUrl = repo.manifestUrl,
@@ -519,7 +514,7 @@ actual object PluginRepository {
                     description = repo.description,
                     version = repo.version,
                     scraperCount = repo.scraperCount,
-                    lastUpdated = repo.lastUpdated,                    
+                    lastUpdated = repo.lastUpdated,
                 )
             },
             scrapers = state.scrapers.map { scraper ->
@@ -538,7 +533,6 @@ actual object PluginRepository {
                     contentLanguage = scraper.contentLanguage,
                     formats = scraper.formats,
                     code = scraper.code,
-                    pluginType = scraper.pluginType,
                 )            },
         )
         PluginStorage.saveState(currentProfileId, json.encodeToString(payload))
@@ -575,6 +569,7 @@ actual object PluginRepository {
         return PluginsUiState(
             pluginsEnabled = stored?.pluginsEnabled ?: true,
             groupStreamsByRepository = stored?.groupStreamsByRepository ?: false,
+            excludedQualities = stored?.excludedQualities.orEmpty(),
             repositories = stored?.repositories
                 ?.map {
                     PluginRepositoryItem(
@@ -606,7 +601,6 @@ actual object PluginRepository {
                         contentLanguage = it.contentLanguage,
                         formats = it.formats,
                         code = it.code,
-                        pluginType = it.pluginType,
                     )
                 }
                 ?: emptyList(),
@@ -639,25 +633,16 @@ actual object PluginRepository {
         return if (query.isEmpty()) manifestPath else "$manifestPath?$query"
     }
 
-    private suspend fun resolveShortcode(shortcode: String): String {
-        val cuttlyUrl = "https://cutt.ly/$shortcode"
-        return try {
-            val response = httpRequestRaw(
-                method = "GET",
-                url = cuttlyUrl,
-                headers = emptyMap(),
-                body = "",
-                followRedirects = true,
-            )
-            response.url
-        } catch (e: Exception) {
-            log.w(e) { "Failed to resolve shortcode '$shortcode', falling back to raw input" }
-            shortcode
-        }
-    }
-
     private fun resolveEffectiveProfileId(profileId: Int): Int {
         val active = ProfileRepository.state.value.activeProfile
-        return if (active != null && !active.id.isBlank() && active.usesPrimaryPlugins) 1 else profileId
+        return if (
+            active != null &&
+            active.profileIndex != 1 &&
+            (active.usesPrimaryPlugins || active.usesPrimaryAddons)
+        ) {
+            1
+        } else {
+            profileId
+        }
     }
 }
