@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.HorizontalDivider
@@ -337,6 +338,7 @@ internal fun LazyListScope.appearanceSettingsContent(
                 SettingsNavigationRow(
                     title = stringResource(Res.string.settings_appearance_app_icon),
                     description = appIconDisplayName(selectedIconId),
+                    icon = Icons.Rounded.Image,
                     isTablet = isTablet,
                     onClick = { showAppIconSheet = true },
                 )
