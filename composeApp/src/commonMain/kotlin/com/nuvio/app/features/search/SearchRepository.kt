@@ -664,7 +664,7 @@ private suspend fun CloudStreamPluginItem.toCloudSearchSection(
     val contentType = result.first().type.nuvioType
     return HomeCatalogSection(
         key = "cloudstream:${metadata.id.storageKey}:search:${query.lowercase()}",
-        title = "${metadata.name} � CloudStream",
+        title = "${metadata.name} · CloudStream",
         subtitle = metadata.language?.uppercase() ?: "CloudStream",
         addonName = metadata.name,
         target = CatalogTarget.CloudStream(
