@@ -5,15 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 data class NuvioDropdownOption(
@@ -42,10 +46,13 @@ data class NuvioDropdownOption(
 fun NuvioDropdownChip(
     title: String,
     label: String,
-    selectedKey: String?,
+    selectedKey: String? = null,
     options: List<NuvioDropdownOption>,
     enabled: Boolean = true,
-    onSelected: (NuvioDropdownOption) -> Unit,
+    multiple: Boolean = false,
+    selectedKeys: Set<String> = emptySet(),
+    onSelected: (NuvioDropdownOption) -> Unit = {},
+    onSelectedMultiple: (Set<String>) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -84,29 +91,108 @@ fun NuvioDropdownChip(
     }
 
     if (isSheetVisible) {
-        NuvioDropdownOptionsSheet(
-            title = title,
-            options = options,
-            selectedKey = selectedKey,
-            sheetState = sheetState,
-            onDismiss = {
-                coroutineScope.launch {
-                    dismissNuvioBottomSheet(
-                        sheetState = sheetState,
-                        onDismiss = { isSheetVisible = false },
+        if (multiple) {
+            val pendingKeys = remember { mutableStateOf(selectedKeys) }
+            NuvioModalBottomSheet(
+                onDismissRequest = {
+                    coroutineScope.launch {
+                        dismissNuvioBottomSheet(
+                            sheetState = sheetState,
+                            onDismiss = { isSheetVisible = false },
+                        )
+                    }
+                },
+                sheetState = sheetState,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = nuvioSafeBottomPadding(tokens.spacing.screenHorizontal)),
+                ) {
+                    Text(
+                        text = title,
+                        modifier = Modifier.padding(
+                            horizontal = tokens.spacing.screenHorizontal,
+                            vertical = NuvioTokens.Space.s14,
+                        ),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = tokens.colors.textPrimary,
                     )
+                    NuvioBottomSheetDivider()
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = tokens.breakpoints.largePhone),
+                    ) {
+                        itemsIndexed(options) { index, option ->
+                            val isChecked = pendingKeys.value.contains(option.key)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        pendingKeys.value = if (isChecked) {
+                                            pendingKeys.value - option.key
+                                        } else {
+                                            pendingKeys.value + option.key
+                                        }
+                                        onSelectedMultiple(pendingKeys.value)
+                                    }
+                                    .padding(
+                                        horizontal = tokens.spacing.screenHorizontal,
+                                        vertical = NuvioTokens.Space.s4,
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(
+                                    checked = isChecked,
+                                    onCheckedChange = { checked ->
+                                        pendingKeys.value = if (checked) {
+                                            pendingKeys.value + option.key
+                                        } else {
+                                            pendingKeys.value - option.key
+                                        }
+                                        onSelectedMultiple(pendingKeys.value)
+                                    },
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = option.label,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = tokens.colors.textPrimary,
+                                )
+                            }
+                            if (index < options.lastIndex) {
+                                NuvioBottomSheetDivider()
+                            }
+                        }
+                    }
                 }
-            },
-            onSelected = { option ->
-                onSelected(option)
-                coroutineScope.launch {
-                    dismissNuvioBottomSheet(
-                        sheetState = sheetState,
-                        onDismiss = { isSheetVisible = false },
-                    )
-                }
-            },
-        )
+            }
+        } else {
+            NuvioDropdownOptionsSheet(
+                title = title,
+                options = options,
+                selectedKey = selectedKey,
+                sheetState = sheetState,
+                onDismiss = {
+                    coroutineScope.launch {
+                        dismissNuvioBottomSheet(
+                            sheetState = sheetState,
+                            onDismiss = { isSheetVisible = false },
+                        )
+                    }
+                },
+                onSelected = { option ->
+                    onSelected(option)
+                    coroutineScope.launch {
+                        dismissNuvioBottomSheet(
+                            sheetState = sheetState,
+                            onDismiss = { isSheetVisible = false },
+                        )
+                    }
+                },
+            )
+        }
     }
 }
 
