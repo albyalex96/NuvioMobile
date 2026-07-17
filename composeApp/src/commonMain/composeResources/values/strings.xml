@@ -354,6 +354,7 @@
     <string name="compose_player_font_size_value">%1$dsp</string>
     <string name="compose_player_lock_controls">Lock player controls</string>
     <string name="compose_player_loading_lines">Loading subtitle lines...</string>
+    <string name="compose_player_languages">Languages</string>
     <string name="compose_player_no_subtitle_lines_found">No subtitle lines found</string>
     <string name="compose_player_subtitle_lines_load_error">Unable to load subtitle lines</string>
     <string name="compose_player_no_audio_tracks_available">No audio tracks available</string>
@@ -1476,6 +1477,7 @@
     <string name="stream_default_name">Stream</string>
     <string name="source_embedded">Embedded</string>
     <string name="trakt_authorization_denied">Authorization denied</string>
+    <string name="trakt_authorization_expired_reconnect">Your Trakt authorization is no longer valid. Reconnect your Trakt account.</string>
     <string name="trakt_complete_sign_in_browser">Complete Trakt sign in in your browser</string>
     <string name="trakt_connected">Connected to Trakt</string>
     <string name="trakt_disconnected">Disconnected from Trakt</string>
