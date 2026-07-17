@@ -39,6 +39,8 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
+import com.nuvio.app.core.ui.rememberAnimatedSoftBrush
+import com.nuvio.app.core.ui.rememberAnimatedAccentBrush
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -1884,10 +1886,14 @@ private fun MainAppContent(
             navController.navigate(PlayerRoute(launchId = launchId))
         }
 
+        val animatedBg = rememberAnimatedAccentBrush()
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.nuvio.colors.background),
+                .background(MaterialTheme.nuvio.colors.background)
+                .then(
+                    if (animatedBg != null) Modifier.background(animatedBg, alpha = 0.12f) else Modifier
+                ),
         ) {
             Box(
                 modifier = Modifier

@@ -19,6 +19,7 @@ import nuvio.composeapp.generated.resources.theme_rose
 import nuvio.composeapp.generated.resources.theme_sunset
 import nuvio.composeapp.generated.resources.theme_violet
 import nuvio.composeapp.generated.resources.theme_white
+import nuvio.composeapp.generated.resources.theme_animation_none
 import org.jetbrains.compose.resources.StringResource
 
 enum class AppTheme {
@@ -63,6 +64,7 @@ val AppTheme.labelRes: StringResource
     }
 
 enum class ThemeAnimationStyle {
+    NONE,
     FLOW,
     SHIMMER,
     WAVE,
@@ -72,6 +74,7 @@ enum class ThemeAnimationStyle {
 
 val ThemeAnimationStyle.labelRes: StringResource
     get() = when (this) {
+        ThemeAnimationStyle.NONE -> Res.string.theme_animation_none
         ThemeAnimationStyle.FLOW -> Res.string.theme_animation_flow
         ThemeAnimationStyle.SHIMMER -> Res.string.theme_animation_shimmer
         ThemeAnimationStyle.WAVE -> Res.string.theme_animation_wave

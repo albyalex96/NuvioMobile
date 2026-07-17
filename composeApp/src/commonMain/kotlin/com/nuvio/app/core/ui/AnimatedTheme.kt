@@ -52,7 +52,7 @@ internal fun rememberAnimatedThemeVisuals(
     customSecond: Color = ThemeAccentColor.CYAN.color,
     animationStyle: ThemeAnimationStyle = ThemeAnimationStyle.FLOW,
 ): AnimatedThemeVisuals? {
-    if (!theme.isEnhanced) return null
+    if (!theme.isEnhanced || animationStyle == ThemeAnimationStyle.NONE) return null
 
     val colors = remember(theme, customFirst, customSecond, animationStyle) {
         stylePalette(
@@ -110,6 +110,7 @@ internal fun rememberAnimatedThemeVisuals(
 
 private val ThemeAnimationStyle.durationMillis: Int
     get() = when (this) {
+        ThemeAnimationStyle.NONE -> 1_000
         ThemeAnimationStyle.FLOW -> 14_000
         ThemeAnimationStyle.SHIMMER -> 12_000
         ThemeAnimationStyle.WAVE -> 18_000
@@ -121,6 +122,7 @@ private val ThemeAnimationStyle.chipAlpha: Float
     get() = when (this) {
         ThemeAnimationStyle.VIVID_WAVE -> 0.26f
         ThemeAnimationStyle.SHIMMER -> 0.20f
+        ThemeAnimationStyle.NONE -> 0.22f
         else -> 0.22f
     }
 
@@ -128,6 +130,7 @@ private val ThemeAnimationStyle.softAlpha: Float
     get() = when (this) {
         ThemeAnimationStyle.VIVID_WAVE -> 0.11f
         ThemeAnimationStyle.WAVE -> 0.09f
+        ThemeAnimationStyle.NONE -> 0.08f
         else -> 0.08f
     }
 
@@ -138,6 +141,7 @@ private fun stylePalette(
 ): List<Color> {
     if (colors.isEmpty()) return colors
     val enhanced = when (style) {
+        ThemeAnimationStyle.NONE -> colors
         ThemeAnimationStyle.VIVID_WAVE -> colors.map { enhanceColor(it, saturation = 1.28f, contrast = 1.14f) }
         ThemeAnimationStyle.WAVE -> colors.map { enhanceColor(it, saturation = 1.22f, contrast = 1.11f) }
         ThemeAnimationStyle.SHIMMER -> colors.map { enhanceColor(it, saturation = 1.18f, contrast = 1.09f) }
@@ -156,6 +160,7 @@ private fun themeBrush(
     colors: List<Color>,
     phase: Float,
 ): Brush = when (style) {
+    ThemeAnimationStyle.NONE -> Brush.horizontalGradient(smoothGradientPalette(colors, steps = 8))
     ThemeAnimationStyle.FLOW -> FlowMotionBrush(colors, phase)
     ThemeAnimationStyle.STILL -> Brush.horizontalGradient(smoothGradientPalette(colors, steps = 8))
     ThemeAnimationStyle.SHIMMER -> ShimmerMotionBrush(colors, phase)
@@ -408,7 +413,13 @@ private fun circularDistance(first: Float, second: Float): Float {
 }
 
 @Composable
-internal fun rememberAnimatedAccentBrush(
+fun rememberAnimatedAccentColor(): Color? = currentAnimatedThemeVisuals?.accent
+
+@Composable
+fun rememberAnimatedAccentStrongColor(): Color? = currentAnimatedThemeVisuals?.accentStrong
+
+@Composable
+fun rememberAnimatedAccentBrush(
     previewTheme: AppTheme? = null,
     customFirst: Color = ThemeAccentColor.PINK.color,
     customSecond: Color = ThemeAccentColor.CYAN.color,
@@ -420,15 +431,15 @@ internal fun rememberAnimatedAccentBrush(
 }
 
 @Composable
-internal fun rememberAnimatedChipBrush(): Brush? = currentAnimatedThemeVisuals?.chipBrush
+fun rememberAnimatedChipBrush(): Brush? = currentAnimatedThemeVisuals?.chipBrush
 
 @Composable
-internal fun rememberAnimatedLineBrush(): Brush? = currentAnimatedThemeVisuals?.lineBrush
+fun rememberAnimatedLineBrush(): Brush? = currentAnimatedThemeVisuals?.lineBrush
 
 @Composable
-internal fun rememberAnimatedSelectionBrush(): Brush? = currentAnimatedThemeVisuals?.selectionBrush
+fun rememberAnimatedSelectionBrush(): Brush? = currentAnimatedThemeVisuals?.selectionBrush
 
 @Composable
-internal fun rememberAnimatedSoftBrush(): Brush? = currentAnimatedThemeVisuals?.softBrush
+fun rememberAnimatedSoftBrush(): Brush? = currentAnimatedThemeVisuals?.softBrush
 
 private const val TwoPi = 6.2831855f

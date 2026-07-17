@@ -2282,6 +2282,7 @@
     <string name="theme_animation_shimmer">Shimmer</string>
     <string name="theme_animation_wave">Wave</string>
     <string name="theme_animation_vivid_wave">Vivid wave</string>
+    <string name="theme_animation_none">None</string>
     <string name="theme_animation_still">Still</string>
     <string name="theme_color_pink">Pink</string>
     <string name="theme_color_purple">Purple</string>

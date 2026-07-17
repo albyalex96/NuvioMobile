@@ -2225,6 +2225,7 @@
   <string name="theme_animation_shimmer">Bagliore</string>
   <string name="theme_animation_wave">Onda</string>
   <string name="theme_animation_vivid_wave">Onda vivida</string>
+  <string name="theme_animation_none">Nessuna</string>
   <string name="theme_animation_still">Fermo</string>
   <string name="theme_color_pink">Rosa</string>
   <string name="theme_color_purple">Viola</string>

@@ -161,8 +161,9 @@ private class NuvioNavigationBarScopeImpl(
         modifier: Modifier,
     ) {
         val tokens = MaterialTheme.nuvio
+        val animatedAccent = rememberAnimatedAccentColor()
         val iconColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
+            targetValue = if (selected) (animatedAccent ?: tokens.colors.accent) else tokens.colors.textMuted,
         )
         val selectedBackground by animateColorAsState(
             targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -208,8 +209,9 @@ private class NuvioNavigationBarScopeImpl(
         modifier: Modifier,
     ) {
         val tokens = MaterialTheme.nuvio
+        val animatedAccent = rememberAnimatedAccentColor()
         val iconColor by animateColorAsState(
-            targetValue = if (selected) tokens.colors.accent else tokens.colors.textMuted,
+            targetValue = if (selected) (animatedAccent ?: tokens.colors.accent) else tokens.colors.textMuted,
         )
         val selectedBackground by animateColorAsState(
             targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
