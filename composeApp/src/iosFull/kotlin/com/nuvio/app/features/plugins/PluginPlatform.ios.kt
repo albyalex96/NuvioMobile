@@ -15,6 +15,13 @@ internal object PluginStorage {
             forKey = "${pluginsStateKey}_$profileId",
         )
     }
+
+    fun loadRaw(key: String): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(key)
+
+    fun saveRaw(key: String, payload: String) {
+        NSUserDefaults.standardUserDefaults.setObject(payload, forKey = key)
+    }
 }
 
 internal fun currentPluginPlatform(): String = "ios"
