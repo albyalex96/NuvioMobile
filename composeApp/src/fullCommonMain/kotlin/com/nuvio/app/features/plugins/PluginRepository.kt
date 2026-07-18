@@ -342,6 +342,26 @@ actual object PluginRepository {
         }
     }
 
+    actual fun getEnabledSoraModulesForType(type: String): List<SoraModuleItem> {
+        return SoraModuleRepository.getEnabledModulesForType(type)
+    }
+
+    actual suspend fun executeSoraModule(
+        module: SoraModuleItem,
+        tmdbId: String,
+        mediaType: String,
+        season: Int?,
+        episode: Int?,
+    ): Result<List<PluginRuntimeResult>> {
+        return SoraModuleRepository.executeModule(
+            module = module,
+            tmdbId = tmdbId,
+            mediaType = mediaType,
+            season = season,
+            episode = episode,
+        )
+    }
+
     private suspend fun resolvePluginTmdbId(
         tmdbId: String,
         mediaType: String,
