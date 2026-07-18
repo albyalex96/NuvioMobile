@@ -15,11 +15,13 @@ import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.plugins.pluginContentId
 import com.nuvio.app.features.plugins.PluginRuntimeResult
 import com.nuvio.app.features.plugins.PluginScraper
+import com.nuvio.app.features.plugins.SoraModuleItem
 import com.nuvio.app.features.streams.AddonStreamWarmupRepository
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
 import com.nuvio.app.features.streams.StreamBadgePresentation
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
+import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamParser
 import com.nuvio.app.features.streams.StreamsUiState
@@ -178,10 +180,33 @@ object PlayerStreamsRepository {
             emptyList()
         }
 
-        if (installedAddons.isEmpty() && pluginScrapers.isEmpty()) {
+        val soraModules = if (AppFeaturePolicy.pluginsEnabled) {
+            PluginRepository.getEnabledSoraModulesForType(type)
+        } else {
+            emptyList()
+        }
+
+        val hasPluginOrSoraSources = pluginScrapers.isNotEmpty() || soraModules.isNotEmpty()
+
+        if (hasPluginOrSoraSources) {
+            TmdbSettingsRepository.ensureLoaded()
+            if (!TmdbSettingsRepository.snapshot().hasApiKey) {
+                stateFlow.value = StreamsUiState(
+                    isAnyLoading = false,
+                    emptyStateReason = com.nuvio.app.features.streams.StreamsEmptyStateReason.TmdbApiKeyMissing,
+                )
+                return
+            }
+        }
+
+        if (installedAddons.isEmpty() && !hasPluginOrSoraSources) {
             stateFlow.value = StreamsUiState(
                 isAnyLoading = false,
-                emptyStateReason = com.nuvio.app.features.streams.StreamsEmptyStateReason.NoAddonsInstalled,
+                emptyStateReason = if (AppFeaturePolicy.pluginsEnabled && !PluginRepository.uiState.value.pluginsEnabled) {
+                    com.nuvio.app.features.streams.StreamsEmptyStateReason.PluginsDisabled
+                } else {
+                    com.nuvio.app.features.streams.StreamsEmptyStateReason.NoAddonsInstalled
+                },
             )
             return
         }
@@ -204,7 +229,7 @@ object PlayerStreamsRepository {
                 )
             }
 
-        if (streamAddons.isEmpty() && pluginScrapers.isEmpty()) {
+        if (streamAddons.isEmpty() && pluginScrapers.isEmpty() && soraModules.isEmpty()) {
             stateFlow.value = StreamsUiState(
                 isAnyLoading = false,
                 emptyStateReason = com.nuvio.app.features.streams.StreamsEmptyStateReason.NoCompatibleAddons,
@@ -229,6 +254,13 @@ object PlayerStreamsRepository {
             AddonStreamGroup(
                 addonName = scraper.name,
                 addonId = "plugin:${scraper.id}",
+                streams = emptyList(),
+                isLoading = true,
+            )
+        } + soraModules.map { module ->
+            AddonStreamGroup(
+                addonName = module.sourceName,
+                addonId = "sora:${module.moduleUrl.lowercase()}",
                 streams = emptyList(),
                 isLoading = true,
             )
@@ -374,7 +406,42 @@ object PlayerStreamsRepository {
                 }
             }
 
-            val jobs = addonJobs + pluginJobs
+            val soraJobs = soraModules.map { module ->
+                async {
+                    PluginRepository.executeSoraModule(
+                        module = module,
+                        tmdbId = pluginContentId(
+                            videoId = videoId,
+                            season = season,
+                            episode = episode,
+                        ),
+                        mediaType = type,
+                        season = season,
+                        episode = episode,
+                    ).fold(
+                        onSuccess = { results ->
+                            AddonStreamGroup(
+                                addonName = module.sourceName,
+                                addonId = "sora:${module.moduleUrl.lowercase()}",
+                                streams = results.map { it.toSoraStreamItem(module) },
+                                isLoading = false,
+                            )
+                        },
+                        onFailure = { err ->
+                            log.w(err) { "Sora module failed: ${module.sourceName}" }
+                            AddonStreamGroup(
+                                addonName = module.sourceName,
+                                addonId = "sora:${module.moduleUrl.lowercase()}",
+                                streams = emptyList(),
+                                isLoading = false,
+                                error = err.message,
+                            )
+                        },
+                    )
+                }
+            }
+
+            val jobs = addonJobs + pluginJobs + soraJobs
             val completions = Channel<AddonStreamGroup>(capacity = Channel.BUFFERED)
             jobs.forEach { deferred ->
                 launch {
@@ -424,6 +491,45 @@ private data class PlayerInstalledStreamAddonTarget(
 
 private fun com.nuvio.app.features.addons.ManagedAddon.streamAddonInstanceId(manifestId: String): String =
     "addon:$manifestId:$manifestUrl"
+
+private fun PluginRuntimeResult.toSoraStreamItem(module: SoraModuleItem): StreamItem {
+    val subtitleParts = listOfNotNull(
+        quality?.takeIf { it.isNotBlank() },
+        module.quality?.takeIf { it.isNotBlank() },
+        language?.takeIf { it.isNotBlank() },
+        module.language?.takeIf { it.isNotBlank() },
+    )
+    val requestHeaders = headers
+        .orEmpty()
+        .mapNotNull { (key, value) ->
+            val headerName = key.trim()
+            val headerValue = value.trim()
+            if (headerName.isBlank() || headerValue.isBlank() || headerName.equals("Range", ignoreCase = true)) {
+                null
+            } else {
+                headerName to headerValue
+            }
+        }
+        .toMap()
+
+    return StreamItem(
+        name = name ?: title,
+        description = subtitleParts.joinToString(" • ").ifBlank { null },
+        url = url,
+        infoHash = infoHash,
+        sourceName = module.sourceName,
+        addonName = module.sourceName,
+        addonId = "sora:${module.moduleUrl.lowercase()}",
+        behaviorHints = if (requestHeaders.isEmpty()) {
+            com.nuvio.app.features.streams.StreamBehaviorHints()
+        } else {
+            com.nuvio.app.features.streams.StreamBehaviorHints(
+                notWebReady = true,
+                proxyHeaders = com.nuvio.app.features.streams.StreamProxyHeaders(request = requestHeaders),
+            )
+        },
+    )
+}
 
 private fun PluginRuntimeResult.toStreamItem(scraper: PluginScraper): StreamItem {
     val subtitleParts = listOfNotNull(
