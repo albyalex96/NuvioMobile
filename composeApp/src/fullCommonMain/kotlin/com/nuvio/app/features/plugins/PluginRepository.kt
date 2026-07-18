@@ -343,9 +343,11 @@ actual object PluginRepository {
         }
     }
 
-    actual fun getEnabledSoraModulesForType(type: String): List<SoraModuleItem> {
-        return SoraModuleRepository.getEnabledModulesForType(type)
-    }
+   actual fun getEnabledSoraModulesForType(type: String): List<SoraModuleItem> {
+    initialize()
+    if (!_uiState.value.pluginsEnabled) return emptyList()
+    return SoraModuleRepository.getEnabledModulesForType(type)
+}
 
     actual suspend fun executeSoraModule(
         module: SoraModuleItem,
