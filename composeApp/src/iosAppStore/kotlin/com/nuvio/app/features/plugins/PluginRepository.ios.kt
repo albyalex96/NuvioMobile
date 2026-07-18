@@ -48,4 +48,15 @@ actual object PluginRepository {
         episode: Int?,
     ): Result<List<PluginRuntimeResult>> =
         Result.failure(UnsupportedOperationException(getString(Res.string.plugins_error_unavailable_build)))
+
+    actual fun getEnabledSoraModulesForType(type: String): List<SoraModuleItem> = emptyList()
+
+    actual suspend fun executeSoraModule(
+        module: SoraModuleItem,
+        tmdbId: String,
+        mediaType: String,
+        season: Int?,
+        episode: Int?,
+    ): Result<List<PluginRuntimeResult>> =
+        Result.failure(UnsupportedOperationException(getString(Res.string.plugins_error_unavailable_build)))
 }
