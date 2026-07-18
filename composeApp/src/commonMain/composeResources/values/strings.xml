@@ -1246,6 +1246,10 @@
     <string name="streams_empty_no_stream_addon_message">Your installed addons do not provide streams for this type of title.</string>
     <string name="streams_empty_no_stream_addon_title">No stream addon available</string>
     <string name="streams_empty_no_streams_message">None of your installed addons returned streams for this title.</string>
+    <string name="streams_empty_tmdb_api_key_missing_title">TMDB API key required</string>
+    <string name="streams_empty_tmdb_api_key_missing_message">Plugin providers require a TMDB API key. Set it in TMDB settings to use plugin scrapers and Sora modules.</string>
+    <string name="streams_empty_plugins_disabled_title">Plugins disabled</string>
+    <string name="streams_empty_plugins_disabled_message">Plugins are disabled in the settings. Enable them to use plugin scrapers and Sora modules.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Episode</string>
     <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
