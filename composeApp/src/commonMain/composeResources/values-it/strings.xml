@@ -2251,4 +2251,6 @@
   <string name="app_icon_confirm_continue">Continua</string>
   <string name="custom_theme_primary_color">Colore primario</string>
   <string name="custom_theme_secondary_color">Colore secondario</string>
+  <string name="layout_catalog_type">Mostra tipo catalogo</string>
+    <string name="layout_catalog_type_sub">Mostra il suffisso del tipo di catalogo accanto al nome del catalogo (Film/Serie).</string>
 </resources>

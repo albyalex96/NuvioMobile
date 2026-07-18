@@ -152,6 +152,7 @@ fun buildAniListDefinitions(isAuthenticated: Boolean): List<HomeCatalogDefinitio
         HomeCatalogDefinition(
             key = "anilist_$key",
             defaultTitle = label,
+            catalogName = label,
             addonName = "AniList",
             manifestUrl = "",
             type = "anime-series",
