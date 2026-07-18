@@ -1379,7 +1379,7 @@
     <string name="auth_sign_up_failed">Înregistrarea a eșuat</string>
     <string name="catalog_load_failed">Nu s-au putut încărca elementele din catalog.</string>
     <string name="continue_watching_up_next">Următorul la rând</string>
-    <string name="continue_watching_up_next_episode">Următorul • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Următorul • %1$s</string>
     <string name="detail_logo_content_description">Siglă %1$s</string>
     <string name="details_comments_load_failed">Nu s-au putut încărca comentariile</string>
     <string name="details_load_failed_all_addons">Nu s-au putut încărca detaliile din nicio extensie.</string>

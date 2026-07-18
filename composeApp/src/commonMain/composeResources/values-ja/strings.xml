@@ -1366,7 +1366,7 @@
     <string name="auth_sign_up_failed">サインアップに失敗しました</string>
     <string name="catalog_load_failed">カタログアイテムを読み込めませんでした。</string>
     <string name="continue_watching_up_next">次のエピソード</string>
-    <string name="continue_watching_up_next_episode">次のエピソード • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">次のエピソード • %1$s</string>
     <string name="detail_logo_content_description">%1$s ロゴ</string>
     <string name="details_comments_load_failed">コメントの読み込みに失敗しました</string>
     <string name="details_load_failed_all_addons">どのアドオンからも詳細を読み込めませんでした。</string>

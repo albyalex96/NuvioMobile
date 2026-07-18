@@ -1369,7 +1369,7 @@
     <string name="auth_sign_up_failed">Registrace selhala</string>
     <string name="catalog_load_failed">Nepodarilo se nacíst položky katalogu.</string>
     <string name="continue_watching_up_next">Další na rade</string>
-    <string name="continue_watching_up_next_episode">Další na rade • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Další na rade • %1$s</string>
     <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Nepodarilo se nacíst komentáre</string>
     <string name="details_load_failed_all_addons">Nepodarilo se nacíst podrobnosti z žádného doplnku.</string>

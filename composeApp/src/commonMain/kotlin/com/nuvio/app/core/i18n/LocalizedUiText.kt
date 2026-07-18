@@ -142,7 +142,7 @@ fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?, format: Episod
     if (seasonNumber != null && episodeNumber != null) {
         val code = formatEpisodeCode(seasonNumber, episodeNumber, format)
         resourceString("Up Next • $code") {
-            getString(Res.string.continue_watching_up_next_episode, seasonNumber, episodeNumber)
+            getString(Res.string.continue_watching_up_next_episode, code)
         }
     } else {
         resourceString("Up Next") { getString(Res.string.continue_watching_up_next) }

@@ -1379,7 +1379,7 @@
     <string name="auth_sign_up_failed">Registreren mislukt</string>
     <string name="catalog_load_failed">Kan catalogusitems niet laden.</string>
     <string name="continue_watching_up_next">Volgende</string>
-    <string name="continue_watching_up_next_episode">Volgende • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Volgende • %1$s</string>
     <string name="detail_logo_content_description">%1$s-logo</string>
     <string name="details_comments_load_failed">Laden van reacties mislukt</string>
     <string name="details_load_failed_all_addons">Kon details van geen enkele addon laden.</string>

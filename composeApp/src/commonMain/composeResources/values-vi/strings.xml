@@ -1376,7 +1376,7 @@
     <string name="auth_sign_up_failed">Đăng ký thất bại</string>
     <string name="catalog_load_failed">Không thể tải nội dung</string>
     <string name="continue_watching_up_next">Tiếp theo</string>
-    <string name="continue_watching_up_next_episode">Tiếp theo • P%1$dT%2$d</string>
+    <string name="continue_watching_up_next_episode">Tiếp theo • %1$s</string>
     <string name="detail_logo_content_description">Logo của %1$s</string>
     <string name="details_comments_load_failed">Không thể tải bình luận</string>
     <string name="details_load_failed_all_addons">Không thể tải thông tin từ bất kỳ addon nào</string>

@@ -11,6 +11,8 @@ import android.graphics.Typeface
 import android.os.Build
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.util.AttributeSet
+import com.nuvio.app.features.addons.httpGetText
+import java.io.File
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
@@ -687,19 +689,20 @@ private fun ExoPlayerSurface(
                             return@launch
                         }
                         preserveAudioSelectionForReload("setSubtitleUri")
-                        val resolvedMime = withContext(Dispatchers.IO) {
-                            resolveSubtitleMimeType(url)
+
+                        val (subtitleUri, resolvedMime) = withContext(Dispatchers.IO) {
+                            downloadAndDetectSubtitle(url, context)
                         }
                         selectedExternalSubtitleMimeType = resolvedMime
                         Log.d(TAG, "setSubtitleUri: currentPosition=$currentPosition, wasPlaying=$wasPlaying")
-                        val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(Uri.parse(url))
+                        val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(subtitleUri)
                             .setMimeType(resolvedMime)
                             .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
                             .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
                             .build()
                         Log.d(
                             TAG,
-                            "setSubtitleUri: subtitleConfig built, uri=${subtitleConfig.uri}, mime=${subtitleConfig.mimeType}, selectionFlags=${subtitleConfig.selectionFlags}"
+                            "setSubtitleUri: subtitleConfig built, uri=$subtitleUri, mime=$resolvedMime, selectionFlags=${subtitleConfig.selectionFlags}"
                         )
                         val newMediaItem = currentMediaItem.buildUpon()
                             .setSubtitleConfigurations(listOf(subtitleConfig))
@@ -1948,6 +1951,39 @@ private fun guessSubtitleMime(url: String): String {
         lower.contains(".ass") || lower.contains(".ssa") -> MimeTypes.TEXT_SSA
         lower.contains(".ttml") || lower.contains(".dfxp") || lower.contains(".xml") -> MimeTypes.APPLICATION_TTML
         else -> MimeTypes.TEXT_VTT
+    }
+}
+
+private suspend fun downloadAndDetectSubtitle(
+    url: String,
+    context: Context,
+): Pair<Uri, String> {
+    try {
+        val content = httpGetText(url)
+        val trimmed = content.trim()
+        val extension = when {
+            trimmed.startsWith("WEBVTT") -> ".vtt"
+            trimmed.contains("[Script Info]") || trimmed.contains("Style:") -> ".ass"
+            else -> ".srt"
+        }
+        val mime = when (extension) {
+            ".vtt" -> MimeTypes.TEXT_VTT
+            ".ass" -> MimeTypes.TEXT_SSA
+            else -> MimeTypes.APPLICATION_SUBRIP
+        }
+        val cacheDir = File(context.cacheDir, "subtitle_cache").also { it.mkdirs() }
+        // Cleanup old cache files (older than 1 hour)
+        cacheDir.listFiles()?.forEach { file ->
+            if (file.lastModified() < System.currentTimeMillis() - 3_600_000) file.delete()
+        }
+        val cacheFile = File(cacheDir, "subtitle_${System.currentTimeMillis()}$extension")
+        cacheFile.writeText(content)
+        Log.d(TAG, "downloadAndDetectSubtitle: cached as $extension -> ${cacheFile.absolutePath}")
+        return Uri.fromFile(cacheFile) to mime
+    } catch (e: Exception) {
+        Log.w(TAG, "downloadAndDetectSubtitle: download failed, falling back to URL probing", e)
+        val mime = resolveSubtitleMimeType(url)
+        return Uri.parse(url) to mime
     }
 }
 

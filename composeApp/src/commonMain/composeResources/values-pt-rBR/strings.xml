@@ -1200,7 +1200,7 @@
     <string name="auth_sign_up_failed">Falha no cadastro</string>
     <string name="catalog_load_failed">Não foi possível carregar itens do catálogo.</string>
     <string name="continue_watching_up_next">A Seguir</string>
-    <string name="continue_watching_up_next_episode">A Seguir • T%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">A Seguir • %1$s</string>
     <string name="detail_logo_content_description">Logo de %1$s</string>
     <string name="details_comments_load_failed">Falha ao carregar comentários</string>
     <string name="details_load_failed_all_addons">Não foi possível carregar detalhes de nenhum addon.</string>

@@ -1339,7 +1339,7 @@
     <string name="auth_sign_up_failed">Falha no registo</string>
     <string name="catalog_load_failed">Não foi possível carregar os itens do catálogo.</string>
     <string name="continue_watching_up_next">A seguir</string>
-    <string name="continue_watching_up_next_episode">A seguir • T%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">A seguir • %1$s</string>
     <string name="detail_logo_content_description">Logótipo de %1$s</string>
     <string name="details_comments_load_failed">Falha ao carregar os comentários</string>
     <string name="details_load_failed_all_addons">Não foi possível carregar os detalhes de nenhum addon.</string>

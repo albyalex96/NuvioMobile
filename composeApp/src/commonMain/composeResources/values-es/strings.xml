@@ -1369,7 +1369,7 @@
     <string name="auth_sign_up_failed">Error al registrarse</string>
     <string name="catalog_load_failed">No se pudieron cargar los elementos del catálogo.</string>
     <string name="continue_watching_up_next">A continuación</string>
-    <string name="continue_watching_up_next_episode">A continuación • T%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">A continuación • %1$s</string>
     <string name="detail_logo_content_description">logotipo de %1$s</string>
     <string name="details_comments_load_failed">No se pudieron cargar los comentarios</string>
     <string name="details_load_failed_all_addons">No se pudieron cargar los detalles desde ningún complemento.</string>

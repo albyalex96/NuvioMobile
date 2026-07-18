@@ -835,7 +835,12 @@ private fun remuxToMp4(
             InAppLogger.debug("Remux", "audio samples done")
         }
 
-        muxer.stop()
+        try {
+            muxer.stop()
+        } catch (e: Exception) {
+            AndroidLog.e("Remux", "muxer.stop() failed: ${e.message}")
+            InAppLogger.warn("Remux", "muxer.stop() failed: ${e.message}")
+        }
         muxer.release()
         videoExtractor.release()
         audioExtractor?.release()
@@ -883,7 +888,8 @@ private fun copyTrack(
         }
         buffer.limit(size)
         buffer.position(0)
-        info.set(0, size, timeUs, flags)
+        val writeFlags = flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM.inv()
+        info.set(0, size, timeUs, writeFlags)
         muxer.writeSampleData(muxerTrack, buffer, info)
         extractor.advance()
         sampleCount++

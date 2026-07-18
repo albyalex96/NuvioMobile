@@ -1330,7 +1330,7 @@
     <string name="auth_sign_up_failed">Регистрацията не бе успешна</string>
     <string name="catalog_load_failed">Елементите на каталога не можаха да се заредят.</string>
     <string name="continue_watching_up_next">Следващо</string>
-    <string name="continue_watching_up_next_episode">Следващо • С%1$dЕ%2$d</string>
+    <string name="continue_watching_up_next_episode">Следващо • %1$s</string>
     <string name="detail_logo_content_description">Лого на %1$s</string>
     <string name="details_comments_load_failed">Коментарите не можаха да се заредят</string>
     <string name="details_load_failed_all_addons">Детайлите не можаха да се заредят от нито една добавка.</string>

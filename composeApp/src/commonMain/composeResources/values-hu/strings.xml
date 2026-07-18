@@ -1188,7 +1188,7 @@
     <string name="auth_sign_up_failed">Regisztráció sikertelen</string>
     <string name="catalog_load_failed">Nem sikerült betölteni a katalóguselemeket.</string>
     <string name="continue_watching_up_next">Következő epizód</string>
-    <string name="continue_watching_up_next_episode">Következő • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Következő • %1$s</string>
     <string name="detail_logo_content_description">%1$s logó</string>
     <string name="details_comments_load_failed">Nem sikerült betölteni a hozzászólásokat</string>
     <string name="details_load_failed_all_addons">Egyetlen kiegészítőből sem sikerült betölteni a részleteket.</string>

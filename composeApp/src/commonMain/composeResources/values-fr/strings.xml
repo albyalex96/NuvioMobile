@@ -1369,7 +1369,7 @@
     <string name="auth_sign_up_failed">Échec de l’inscription</string>
     <string name="catalog_load_failed">Impossible de charger les éléments du catalogue.</string>
     <string name="continue_watching_up_next">À suivre</string>
-    <string name="continue_watching_up_next_episode">À suivre • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">À suivre • %1$s</string>
     <string name="detail_logo_content_description">Logo de %1$s</string>
     <string name="details_comments_load_failed">Impossible de charger les commentaires</string>
     <string name="details_load_failed_all_addons">Impossible de charger les détails depuis les addons disponibles.</string>

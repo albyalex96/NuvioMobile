@@ -986,7 +986,7 @@
   <string name="auth_sign_up_failed">Registrazione fallita</string>
   <string name="catalog_load_failed">Impossibile caricare gli elementi del catalogo.</string>
   <string name="continue_watching_up_next">Prossimo contenuto</string>
-  <string name="continue_watching_up_next_episode">Prossimo • S%1$dE%2$d</string>
+  <string name="continue_watching_up_next_episode">Prossimo • %1$s</string>
   <string name="detail_logo_content_description">Logo di %1$s</string>
   <string name="details_comments_load_failed">Impossibile caricare i commenti</string>
   <string name="details_load_failed_all_addons">Impossibile caricare i dettagli da alcun addon.</string>

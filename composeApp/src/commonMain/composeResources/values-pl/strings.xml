@@ -1264,7 +1264,7 @@
     <string name="auth_sign_up_failed">Rejestracja nie powiodła się</string>
     <string name="catalog_load_failed">Nie można załadować elementów katalogu.</string>
     <string name="continue_watching_up_next">Następny</string>
-    <string name="continue_watching_up_next_episode">Następny • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Następny • %1$s</string>
     <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Nie udało się załadować komentarzy</string>
     <string name="details_load_failed_all_addons">Nie można załadować szczegółów z żadnego dodatku.</string>

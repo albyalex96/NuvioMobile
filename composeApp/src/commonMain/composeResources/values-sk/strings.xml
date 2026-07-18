@@ -1342,7 +1342,7 @@
     <string name="auth_sign_up_failed">Registrácia zlyhala</string>
     <string name="catalog_load_failed">Nepodarilo sa načítať položky katalógu.</string>
     <string name="continue_watching_up_next">Ďalšie na rade</string>
-    <string name="continue_watching_up_next_episode">Ďalšie na rade • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Ďalšie na rade • %1$s</string>
     <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Nepodarilo sa načítať komentáre</string>
     <string name="details_load_failed_all_addons">Nepodarilo sa načítať podrobnosti z žiadneho doplnku.</string>
