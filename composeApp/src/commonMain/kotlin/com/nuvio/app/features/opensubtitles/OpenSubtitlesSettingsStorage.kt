@@ -1,5 +1,7 @@
 package com.nuvio.app.features.opensubtitles
 
+import kotlinx.serialization.json.JsonObject
+
 internal expect object OpenSubtitlesSettingsStorage {
     fun loadEnabled(): Boolean?
     fun saveEnabled(enabled: Boolean)
@@ -7,4 +9,6 @@ internal expect object OpenSubtitlesSettingsStorage {
     fun saveApiKey(apiKey: String)
     fun loadLanguages(): Set<String>?
     fun saveLanguages(languages: Set<String>)
+    fun exportToSyncPayload(): JsonObject
+    fun replaceFromSyncPayload(payload: JsonObject)
 }

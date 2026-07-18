@@ -1,5 +1,6 @@
 package com.nuvio.app.features.opensubtitles
 
+import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.addons.httpGetTextWithHeaders
 import com.nuvio.app.features.addons.httpPostJsonWithHeaders
 import kotlinx.serialization.json.Json
@@ -35,8 +36,11 @@ object OpenSubtitlesApiClient {
         queryParams.add("page=$page")
 
         val url = "$BASE_URL/subtitles?${queryParams.joinToString("&")}"
-        val response = httpGetTextWithHeaders(url, authHeaders(apiKey))
-        return json.decodeFromString<OpenSubtitlesSearchResponse>(response)
+        val responseBody = httpGetTextWithHeaders(url, authHeaders(apiKey))
+        val result = json.decodeFromString<OpenSubtitlesSearchResponse>(responseBody)
+        println("[OpenSubtitles] searchSubtitles: imdbId=$imdbId type=$type languages=$languages → ${result.totalCount} total, ${result.data.size} items")
+        InAppLogger.info("OpenSubtitles", "searchSubtitles: imdbId=$imdbId type=$type languages=$languages → ${result.totalCount} total, ${result.data.size} items")
+        return result
     }
 
     suspend fun searchSubtitlesByQuery(
@@ -59,8 +63,11 @@ object OpenSubtitlesApiClient {
         queryParams.add("page=$page")
 
         val url = "$BASE_URL/subtitles?${queryParams.joinToString("&")}"
-        val response = httpGetTextWithHeaders(url, authHeaders(apiKey))
-        return json.decodeFromString<OpenSubtitlesSearchResponse>(response)
+        val responseBody = httpGetTextWithHeaders(url, authHeaders(apiKey))
+        val result = json.decodeFromString<OpenSubtitlesSearchResponse>(responseBody)
+        println("[OpenSubtitles] searchSubtitlesByQuery: query=$query languages=$languages → ${result.totalCount} total, ${result.data.size} items")
+        InAppLogger.info("OpenSubtitles", "searchSubtitlesByQuery: query=$query languages=$languages → ${result.totalCount} total, ${result.data.size} items")
+        return result
     }
 
     suspend fun downloadSubtitle(
@@ -69,7 +76,10 @@ object OpenSubtitlesApiClient {
     ): OpenSubtitlesDownloadResponse {
         val url = "$BASE_URL/download"
         val body = """{"file_id":$fileId}"""
-        val response = httpPostJsonWithHeaders(url, body, authHeaders(apiKey))
-        return json.decodeFromString<OpenSubtitlesDownloadResponse>(response)
+        val responseBody = httpPostJsonWithHeaders(url, body, authHeaders(apiKey))
+        val result = json.decodeFromString<OpenSubtitlesDownloadResponse>(responseBody)
+        println("[OpenSubtitles] downloadSubtitle: fileId=$fileId → link=${result.link != null} remaining=${result.remaining}")
+        InAppLogger.info("OpenSubtitles", "downloadSubtitle: fileId=$fileId → link=${result.link != null} remaining=${result.remaining}")
+        return result
     }
 }

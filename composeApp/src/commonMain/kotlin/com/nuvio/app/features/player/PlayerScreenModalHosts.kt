@@ -26,6 +26,7 @@ import nuvio.composeapp.generated.resources.still_watching_title
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.downloads.DownloadsRepository
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSubtitleItem
 import com.nuvio.app.features.p2p.P2pConsentDialog
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.streams.StreamItem
@@ -57,10 +58,16 @@ internal fun PlayerScreenModalHosts(
     subtitleDelayMs: Int,
     selectedAddonSubtitle: AddonSubtitle?,
     subtitleAutoSyncState: SubtitleAutoSyncUiState,
+    openSubtitlesItems: List<OpenSubtitlesSubtitleItem>,
+    selectedOpenSubtitlesFileId: Int?,
+    isLoadingOpenSubtitles: Boolean,
+    isOpenSubtitlesConfigured: Boolean,
     onSubtitleTabSelected: (SubtitleTab) -> Unit,
     onBuiltInSubtitleTrackSelected: (Int) -> Unit,
     onAddonSubtitleSelected: (AddonSubtitle) -> Unit,
     onFetchAddonSubtitles: () -> Unit,
+    onOpenSubtitlesSearch: () -> Unit,
+    onOpenSubtitlesItemSelected: (OpenSubtitlesSubtitleItem) -> Unit,
     onSubtitleStyleChanged: (SubtitleStyleState) -> Unit,
     onSubtitleDelayChanged: (Int) -> Unit,
     onSubtitleDelayReset: () -> Unit,
@@ -179,10 +186,16 @@ internal fun PlayerScreenModalHosts(
         subtitleDelayMs = subtitleDelayMs,
         selectedAddonSubtitle = selectedAddonSubtitle,
         subtitleAutoSyncState = subtitleAutoSyncState,
+        openSubtitlesItems = openSubtitlesItems,
+        selectedOpenSubtitlesFileId = selectedOpenSubtitlesFileId,
+        isLoadingOpenSubtitles = isLoadingOpenSubtitles,
+        isOpenSubtitlesConfigured = isOpenSubtitlesConfigured,
         onTabSelected = onSubtitleTabSelected,
         onBuiltInTrackSelected = onBuiltInSubtitleTrackSelected,
         onAddonSubtitleSelected = onAddonSubtitleSelected,
         onFetchAddonSubtitles = onFetchAddonSubtitles,
+        onOpenSubtitlesSearch = onOpenSubtitlesSearch,
+        onOpenSubtitlesItemSelected = onOpenSubtitlesItemSelected,
         onStyleChanged = onSubtitleStyleChanged,
         onSubtitleDelayChanged = onSubtitleDelayChanged,
         onSubtitleDelayReset = onSubtitleDelayReset,

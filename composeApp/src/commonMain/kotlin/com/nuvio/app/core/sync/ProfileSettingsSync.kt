@@ -14,6 +14,8 @@ import com.nuvio.app.features.mdblist.MdbListMetadataService
 import com.nuvio.app.features.mdblist.MdbListSettingsStorage
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSettingsRepository
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSettingsStorage
 import com.nuvio.app.features.player.PlayerSettingsStorage
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.profiles.ProfileRepository
@@ -185,6 +187,7 @@ object ProfileSettingsSync {
             ContinueWatchingPreferencesRepository.uiState.map { "continue_watching" },
             TraktSettingsRepository.uiState.map { "trakt_settings" },
             TraktCommentsSettings.enabled.map { "trakt_comments" },
+            OpenSubtitlesSettingsRepository.uiState.map { "opensubtitles" },
             EpisodeReleaseNotificationsRepository.uiState.map { "episode_release_alerts" },
         )
 
@@ -234,6 +237,7 @@ object ProfileSettingsSync {
                 continueWatchingSettingsPayload = ContinueWatchingPreferencesStorage.loadPayload().orEmpty().trim(),
                 traktSettingsPayload = TraktSettingsStorage.loadPayload().orEmpty().trim(),
                 traktCommentsSettings = TraktCommentsStorage.exportToSyncPayload(),
+                opensubtitlesSettings = OpenSubtitlesSettingsStorage.exportToSyncPayload(),
                 notificationsSettings = NotificationsSettingsPayload(
                     episodeReleaseAlertsEnabled = EpisodeReleaseNotificationsRepository.uiState.value.isEnabled,
                 ),
@@ -282,6 +286,9 @@ object ProfileSettingsSync {
         TraktCommentsStorage.replaceFromSyncPayload(blob.features.traktCommentsSettings)
         TraktCommentsSettings.onProfileChanged()
 
+        OpenSubtitlesSettingsStorage.replaceFromSyncPayload(blob.features.opensubtitlesSettings)
+        OpenSubtitlesSettingsRepository.onProfileChanged()
+
         EpisodeReleaseNotificationsRepository.applyFromSyncEnabled(blob.features.notificationsSettings.episodeReleaseAlertsEnabled)
     }
 
@@ -299,6 +306,7 @@ object ProfileSettingsSync {
         ContinueWatchingPreferencesRepository.ensureLoaded()
         TraktSettingsRepository.ensureLoaded()
         TraktCommentsSettings.ensureLoaded()
+        OpenSubtitlesSettingsRepository.ensureLoaded()
         EpisodeReleaseNotificationsRepository.ensureLoaded()
     }
 
@@ -321,6 +329,7 @@ object ProfileSettingsSync {
         "continue=${ContinueWatchingPreferencesRepository.uiState.value}",
         "trakt_settings=${TraktSettingsRepository.uiState.value}",
         "trakt_comments=${TraktCommentsSettings.enabled.value}",
+        "opensubtitles=${OpenSubtitlesSettingsRepository.uiState.value}",
         "episode_release_alerts=${EpisodeReleaseNotificationsRepository.uiState.value.isEnabled}",
     ).joinToString(separator = "||")
 
@@ -347,6 +356,7 @@ private data class MobileProfileSettingsFeatures(
     @SerialName("continue_watching_settings_payload") val continueWatchingSettingsPayload: String = "",
     @SerialName("trakt_settings_payload") val traktSettingsPayload: String = "",
     @SerialName("trakt_comments_settings") val traktCommentsSettings: JsonObject = JsonObject(emptyMap()),
+    @SerialName("opensubtitles_settings") val opensubtitlesSettings: JsonObject = JsonObject(emptyMap()),
     @SerialName("notifications_settings") val notificationsSettings: NotificationsSettingsPayload = NotificationsSettingsPayload(),
 )
 

@@ -173,6 +173,9 @@
   <string name="compose_player_no_subtitle_lines_found">Nessuna linea di sottotitoli trovata</string>
   <string name="compose_player_no_streams_found">Nessun flusso trovato</string>
   <string name="compose_player_none">Nessuno</string>
+  <string name="compose_player_opensubtitles_section">OpenSubtitles</string>
+  <string name="compose_player_opensubtitles_source">OpenSub</string>
+  <string name="compose_player_search_opensubtitles">Cerca su OpenSubtitles</string>
   <string name="compose_player_outline">Bordo</string>
   <string name="compose_player_outline_color">Colore bordo</string>
   <string name="compose_player_panel_episodes">Episodi</string>
@@ -1385,6 +1388,7 @@
   <string name="settings_opensubtitles_personal_api_key">Chiave API personale</string>
   <string name="settings_opensubtitles_api_key_label">Chiave API</string>
   <string name="settings_opensubtitles_api_key_hint">Inserisci la tua chiave API di OpenSubtitles.com per abilitare la ricerca dei sottotitoli</string>
+  <string name="settings_opensubtitles_get_free_key">Ottieni chiave gratuita</string>
   <string name="settings_opensubtitles_languages">Lingue preferite</string>
   <string name="settings_opensubtitles_languages_description">Seleziona le lingue per la ricerca automatica dei sottotitoli</string>
   <string name="settings_subdl_attribution_title">SubDL</string>

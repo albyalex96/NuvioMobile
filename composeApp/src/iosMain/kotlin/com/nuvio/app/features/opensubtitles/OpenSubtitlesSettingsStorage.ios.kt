@@ -1,12 +1,22 @@
 package com.nuvio.app.features.opensubtitles
 
 import com.nuvio.app.core.storage.ProfileScopedKey
+import com.nuvio.app.core.sync.decodeSyncBoolean
+import com.nuvio.app.core.sync.decodeSyncString
+import com.nuvio.app.core.sync.decodeSyncStringSet
+import com.nuvio.app.core.sync.encodeSyncBoolean
+import com.nuvio.app.core.sync.encodeSyncString
+import com.nuvio.app.core.sync.encodeSyncStringSet
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import platform.Foundation.NSUserDefaults
 
 actual object OpenSubtitlesSettingsStorage {
     private const val enabledKey = "opensubtitles_enabled"
     private const val apiKeyKey = "opensubtitles_api_key"
     private const val languagesKey = "opensubtitles_languages"
+    private val syncKeys = listOf(enabledKey, apiKeyKey, languagesKey)
 
     actual fun loadEnabled(): Boolean? {
         val defaults = NSUserDefaults.standardUserDefaults
@@ -34,5 +44,20 @@ actual object OpenSubtitlesSettingsStorage {
     actual fun saveLanguages(languages: Set<String>) {
         val raw = if (languages.isEmpty()) "" else languages.joinToString(",")
         NSUserDefaults.standardUserDefaults.setObject(raw, forKey = ProfileScopedKey.of(languagesKey))
+    }
+
+    actual fun exportToSyncPayload(): JsonObject = buildJsonObject {
+        loadEnabled()?.let { put(enabledKey, encodeSyncBoolean(it)) }
+        loadApiKey()?.let { put(apiKeyKey, encodeSyncString(it)) }
+        loadLanguages()?.let { put(languagesKey, encodeSyncStringSet(it)) }
+    }
+
+    actual fun replaceFromSyncPayload(payload: JsonObject) {
+        val defaults = NSUserDefaults.standardUserDefaults
+        syncKeys.forEach { defaults.removeObjectForKey(ProfileScopedKey.of(it)) }
+
+        payload.decodeSyncBoolean(enabledKey)?.let(::saveEnabled)
+        payload.decodeSyncString(apiKeyKey)?.let(::saveApiKey)
+        payload.decodeSyncStringSet(languagesKey)?.let(::saveLanguages)
     }
 }

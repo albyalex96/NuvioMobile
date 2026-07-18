@@ -14,6 +14,7 @@ import com.nuvio.app.features.player.skip.SkipIntroRepository
 import com.nuvio.app.features.player.dualsubtitle.DualSubtitleRepository
 import com.nuvio.app.features.player.sponsorblock.SponsorBlockRepository
 import com.nuvio.app.features.player.sponsorblock.SponsorBlockSettingsRepository
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesRepository
 import com.nuvio.app.features.streams.BingeGroupCacheRepository
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.StreamItem
@@ -193,6 +194,12 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         if (autoFetchedAddonSubtitlesForKey == fetchKey) return@LaunchedEffect
         autoFetchedAddonSubtitlesForKey = fetchKey
         fetchAddonSubtitlesForActiveItem()
+    }
+
+    LaunchedEffect(activeSourceUrl) {
+        if (activeSourceUrl.isNotBlank() && OpenSubtitlesRepository.isConfigured()) {
+            searchOpenSubtitles()
+        }
     }
 
     LaunchedEffect(playbackSnapshot.isLoading, playerController) {

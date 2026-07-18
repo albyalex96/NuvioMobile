@@ -2725,7 +2725,11 @@ private fun MainAppContent(
                                 seasonNumber = launch.seasonNumber,
                                 episodeNumber = launch.episodeNumber,
                             )
-                        } catch (_: Exception) { emptyList() }
+                        } catch (e: Exception) {
+                            println("[App] OpenSubtitles auto-search error: ${e.message}")
+                            com.nuvio.app.core.logging.InAppLogger.warn("App", "OpenSubtitles auto-search error: ${e.message}")
+                            emptyList()
+                        }
                         val mergedSubtitles = stream.externalSubtitles + openSubtitlesSubs
                         val playerLaunch = PlayerLaunch(
                             profileId = launch.profileId,
@@ -2880,7 +2884,11 @@ private fun MainAppContent(
                                     episodeNumber = launch.episodeNumber,
                                 )
                             }
-                        } catch (_: Exception) { emptyList() }
+                        } catch (e: Exception) {
+                            println("[App] OpenSubtitles auto-search error (runBlocking): ${e.message}")
+                            com.nuvio.app.core.logging.InAppLogger.warn("App", "OpenSubtitles auto-search error (runBlocking): ${e.message}")
+                            emptyList()
+                        }
                         val mergedSubtitles = stream.externalSubtitles + openSubtitlesSubs
                         val playerLaunch = PlayerLaunch(
                             profileId = launch.profileId,

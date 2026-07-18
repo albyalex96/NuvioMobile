@@ -35,6 +35,7 @@ data class AddonSubtitle(
 
 enum class SubtitleTab {
     BuiltIn,
+    OpenSubtitles,
     Addons,
     Style,
 }

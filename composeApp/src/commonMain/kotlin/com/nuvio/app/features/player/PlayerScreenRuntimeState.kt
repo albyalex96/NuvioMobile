@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.addons.AddonsUiState
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSubtitleItem
 import com.nuvio.app.features.details.MetaDetailsUiState
 import com.nuvio.app.features.details.MetaScreenSettingsUiState
 import com.nuvio.app.features.details.MetaVideo
@@ -193,6 +194,7 @@ internal class PlayerScreenRuntime(
     var selectedAudioIndex by mutableStateOf(-1)
     var selectedSubtitleIndex by mutableStateOf(-1)
     var selectedAddonSubtitleId by mutableStateOf<String?>(null)
+    var selectedOpenSubtitlesFileId by mutableStateOf<Int?>(null)
     var useCustomSubtitles by mutableStateOf(false)
     var preferredAudioSelectionApplied by mutableStateOf(false)
     var preferredSubtitleSelectionApplied by mutableStateOf(false)
@@ -206,6 +208,12 @@ internal class PlayerScreenRuntime(
     var showCastPicker by mutableStateOf(false)
 
     var showLiveTvChannelsPanel by mutableStateOf(false)
+
+    var openSubtitlesItems by mutableStateOf<List<OpenSubtitlesSubtitleItem>>(emptyList())
+    var isLoadingOpenSubtitles by mutableStateOf(false)
+
+    val isOpenSubtitlesConfigured: Boolean
+        get() = com.nuvio.app.features.opensubtitles.OpenSubtitlesRepository.isConfigured()
 
     var lastSyncedSettingsResizeMode: PlayerResizeMode? = null
     var lastResetPlaybackIdentity: String? = null

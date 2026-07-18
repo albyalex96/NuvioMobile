@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +23,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.opensubtitles.OpenSubtitlesSettings
@@ -28,14 +34,12 @@ import nuvio.composeapp.generated.resources.action_save
 import nuvio.composeapp.generated.resources.settings_opensubtitles_add_api_key_first
 import nuvio.composeapp.generated.resources.settings_opensubtitles_api_key_hint
 import nuvio.composeapp.generated.resources.settings_opensubtitles_api_key_label
-import nuvio.composeapp.generated.resources.settings_opensubtitles_attribution_body
-import nuvio.composeapp.generated.resources.settings_opensubtitles_attribution_title
 import nuvio.composeapp.generated.resources.settings_opensubtitles_enable
 import nuvio.composeapp.generated.resources.settings_opensubtitles_enable_description
+import nuvio.composeapp.generated.resources.settings_opensubtitles_get_free_key
 import nuvio.composeapp.generated.resources.settings_opensubtitles_languages
 import nuvio.composeapp.generated.resources.settings_opensubtitles_languages_description
 import nuvio.composeapp.generated.resources.settings_opensubtitles_personal_api_key
-import nuvio.composeapp.generated.resources.settings_opensubtitles_section_attribution
 import nuvio.composeapp.generated.resources.settings_opensubtitles_section_credentials
 import nuvio.composeapp.generated.resources.settings_opensubtitles_section_languages
 import org.jetbrains.compose.resources.stringResource
@@ -83,36 +87,28 @@ internal fun LazyListScope.openSubtitlesSettingsContent(
     settings: OpenSubtitlesSettings,
 ) {
     item {
-        SettingsSection(
-            title = stringResource(Res.string.settings_opensubtitles_section_attribution),
-            isTablet = isTablet,
-        ) {
-            SettingsGroup(isTablet = isTablet) {
-                OpenSubtitlesAttributionRow(isTablet = isTablet)
-            }
-            SettingsGroup(isTablet = isTablet) {
-                SettingsSwitchRow(
-                    title = stringResource(Res.string.settings_opensubtitles_enable),
-                    description = stringResource(Res.string.settings_opensubtitles_enable_description),
-                    checked = settings.enabled,
-                    enabled = settings.hasApiKey,
-                    isTablet = isTablet,
-                    onCheckedChange = OpenSubtitlesSettingsRepository::setEnabled,
+        SettingsGroup(isTablet = isTablet) {
+            SettingsSwitchRow(
+                title = stringResource(Res.string.settings_opensubtitles_enable),
+                description = stringResource(Res.string.settings_opensubtitles_enable_description),
+                checked = settings.enabled,
+                enabled = settings.hasApiKey,
+                isTablet = isTablet,
+                onCheckedChange = OpenSubtitlesSettingsRepository::setEnabled,
+            )
+            if (!settings.hasApiKey) {
+                SettingsGroupDivider(isTablet = isTablet)
+                Text(
+                    text = stringResource(Res.string.settings_opensubtitles_add_api_key_first),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = if (isTablet) 20.dp else 16.dp,
+                            vertical = if (isTablet) 12.dp else 10.dp,
+                        ),
                 )
-                if (!settings.hasApiKey) {
-                    SettingsGroupDivider(isTablet = isTablet)
-                    Text(
-                        text = stringResource(Res.string.settings_opensubtitles_add_api_key_first),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = if (isTablet) 20.dp else 16.dp,
-                                vertical = if (isTablet) 12.dp else 10.dp,
-                            ),
-                    )
-                }
             }
         }
     }
@@ -146,30 +142,6 @@ internal fun LazyListScope.openSubtitlesSettingsContent(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun OpenSubtitlesAttributionRow(isTablet: Boolean) {
-    val horizontalPadding = if (isTablet) 20.dp else 16.dp
-    val verticalPadding = if (isTablet) 16.dp else 14.dp
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
-    ) {
-        Text(
-            text = stringResource(Res.string.settings_opensubtitles_attribution_title),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = stringResource(Res.string.settings_opensubtitles_attribution_body),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp),
-        )
     }
 }
 
@@ -221,6 +193,19 @@ private fun OpenSubtitlesApiKeyRow(
                 enabled = normalizedDraft != value,
             ) {
                 Text(stringResource(Res.string.action_save))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            val uriHandler = LocalUriHandler.current
+            OutlinedButton(
+                onClick = { runCatching { uriHandler.openUri("https://www.opensubtitles.com/") } },
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 4.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(stringResource(Res.string.settings_opensubtitles_get_free_key))
             }
         }
     }

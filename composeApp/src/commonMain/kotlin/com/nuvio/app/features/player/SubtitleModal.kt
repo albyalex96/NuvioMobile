@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,11 +45,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSubtitleItem
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.addon_title
 import nuvio.composeapp.generated.resources.compose_player_built_in
 import nuvio.composeapp.generated.resources.compose_player_fetch_subtitles
 import nuvio.composeapp.generated.resources.compose_player_none
+import nuvio.composeapp.generated.resources.compose_player_opensubtitles_source
+import nuvio.composeapp.generated.resources.compose_player_search_opensubtitles
 import nuvio.composeapp.generated.resources.compose_player_style
 import nuvio.composeapp.generated.resources.compose_player_subtitles
 import org.jetbrains.compose.resources.stringResource
@@ -66,10 +71,16 @@ fun SubtitleModal(
     subtitleDelayMs: Int,
     selectedAddonSubtitle: AddonSubtitle?,
     subtitleAutoSyncState: SubtitleAutoSyncUiState,
+    openSubtitlesItems: List<OpenSubtitlesSubtitleItem>,
+    selectedOpenSubtitlesFileId: Int?,
+    isLoadingOpenSubtitles: Boolean,
+    isOpenSubtitlesConfigured: Boolean,
     onTabSelected: (SubtitleTab) -> Unit,
     onBuiltInTrackSelected: (Int) -> Unit,
     onAddonSubtitleSelected: (AddonSubtitle) -> Unit,
     onFetchAddonSubtitles: () -> Unit,
+    onOpenSubtitlesSearch: () -> Unit,
+    onOpenSubtitlesItemSelected: (OpenSubtitlesSubtitleItem) -> Unit,
     onStyleChanged: (SubtitleStyleState) -> Unit,
     onSubtitleDelayChanged: (Int) -> Unit,
     onSubtitleDelayReset: () -> Unit,
@@ -151,6 +162,14 @@ fun SubtitleModal(
                                     selectedIndex = selectedSubtitleIndex,
                                     onTrackSelected = onBuiltInTrackSelected,
                                 )
+                                SubtitleTab.OpenSubtitles -> OpenSubtitlesTabContent(
+                                    items = openSubtitlesItems,
+                                    selectedFileId = selectedOpenSubtitlesFileId,
+                                    isLoading = isLoadingOpenSubtitles,
+                                    isConfigured = isOpenSubtitlesConfigured,
+                                    onSearch = onOpenSubtitlesSearch,
+                                    onItemSelected = onOpenSubtitlesItemSelected,
+                                )
                                 SubtitleTab.Addons -> {
                                     AddonSubtitleList(
                                         addons = addonSubtitles,
@@ -222,6 +241,7 @@ private fun SubtitleTabBar(
                 Text(
                     text = when (tab) {
                         SubtitleTab.BuiltIn -> stringResource(Res.string.compose_player_built_in)
+                        SubtitleTab.OpenSubtitles -> stringResource(Res.string.compose_player_opensubtitles_source)
                         SubtitleTab.Addons -> stringResource(Res.string.addon_title)
                         SubtitleTab.Style -> stringResource(Res.string.compose_player_style)
                     },
@@ -293,6 +313,129 @@ private fun BuiltInSubtitleList(
                     fontSize = 15.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = null,
+                        tint = colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OpenSubtitlesTabContent(
+    items: List<OpenSubtitlesSubtitleItem>,
+    selectedFileId: Int?,
+    isLoading: Boolean,
+    isConfigured: Boolean,
+    onSearch: () -> Unit,
+    onItemSelected: (OpenSubtitlesSubtitleItem) -> Unit,
+) {
+    if (!isConfigured && items.isEmpty()) return
+
+    val colorScheme = MaterialTheme.colorScheme
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            NuvioLoadingIndicator(
+                color = colorScheme.primary,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+        return
+    }
+
+    if (items.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                .clickable(onClick = onSearch)
+                .padding(vertical = 12.dp, horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.CloudDownload,
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(
+                    text = stringResource(Res.string.compose_player_search_opensubtitles),
+                    color = colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                )
+            }
+        }
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        items.forEach { item ->
+            val isSelected = item.fileId == selectedFileId
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (isSelected) colorScheme.primaryContainer
+                        else colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    )
+                    .clickable { onItemSelected(item) }
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val languageDisplay = languageLabelForCode(item.languageCode)
+                            .takeIf { it.isNotBlank() && it != item.languageCode }
+                            ?: item.language.ifBlank { item.languageCode.ifBlank { "?" } }
+                        Text(
+                            text = languageDisplay,
+                            color = if (isSelected) colorScheme.onPrimaryContainer else colorScheme.onSurface,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        if (item.hearingImpaired) {
+                            Text(
+                                text = " [HI]",
+                                color = if (isSelected) colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                else colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp,
+                            )
+                        }
+                        if (item.fromTrusted) {
+                            Text(
+                                text = " ★",
+                                color = if (isSelected) colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                else colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp,
+                            )
+                        }
+                    }
+                    Text(
+                        text = stringResource(Res.string.compose_player_opensubtitles_source),
+                        color = if (isSelected) colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                        else colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontSize = 11.sp,
+                    )
+                }
                 if (isSelected) {
                     Icon(
                         imageVector = Icons.Rounded.Check,

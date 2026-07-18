@@ -1,5 +1,10 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.logging.InAppLogger
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesRepository
+import com.nuvio.app.features.opensubtitles.OpenSubtitlesSubtitleItem
+import kotlinx.coroutines.launch
+
 internal val PlayerScreenRuntime.subtitleStyle: SubtitleStyleState
     get() = playerSettingsUiState.subtitleStyle
 
@@ -216,6 +221,47 @@ internal fun PlayerScreenRuntime.refreshTracks() {
                 useCustomSubtitles = false
             }
             preferredSubtitleSelectionApplied = true
+        }
+    }
+}
+
+internal fun PlayerScreenRuntime.searchOpenSubtitles() {
+    val imdbId = activeVideoId?.split(":")?.firstOrNull()
+        ?.takeIf { it.startsWith("tt") }
+        ?: parentMetaId.takeIf { it.startsWith("tt") }
+    println("[Player] searchOpenSubtitles: imdbId=$imdbId S${activeSeasonNumber}E${activeEpisodeNumber}")
+    InAppLogger.info("Player/OS", "searchOpenSubtitles: imdbId=$imdbId S${activeSeasonNumber}E${activeEpisodeNumber}")
+    scope.launch {
+        isLoadingOpenSubtitles = true
+        openSubtitlesItems = emptyList()
+        openSubtitlesItems = OpenSubtitlesRepository.searchManual(
+            imdbId = imdbId,
+            type = contentType ?: parentMetaType,
+            seasonNumber = activeSeasonNumber,
+            episodeNumber = activeEpisodeNumber,
+        )
+        println("[Player] searchOpenSubtitles: found ${openSubtitlesItems.size} items")
+        InAppLogger.info("Player/OS", "searchOpenSubtitles: found ${openSubtitlesItems.size} items")
+        isLoadingOpenSubtitles = false
+    }
+}
+
+internal fun PlayerScreenRuntime.loadOpenSubtitlesSubtitle(item: OpenSubtitlesSubtitleItem) {
+    println("[Player] loadOpenSubtitlesSubtitle: fileId=${item.fileId} lang=${item.languageCode}")
+    InAppLogger.info("Player/OS", "loadOpenSubtitlesSubtitle: fileId=${item.fileId} lang=${item.languageCode}")
+    scope.launch {
+        val url = OpenSubtitlesRepository.downloadItem(item)
+        if (url != null) {
+            selectedOpenSubtitlesFileId = item.fileId
+            selectedSubtitleIndex = -1
+            selectedAddonSubtitleId = null
+            useCustomSubtitles = true
+            playerController?.setSubtitleUri(url)
+            println("[Player] loadOpenSubtitlesSubtitle: loaded via setSubtitleUri")
+            InAppLogger.info("Player/OS", "loadOpenSubtitlesSubtitle: loaded via setSubtitleUri")
+        } else {
+            println("[Player] loadOpenSubtitlesSubtitle: download returned null URL")
+            InAppLogger.warn("Player/OS", "loadOpenSubtitlesSubtitle: download returned null URL")
         }
     }
 }

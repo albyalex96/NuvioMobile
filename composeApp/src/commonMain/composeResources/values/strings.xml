@@ -362,6 +362,9 @@
     <string name="compose_player_no_episodes_available">No episodes available</string>
     <string name="compose_player_no_streams_found">No streams found</string>
     <string name="compose_player_none">None</string>
+    <string name="compose_player_opensubtitles_section">OpenSubtitles</string>
+    <string name="compose_player_opensubtitles_source">OpenSub</string>
+    <string name="compose_player_search_opensubtitles">Search OpenSubtitles</string>
     <string name="compose_player_outline">Outline</string>
     <string name="compose_player_outline_color">Outline Color</string>
     <string name="compose_player_panel_episodes">Episodes</string>
@@ -554,6 +557,7 @@
     <string name="settings_opensubtitles_personal_api_key">Personal API Key</string>
     <string name="settings_opensubtitles_api_key_label">API Key</string>
     <string name="settings_opensubtitles_api_key_hint">Enter your OpenSubtitles.com API key to enable subtitle search</string>
+    <string name="settings_opensubtitles_get_free_key">Get Free Key</string>
     <string name="settings_opensubtitles_languages">Preferred Languages</string>
     <string name="settings_opensubtitles_languages_description">Select the languages for automatic subtitle search</string>
     <string name="settings_subdl_attribution_title">SubDL</string>

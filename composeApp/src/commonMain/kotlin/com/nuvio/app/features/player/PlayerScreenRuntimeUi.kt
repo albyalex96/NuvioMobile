@@ -485,11 +485,16 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         subtitleDelayMs = subtitleDelayMs,
         selectedAddonSubtitle = selectedAddonSubtitle,
         subtitleAutoSyncState = subtitleAutoSyncState,
+        openSubtitlesItems = openSubtitlesItems,
+        selectedOpenSubtitlesFileId = selectedOpenSubtitlesFileId,
+        isLoadingOpenSubtitles = isLoadingOpenSubtitles,
+        isOpenSubtitlesConfigured = isOpenSubtitlesConfigured,
         onSubtitleTabSelected = { activeSubtitleTab = it },
         onBuiltInSubtitleTrackSelected = { index ->
             val wasCustom = useCustomSubtitles
             selectedSubtitleIndex = index
             selectedAddonSubtitleId = null
+            selectedOpenSubtitlesFileId = null
             useCustomSubtitles = false
             persistInternalSubtitlePreference(subtitleTracks.firstOrNull { it.index == index })
             if (wasCustom) {
@@ -501,11 +506,14 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         onAddonSubtitleSelected = { addon ->
             selectedAddonSubtitleId = addon.id
             selectedSubtitleIndex = -1
+            selectedOpenSubtitlesFileId = null
             useCustomSubtitles = true
             persistAddonSubtitlePreference(addon)
             playerController?.setSubtitleUri(addon.url)
         },
         onFetchAddonSubtitles = { fetchAddonSubtitlesForActiveItem() },
+        onOpenSubtitlesSearch = { searchOpenSubtitles() },
+        onOpenSubtitlesItemSelected = { item -> loadOpenSubtitlesSubtitle(item) },
         onSubtitleStyleChanged = PlayerSettingsRepository::setSubtitleStyle,
         onSubtitleDelayChanged = { delayMs -> setSubtitleDelay(delayMs) },
         onSubtitleDelayReset = { setSubtitleDelay(0) },
