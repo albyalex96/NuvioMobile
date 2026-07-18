@@ -83,3 +83,12 @@ Un visualizzatore di log diagnostici accessibile da Impostazioni → Avanzate �
 
 ### Acquisizione Log Estesa
 Un `LogWriter` Kermit personalizzato inoltra tutte le 200–400+ chiamate di log da 47 file feature (Auth, Trakt, TMDB, Sync, Cast, P2P, ecc.) al visualizzatore in-app, senza sostituire i logger di piattaforma (Logcat/OSLog rimangono attivi). Anche le chiamate `Log.w/e` Android, `print()`/`NSLog()` iOS e `println()` Desktop vengono collegate.
+
+## Integrazione AniList (Sola Lettura)
+Sfoglia la tua libreria AniList direttamente in Nuvio — visualizza le liste "In visione", "Completati", "Da vedere" e altre. L'integrazione è in sola lettura: puoi esplorare e navigare i tuoi titoli salvati ma non aggiungerne di nuovi dall'app. Le funzionalità per modificare le liste verranno aggiunte in seguito.
+
+## Ricerca Sottotitoli OpenSubtitles
+Integrazione con OpenSubtitles per la ricerca manuale di sottotitoli durante la riproduzione. Una scheda dedicata nel modal sottotitoli permette di cercare su OpenSubtitles per lingua e scaricare sottotitoli su richiesta. La chiave API OpenSubtitles si configura in Impostazioni → Integrazioni → OpenSubtitles, e le impostazioni vengono sincronizzate tra i dispositivi tramite Nuvio Sync.
+
+## Accelerazione Ritardo Sottotitoli con Pressione Prolungata
+I pulsanti stepper del ritardo sottotitoli nella scheda Stile supportano l'accelerazione a pressione prolungata. Un tap singolo regola il ritardo di 100 ms. Tenendo premuto oltre 300 ms, la velocità di regolazione accelera progressivamente (moltiplicatore 1×→10×, intervallo tick 250 ms→60 ms) per una regolazione rapida nell'intervallo esteso di ±120 s. Il player e le preferenze sono debounce — l'UI si aggiorna immediatamente durante la pressione, mentre il ritardo effettivo viene applicato 300 ms dopo che l'utente smette di premere.

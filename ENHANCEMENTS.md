@@ -81,3 +81,12 @@ A diagnostic log viewer accessible under Settings → Advanced → Debug Logs. F
 
 ### Extended Log Capture
 A custom Kermit `LogWriter` forwards all 200–400+ log calls from 47 feature files (Auth, Trakt, TMDB, Sync, Cast, P2P, etc.) to the in-app viewer without replacing platform loggers (Logcat/OSLog remain active). Platform-specific `Log.w/e`, `print()`, `NSLog()`, and `println()` calls are also bridged across Android, iOS, and Desktop.
+
+## AniList Integration (Read-Only)
+Browse your existing AniList library directly inside Nuvio — view your watching, completed, planning, and other lists. The integration is read-only: you can explore and navigate your saved titles but cannot add new entries from the app. Editing features will be added later.
+
+## OpenSubtitles Subtitle Search
+Built-in OpenSubtitles integration for manual subtitle lookup during playback. A dedicated tab in the subtitle modal lets you search OpenSubtitles by language and download subtitles on demand. The OpenSubtitles API key can be configured in Settings → Integrations → OpenSubtitles, and settings are synced across devices through Nuvio Sync.
+
+## Hold-to-Accelerate Subtitle Delay
+The subtitle stepper buttons in the Style tab support press-and-hold acceleration. A single tap adjusts delay by 100 ms. When held beyond 300 ms, the adjustment rate progressively accelerates (step multiplier 1×→10×, tick interval 250 ms→60 ms) for quick fine-tuning across the extended ±120 s range. The player and preferences are debounced — the UI updates immediately during the hold, while the actual player delay is applied 300 ms after the user stops pressing.
