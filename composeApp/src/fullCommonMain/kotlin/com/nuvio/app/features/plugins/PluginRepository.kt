@@ -68,6 +68,7 @@ actual object PluginRepository {
         val effectiveProfileId = resolveEffectiveProfileId(ProfileRepository.activeProfileId)
         val shouldRefreshStoredRepos = !initialized || currentProfileId != effectiveProfileId
         ensureStateLoadedForProfile(effectiveProfileId)
+        SoraModuleRepository.initialize()
         if (!shouldRefreshStoredRepos) return
 
         _uiState.value.repositories.forEach { repo ->

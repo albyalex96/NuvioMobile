@@ -32,6 +32,7 @@ internal object SoraModuleRepository {
     fun initialize() {
         val stored = loadModules()
         _soraModules.value = stored
+        log.d { "SoraModuleRepository initialized with ${stored.size} modules" }
     }
 
     suspend fun addModule(rawUrl: String): AddSoraModuleResult {
