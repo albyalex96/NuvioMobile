@@ -18,6 +18,7 @@ import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.plugins.PluginRepositoryItem
 import com.nuvio.app.features.plugins.PluginRuntimeResult
 import com.nuvio.app.features.plugins.PluginScraper
+import com.nuvio.app.features.plugins.SoraModuleItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -170,7 +171,20 @@ object StreamsRepository {
             groupByRepository = pluginUiState.groupStreamsByRepository,
         )
 
-        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty()) {
+        val soraModules = if (AppFeaturePolicy.pluginsEnabled) {
+            PluginRepository.getEnabledSoraModulesForType(type)
+        } else {
+            emptyList()
+        }
+        val soraProviderGroups = soraModules.map { module ->
+            SoraProviderGroup(
+                addonId = "sora:${module.moduleUrl.lowercase()}",
+                addonName = module.sourceName,
+                modules = listOf(module),
+            )
+        }
+
+        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
             _uiState.value = StreamsUiState(
                 requestToken = requestToken,
                 isAnyLoading = false,
@@ -199,7 +213,7 @@ object StreamsRepository {
 
         log.d { "Found ${streamAddons.size} addons for stream type=$type id=$videoId" }
 
-        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty()) {
+        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
             _uiState.value = StreamsUiState(
                 requestToken = requestToken,
                 isAnyLoading = false,
@@ -229,6 +243,13 @@ object StreamsRepository {
                 streams = emptyList(),
                 isLoading = true,
             )
+        } + soraProviderGroups.map { providerGroup ->
+            AddonStreamGroup(
+                addonName = providerGroup.addonName,
+                addonId = providerGroup.addonId,
+                streams = emptyList(),
+                isLoading = true,
+            )
         }, installedAddonOrder)
         val isInitiallyLoading = initialGroups.any { it.isLoading }
         _uiState.value = StreamsUiState(
@@ -248,8 +269,13 @@ object StreamsRepository {
                 .associate { it.addonId to it.scrapers.size }
                 .toMutableMap()
             val pluginFirstErrorByAddonId = mutableMapOf<String, String>()
+            val soraRemainingByAddonId = soraProviderGroups
+                .associate { it.addonId to it.modules.size }
+                .toMutableMap()
+            val soraFirstErrorByAddonId = mutableMapOf<String, String>()
             val totalTasks = pendingStreamAddons.size +
-                pluginProviderGroups.sumOf { it.scrapers.size }
+                pluginProviderGroups.sumOf { it.scrapers.size } +
+                soraProviderGroups.sumOf { it.modules.size }
 
             val installedAddonNames = installedAddonOrder.toSet()
             val installedAddonIds = streamAddons.map { it.addonId }.toSet()
@@ -524,6 +550,46 @@ object StreamsRepository {
                 }
             }
 
+            soraProviderGroups.forEach { providerGroup ->
+                providerGroup.modules.forEach { module ->
+                    launch {
+                        val completion = PluginRepository.executeSoraModule(
+                            module = module,
+                            tmdbId = pluginContentId(
+                                videoId = videoId,
+                                season = season,
+                                episode = episode,
+                            ),
+                            mediaType = type,
+                            season = season,
+                            episode = episode,
+                        ).fold(
+                            onSuccess = { results ->
+                                StreamLoadCompletion.SoraModule(
+                                    addonId = providerGroup.addonId,
+                                    streams = results.map { result ->
+                                        result.toSoraStreamItem(
+                                            module = module,
+                                            addonName = providerGroup.addonName,
+                                            addonId = providerGroup.addonId,
+                                        )
+                                    },
+                                    error = null,
+                                )
+                            },
+                            onFailure = { error ->
+                                StreamLoadCompletion.SoraModule(
+                                    addonId = providerGroup.addonId,
+                                    streams = emptyList(),
+                                    error = error.message ?: getString(Res.string.streams_failed_to_load_scraper, module.sourceName),
+                                )
+                            },
+                        )
+                        publishCompletion(completion)
+                    }
+                }
+            }
+
             repeat(totalTasks) {
                 when (val completion = completions.receive()) {
                     is StreamLoadCompletion.Addon -> {
@@ -573,6 +639,47 @@ object StreamsRepository {
                         }
                     }
 
+                    is StreamLoadCompletion.SoraModule -> {
+                        val remaining = (soraRemainingByAddonId[completion.addonId] ?: 1) - 1
+                        soraRemainingByAddonId[completion.addonId] = remaining.coerceAtLeast(0)
+                        if (!completion.error.isNullOrBlank() && soraFirstErrorByAddonId[completion.addonId].isNullOrBlank()) {
+                            soraFirstErrorByAddonId[completion.addonId] = completion.error
+                        }
+
+                        _uiState.update { current ->
+                            val updated = StreamAutoPlaySelector.orderAddonStreams(
+                                groups = current.groups.map { group ->
+                                    if (group.addonId != completion.addonId) {
+                                        group
+                                    } else {
+                                        val mergedStreams = if (completion.streams.isEmpty()) {
+                                            group.streams
+                                        } else {
+                                            (group.streams + completion.streams).sortedForGroupedDisplay()
+                                        }
+                                        val stillLoading = remaining > 0
+                                        val finalError = if (mergedStreams.isEmpty() && !stillLoading) {
+                                            soraFirstErrorByAddonId[completion.addonId]
+                                        } else {
+                                            null
+                                        }
+                                        group.copy(
+                                            streams = mergedStreams,
+                                            isLoading = stillLoading,
+                                            error = finalError,
+                                        )
+                                    }
+                                },
+                                installedOrder = installedAddonOrder,
+                            )
+                            val anyLoading = updated.any { it.isLoading }
+                            current.copy(
+                                groups = updated,
+                                isAnyLoading = anyLoading,
+                                emptyStateReason = updated.toEmptyStateReason(anyLoading),
+                            )
+                        }
+                    }
                 }
             }
 
@@ -825,6 +932,12 @@ private data class PluginProviderGroup(
     val scrapers: List<PluginScraper>,
 )
 
+private data class SoraProviderGroup(
+    val addonId: String,
+    val addonName: String,
+    val modules: List<SoraModuleItem>,
+)
+
 private sealed interface StreamLoadCompletion {
     data class Addon(val group: AddonStreamGroup) : StreamLoadCompletion
     data class PluginScraper(
@@ -832,6 +945,41 @@ private sealed interface StreamLoadCompletion {
         val streams: List<StreamItem>,
         val error: String?,
     ) : StreamLoadCompletion
+    data class SoraModule(
+        val addonId: String,
+        val streams: List<StreamItem>,
+        val error: String?,
+    ) : StreamLoadCompletion
+}
+
+private fun PluginRuntimeResult.toSoraStreamItem(
+    module: SoraModuleItem,
+    addonName: String = module.sourceName,
+    addonId: String = "sora:${module.moduleUrl.lowercase()}",
+): StreamItem {
+    val subtitleParts = listOfNotNull(
+        quality?.takeIf { it.isNotBlank() },
+        module.quality?.takeIf { it.isNotBlank() },
+        language?.takeIf { it.isNotBlank() },
+        module.language?.takeIf { it.isNotBlank() },
+    )
+    return StreamItem(
+        name = name ?: title,
+        description = subtitleParts.joinToString(" • ").ifBlank { null },
+        url = url,
+        infoHash = infoHash,
+        sourceName = module.sourceName,
+        addonName = addonName,
+        addonId = addonId,
+        behaviorHints = if (headers.isNullOrEmpty()) {
+            StreamBehaviorHints()
+        } else {
+            StreamBehaviorHints(
+                notWebReady = true,
+                proxyHeaders = StreamProxyHeaders(request = headers),
+            )
+        },
+    )
 }
 
 private fun List<PluginScraper>.toPluginProviderGroups(
