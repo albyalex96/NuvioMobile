@@ -183,7 +183,7 @@ internal object SoraModuleRuntime {
                 }
             }
             val episodes = parseEpisodeResults(capturedResult)
-            return episodes.find { it.number?.toIntOrNull() == episode } ?: episodes.firstOrNull()
+            return (episodes.find { it.number?.toIntOrNull() == episode } ?: episodes.firstOrNull())?.href
         } catch (e: Exception) {
             log.e(e) { "Sora episode resolution failed for ${module.sourceName}" }
             return null
