@@ -38,4 +38,14 @@ expect object PluginRepository {
         season: Int?,
         episode: Int?,
     ): Result<List<PluginRuntimeResult>>
+
+    fun getEnabledSoraModulesForType(type: String): List<SoraModuleItem>
+
+    suspend fun executeSoraModule(
+        module: SoraModuleItem,
+        tmdbId: String,
+        mediaType: String,
+        season: Int?,
+        episode: Int?,
+    ): Result<List<PluginRuntimeResult>>
 }
