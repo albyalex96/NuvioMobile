@@ -184,14 +184,21 @@ object StreamsRepository {
             )
         }
 
-        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
-            _uiState.value = StreamsUiState(
-                requestToken = requestToken,
-                isAnyLoading = false,
-                emptyStateReason = StreamsEmptyStateReason.NoAddonsInstalled,
-            )
-            return
-        }
+      if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
+    val anyPluginSystemEnabled = pluginUiState.pluginsEnabled || soraModules.isNotEmpty()
+    _uiState.value = StreamsUiState(
+        requestToken = requestToken,
+        isAnyLoading = false,
+        emptyStateReason = if (hasTmdbApiKey && anyPluginSystemEnabled) {
+            StreamsEmptyStateReason.NoAddonsInstalled
+        } else if (!hasTmdbApiKey && anyPluginSystemEnabled) {
+            StreamsEmptyStateReason.TmdbApiKeyMissing
+        } else {
+            StreamsEmptyStateReason.PluginsDisabled
+        },
+    )
+    return
+}
 
         val streamAddons = installedAddons
             .mapNotNull { addon ->
@@ -212,15 +219,19 @@ object StreamsRepository {
             }
 
         log.d { "Found ${streamAddons.size} addons for stream type=$type id=$videoId" }
-
-        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
-            _uiState.value = StreamsUiState(
-                requestToken = requestToken,
-                isAnyLoading = false,
-                emptyStateReason = StreamsEmptyStateReason.NoCompatibleAddons,
-            )
-            return
-        }
+        
+if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
+    val anyPluginSystemEnabled = pluginUiState.pluginsEnabled || soraModules.isNotEmpty()
+    _uiState.value = StreamsUiState(
+        ...
+        emptyStateReason = if (anyPluginSystemEnabled) {
+            StreamsEmptyStateReason.NoCompatibleAddons
+        } else {
+            StreamsEmptyStateReason.PluginsDisabled
+        },
+    )
+    return
+}
 
         // Initialise loading placeholders
         val installedAddonOrder = streamAddons.map { it.addonName }
