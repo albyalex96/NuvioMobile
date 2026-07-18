@@ -108,6 +108,10 @@ import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watching.application.WatchingState
 import com.nuvio.app.features.watching.domain.isReleasedBy
+import com.nuvio.app.features.anilist.AniListAuthRepository
+import com.nuvio.app.features.mal.MalAuthRepository
+import com.nuvio.app.features.trakt.TraktAuthRepository
+import com.nuvio.app.features.trakt.TraktSettingsRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -166,6 +170,7 @@ fun LibraryScreen(
     val listState = rememberLazyListState()
     val isTraktSource = uiState.sourceMode == LibrarySourceMode.TRAKT
     val isMalSource = uiState.sourceMode == LibrarySourceMode.MAL
+    val isAniListSource = uiState.sourceMode == LibrarySourceMode.ANILIST
     val retryLibraryLoad: () -> Unit = {
         NetworkStatusRepository.requestRefresh(force = true)
         coroutineScope.launch {
@@ -173,7 +178,7 @@ fun LibraryScreen(
         }
     }
 
-    LaunchedEffect(networkStatusUiState.condition, isTraktSource, isMalSource) {
+    LaunchedEffect(networkStatusUiState.condition, isTraktSource, isMalSource, isAniListSource) {
         when (networkStatusUiState.condition) {
             NetworkCondition.NoInternet,
             NetworkCondition.ServersUnreachable,
@@ -184,7 +189,7 @@ fun LibraryScreen(
             NetworkCondition.Online -> {
                 if (!observedOfflineState) return@LaunchedEffect
                 observedOfflineState = false
-                if (isTraktSource || isMalSource) {
+                if (isTraktSource || isMalSource || isAniListSource) {
                     coroutineScope.launch {
                         LibraryRepository.pullFromServer(ProfileRepository.activeProfileId)
                     }
@@ -255,6 +260,8 @@ fun LibraryScreen(
                             stringResource(Res.string.library_trakt_title)
                         } else if (isMalSource) {
                             stringResource(Res.string.library_mal_title)
+                        } else if (isAniListSource) {
+                            stringResource(Res.string.library_anilist_title)
                         } else {
                             stringResource(Res.string.library_title)
                         },
@@ -284,7 +291,12 @@ fun LibraryScreen(
                         },
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    if (sourceMode == LibraryViewMode.Saved) {
+                        LibrarySourceSelector(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(if (sourceMode == LibraryViewMode.Saved) 2.dp else 6.dp))
                 }
             }
         }
@@ -341,6 +353,7 @@ fun LibraryScreen(
                                 title = when {
                                     isTraktSource -> stringResource(Res.string.library_trakt_load_failed)
                                     isMalSource -> stringResource(Res.string.library_mal_load_failed)
+                                    isAniListSource -> stringResource(Res.string.library_anilist_load_failed)
                                     else -> stringResource(Res.string.library_load_failed)
                                 },
                                 message = uiState.errorMessage.orEmpty(),
@@ -353,7 +366,7 @@ fun LibraryScreen(
 
                 uiState.sections.isEmpty() -> {
                     item {
-                        if (networkStatusUiState.isOfflineLike && (isTraktSource || isMalSource)) {
+                        if (networkStatusUiState.isOfflineLike && (isTraktSource || isMalSource || isAniListSource)) {
                             NuvioNetworkOfflineCard(
                                 condition = networkStatusUiState.condition,
                                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -365,11 +378,13 @@ fun LibraryScreen(
                                 title = when {
                                     isTraktSource -> stringResource(Res.string.library_trakt_empty_title)
                                     isMalSource -> stringResource(Res.string.library_mal_empty_title)
+                                    isAniListSource -> stringResource(Res.string.library_anilist_empty_title)
                                     else -> stringResource(Res.string.library_empty_title)
                                 },
                                 message = when {
                                     isTraktSource -> stringResource(Res.string.library_trakt_empty_message)
                                     isMalSource -> stringResource(Res.string.library_mal_empty_message)
+                                    isAniListSource -> stringResource(Res.string.library_anilist_empty_message)
                                     else -> stringResource(Res.string.library_empty_message)
                                 },
                             )
@@ -554,6 +569,61 @@ private fun LibrarySourceSwitch(
         )
     }
 }
+
+@Composable
+private fun LibrarySourceSelector(
+    modifier: Modifier = Modifier,
+) {
+    val traktSettings by TraktSettingsRepository.uiState.collectAsStateWithLifecycle()
+    val currentSource = traktSettings.librarySourceMode
+    val isTraktAuth by TraktAuthRepository.isAuthenticated.collectAsStateWithLifecycle()
+    val isMalAuth by MalAuthRepository.isAuthenticated.collectAsStateWithLifecycle()
+    val isAniListAuth by AniListAuthRepository.isAuthenticated.collectAsStateWithLifecycle()
+
+    val localLabel = librarySourceLabel(LibrarySourceMode.LOCAL)
+    val traktLabel = librarySourceLabel(LibrarySourceMode.TRAKT)
+    val malLabel = librarySourceLabel(LibrarySourceMode.MAL)
+    val aniListLabel = librarySourceLabel(LibrarySourceMode.ANILIST)
+
+    val options = remember(currentSource, isTraktAuth, isMalAuth, isAniListAuth,
+        localLabel, traktLabel, malLabel, aniListLabel) {
+        buildList {
+            add(NuvioDropdownOption(key = LibrarySourceMode.LOCAL.name, label = localLabel))
+            if (isTraktAuth) {
+                add(NuvioDropdownOption(key = LibrarySourceMode.TRAKT.name, label = traktLabel))
+            }
+            if (isMalAuth) {
+                add(NuvioDropdownOption(key = LibrarySourceMode.MAL.name, label = malLabel))
+            }
+            if (isAniListAuth) {
+                add(NuvioDropdownOption(key = LibrarySourceMode.ANILIST.name, label = aniListLabel))
+            }
+        }
+    }
+
+    NuvioDropdownChip(
+        title = stringResource(Res.string.trakt_library_source_title),
+        label = librarySourceLabel(currentSource),
+        selectedKey = currentSource.name,
+        options = options,
+        modifier = modifier,
+        onSelected = { option ->
+            val source = runCatching { LibrarySourceMode.valueOf(option.key) }.getOrNull()
+            if (source != null) {
+                TraktSettingsRepository.setLibrarySourceMode(source)
+            }
+        },
+    )
+}
+
+@Composable
+private fun librarySourceLabel(source: LibrarySourceMode): String =
+    when (source) {
+        LibrarySourceMode.TRAKT -> stringResource(Res.string.trakt_library_source_trakt)
+        LibrarySourceMode.MAL -> stringResource(Res.string.trakt_library_source_mal)
+        LibrarySourceMode.ANILIST -> stringResource(Res.string.trakt_library_source_anilist)
+        LibrarySourceMode.LOCAL -> stringResource(Res.string.trakt_library_source_nuvio)
+    }
 
 @Composable
 private fun CloudLibraryToolbar(

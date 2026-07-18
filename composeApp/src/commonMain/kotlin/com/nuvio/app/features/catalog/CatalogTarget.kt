@@ -36,6 +36,12 @@ sealed interface CatalogTarget {
         override val contentType: String,
         override val supportsPagination: Boolean = false,
     ) : CatalogTarget
+
+    data class AniList(
+        val statusGroup: String,
+        override val contentType: String = "anime-series",
+        override val supportsPagination: Boolean = false,
+    ) : CatalogTarget
 }
 
 @Serializable
@@ -44,4 +50,5 @@ enum class CatalogTargetKind {
     LIBRARY,
     COLLECTION_SOURCE,
     CLOUDSTREAM,
+    ANILIST,
 }

@@ -16,6 +16,7 @@ enum class AniListConnectionMode {
 @Serializable
 data class AniListAuthState(
     val accessToken: String? = null,
+    val refreshToken: String? = null,
     val username: String? = null,
     val avatarUrl: String? = null,
     val userId: Int? = null,
@@ -29,6 +30,7 @@ data class AniListAuthUiState(
     val mode: AniListConnectionMode = AniListConnectionMode.DISCONNECTED,
     val username: String? = null,
     val avatarUrl: String? = null,
+    val tokenExpiresAtEpochMs: Long? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )

@@ -61,6 +61,13 @@ object AniListLibraryRepository {
             .any { it.id == anilistId }
     }
 
+    fun findAniListItemById(anilistId: Int): AniListLibraryItem? {
+        val state = _uiState.value
+        return (state.watching + state.completed + state.planning +
+                state.paused + state.dropped + state.rewatching)
+            .find { it.id == anilistId }
+    }
+
     suspend fun refreshNow() {
         refresh(force = true)
     }
@@ -77,7 +84,7 @@ object AniListLibraryRepository {
                 return
             }
 
-            val token = AniListAuthRepository.getAccessToken()
+            val token = AniListAuthRepository.getAccessTokenRefreshed()
             val userId = AniListAuthRepository.getUserId()
 
             if (token.isNullOrBlank() || userId == null) {

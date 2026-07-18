@@ -1,14 +1,17 @@
 package com.nuvio.app.features.catalog
 
+import com.nuvio.app.features.anilist.AniListLibraryItem
+import com.nuvio.app.features.anilist.AniListLibraryRepository
 import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.cloudstream.toMetaPreview
 import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
 import com.nuvio.app.features.collection.catalogRouteKey
+import com.nuvio.app.features.home.HomeCatalogSettingsRepository
+import com.nuvio.app.features.home.MetaPreview
+import com.nuvio.app.features.home.filterReleasedItems
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.library.toMetaPreview
-import com.nuvio.app.features.home.HomeCatalogSettingsRepository
-import com.nuvio.app.features.home.filterReleasedItems
 import com.nuvio.app.features.trakt.TraktPublicListSourceResolver
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import kotlinx.coroutines.CoroutineScope
@@ -169,6 +172,22 @@ object CatalogRepository {
                         }
                         CatalogPage(items = items, rawItemCount = items.size, nextSkip = null)
                     }
+
+                    is CatalogTarget.AniList -> {
+                        AniListLibraryRepository.ensureFresh()
+                        val aniListItems = AniListLibraryRepository.uiState.value
+                        val items = when (target.statusGroup) {
+                            "watching" -> aniListItems.watching
+                            "rewatching" -> aniListItems.rewatching
+                            "completed" -> aniListItems.completed
+                            "planning" -> aniListItems.planning
+                            "paused" -> aniListItems.paused
+                            "dropped" -> aniListItems.dropped
+                            else -> emptyList()
+                        }
+                        val metaItems = items.map { it.toMetaPreview() }
+                        CatalogPage(items = metaItems, rawItemCount = metaItems.size, nextSkip = null)
+                    }
                 }.withUnreleasedFilter(request.hideUnreleasedContent)
             }.fold(
                 onSuccess = { page ->
@@ -246,3 +265,13 @@ private data class CatalogRequest(
     val target: CatalogTarget,
     val hideUnreleasedContent: Boolean,
 )
+
+private fun AniListLibraryItem.toMetaPreview(): MetaPreview =
+    MetaPreview(
+        id = "anilist:$id",
+        type = "series",
+        name = title,
+        poster = posterUrl,
+        releaseInfo = totalEpisodes?.let { "$it episodes" },
+        imdbRating = score?.let { "${it / 10}" },
+    )

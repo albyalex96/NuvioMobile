@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,7 +100,7 @@ object AniListAuthRepository {
             val implicitToken = parsedUrl.parameters["access_token"]
             if (!implicitToken.isNullOrBlank()) {
                 val expiresInSeconds = parsedUrl.parameters["expires_in"]?.toLongOrNull() ?: 31536000L
-                completeAuthWithToken(implicitToken, expiresInSeconds)
+                completeAuthWithToken(implicitToken, null, expiresInSeconds)
                 return@launch
             }
 
@@ -108,7 +109,11 @@ object AniListAuthRepository {
             if (!code.isNullOrBlank()) {
                 val tokenResult = AniListApi.exchangeCodeForToken(code)
                 if (tokenResult != null) {
-                    completeAuthWithToken(tokenResult.first, tokenResult.second)
+                    completeAuthWithToken(
+                        token = tokenResult.accessToken,
+                        refreshToken = tokenResult.refreshToken,
+                        expiresInSeconds = tokenResult.expiresInSeconds
+                    )
                 } else {
                     publish(isLoading = false, errorMessage = "Failed to exchange authorization code.")
                 }
@@ -119,7 +124,7 @@ object AniListAuthRepository {
         }
     }
 
-    private suspend fun completeAuthWithToken(token: String, expiresInSeconds: Long) {
+    private suspend fun completeAuthWithToken(token: String, refreshToken: String?, expiresInSeconds: Long) {
         val viewer = AniListApi.fetchViewer(token)
         if (viewer == null) {
             publish(isLoading = false, errorMessage = "Failed to fetch user profile details from AniList.")
@@ -129,6 +134,7 @@ object AniListAuthRepository {
         val expiresAt = WatchProgressClock.nowEpochMs() + (expiresInSeconds * 1000L)
         authState = AniListAuthState(
             accessToken = token,
+            refreshToken = refreshToken,
             username = viewer.name,
             avatarUrl = viewer.avatar?.large,
             userId = viewer.id,
@@ -149,6 +155,42 @@ object AniListAuthRepository {
         }
     }
 
+    private suspend fun refreshTokenIfNeeded(): Boolean {
+        val state = authState
+        val refreshTok = state.refreshToken
+        if (refreshTok.isNullOrBlank()) return true
+
+        val expiresAt = state.tokenExpiresAtEpochMs
+        if (expiresAt != null && WatchProgressClock.nowEpochMs() < expiresAt - 60_000L) {
+            return true
+        }
+
+        log.i { "AniList access token expired or expiring. Refreshing..." }
+        publish(isLoading = false, errorMessage = null)
+
+        return try {
+            val result = AniListApi.refreshAccessToken(refreshTok)
+            if (result != null) {
+                val newExpiresAt = WatchProgressClock.nowEpochMs() + (result.expiresInSeconds * 1000L)
+                authState = authState.copy(
+                    accessToken = result.accessToken,
+                    refreshToken = result.refreshToken,
+                    tokenExpiresAtEpochMs = newExpiresAt
+                )
+                persist()
+                publish()
+                log.i { "AniList token refreshed successfully." }
+                true
+            } else {
+                log.e { "Failed to refresh AniList token — response was null." }
+                false
+            }
+        } catch (e: Exception) {
+            log.e { "Failed to refresh AniList token: ${e.message}" }
+            false
+        }
+    }
+
     fun disconnect() {
         clearLocalState()
         scope.launch {
@@ -158,6 +200,13 @@ object AniListAuthRepository {
 
     fun getAccessToken(): String? {
         ensureLoaded()
+        return authState.accessToken
+    }
+
+    suspend fun getAccessTokenRefreshed(): String? {
+        ensureLoaded()
+        val success = refreshTokenIfNeeded()
+        if (!success) return null
         return authState.accessToken
     }
 
@@ -205,6 +254,7 @@ object AniListAuthRepository {
             mode = mode,
             username = authState.username,
             avatarUrl = authState.avatarUrl,
+            tokenExpiresAtEpochMs = authState.tokenExpiresAtEpochMs,
             isLoading = isLoading,
             errorMessage = errorMessage
         )

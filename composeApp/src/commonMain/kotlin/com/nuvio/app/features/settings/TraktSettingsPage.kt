@@ -83,6 +83,8 @@ import nuvio.composeapp.generated.resources.trakt_library_source_dialog_subtitle
 import nuvio.composeapp.generated.resources.trakt_library_source_dialog_title
 import nuvio.composeapp.generated.resources.trakt_library_source_nuvio
 import nuvio.composeapp.generated.resources.trakt_library_source_mal
+import nuvio.composeapp.generated.resources.trakt_library_source_anilist
+import nuvio.composeapp.generated.resources.trakt_library_source_anilist_selected
 import nuvio.composeapp.generated.resources.trakt_library_source_nuvio_selected
 import nuvio.composeapp.generated.resources.trakt_library_source_subtitle
 import nuvio.composeapp.generated.resources.trakt_library_source_title
@@ -172,6 +174,7 @@ private fun TraktFeatureRows(
     val nuvioProgressSelectedMessage = stringResource(Res.string.trakt_watch_progress_nuvio_selected)
     val traktLibrarySelectedMessage = stringResource(Res.string.trakt_library_source_trakt_selected)
     val nuvioLibrarySelectedMessage = stringResource(Res.string.trakt_library_source_nuvio_selected)
+    val aniListLibrarySelectedMessage = stringResource(Res.string.trakt_library_source_anilist_selected)
 
     TraktSettingsActionRow(
         title = stringResource(Res.string.trakt_library_source_title),
@@ -225,10 +228,10 @@ private fun TraktFeatureRows(
             selectedSource = settingsUiState.librarySourceMode,
             onSourceSelected = { source ->
                 TraktSettingsRepository.setLibrarySourceMode(source)
-                statusMessage = if (source == LibrarySourceMode.TRAKT) {
-                    traktLibrarySelectedMessage
-                } else {
-                    nuvioLibrarySelectedMessage
+                statusMessage = when (source) {
+                    LibrarySourceMode.TRAKT -> traktLibrarySelectedMessage
+                    LibrarySourceMode.ANILIST -> aniListLibrarySelectedMessage
+                    else -> nuvioLibrarySelectedMessage
                 }
                 showLibrarySourceDialog = false
             },
@@ -356,6 +359,7 @@ private fun librarySourceModeLabel(source: LibrarySourceMode): String =
     when (source) {
         LibrarySourceMode.TRAKT -> stringResource(Res.string.trakt_library_source_trakt)
         LibrarySourceMode.MAL -> stringResource(Res.string.trakt_library_source_mal)
+        LibrarySourceMode.ANILIST -> stringResource(Res.string.trakt_library_source_anilist)
         LibrarySourceMode.LOCAL -> stringResource(Res.string.trakt_library_source_nuvio)
     }
 
@@ -416,7 +420,7 @@ private fun LibrarySourceModeDialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    listOf(LibrarySourceMode.TRAKT, LibrarySourceMode.MAL, LibrarySourceMode.LOCAL).forEach { source ->
+                    listOf(LibrarySourceMode.TRAKT, LibrarySourceMode.MAL, LibrarySourceMode.ANILIST, LibrarySourceMode.LOCAL).forEach { source ->
                         TraktDialogOption(
                             label = librarySourceModeLabel(source),
                             selected = source == selectedSource,

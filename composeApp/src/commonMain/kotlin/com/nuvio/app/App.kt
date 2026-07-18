@@ -246,6 +246,14 @@ import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.WatchProgressSourceCoordinator
 import com.nuvio.app.features.watchprogress.nextUpDismissKey
 import com.nuvio.app.features.watchprogress.toContinueWatchingItem
+import com.nuvio.app.features.anilist.AniListApi
+import com.nuvio.app.features.anilist.AniListAuthRepository
+import com.nuvio.app.features.anilist.AniListLibraryItem
+import com.nuvio.app.features.anilist.AniListLibraryRepository
+import com.nuvio.app.features.anilist.AniListResolutionService
+import com.nuvio.app.features.anilist.components.AniListEditMediaBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import com.nuvio.app.features.watching.application.WatchingActions
 import com.nuvio.app.features.watching.application.WatchingState
 import kotlinx.coroutines.flow.Flow
@@ -345,6 +353,7 @@ private data class CatalogLaunch(
                 contentType = contentType,
             )
             CatalogTargetKind.CLOUDSTREAM -> target as CatalogTarget.CloudStream
+            CatalogTargetKind.ANILIST -> target as CatalogTarget.AniList
         }
 }
 
@@ -876,6 +885,9 @@ private fun MainAppContent(
         var pickerMembership by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
         var pickerPending by remember { mutableStateOf(false) }
         var pickerError by remember { mutableStateOf<String?>(null) }
+        var showAniListEditSheet by remember { mutableStateOf(false) }
+        var aniListEditItem by remember { mutableStateOf<AniListLibraryItem?>(null) }
+        val aniListEditSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val addonsUiState by remember {
             AddonRepository.initialize()
             AddonRepository.uiState
@@ -944,6 +956,7 @@ private fun MainAppContent(
     val newCollectionTitle = stringResource(Res.string.collections_new)
     val detailsFallbackTitle = stringResource(Res.string.meta_section_details_title)
     val isTraktLibrarySource = libraryUiState.sourceMode == LibrarySourceMode.TRAKT
+    val isAniListLibrarySource = libraryUiState.sourceMode == LibrarySourceMode.ANILIST
     var initialHomeReady by rememberSaveable(ownsAppRuntime) {
         mutableStateOf(!ownsAppRuntime)
     }
@@ -2032,13 +2045,47 @@ private fun MainAppContent(
                                         animateHomeCollectionGifs = tabsRouteActive,
                                         onCatalogClick = onCatalogClick,
                                         onPosterClick = { meta ->
-                                            navController.navigate(DetailRoute(type = meta.type, id = meta.id, title = meta.name))
+                                            if (meta.id.startsWith("anilist:", ignoreCase = true)) {
+                                                coroutineScope.launch {
+                                                    val anilistId = meta.id.removePrefix("anilist:").substringBefore(":").toIntOrNull()
+                                                    val resolvedId = if (anilistId != null) {
+                                                        AniListResolutionService.resolveImdbId(anilistId)
+                                                    } else null
+                                                    val effectiveType = if (resolvedId != null) "series" else meta.type
+                                                    navController.navigate(
+                                                        DetailRoute(
+                                                            type = effectiveType,
+                                                            id = resolvedId ?: meta.id,
+                                                            title = meta.name
+                                                        )
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(DetailRoute(type = meta.type, id = meta.id, title = meta.name))
+                                            }
                                         },
                                         onPosterLongClick = { meta ->
                                             openPosterActions(PosterActionTarget(preview = meta))
                                         },
                                         onLibraryPosterClick = { item ->
-                                            navController.navigate(DetailRoute(type = item.type, id = item.id, title = item.name))
+                                            if (item.id.startsWith("anilist:", ignoreCase = true)) {
+                                                coroutineScope.launch {
+                                                    val anilistId = item.id.removePrefix("anilist:").substringBefore(":").toIntOrNull()
+                                                    val resolvedId = if (anilistId != null) {
+                                                        AniListResolutionService.resolveImdbId(anilistId)
+                                                    } else null
+                                                    val effectiveType = if (resolvedId != null) "series" else item.type
+                                                    navController.navigate(
+                                                        DetailRoute(
+                                                            type = effectiveType,
+                                                            id = resolvedId ?: item.id,
+                                                            title = item.name
+                                                        )
+                                                    )
+                                                }
+                                            } else {
+                                                navController.navigate(DetailRoute(type = item.type, id = item.id, title = item.name))
+                                            }
                                         },
                                         onLibraryPosterLongClick = { item, section ->
                                             openPosterActions(
@@ -3364,13 +3411,15 @@ private fun MainAppContent(
                 key(posterActionTarget) {
                     val preview = posterActionTarget.preview
                     val isSaved = LibraryRepository.isSaved(preview.id, preview.type)
+                    val isAniListSaved = isAniListLibrarySource && posterActionTarget.libraryItem != null
+                    val effectiveSaved = isSaved || isAniListSaved
                     val isWatched = WatchingState.isPosterWatched(
                         watchedKeys = watchedUiState.watchedKeys,
                         item = preview,
                     )
                     // Trakt items long-pressed outside the library open the list picker
                     // instead of removing, so only true removals disintegrate.
-                    val removesFromLibrary = isSaved &&
+                    val removesFromLibrary = effectiveSaved &&
                         (posterActionTarget.libraryItem != null || !isTraktLibrarySource)
                     NuvioPosterZoomActionOverlay(
                         imageUrl = selectedPosterAnchor?.imageUrl ?: preview.poster,
@@ -3385,8 +3434,8 @@ private fun MainAppContent(
                         anchor = selectedPosterAnchor,
                         actions = listOf(
                             PosterZoomOverlayAction(
-                                icon = if (isSaved) Icons.Default.DeleteOutline else Icons.Default.Add,
-                                label = if (isSaved) {
+                                icon = if (effectiveSaved) Icons.Default.DeleteOutline else Icons.Default.Add,
+                                label = if (effectiveSaved) {
                                     stringResource(Res.string.hero_remove_from_library)
                                 } else {
                                     stringResource(Res.string.hero_add_to_library)
@@ -3415,13 +3464,41 @@ private fun MainAppContent(
                                                     )
                                                 }
                                             }
+                                        } else if (isAniListLibrarySource) {
+                                            val anilistId = libraryItem.id.removePrefix("anilist:").toIntOrNull()
+                                            if (anilistId != null) {
+                                                val aniListItem = AniListLibraryRepository.findAniListItemById(anilistId)
+                                                if (aniListItem != null) {
+                                                    aniListEditItem = aniListItem
+                                                    showAniListEditSheet = true
+                                                } else {
+                                                    coroutineScope.launch {
+                                                        val token = AniListAuthRepository.getAccessToken() ?: return@launch
+                                                        AniListApi.saveMediaListEntry(token, anilistId, "PLANNING", 0, null)
+                                                        AniListLibraryRepository.refreshNow()
+                                                        LibraryRepository.ensureLoaded()
+                                                    }
+                                                }
+                                            } else {
+                                                LibraryRepository.remove(libraryItem.id)
+                                            }
                                         } else {
                                             LibraryRepository.remove(libraryItem.id)
                                         }
                                     } else {
-                                        if (!isTraktLibrarySource) {
-                                            LibraryRepository.toggleSaved(libraryItem)
-                                        } else {
+                                        if (isAniListLibrarySource) {
+                                            val anilistId = libraryItem.id.removePrefix("anilist:").toIntOrNull()
+                                            if (anilistId != null) {
+                                                coroutineScope.launch {
+                                                    val token = AniListAuthRepository.getAccessToken() ?: return@launch
+                                                    AniListApi.saveMediaListEntry(token, anilistId, "PLANNING", 0, null)
+                                                    AniListLibraryRepository.refreshNow()
+                                                    LibraryRepository.ensureLoaded()
+                                                }
+                                            } else {
+                                                LibraryRepository.toggleSaved(libraryItem)
+                                            }
+                                        } else if (isTraktLibrarySource) {
                                             pickerItem = libraryItem
                                             pickerTitle = preview.name
                                             pickerTabs = LibraryRepository.libraryListTabs()
@@ -3442,6 +3519,8 @@ private fun MainAppContent(
                                                 }
                                                 pickerPending = false
                                             }
+                                        } else {
+                                            LibraryRepository.toggleSaved(libraryItem)
                                         }
                                     }
                                 },
@@ -3600,6 +3679,46 @@ private fun MainAppContent(
                     }
                 },
             )
+
+            if (showAniListEditSheet && aniListEditItem != null) {
+                AniListEditMediaBottomSheet(
+                    item = aniListEditItem!!,
+                    sheetState = aniListEditSheetState,
+                    onDismissRequest = {
+                        showAniListEditSheet = false
+                        aniListEditItem = null
+                    },
+                    onSave = { status, progress, score ->
+                        coroutineScope.launch {
+                            val item = aniListEditItem ?: return@launch
+                            val token = AniListAuthRepository.getAccessToken() ?: return@launch
+                            AniListApi.saveMediaListEntry(
+                                token = token,
+                                mediaId = item.id,
+                                status = status,
+                                progress = progress,
+                                scoreRaw = score?.let { (it * 10).toInt() }
+                            )
+                            AniListLibraryRepository.refreshNow()
+                            LibraryRepository.ensureLoaded()
+                            showAniListEditSheet = false
+                            aniListEditItem = null
+                        }
+                    },
+                    onDelete = {
+                        coroutineScope.launch {
+                            val item = aniListEditItem ?: return@launch
+                            val entryId = item.entryId ?: return@launch
+                            val token = AniListAuthRepository.getAccessToken() ?: return@launch
+                            AniListApi.deleteMediaListEntry(token, entryId)
+                            AniListLibraryRepository.refreshNow()
+                            LibraryRepository.ensureLoaded()
+                            showAniListEditSheet = false
+                            aniListEditItem = null
+                        }
+                    },
+                )
+            }
 
             NuvioStatusModal(
                 title = stringResource(Res.string.app_exit_title),

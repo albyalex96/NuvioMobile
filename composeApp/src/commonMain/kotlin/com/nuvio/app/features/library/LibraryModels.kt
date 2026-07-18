@@ -37,6 +37,7 @@ enum class LibrarySourceMode {
     LOCAL,
     TRAKT,
     MAL,
+    ANILIST,
 }
 
 data class LibraryUiState(

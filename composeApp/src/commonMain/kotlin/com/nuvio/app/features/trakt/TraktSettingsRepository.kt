@@ -2,6 +2,7 @@ package com.nuvio.app.features.trakt
 
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
+import com.nuvio.app.features.anilist.AniListAuthRepository
 import com.nuvio.app.features.library.LibrarySourceMode
 import com.nuvio.app.features.profiles.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -209,6 +210,8 @@ fun effectiveLibrarySourceMode(
 ): LibrarySourceMode =
     if (isAuthenticated && source == LibrarySourceMode.TRAKT) {
         LibrarySourceMode.TRAKT
+    } else if (source == LibrarySourceMode.ANILIST && AniListAuthRepository.isAuthenticated.value) {
+        LibrarySourceMode.ANILIST
     } else {
         LibrarySourceMode.LOCAL
     }

@@ -2,6 +2,7 @@
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.features.addons.httpPostJsonWithHeaders
+import com.nuvio.app.features.watchprogress.WatchProgressClock
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -14,11 +15,27 @@ object AniListApi {
     private const val GRAPHQL_URL = "https://graphql.anilist.co/"
     private const val TOKEN_URL = "https://anilist.co/api/v2/oauth/token"
 
+    private const val MIN_REQUEST_INTERVAL_MS = 1600L
+    private const val RATE_LIMIT_BASE_DELAY_MS = 5000L
+
+    private var lastRequestTimeMs = 0L
+
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
         coerceInputValues = true
     }
+
+    private suspend fun enforceMinInterval() {
+        val now = currentTimeMs()
+        val elapsed = now - lastRequestTimeMs
+        if (elapsed < MIN_REQUEST_INTERVAL_MS) {
+            delay(MIN_REQUEST_INTERVAL_MS - elapsed)
+        }
+    }
+
+    private fun currentTimeMs(): Long =
+        WatchProgressClock.nowEpochMs()
 
     private suspend fun executeGraphQL(
         token: String,
@@ -38,14 +55,27 @@ object AniListApi {
         while (true) {
             attempt++
             try {
-                return httpPostJsonWithHeaders(GRAPHQL_URL, body, headers)
+                enforceMinInterval()
+                val result = httpPostJsonWithHeaders(GRAPHQL_URL, body, headers)
+                lastRequestTimeMs = currentTimeMs()
+                return result
             } catch (e: Exception) {
-                log.w { "GraphQL Request failed (attempt $attempt/$retryCount): ${e.message}" }
+                val msg = e.message.orEmpty()
+                log.w { "GraphQL Request failed (attempt $attempt/$retryCount): $msg" }
+                val isRateLimit = msg.contains("429")
                 if (attempt >= retryCount) {
+                    if (isRateLimit) {
+                        log.e { "Rate limited after $retryCount attempts. Waiting longer before giving up." }
+                    }
                     throw e
                 }
-                // Back off exponentially before retry
-                delay(attempt * 1000L)
+                if (isRateLimit) {
+                    val backoff = RATE_LIMIT_BASE_DELAY_MS * attempt
+                    log.w { "Rate limited. Backing off ${backoff}ms before retry." }
+                    delay(backoff)
+                } else {
+                    delay(attempt * 1000L)
+                }
             }
         }
     }
@@ -214,10 +244,17 @@ object AniListApi {
     @Serializable
     private data class TokenExchangeResponse(
         val access_token: String? = null,
+        val refresh_token: String? = null,
         val expires_in: Long? = null
     )
 
-    suspend fun exchangeCodeForToken(code: String): Pair<String, Long>? {
+    data class TokenResult(
+        val accessToken: String,
+        val refreshToken: String?,
+        val expiresInSeconds: Long
+    )
+
+    suspend fun exchangeCodeForToken(code: String): TokenResult? {
         val requestBody = json.encodeToString(
             TokenExchangeRequest(
                 grant_type = "authorization_code",
@@ -237,12 +274,49 @@ object AniListApi {
             val parsed = json.decodeFromString<TokenExchangeResponse>(response)
             val token = parsed.access_token
             if (!token.isNullOrBlank()) {
-                Pair(token, parsed.expires_in ?: 31536000L)
+                TokenResult(
+                    accessToken = token,
+                    refreshToken = parsed.refresh_token,
+                    expiresInSeconds = parsed.expires_in ?: 31536000L
+                )
             } else {
                 null
             }
         } catch (e: Exception) {
             log.e { "Failed to exchange AniList oauth code: ${e.message}" }
+            null
+        }
+    }
+
+    suspend fun refreshAccessToken(refreshToken: String): TokenResult? {
+        val body = json.encodeToString(
+            buildJsonObject {
+                put("grant_type", "refresh_token")
+                put("refresh_token", refreshToken)
+                put("client_id", AniListConfig.CLIENT_ID)
+                put("client_secret", AniListConfig.CLIENT_SECRET)
+            }
+        )
+
+        return try {
+            val response = httpPostJsonWithHeaders(
+                url = TOKEN_URL,
+                body = body,
+                headers = mapOf("Content-Type" to "application/json")
+            )
+            val parsed = json.decodeFromString<TokenExchangeResponse>(response)
+            val token = parsed.access_token
+            if (!token.isNullOrBlank()) {
+                TokenResult(
+                    accessToken = token,
+                    refreshToken = parsed.refresh_token ?: refreshToken,
+                    expiresInSeconds = parsed.expires_in ?: 31536000L
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            log.e { "Failed to refresh AniList access token: ${e.message}" }
             null
         }
     }

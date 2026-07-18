@@ -3,6 +3,9 @@ package com.nuvio.app.features.home
 import com.nuvio.app.features.addons.ManagedAddon
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.anilist.AniListAuthRepository
+import com.nuvio.app.features.anilist.AniListLibraryItem
+import com.nuvio.app.features.anilist.AniListLibraryRepository
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.catalog.fetchCatalogPage
 import com.nuvio.app.features.collection.Collection
@@ -54,7 +57,8 @@ object HomeRepository {
         val cloudState = CloudStreamRepository.uiState.value
         val cloudPlugins = cloudState.plugins.filter(CloudStreamPluginItem::isRunnable)
         val activeAddons = addons.enabledAddons()
-        val requests = buildHomeCatalogDefinitions(activeAddons)
+        val requests = buildHomeCatalogDefinitions(activeAddons) +
+            buildAniListDefinitions(AniListAuthRepository.isAuthenticated.value)
         currentDefinitions = requests
         val requestCacheKeys = requests.mapTo(mutableSetOf(), HomeCatalogDefinition::cacheKey)
         cachedSections = cachedSections.filterKeys(requestCacheKeys::contains)
@@ -309,6 +313,9 @@ object HomeRepository {
     }
 
     private suspend fun HomeCatalogDefinition.toSection(): HomeCatalogSection {
+        if (key.startsWith("anilist_")) {
+            return resolveAniListSection()
+        }
         val page = fetchCatalogPage(
             manifestUrl = manifestUrl,
             type = type,
@@ -350,6 +357,45 @@ object HomeRepository {
             hasMore = supportsPagination && page.nextSkip != null,
         )
     }
+
+    private suspend fun HomeCatalogDefinition.resolveAniListSection(): HomeCatalogSection {
+        val statusGroup = catalogId
+        AniListLibraryRepository.ensureFresh()
+        val aniListItems = AniListLibraryRepository.uiState.value
+        val items = when (statusGroup) {
+            "watching" -> aniListItems.watching
+            "rewatching" -> aniListItems.rewatching
+            "completed" -> aniListItems.completed
+            "planning" -> aniListItems.planning
+            "paused" -> aniListItems.paused
+            "dropped" -> aniListItems.dropped
+            else -> emptyList()
+        }
+        val metaItems = items.map { it.toMetaPreview() }
+        return HomeCatalogSection(
+            key = key,
+            title = defaultTitle,
+            subtitle = addonName,
+            addonName = addonName,
+            target = CatalogTarget.AniList(
+                statusGroup = statusGroup,
+                contentType = type,
+            ),
+            items = metaItems,
+            availableItemCount = metaItems.size,
+            hasMore = false,
+        )
+    }
+
+    private fun AniListLibraryItem.toMetaPreview(): MetaPreview =
+        MetaPreview(
+            id = "anilist:$id",
+            type = "series",
+            name = title,
+            poster = posterUrl,
+            releaseInfo = totalEpisodes?.let { "$it episodes" },
+            imdbRating = score?.let { "${it / 10}" },
+        )
 
     private fun ensureCollectionHeroFallback(
         addons: List<ManagedAddon>,

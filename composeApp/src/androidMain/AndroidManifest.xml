@@ -19,6 +19,7 @@
         <activity
             android:exported="true"
             android:name=".MainActivity"
+            android:launchMode="singleTask"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.Nuvio.Splash">
@@ -32,6 +33,18 @@
                     android:scheme="nuvio"
                     android:host="auth"
                     android:path="/trakt" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="nuvio"
+                    android:host="auth"
+                    android:path="/anilist" />
             </intent-filter>
         </activity>
 

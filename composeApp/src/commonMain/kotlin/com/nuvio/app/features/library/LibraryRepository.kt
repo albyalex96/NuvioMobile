@@ -19,6 +19,9 @@ import com.nuvio.app.features.trakt.shouldUseTraktLibrary
 import com.nuvio.app.features.mal.MalAuthRepository
 import com.nuvio.app.features.mal.MalLibraryRepository
 import com.nuvio.app.features.mal.MalLibraryItem
+import com.nuvio.app.features.anilist.AniListAuthRepository
+import com.nuvio.app.features.anilist.AniListLibraryRepository
+import com.nuvio.app.features.anilist.AniListLibraryItem
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.atomicfu.locks.SynchronizedObject
@@ -152,6 +155,22 @@ object LibraryRepository {
                 }
             }
         }
+        syncScope.launch {
+            AniListAuthRepository.isAuthenticated.collectLatest { authenticated ->
+                if (authenticated && isAniListLibrarySourceActive()) {
+                    runCatching { AniListLibraryRepository.refreshNow() }
+                        .onFailure { log.e(it) { "Failed to refresh AniList library after auth change" } }
+                }
+                publish()
+            }
+        }
+        syncScope.launch {
+            AniListLibraryRepository.uiState.collectLatest {
+                if (AniListAuthRepository.isAuthenticated.value) {
+                    publish()
+                }
+            }
+        }
     }
 
     fun ensureLoaded() {
@@ -160,6 +179,8 @@ object LibraryRepository {
         TraktLibraryRepository.ensureLoaded()
         MalAuthRepository.ensureLoaded()
         MalLibraryRepository.ensureLoaded()
+        AniListAuthRepository.ensureLoaded()
+        AniListLibraryRepository.ensureLoaded()
         while (true) {
             val activeProfileId = ProfileRepository.activeProfileId
             val snapshot = localState.snapshot()
@@ -175,6 +196,9 @@ object LibraryRepository {
         if (isMalLibrarySourceActive()) {
             refreshMalLibraryAsync()
         }
+        if (isAniListLibrarySourceActive()) {
+            refreshAniListLibraryAsync()
+        }
     }
 
     fun onProfileChanged(profileId: Int) {
@@ -187,6 +211,8 @@ object LibraryRepository {
         TraktLibraryRepository.onProfileChanged()
         MalAuthRepository.onProfileChanged()
         MalLibraryRepository.onProfileChanged()
+        AniListAuthRepository.onProfileChanged()
+        AniListLibraryRepository.onProfileChanged()
         if (TraktAuthRepository.isAuthenticated.value) {
             TraktLibraryRepository.preloadListTabsAsync()
             if (isTraktLibrarySourceActive()) {
@@ -195,6 +221,9 @@ object LibraryRepository {
         }
         if (isMalLibrarySourceActive()) {
             refreshMalLibraryAsync()
+        }
+        if (isAniListLibrarySourceActive()) {
+            refreshAniListLibraryAsync()
         }
     }
 
@@ -205,6 +234,8 @@ object LibraryRepository {
         TraktLibraryRepository.clearLocalState()
         MalAuthRepository.clearLocalState()
         MalLibraryRepository.clearLocalState()
+        AniListAuthRepository.clearLocalState()
+        AniListLibraryRepository.clearLocalState()
         _uiState.value = LibraryUiState()
     }
 
@@ -279,6 +310,13 @@ object LibraryRepository {
         if (isMalLibrarySourceActive()) {
             runCatching { MalLibraryRepository.refreshNow() }
                 .onFailure { e -> log.e(e) { "Failed to pull MAL library" } }
+            publish()
+            return
+        }
+
+        if (isAniListLibrarySourceActive()) {
+            runCatching { AniListLibraryRepository.refreshNow() }
+                .onFailure { e -> log.e(e) { "Failed to pull AniList library" } }
             publish()
             return
         }
@@ -416,6 +454,10 @@ object LibraryRepository {
             return MalLibraryRepository.uiState.value.allItems.any { "mal:${it.id}" == id }
         }
 
+        if (isAniListLibrarySourceActive()) {
+            return allAniListItems().any { "anilist:${it.id}" == id }
+        }
+
         return if (type != null) {
             localState.contains(id, type)
         } else {
@@ -435,7 +477,17 @@ object LibraryRepository {
             return malItem?.toLibraryItem()
         }
 
+        if (isAniListLibrarySourceActive()) {
+            val aniListItem = allAniListItems().firstOrNull { "anilist:${it.id}" == id }
+            return aniListItem?.toLibraryItem()
+        }
+
         return localState.findById(id)
+    }
+
+    private fun allAniListItems(): List<AniListLibraryItem> {
+        val s = AniListLibraryRepository.uiState.value
+        return s.watching + s.rewatching + s.completed + s.planning + s.paused + s.dropped
     }
 
     fun libraryListTabs(): List<TraktListTab> {
@@ -636,6 +688,43 @@ object LibraryRepository {
             return
         }
 
+        if (isAniListLibrarySourceActive()) {
+            val aniListState = AniListLibraryRepository.uiState.value
+            val sectionOrder = listOf("watching", "rewatching", "completed", "planning", "paused", "dropped")
+            val sections = sectionOrder.mapNotNull { status ->
+                val statusItems = when (status) {
+                    "watching" -> aniListState.watching
+                    "rewatching" -> aniListState.rewatching
+                    "completed" -> aniListState.completed
+                    "planning" -> aniListState.planning
+                    "paused" -> aniListState.paused
+                    "dropped" -> aniListState.dropped
+                    else -> emptyList()
+                }
+                if (statusItems.isEmpty()) return@mapNotNull null
+                LibrarySection(
+                    type = "anilist:$status",
+                    displayTitle = aniListStatusDisplayTitle(status),
+                    items = statusItems.map { it.toLibraryItem() },
+                )
+            }
+            val allItems = (
+                aniListState.watching + aniListState.rewatching +
+                aniListState.completed + aniListState.planning +
+                aniListState.paused + aniListState.dropped
+            ).map { it.toLibraryItem() }
+
+            _uiState.value = LibraryUiState(
+                sourceMode = LibrarySourceMode.ANILIST,
+                items = allItems,
+                sections = sections,
+                isLoaded = aniListState.isLoaded,
+                isLoading = aniListState.isLoading,
+                errorMessage = aniListState.errorMessage,
+            )
+            return
+        }
+
         val items = localSnapshot.items
             .sortedByDescending { it.savedAtEpochMs }
         val sections = items
@@ -673,6 +762,17 @@ object LibraryRepository {
         }
     }
 
+    private fun aniListStatusDisplayTitle(status: String): String =
+        when (status) {
+            "watching" -> "Watching"
+            "rewatching" -> "Rewatching"
+            "completed" -> "Completed"
+            "planning" -> "Planning"
+            "paused" -> "Paused"
+            "dropped" -> "Dropped"
+            else -> status.replaceFirstChar { it.uppercase() }
+        }
+
     private fun MalLibraryItem.toLibraryItem(): LibraryItem {
         val itemId = "mal:${id}"
         val now = LibraryClock.nowEpochMs()
@@ -687,6 +787,24 @@ object LibraryRepository {
             genres = genres,
             posterShape = PosterShape.Poster,
             savedAtEpochMs = updatedAtEpochMs ?: now,
+        )
+    }
+
+    private fun AniListLibraryItem.toLibraryItem(): LibraryItem {
+        val now = LibraryClock.nowEpochMs()
+        val normalizedType = when (format?.uppercase()) {
+            "MOVIE" -> "movie"
+            else -> "series"
+        }
+        return LibraryItem(
+            id = "anilist:$id",
+            type = normalizedType,
+            name = title,
+            poster = posterUrl,
+            releaseInfo = totalEpisodes?.let { "$it episodes" },
+            imdbRating = score?.let { "${it / 10}" },
+            posterShape = PosterShape.Poster,
+            savedAtEpochMs = updatedAt * 1000L,
         )
     }
 
@@ -731,6 +849,12 @@ object LibraryRepository {
                 return LibrarySourceMode.MAL
             }
         }
+        if (source == LibrarySourceMode.ANILIST) {
+            AniListAuthRepository.ensureLoaded()
+            if (AniListAuthRepository.isAuthenticated.value) {
+                return LibrarySourceMode.ANILIST
+            }
+        }
         return LibrarySourceMode.LOCAL
     }
 
@@ -740,10 +864,21 @@ object LibraryRepository {
     private fun isMalLibrarySourceActive(): Boolean =
         effectiveLibrarySourceMode() == LibrarySourceMode.MAL
 
+    private fun isAniListLibrarySourceActive(): Boolean =
+        effectiveLibrarySourceMode() == LibrarySourceMode.ANILIST
+
     private fun refreshMalLibraryAsync() {
         syncScope.launch {
             runCatching { MalLibraryRepository.refreshNow() }
                 .onFailure { e -> log.e(e) { "Failed to refresh MAL library" } }
+            publish()
+        }
+    }
+
+    private fun refreshAniListLibraryAsync() {
+        syncScope.launch {
+            runCatching { AniListLibraryRepository.refreshNow() }
+                .onFailure { e -> log.e(e) { "Failed to refresh AniList library" } }
             publish()
         }
     }

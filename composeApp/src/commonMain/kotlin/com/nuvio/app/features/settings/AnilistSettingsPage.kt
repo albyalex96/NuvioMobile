@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.animateDpAsState
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.i18n.localizedShortMonthName
 import com.nuvio.app.core.ui.NuvioActionLabel
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.anilist.AniListAuthRepository
@@ -222,6 +223,24 @@ private fun AniListConnectionCard(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
+                        val expiresAt = authUiState.tokenExpiresAtEpochMs
+                        if (expiresAt != null && expiresAt > 0L) {
+                            val remainingMs = expiresAt - androidx.compose.runtime.remember {
+                                com.nuvio.app.features.watchprogress.WatchProgressClock.nowEpochMs()
+                            }
+                            val label = when {
+                                remainingMs <= 0 -> "Token expired"
+                                remainingMs < 60_000L -> "Expires in <1 min"
+                                remainingMs < 3_600_000L -> "Expires in ${remainingMs / 60_000L} min"
+                                remainingMs < 86_400_000L -> "Expires in ${remainingMs / 3_600_000L}h ${(remainingMs % 3_600_000L) / 60_000L}m"
+                                else -> "Expires in ${remainingMs / 86_400_000L}d"
+                            }
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                     Button(
                         onClick = { showDisconnectConfirm = true },

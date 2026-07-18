@@ -2,6 +2,7 @@ package com.nuvio.app.core.deeplink
 
 import com.nuvio.app.features.trakt.handleTraktAuthCallbackUrl
 import com.nuvio.app.features.mal.handleMalAuthCallbackUrl
+import com.nuvio.app.features.anilist.handleAniListAuthCallbackUrl
 import io.ktor.http.Url
 import io.ktor.http.encodeURLParameter
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +45,7 @@ fun handleAppUrl(url: String) {
 
     handleTraktAuthCallbackUrl(normalizedUrl)
     handleMalAuthCallbackUrl(normalizedUrl)
+    handleAniListAuthCallbackUrl(normalizedUrl)
     AppDeepLinkRepository.handleUrl(normalizedUrl)
 }
 

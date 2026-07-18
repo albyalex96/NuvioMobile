@@ -1210,6 +1210,8 @@
     <string name="trakt_library_source_trakt">Trakt</string>
     <string name="trakt_library_source_nuvio">Nuvio Library</string>
     <string name="trakt_library_source_mal">MyAnimeList</string>
+    <string name="trakt_library_source_anilist">AniList</string>
+    <string name="trakt_library_source_anilist_selected">AniList library selected</string>
     <string name="trakt_library_source_trakt_selected">Trakt library selected</string>
     <string name="trakt_library_source_nuvio_selected">Nuvio library selected</string>
     <string name="trakt_watch_progress_title">Watch Progress</string>
@@ -1728,6 +1730,10 @@
     <string name="library_mal_status_on_hold">On Hold</string>
     <string name="library_mal_status_dropped">Dropped</string>
     <string name="library_mal_status_plan_to_watch">Plan to Watch</string>
+    <string name="library_anilist_title">AniList Library</string>
+    <string name="library_anilist_empty_title">Your AniList library is empty</string>
+    <string name="library_anilist_empty_message">Connect AniList and add anime to your list to see them here.</string>
+    <string name="library_anilist_load_failed">Couldn\'t load AniList library</string>
     <string name="library_calendar_empty_message">Series with full release dates will appear here. Items that only provide a year are not placed on the calendar.</string>
     <string name="library_calendar_empty_title">No calendar dates found</string>
     <string name="library_calendar_exact_dates_only">Shows saved titles and episode releases with exact dates.</string>

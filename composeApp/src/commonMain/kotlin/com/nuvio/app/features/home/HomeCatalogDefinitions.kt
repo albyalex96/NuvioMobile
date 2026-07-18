@@ -5,6 +5,7 @@ import com.nuvio.app.features.addons.AddonCatalog
 import com.nuvio.app.features.addons.AddonManifest
 import com.nuvio.app.features.addons.ManagedAddon
 import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.anilist.AniListLibraryRepository
 import com.nuvio.app.features.catalog.supportsPagination
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
@@ -130,3 +131,28 @@ private fun buildHomeCatalogDescriptorSignature(
     }
 
 internal fun String.displayLabel(): String = localizedMediaTypeLabel(this)
+
+private val aniListGroupLabels: Map<String, String> = mapOf(
+    "watching" to "Currently Watching",
+    "rewatching" to "Rewatching",
+    "completed" to "Completed",
+    "planning" to "Plan to Watch",
+    "paused" to "Paused",
+    "dropped" to "Dropped",
+)
+
+fun buildAniListDefinitions(isAuthenticated: Boolean): List<HomeCatalogDefinition> {
+    if (!isAuthenticated) return emptyList()
+    return aniListGroupLabels.map { (key, label) ->
+        HomeCatalogDefinition(
+            key = "anilist_$key",
+            defaultTitle = label,
+            addonName = "AniList",
+            manifestUrl = "",
+            type = "anime-series",
+            catalogId = key,
+            supportsPagination = false,
+            descriptorSignature = "anilist|$key",
+        )
+    }
+}

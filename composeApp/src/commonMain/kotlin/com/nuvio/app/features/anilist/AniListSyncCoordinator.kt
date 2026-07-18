@@ -91,7 +91,7 @@ object AniListSyncCoordinator {
                 )
 
                 if (resolved != null) {
-                    val token = AniListAuthRepository.getAccessToken() ?: return@launch
+                    val token = AniListAuthRepository.getAccessTokenRefreshed() ?: return@launch
 
                     // Guard: skip if not in library and auto-add is disabled
                     if (!settings.autoAddNewAnime &&
@@ -177,7 +177,7 @@ object AniListSyncCoordinator {
                         AniListLibraryRepository.uiState.value.dropped +
                         AniListLibraryRepository.uiState.value.rewatching
 
-                val token = AniListAuthRepository.getAccessToken().orEmpty()
+                val token = AniListAuthRepository.getAccessTokenRefreshed().orEmpty()
 
                 ensureCacheLoaded()
                 val lastSyncTimestampMs = settings.lastSyncTimestamp ?: 0L

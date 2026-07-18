@@ -1,6 +1,7 @@
 package com.nuvio.app.features.home
 
 import com.nuvio.app.features.addons.ManagedAddon
+import com.nuvio.app.features.anilist.AniListAuthRepository
 import com.nuvio.app.features.collection.Collection
 import com.nuvio.app.features.collection.CollectionRepository
 import kotlinx.coroutines.runBlocking
@@ -126,7 +127,8 @@ object HomeCatalogSettingsRepository {
 
     fun syncCatalogs(addons: List<ManagedAddon>) {
         ensureLoaded()
-        definitions = buildHomeCatalogDefinitions(addons)
+        definitions = buildHomeCatalogDefinitions(addons) +
+            buildAniListDefinitions(AniListAuthRepository.isAuthenticated.value)
         collectionDefinitions = buildCollectionDefinitions(CollectionRepository.collections.value)
         if (definitions.isEmpty() && collectionDefinitions.isEmpty()) {
             publish()
