@@ -83,11 +83,17 @@ data class PluginsUiState(
     val groupStreamsByRepository: Boolean = false,
     val repositories: List<PluginRepositoryItem> = emptyList(),
     val scrapers: List<PluginScraper> = emptyList(),
+    val soraModules: List<SoraModuleItem> = emptyList(),
 )
 
 sealed interface AddPluginRepositoryResult {
     data class Success(val repository: PluginRepositoryItem) : AddPluginRepositoryResult
     data class Error(val message: String) : AddPluginRepositoryResult
+}
+
+sealed interface AddSoraModuleResult {
+    data class Success(val module: SoraModuleItem) : AddSoraModuleResult
+    data class Error(val message: String) : AddSoraModuleResult
 }
 
 @Serializable
@@ -96,6 +102,7 @@ internal data class StoredPluginsState(
     val groupStreamsByRepository: Boolean = false,
     val repositories: List<StoredPluginRepository> = emptyList(),
     val scrapers: List<StoredPluginScraper> = emptyList(),
+    val soraModules: List<StoredSoraModule> = emptyList(),
 )
 
 @Serializable
