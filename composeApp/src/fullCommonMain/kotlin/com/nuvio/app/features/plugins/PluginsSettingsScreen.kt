@@ -591,6 +591,7 @@ private fun SoraModulesSection() {
     val sortedModules = remember(soraModules) {
         soraModules.sortedBy { it.sourceName.lowercase() }
     }
+    val soraEnterUrlError = stringResource(Res.string.sora_error_enter_url)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NuvioSectionLabel(stringResource(Res.string.sora_section_docs))
@@ -647,7 +648,7 @@ private fun SoraModulesSection() {
                 onClick = {
                     val requested = moduleUrl.trim()
                     if (requested.isBlank()) {
-                        message = stringResource(Res.string.sora_error_enter_url)
+                        message = soraEnterUrlError
                         return@NuvioPrimaryButton
                     }
                     isAdding = true

@@ -105,7 +105,7 @@ internal object SoraModuleRuntime {
     ): List<SoraSearchResult> {
         try {
             capturedResult = "[]"
-            return quickJs(Dispatchers.Default) {
+            quickJs(Dispatchers.Default) {
                 withNativeFunctions()
                 evaluate<Any?>(polyfillCode(module.sourceName))
                 evaluate<Any?>(wrapJsCode(module.jsCode))
@@ -136,12 +136,11 @@ internal object SoraModuleRuntime {
                         })();
                     """.trimIndent())
                 }
-
-                parseSearchResults(capturedResult)
             }
+            return parseSearchResults(capturedResult)
         } catch (e: Exception) {
             log.e(e) { "Sora search failed for ${module.sourceName}" }
-            emptyList()
+            return emptyList()
         }
     }
 
@@ -150,7 +149,7 @@ internal object SoraModuleRuntime {
     ): String? {
         try {
             capturedResult = "[]"
-            return quickJs(Dispatchers.Default) {
+            quickJs(Dispatchers.Default) {
                 withNativeFunctions()
                 evaluate<Any?>(polyfillCode(module.sourceName))
                 evaluate<Any?>(wrapJsCode(module.jsCode))
@@ -182,14 +181,12 @@ internal object SoraModuleRuntime {
                         })();
                     """.trimIndent())
                 }
-
-                val episodes = parseEpisodeResults(capturedResult)
-                val match = episodes.find { it.number?.toIntOrNull() == episode } ?: episodes.firstOrNull()
-                match?.href
             }
+            val episodes = parseEpisodeResults(capturedResult)
+            return episodes.find { it.number?.toIntOrNull() == episode } ?: episodes.firstOrNull()
         } catch (e: Exception) {
             log.e(e) { "Sora episode resolution failed for ${module.sourceName}" }
-            null
+            return null
         }
     }
 
@@ -198,7 +195,7 @@ internal object SoraModuleRuntime {
     ): String? {
         try {
             capturedResult = "\"\""
-            return quickJs(Dispatchers.Default) {
+            quickJs(Dispatchers.Default) {
                 withNativeFunctions()
                 evaluate<Any?>(polyfillCode(module.sourceName))
                 evaluate<Any?>(wrapJsCode(module.jsCode))
@@ -230,13 +227,12 @@ internal object SoraModuleRuntime {
                         })();
                     """.trimIndent())
                 }
-
-                val streamUrl = json.parseToJsonElement(capturedResult).jsonPrimitive.contentOrNull
-                if (streamUrl.isNullOrBlank() || streamUrl == "null") null else streamUrl
             }
+            val streamUrl = json.parseToJsonElement(capturedResult).jsonPrimitive.contentOrNull
+            return if (streamUrl.isNullOrBlank() || streamUrl == "null") null else streamUrl
         } catch (e: Exception) {
             log.e(e) { "Sora stream resolution failed for ${module.sourceName}" }
-            null
+            return null
         }
     }
 
