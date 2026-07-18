@@ -524,6 +524,57 @@ internal object PluginRuntime {
                 };
             };
 
+            var fetchv2 = async function(url, headers, method, body) {
+                var m = (method || 'GET').toUpperCase();
+                var h = headers || {};
+                var b = body;
+                if (typeof b === 'object' && b !== null && !(b instanceof String)) {
+                    b = JSON.stringify(b);
+                }
+                var result = __native_fetch(url, m, JSON.stringify(h), b || '', true);
+                var parsed = JSON.parse(result);
+                return {
+                    ok: parsed.ok,
+                    status: parsed.status,
+                    statusText: parsed.statusText,
+                    url: parsed.url,
+                    headers: {
+                        get: function(name) {
+                            return parsed.headers[name.toLowerCase()] || null;
+                        }
+                    },
+                    text: async function() { return parsed.body; },
+                    json: async function() {
+                        try {
+                            if (parsed.body === null || parsed.body === undefined || parsed.body === '') {
+                                return null;
+                            }
+                            return JSON.parse(parsed.body);
+                        } catch (e) {
+                            return null;
+                        }
+                    }
+                };
+            };
+
+            var soraFetch = async function(url, options) {
+                options = options || {};
+                var h = options.headers || {};
+                var m = options.method || 'GET';
+                var b = options.body || null;
+                try {
+                    var resp = await fetchv2(url, h, m, b);
+                    return resp;
+                } catch(e) {
+                    try {
+                        var resp2 = await fetch(url, { headers: h, method: m, body: b });
+                        return resp2;
+                    } catch(e2) {
+                        return null;
+                    }
+                }
+            };
+
             if (typeof AbortSignal === 'undefined') {
                 var AbortSignal = function() { this.aborted = false; this.reason = undefined; this._listeners = []; };
                 AbortSignal.prototype.addEventListener = function(type, listener) {

@@ -1,16 +1,23 @@
 package com.nuvio.app.features.plugins
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,7 +35,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,7 +86,20 @@ import nuvio.composeapp.generated.resources.plugins_test_error_title
 import nuvio.composeapp.generated.resources.plugins_test_failed
 import nuvio.composeapp.generated.resources.plugins_test_results_count
 import nuvio.composeapp.generated.resources.plugins_tmdb_required_message
+import nuvio.composeapp.generated.resources.sora_docs_link
+import nuvio.composeapp.generated.resources.sora_error_enter_url
+import nuvio.composeapp.generated.resources.sora_input_placeholder
+import nuvio.composeapp.generated.resources.sora_module_add
+import nuvio.composeapp.generated.resources.sora_module_adding
+import nuvio.composeapp.generated.resources.sora_module_empty
+import nuvio.composeapp.generated.resources.sora_modules_label
+import nuvio.composeapp.generated.resources.sora_plugins_label
+import nuvio.composeapp.generated.resources.sora_section_add_module
+import nuvio.composeapp.generated.resources.sora_section_docs
+import nuvio.composeapp.generated.resources.sora_section_installed
 import org.jetbrains.compose.resources.stringResource
+
+private enum class PluginsTab { REPOSITORIES, SORA_MODULES }
 
 @Composable
 fun PluginsSettingsPageContent(
@@ -85,8 +107,65 @@ fun PluginsSettingsPageContent(
 ) {
     LaunchedEffect(Unit) {
         PluginRepository.initialize()
+        SoraModuleRepository.initialize()
     }
 
+    var selectedTab by rememberSaveable { mutableStateOf(PluginsTab.REPOSITORIES) }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        PluginsTabBar(
+            selectedTab = selectedTab,
+            onTabSelected = { selectedTab = it },
+        )
+
+        when (selectedTab) {
+            PluginsTab.REPOSITORIES -> PluginRepositoriesSection()
+            PluginsTab.SORA_MODULES -> SoraModulesSection()
+        }
+    }
+}
+
+@Composable
+private fun PluginsTabBar(
+    selectedTab: PluginsTab,
+    onTabSelected: (PluginsTab) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        PluginsTab.entries.forEach { tab ->
+            val isSelected = tab == selectedTab
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                    .clickable { onTabSelected(tab) }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = when (tab) {
+                        PluginsTab.REPOSITORIES -> stringResource(Res.string.sora_plugins_label)
+                        PluginsTab.SORA_MODULES -> stringResource(Res.string.sora_modules_label)
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PluginRepositoriesSection() {
     val uiState by PluginRepository.uiState.collectAsStateWithLifecycle()
     val tmdbSettings by remember {
         TmdbSettingsRepository.ensureLoaded()
@@ -123,10 +202,7 @@ fun PluginsSettingsPageContent(
     val installedTemplate = stringResource(Res.string.plugins_message_installed)
     val enterRepoUrlError = stringResource(Res.string.plugins_error_enter_repo_url)
 
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NuvioSectionLabel(stringResource(Res.string.plugins_section_overview))
         NuvioSurfaceCard {
             Row(
@@ -496,6 +572,210 @@ fun PluginsSettingsPageContent(
                             }
                             Spacer(modifier = Modifier.height(6.dp))
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SoraModulesSection() {
+    val soraModules by SoraModuleRepository.soraModules.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+
+    var moduleUrl by rememberSaveable { mutableStateOf("") }
+    var message by rememberSaveable { mutableStateOf<String?>(null) }
+    var isAdding by remember { mutableStateOf(false) }
+
+    val sortedModules = remember(soraModules) {
+        soraModules.sortedBy { it.sourceName.lowercase() }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        NuvioSectionLabel(stringResource(Res.string.sora_section_docs))
+        NuvioSurfaceCard {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Language,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(Res.string.sora_docs_link),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "soradocs.readthedocs.io/en/latest",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Rounded.OpenInNew,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        NuvioSectionLabel(stringResource(Res.string.sora_section_add_module))
+        NuvioSurfaceCard {
+            NuvioInputField(
+                value = moduleUrl,
+                onValueChange = {
+                    moduleUrl = it
+                    message = null
+                },
+                placeholder = stringResource(Res.string.sora_input_placeholder),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            NuvioPrimaryButton(
+                text = if (isAdding) {
+                    stringResource(Res.string.sora_module_adding)
+                } else {
+                    stringResource(Res.string.sora_module_add)
+                },
+                enabled = moduleUrl.isNotBlank() && !isAdding,
+                onClick = {
+                    val requested = moduleUrl.trim()
+                    if (requested.isBlank()) {
+                        message = stringResource(Res.string.sora_error_enter_url)
+                        return@NuvioPrimaryButton
+                    }
+                    isAdding = true
+                    message = null
+                    coroutineScope.launch {
+                        when (val result = SoraModuleRepository.addModule(requested)) {
+                            is AddSoraModuleResult.Success -> {
+                                moduleUrl = ""
+                                message = "Installed ${result.module.sourceName}."
+                            }
+                            is AddSoraModuleResult.Error -> {
+                                message = result.message
+                            }
+                        }
+                        isAdding = false
+                    }
+                },
+            )
+            message?.let { text ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        NuvioSectionLabel(stringResource(Res.string.sora_section_installed))
+        if (sortedModules.isEmpty()) {
+            NuvioSurfaceCard {
+                Text(
+                    text = stringResource(Res.string.sora_module_empty),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            sortedModules.forEach { module ->
+                NuvioSurfaceCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Extension,
+                                contentDescription = null,
+                                tint = if (module.enabled) Color(0xFF68B76A) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = module.sourceName,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                module.authorName?.let { author ->
+                                    Text(
+                                        text = author,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                module.language?.let { lang ->
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = lang,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                        Switch(
+                            checked = module.enabled,
+                            onCheckedChange = { SoraModuleRepository.toggleModule(module.moduleUrl, it) },
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (module.type != null) {
+                            NuvioInfoBadge(text = module.type)
+                        }
+                        if (module.quality != null) {
+                            NuvioInfoBadge(text = module.quality)
+                        }
+                        if (module.streamType != null) {
+                            NuvioInfoBadge(text = module.streamType)
+                        }
+                        NuvioInfoBadge(text = "v${module.version}")
+                        if (module.softsub) {
+                            NuvioInfoBadge(text = "SoftSub")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        NuvioIconActionButton(
+                            icon = Icons.Rounded.Refresh,
+                            contentDescription = "Refresh module",
+                            tint = MaterialTheme.colorScheme.primary,
+                            onClick = { SoraModuleRepository.refreshModule(module.moduleUrl) },
+                        )
+                        NuvioIconActionButton(
+                            icon = Icons.Rounded.Delete,
+                            contentDescription = "Delete module",
+                            tint = MaterialTheme.colorScheme.error,
+                            onClick = { SoraModuleRepository.removeModule(module.moduleUrl) },
+                        )
                     }
                 }
             }

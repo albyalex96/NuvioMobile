@@ -3,6 +3,7 @@ package com.nuvio.app.features.plugins
 import co.touchlab.kermit.Logger
 import com.dokar.quickjs.binding.define
 import com.dokar.quickjs.binding.function
+import com.dokar.quickjs.QuickJs
 import com.dokar.quickjs.quickJs
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
@@ -105,7 +106,7 @@ internal object SoraModuleRuntime {
         try {
             capturedResult = "[]"
             return quickJs(Dispatchers.Default) {
-                installNativeFunctions()
+                withNativeFunctions()
                 evaluate<Any?>(polyfillCode(module.sourceName))
                 evaluate<Any?>(wrapJsCode(module.jsCode))
 
@@ -150,7 +151,7 @@ internal object SoraModuleRuntime {
         try {
             capturedResult = "[]"
             return quickJs(Dispatchers.Default) {
-                installNativeFunctions()
+                withNativeFunctions()
                 evaluate<Any?>(polyfillCode(module.sourceName))
                 evaluate<Any?>(wrapJsCode(module.jsCode))
 
@@ -198,7 +199,7 @@ internal object SoraModuleRuntime {
         try {
             capturedResult = "\"\""
             return quickJs(Dispatchers.Default) {
-                installNativeFunctions()
+                withNativeFunctions()
                 evaluate<Any?>(polyfillCode(module.sourceName))
                 evaluate<Any?>(wrapJsCode(module.jsCode))
 
@@ -239,7 +240,7 @@ internal object SoraModuleRuntime {
         }
     }
 
-    private fun installNativeFunctions() {
+    private fun QuickJs.withNativeFunctions() {
         define("console") {
             function("log") { a -> log.d { "SoraJS ${a.joinToString(" ") { it?.toString() ?: "null" }}" }; null }
             function("error") { a -> log.e { "SoraJS ${a.joinToString(" ") { it?.toString() ?: "null" }}" }; null }
