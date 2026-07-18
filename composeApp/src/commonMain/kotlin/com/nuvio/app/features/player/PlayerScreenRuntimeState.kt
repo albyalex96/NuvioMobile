@@ -202,6 +202,7 @@ internal class PlayerScreenRuntime(
     var autoFetchedAddonSubtitlesForKey by mutableStateOf<String?>(null)
     var trackPreferenceRestoreApplied by mutableStateOf(false)
     var subtitleDelayMs by mutableStateOf(0)
+    var subtitleDelayDebounceJob by mutableStateOf<Job?>(null)
     var subtitleAutoSyncState by mutableStateOf(SubtitleAutoSyncUiState())
 
     var castController by mutableStateOf<CastController?>(null)

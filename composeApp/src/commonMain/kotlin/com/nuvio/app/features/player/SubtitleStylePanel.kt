@@ -3,6 +3,7 @@ package com.nuvio.app.features.player
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,13 +23,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
@@ -127,6 +132,14 @@ private fun StyleControlsCard(
                 buttonSize = btnSize,
                 buttonRadius = btnRadius,
                 minWidth = 72.dp,
+                enableHoldAcceleration = true,
+                accelerationStep = SUBTITLE_DELAY_STEP_MS,
+                onAcceleratedMinus = { mult ->
+                    onSubtitleDelayChanged((subtitleDelayMs - SUBTITLE_DELAY_STEP_MS * mult).coerceAtLeast(SUBTITLE_DELAY_MIN_MS))
+                },
+                onAcceleratedPlus = { mult ->
+                    onSubtitleDelayChanged((subtitleDelayMs + SUBTITLE_DELAY_STEP_MS * mult).coerceAtMost(SUBTITLE_DELAY_MAX_MS))
+                },
             )
         }
 
@@ -519,6 +532,10 @@ private fun StepperControl(
     minWidth: androidx.compose.ui.unit.Dp = 42.dp,
     minusIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Rounded.Remove,
     plusIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Rounded.KeyboardArrowUp,
+    enableHoldAcceleration: Boolean = false,
+    accelerationStep: Int = 500,
+    onAcceleratedMinus: ((multiplier: Int) -> Unit)? = null,
+    onAcceleratedPlus: ((multiplier: Int) -> Unit)? = null,
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -531,7 +548,28 @@ private fun StepperControl(
                 .size(buttonSize)
                 .clip(RoundedCornerShape(buttonRadius))
                 .background(colorScheme.primaryContainer)
-                .clickable(onClick = onMinus),
+                .then(
+                    if (enableHoldAcceleration) {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { onMinus() },
+                                onPress = {
+                                    delay(300L)
+                                    var mult = 1
+                                    var intervalMs = 250L
+                                    while (true) {
+                                        onAcceleratedMinus?.invoke(mult)
+                                        delay(intervalMs)
+                                        mult = (mult + 1).coerceAtMost(10)
+                                        intervalMs = (intervalMs * 0.85).toLong().coerceAtLeast(60L)
+                                    }
+                                },
+                            )
+                        }
+                    } else {
+                        Modifier.clickable(onClick = onMinus)
+                    }
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -564,7 +602,28 @@ private fun StepperControl(
                 .size(buttonSize)
                 .clip(RoundedCornerShape(buttonRadius))
                 .background(colorScheme.primaryContainer)
-                .clickable(onClick = onPlus),
+                .then(
+                    if (enableHoldAcceleration) {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { onPlus() },
+                                onPress = {
+                                    delay(300L)
+                                    var mult = 1
+                                    var intervalMs = 250L
+                                    while (true) {
+                                        onAcceleratedPlus?.invoke(mult)
+                                        delay(intervalMs)
+                                        mult = (mult + 1).coerceAtMost(10)
+                                        intervalMs = (intervalMs * 0.85).toLong().coerceAtLeast(60L)
+                                    }
+                                },
+                            )
+                        }
+                    } else {
+                        Modifier.clickable(onClick = onPlus)
+                    }
+                ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
