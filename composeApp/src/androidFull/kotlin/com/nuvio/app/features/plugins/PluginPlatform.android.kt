@@ -22,6 +22,16 @@ internal object PluginStorage {
             ?.putString("${pluginsStateKey}_$profileId", payload)
             ?.apply()
     }
+
+    fun loadRaw(key: String): String? =
+        preferences?.getString(key, null)
+
+    fun saveRaw(key: String, payload: String) {
+        preferences
+            ?.edit()
+            ?.putString(key, payload)
+            ?.apply()
+    }
 }
 
 internal fun currentPluginPlatform(): String = "android"
