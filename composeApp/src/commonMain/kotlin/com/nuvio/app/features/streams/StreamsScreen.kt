@@ -1302,6 +1302,16 @@ private fun EmptyStateBlock(
             title = stringResource(Res.string.compose_player_no_streams_found)
             message = stringResource(Res.string.streams_empty_no_streams_message)
         }
+
+        StreamsEmptyStateReason.TmdbApiKeyMissing -> {
+            title = stringResource(Res.string.streams_empty_tmdb_api_key_missing_title)
+            message = stringResource(Res.string.streams_empty_tmdb_api_key_missing_message)
+        }
+
+        StreamsEmptyStateReason.PluginsDisabled -> {
+            title = stringResource(Res.string.streams_empty_plugins_disabled_title)
+            message = stringResource(Res.string.streams_empty_plugins_disabled_message)
+        }
     }
 
     Column(

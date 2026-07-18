@@ -220,6 +220,8 @@ enum class StreamsEmptyStateReason {
     NoCompatibleAddons,
     NoStreamsFound,
     StreamFetchFailed,
+    TmdbApiKeyMissing,
+    PluginsDisabled,
 }
 
 data class StreamsUiState(

@@ -9,6 +9,7 @@ import com.nuvio.app.features.addons.httpGetText
 import com.nuvio.app.features.debrid.DirectDebridStreamPreparer
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DebridStreamPresentation
+import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.debrid.LocalDebridAvailabilityService
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
@@ -184,21 +185,33 @@ object StreamsRepository {
             )
         }
 
-      if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
-    val anyPluginSystemEnabled = pluginUiState.pluginsEnabled || soraModules.isNotEmpty()
-    _uiState.value = StreamsUiState(
-        requestToken = requestToken,
-        isAnyLoading = false,
-        emptyStateReason = if (hasTmdbApiKey && anyPluginSystemEnabled) {
-            StreamsEmptyStateReason.NoAddonsInstalled
-        } else if (!hasTmdbApiKey && anyPluginSystemEnabled) {
-            StreamsEmptyStateReason.TmdbApiKeyMissing
-        } else {
-            StreamsEmptyStateReason.PluginsDisabled
-        },
-    )
-    return
-}
+        val hasPluginOrSoraSources = pluginProviderGroups.isNotEmpty() || soraProviderGroups.isNotEmpty()
+
+        if (hasPluginOrSoraSources) {
+            TmdbSettingsRepository.ensureLoaded()
+            val tmdbHasApiKey = TmdbSettingsRepository.snapshot().hasApiKey
+            if (!tmdbHasApiKey) {
+                _uiState.value = StreamsUiState(
+                    requestToken = requestToken,
+                    isAnyLoading = false,
+                    emptyStateReason = StreamsEmptyStateReason.TmdbApiKeyMissing,
+                )
+                return
+            }
+        }
+
+        if (installedAddons.isEmpty() && !hasPluginOrSoraSources) {
+            _uiState.value = StreamsUiState(
+                requestToken = requestToken,
+                isAnyLoading = false,
+                emptyStateReason = if (AppFeaturePolicy.pluginsEnabled && !pluginUiState.pluginsEnabled) {
+                    StreamsEmptyStateReason.PluginsDisabled
+                } else {
+                    StreamsEmptyStateReason.NoAddonsInstalled
+                },
+            )
+            return
+        }
 
         val streamAddons = installedAddons
             .mapNotNull { addon ->
@@ -219,19 +232,15 @@ object StreamsRepository {
             }
 
         log.d { "Found ${streamAddons.size} addons for stream type=$type id=$videoId" }
-        
-if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
-    val anyPluginSystemEnabled = pluginUiState.pluginsEnabled || soraModules.isNotEmpty()
-    _uiState.value = StreamsUiState(
-        ...
-        emptyStateReason = if (anyPluginSystemEnabled) {
-            StreamsEmptyStateReason.NoCompatibleAddons
-        } else {
-            StreamsEmptyStateReason.PluginsDisabled
-        },
-    )
-    return
-}
+
+        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && soraProviderGroups.isEmpty()) {
+            _uiState.value = StreamsUiState(
+                requestToken = requestToken,
+                isAnyLoading = false,
+                emptyStateReason = StreamsEmptyStateReason.NoCompatibleAddons,
+            )
+            return
+        }
 
         // Initialise loading placeholders
         val installedAddonOrder = streamAddons.map { it.addonName }
