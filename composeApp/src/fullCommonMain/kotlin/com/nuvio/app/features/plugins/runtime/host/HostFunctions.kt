@@ -7,7 +7,7 @@ import com.dokar.quickjs.binding.function
 
 internal class HostFunctions(
     private val scraperId: String,
-    private val onResult: (Any?) -> Unit
+    private val onResult: (String) -> Unit
 ) : HostModule {
     private val log = Logger.withTag("PluginRuntime")
 
@@ -36,7 +36,7 @@ internal class HostFunctions(
         }
 
         runtime.function("__capture_result") { args ->
-            onResult(args.getOrNull(0))
+            onResult(args.getOrNull(0)?.toString() ?: "[]")
             null
         }
     }

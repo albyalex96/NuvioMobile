@@ -76,7 +76,8 @@ internal fun CloudStreamSettingsSection() {
         StreamSourcePreferencesRepository.ensureLoaded()
         StreamSourcePreferencesRepository.uiState
     }.collectAsStateWithLifecycle()
-    val copy = remember(selectedAppLanguage) { CloudStreamSettingsCopy.forLanguage(selectedAppLanguage) }
+    val effectiveLanguage = remember(selectedAppLanguage) { resolveEffectiveLanguage(selectedAppLanguage) }
+    val copy = remember(effectiveLanguage) { CloudStreamSettingsCopy.forLanguage(effectiveLanguage) }
     val scope = rememberCoroutineScope()
     var repositoryUrl by rememberSaveable { mutableStateOf("") }
     var editingRepositoryUrl by rememberSaveable { mutableStateOf<String?>(null) }
@@ -811,6 +812,17 @@ private class CloudStreamSettingsCopy private constructor(
     companion object {
         fun forLanguage(language: AppLanguage): CloudStreamSettingsCopy =
             CloudStreamSettingsCopy(language = language)
+    }
+}
+
+private fun resolveEffectiveLanguage(language: AppLanguage): AppLanguage {
+    if (language != AppLanguage.DEVICE) return language
+    return try {
+        val code = java.util.Locale.getDefault().language
+        val resolved = AppLanguage.fromCode(code)
+        if (resolved == AppLanguage.DEVICE) AppLanguage.ENGLISH else resolved
+    } catch (_: Exception) {
+        AppLanguage.ENGLISH
     }
 }
 

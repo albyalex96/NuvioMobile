@@ -10,7 +10,6 @@ internal class JsRuntime(
 ) {
     suspend fun <T> use(block: suspend QuickJs.() -> T): T {
         return quickJs(dispatcher) {
-            maxStackSize = 8L * 1024 * 1024 // 8 MB stack
             block()
         }
     }

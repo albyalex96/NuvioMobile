@@ -10,6 +10,7 @@ import com.nuvio.app.features.plugins.runtime.js.JsBindings
 import com.nuvio.app.features.plugins.runtime.js.JsRuntime
 import com.dokar.quickjs.binding.function
 import com.nuvio.app.features.plugins.runtime.network.FetchBridge
+import co.touchlab.kermit.Logger
 import com.nuvio.app.features.plugins.runtime.network.UrlBridge
 import com.nuvio.app.features.plugins.runtime.wasm.WasmBridge
 import kotlinx.coroutines.CompletableDeferred
@@ -17,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import co.touchlab.kermit.Logger
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -33,9 +33,10 @@ import org.jetbrains.compose.resources.getString
 
 private const val PLUGIN_TIMEOUT_MS = 60_000L
 
+private val log = Logger.withTag("PluginRuntime")
+
 internal object PluginRuntime {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-    private val log = Logger.withTag("PluginRuntime")
+    private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun executePlugin(
         code: String,
@@ -51,15 +52,20 @@ internal object PluginRuntime {
         }.getOrElse { emptyMap() }
 
         withTimeout(PLUGIN_TIMEOUT_MS) {
-            executePluginInternal(
-                code = code,
-                tmdbId = tmdbId,
-                mediaType = mediaType,
-                season = season,
-                episode = episode,
-                scraperId = scraperId,
-                scraperSettings = scraperSettingsMap,
-            )
+            try {
+                executePluginInternal(
+                    code = code,
+                    tmdbId = tmdbId,
+                    mediaType = mediaType,
+                    season = season,
+                    episode = episode,
+                    scraperId = scraperId,
+                    scraperSettings = scraperSettingsMap,
+                )
+            } catch (e: Exception) {
+                log.e(e) { "Plugin execution CRASHED: scraperId=$scraperId, tmdbId=$tmdbId, msg=${e.message}" }
+                throw e
+            }
         }
     }
 
@@ -129,7 +135,7 @@ internal object PluginRuntime {
         scraperSettings: Map<String, JsonElement>,
     ): List<PluginRuntimeResult> {
         val jsRuntime = JsRuntime()
-        val deferred = CompletableDeferred<Any?>()
+        val deferred = CompletableDeferred<String>()
 
         val domBridge = DomBridge()
         val hostRegistry = HostApiRegistry().apply {
@@ -171,14 +177,14 @@ internal object PluginRuntime {
                             var getStreams = module.exports.getStreams || globalThis.getStreams;
                             if (!getStreams) {
                                 console.error("getStreams function not found on module.exports or globalThis");
-                                __capture_result([]);
+                                __capture_result(JSON.stringify([]));
                                 return;
                             }
                             var result = await getStreams($tmdbIdArg, $mediaTypeArg, $seasonArg, $episodeArg);
-                            __capture_result(result || []);
+                            __capture_result(JSON.stringify(result || []));
                         } catch (e) {
                             console.error("getStreams error:", e && e.message ? e.message : e, e && e.stack ? e.stack : "");
-                            __capture_result([]);
+                            __capture_result(JSON.stringify([]));
                         }
                     })();
                 """.trimIndent()
@@ -187,106 +193,67 @@ internal object PluginRuntime {
                 deferred.await()
             }
             
-            val rawResult = deferred.await()
-            val jsonString = when (rawResult) {
-                is String -> rawResult
-                else -> {
-                    val element = toJsonElement(rawResult)
-                    when (element) {
-                        is JsonArray -> json.encodeToString(element)
-                        is JsonObject -> json.encodeToString(JsonArray(listOf(element)))
-                        else -> "[]"
-                    }
-                }
-            }
-            return parseJsonResults(jsonString)
+            // Result is captured inside use block, but returned outside to satisfy compiler
+            return parseJsonResults(deferred.await())
         } finally {
             domBridge.clear()
         }
     }
 
     private fun parseJsonResults(rawJson: String): List<PluginRuntimeResult> {
-        log.i { "parseJsonResults raw length=${rawJson.length}" }
-        if (rawJson.length <= 5000) log.i { "parseJsonResults raw=$rawJson" }
-        if (rawJson.length < 10) return emptyList()
-        val array = try {
-            json.parseToJsonElement(rawJson) as? JsonArray
-        } catch (e: Exception) {
-            log.w { "parseJsonResults standard parse FAILED: ${e.message?.take(100)}" }
-            try {
-                json.parseToJsonElement(rawJson.replace(Regex("[\\x00-\\x1F]"), "")) as? JsonArray
-            } catch (e2: Exception) {
-                log.w { "parseJsonResults lenient parse FAILED: ${e2.message?.take(100)}, trying regex" }
-                return extractWithRegex(rawJson)
-            }
-        }
-        if (array == null) return emptyList()
-        return array.mapNotNull { element ->
-            val item = element as? JsonObject ?: return@mapNotNull null
-            val url = when (val urlValue = item["url"]) {
-                is JsonPrimitive -> urlValue.contentOrNull?.takeIf { it.isNotBlank() }
-                is JsonObject -> urlValue["url"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
-                else -> null
-            } ?: return@mapNotNull null
-            PluginRuntimeResult(
-                title = item.stringOrNull("title") ?: item.stringOrNull("name") ?: runBlocking { getString(Res.string.generic_unknown) },
-                name = item.stringOrNull("name"),
-                url = url,
-                quality = item.stringOrNull("quality"),
-                size = item.stringOrNull("size"),
-                language = item.stringOrNull("language"),
-                provider = item.stringOrNull("provider"),
-                type = item.stringOrNull("type"),
-                seeders = item["seeders"]?.jsonPrimitive?.intOrNull,
-                peers = item["peers"]?.jsonPrimitive?.intOrNull,
-                infoHash = item.stringOrNull("infoHash"),
-                headers = (item["headers"] as? JsonObject)?.mapNotNull { (k, v) ->
-                    v.jsonPrimitive.contentOrNull?.let { k to it }
-                }?.toMap()?.takeIf { it.isNotEmpty() },
-                subtitles = (item["subtitles"] as? JsonArray)?.mapNotNull { sub ->
-                    val s = sub as? JsonObject ?: return@mapNotNull null
+        return runCatching {
+            val array = json.parseToJsonElement(rawJson) as? JsonArray ?: return emptyList()
+            array.mapNotNull { element ->
+                val item = element as? JsonObject ?: return@mapNotNull null
+                val url = when (val urlValue = item["url"]) {
+                    is JsonPrimitive -> urlValue.contentOrNull?.takeIf { it.isNotBlank() }
+                    is JsonObject -> urlValue["url"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                    else -> null
+                } ?: return@mapNotNull null
+
+                val headers = (item["headers"] as? JsonObject)
+                    ?.mapNotNull { (key, value) ->
+                        value.jsonPrimitive.contentOrNull?.let { key to it }
+                    }
+                    ?.toMap()
+                    ?.takeIf { it.isNotEmpty() }
+
+                val subtitles = (item["subtitles"] as? JsonArray)?.mapNotNull { subElement ->
+                    val subObj = subElement as? JsonObject ?: return@mapNotNull null
+                    val subUrl = subObj["url"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    val subLang = subObj["language"]?.jsonPrimitive?.contentOrNull ?: "Unknown"
+                    val subName = subObj["name"]?.jsonPrimitive?.contentOrNull
+                    val subHeaders = (subObj["headers"] as? JsonObject)
+                        ?.mapNotNull { (key, value) ->
+                            value.jsonPrimitive.contentOrNull?.let { key to it }
+                        }
+                        ?.toMap()
+                        ?.takeIf { it.isNotEmpty() }
                     com.nuvio.app.features.plugins.PluginSubtitleResult(
-                        url = s["url"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
-                        language = s["language"]?.jsonPrimitive?.contentOrNull ?: "Unknown",
-                        name = s["name"]?.jsonPrimitive?.contentOrNull,
-                        headers = (s["headers"] as? JsonObject)?.mapNotNull { (k, v) -> v.jsonPrimitive.contentOrNull?.let { k to it } }?.toMap()?.takeIf { it.isNotEmpty() },
+                        url = subUrl,
+                        language = subLang,
+                        name = subName,
+                        headers = subHeaders
                     )
-                }?.takeIf { it.isNotEmpty() },
-            )
-        }.filter { it.url.isNotBlank() }
-    }
+                }?.takeIf { it.isNotEmpty() }
 
-    private fun extractWithRegex(rawJson: String): List<PluginRuntimeResult> {
-        val results = mutableListOf<PluginRuntimeResult>()
-        val urlRegex = Regex(""""url"\s*:\s*"((?:[^"\\]|\\.)*)"""")
-        val nameRegex = Regex(""""name"\s*:\s*"((?:[^"\\]|\\.)*)"""")
-        val titleRegex = Regex(""""title"\s*:\s*"((?:[^"\\]|\\.)*)"""")
-        val qualRegex = Regex(""""quality"\s*:\s*"((?:[^"\\]|\\.)*)"""")
-
-        val urlMatches = urlRegex.findAll(rawJson).toList()
-        if (urlMatches.isEmpty()) {
-            log.w { "extractWithRegex: no url matches found" }
-            return emptyList()
-        }
-        val nameMatches = nameRegex.findAll(rawJson).toList()
-        val titleMatches = titleRegex.findAll(rawJson).toList()
-        val qualMatches = qualRegex.findAll(rawJson).toList()
-
-        for (urlMatch in urlMatches) {
-            val url = urlMatch.groupValues[1]
-            val urlStart = urlMatch.range.first
-            val name = nameMatches.lastOrNull { it.range.last < urlStart }?.groupValues?.getOrNull(1)
-            val title = titleMatches.lastOrNull { it.range.last < urlStart }?.groupValues?.getOrNull(1)
-            val qual = qualMatches.lastOrNull { it.range.last < urlStart }?.groupValues?.getOrNull(1)
-            results.add(PluginRuntimeResult(
-                title = title ?: name ?: runBlocking { getString(Res.string.generic_unknown) },
-                name = name,
-                url = url,
-                quality = qual,
-            ))
-        }
-        log.i { "extractWithRegex: found ${results.size} results" }
-        return results
+                PluginRuntimeResult(
+                    title = item.stringOrNull("title") ?: item.stringOrNull("name") ?: runBlocking { getString(Res.string.generic_unknown) },
+                    name = item.stringOrNull("name"),
+                    url = url,
+                    quality = item.stringOrNull("quality"),
+                    size = item.stringOrNull("size"),
+                    language = item.stringOrNull("language"),
+                    provider = item.stringOrNull("provider"),
+                    type = item.stringOrNull("type"),
+                    seeders = item["seeders"]?.jsonPrimitive?.intOrNull,
+                    peers = item["peers"]?.jsonPrimitive?.intOrNull,
+                    infoHash = item.stringOrNull("infoHash"),
+                    headers = headers,
+                    subtitles = subtitles,
+                )
+            }.filter { it.url.isNotBlank() }
+        }.getOrElse { emptyList() }
     }
 
     private fun JsonObject.stringOrNull(key: String): String? =
