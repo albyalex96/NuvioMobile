@@ -3,7 +3,9 @@ package com.nuvio.app.features.player
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
@@ -538,6 +543,11 @@ private fun StepperControl(
     onAcceleratedPlus: ((multiplier: Int) -> Unit)? = null,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val scope = rememberCoroutineScope()
+    val currentOnMinus = rememberUpdatedState(onMinus)
+    val currentOnPlus = rememberUpdatedState(onPlus)
+    val currentOnAcceleratedMinus = rememberUpdatedState(onAcceleratedMinus)
+    val currentOnAcceleratedPlus = rememberUpdatedState(onAcceleratedPlus)
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -551,20 +561,28 @@ private fun StepperControl(
                 .then(
                     if (enableHoldAcceleration) {
                         Modifier.pointerInput(Unit) {
-                            detectTapGestures(
-                                onTap = { onMinus() },
-                                onPress = {
+                            awaitEachGesture {
+                                awaitFirstDown()
+                                var holdCompleted = false
+
+                                val holdJob = scope.launch {
                                     delay(300L)
+                                    holdCompleted = true
                                     var mult = 1
                                     var intervalMs = 250L
                                     while (true) {
-                                        onAcceleratedMinus?.invoke(mult)
+                                        currentOnAcceleratedMinus.value?.invoke(mult)
                                         delay(intervalMs)
                                         mult = (mult + 1).coerceAtMost(10)
                                         intervalMs = (intervalMs * 0.85).toLong().coerceAtLeast(60L)
                                     }
-                                },
-                            )
+                                }
+
+                                waitForUpOrCancellation()
+                                holdJob.cancel()
+
+                                if (!holdCompleted) currentOnMinus.value()
+                            }
                         }
                     } else {
                         Modifier.clickable(onClick = onMinus)
@@ -605,20 +623,28 @@ private fun StepperControl(
                 .then(
                     if (enableHoldAcceleration) {
                         Modifier.pointerInput(Unit) {
-                            detectTapGestures(
-                                onTap = { onPlus() },
-                                onPress = {
+                            awaitEachGesture {
+                                awaitFirstDown()
+                                var holdCompleted = false
+
+                                val holdJob = scope.launch {
                                     delay(300L)
+                                    holdCompleted = true
                                     var mult = 1
                                     var intervalMs = 250L
                                     while (true) {
-                                        onAcceleratedPlus?.invoke(mult)
+                                        currentOnAcceleratedPlus.value?.invoke(mult)
                                         delay(intervalMs)
                                         mult = (mult + 1).coerceAtMost(10)
                                         intervalMs = (intervalMs * 0.85).toLong().coerceAtLeast(60L)
                                     }
-                                },
-                            )
+                                }
+
+                                waitForUpOrCancellation()
+                                holdJob.cancel()
+
+                                if (!holdCompleted) currentOnPlus.value()
+                            }
                         }
                     } else {
                         Modifier.clickable(onClick = onPlus)
