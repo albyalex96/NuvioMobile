@@ -51,8 +51,10 @@ internal data class PluginProviderGroup(
 internal data class CloudStreamProviderGroup(
     val addonId: String,
     val addonName: String,
-    val providerId: String,
-)
+    val providerIds: List<String>,
+) {
+    val providerId: String get() = providerIds.first()
+}
 
 internal data class CloudStreamSearchRequest(
     val title: String,
@@ -91,9 +93,11 @@ internal fun cloudStreamAddonId(providerId: String): String =
 internal fun cloudStreamProviderGroupsForRequest(
     type: String,
     request: CloudStreamSearchRequest?,
+    groupByRepository: Boolean = false,
+    repoNameByUrl: Map<String, String> = emptyMap(),
 ): List<CloudStreamProviderGroup> {
     CloudStreamRepository.initialize()
-    return CloudStreamRepository.uiState.value.plugins
+    val eligible = CloudStreamRepository.uiState.value.plugins
         .filter(CloudStreamPluginItem::isRunnable)
         .filter { plugin -> plugin.supportsCloudStreamRequest(type, request) }
         .sortedWith(
@@ -105,14 +109,29 @@ internal fun cloudStreamProviderGroupsForRequest(
                 plugin.metadata.name.lowercase()
             },
         )
-        .map { plugin ->
+
+    if (!groupByRepository) {
+        return eligible.map { plugin ->
             CloudStreamProviderGroup(
                 addonId = cloudStreamAddonId(plugin.metadata.id.value),
                 addonName = plugin.metadata.name.ifBlank { plugin.metadata.internalName },
-                providerId = plugin.metadata.id.value,
+                providerIds = listOf(plugin.metadata.id.value),
+            )
+        }.distinctBy { it.addonId }
+    }
+
+    return eligible.groupBy { it.metadata.repositoryManifestUrl }
+        .map { (repoUrl, plugins) ->
+            val repoName = repoNameByUrl[repoUrl].orEmpty()
+                .ifBlank { repoUrl.fallbackRepositoryLabel() }
+            val sortedPlugins = plugins.sortedBy { it.metadata.name.lowercase() }
+            CloudStreamProviderGroup(
+                addonId = "cloudstream-repo:${repoUrl.lowercase()}",
+                addonName = repoName,
+                providerIds = sortedPlugins.map { it.metadata.id.value },
             )
         }
-        .distinctBy { it.providerId }
+        .sortedBy { it.addonName.lowercase() }
 }
 
 internal suspend fun resolveCloudStreamProviderStreams(
@@ -125,6 +144,43 @@ internal suspend fun resolveCloudStreamProviderStreams(
             error = "CloudStream search title is unavailable",
         )
 
+    val allStreams = mutableListOf<StreamItem>()
+
+    for (pid in providerGroup.providerIds) {
+        val plugin = CloudStreamRepository.uiState.value.plugins.find { it.metadata.id.value == pid }
+        val providerName = plugin?.let {
+            it.metadata.name.ifBlank { it.metadata.internalName }
+        } ?: providerGroup.addonName
+        val providerStreams = resolveSingleCloudStreamProvider(
+            providerId = pid,
+            addonName = providerName,
+            searchRequest = searchRequest,
+        )
+        if (providerStreams != null) {
+            allStreams.addAll(providerStreams.map { stream ->
+                stream.copy(
+                    addonId = providerGroup.addonId,
+                    sourceName = providerName,
+                )
+            })
+        }
+    }
+
+    return providerGroup.toCloudStreamGroup(
+        streams = allStreams,
+        error = if (allStreams.isEmpty()) {
+            "No links found"
+        } else {
+            null
+        },
+    )
+}
+
+private suspend fun resolveSingleCloudStreamProvider(
+    providerId: String,
+    addonName: String,
+    searchRequest: CloudStreamSearchRequest,
+): List<StreamItem>? {
     // Third-party plugins can execute blocking code that ignores coroutine cancellation.
     // Run them in a detached supervisor so a timed-out plugin cannot retain the caller's
     // semaphore permit and prevent every provider behind it from being scanned.
@@ -136,7 +192,7 @@ internal suspend fun resolveCloudStreamProviderStreams(
                 allowProviderRankedFallback: Boolean,
             ): List<StreamItem>? {
                 val loaded = runCatchingUnlessCancelled {
-                    CloudStreamRepository.load(providerGroup.providerId, match.data).getOrThrow()
+                    CloudStreamRepository.load(providerId, match.data).getOrThrow()
                 }.onFailure { error -> lastError = error }
                     .getOrNull()
                     ?: return null
@@ -154,13 +210,13 @@ internal suspend fun resolveCloudStreamProviderStreams(
                 }
 
                 val sources = runCatchingUnlessCancelled {
-                    CloudStreamRepository.loadLinks(providerGroup.providerId, linkData).getOrThrow()
+                    CloudStreamRepository.loadLinks(providerId, linkData).getOrThrow()
                 }.onFailure { error -> lastError = error }
                     .getOrNull()
                     ?: return null
                 return cloudStreamSourcesToStreamItems(
-                    providerId = providerGroup.providerId,
-                    providerName = providerGroup.addonName,
+                    providerId = providerId,
+                    providerName = addonName,
                     sources = sources,
                 ).takeIf { streams -> streams.isNotEmpty() }
                     ?: run {
@@ -170,7 +226,7 @@ internal suspend fun resolveCloudStreamProviderStreams(
             }
 
             val indexedRoutes = CloudStreamSearchRouteIndex.find(
-                providerId = providerGroup.providerId,
+                providerId = providerId,
                 titles = searchRequest.titleCandidates,
                 type = searchRequest.type,
                 year = searchRequest.year,
@@ -183,20 +239,20 @@ internal suspend fun resolveCloudStreamProviderStreams(
 
             searchRequest.externalId?.let { externalId ->
                 val loaded = runCatchingUnlessCancelled {
-                    CloudStreamRepository.loadByExternalId(providerGroup.providerId, externalId).getOrThrow()
+                    CloudStreamRepository.loadByExternalId(providerId, externalId).getOrThrow()
                 }.onFailure { error -> lastError = error }
                     .getOrNull()
                 if (loaded != null) {
                     val linkData = loaded.linkDataForCloudStreamRequest(searchRequest)
                     if (linkData != null) {
                         val directSources = runCatchingUnlessCancelled {
-                            CloudStreamRepository.loadLinks(providerGroup.providerId, linkData).getOrThrow()
+                            CloudStreamRepository.loadLinks(providerId, linkData).getOrThrow()
                         }.onFailure { error -> lastError = error }
                             .getOrNull()
                         if (directSources != null) {
                             val directStreams = cloudStreamSourcesToStreamItems(
-                                providerId = providerGroup.providerId,
-                                providerName = providerGroup.addonName,
+                                providerId = providerId,
+                                providerName = addonName,
                                 sources = directSources,
                             )
                             if (directStreams.isNotEmpty()) return@runCatchingUnlessCancelled directStreams
@@ -206,7 +262,7 @@ internal suspend fun resolveCloudStreamProviderStreams(
             }
             for (query in searchRequest.searchQueries()) {
                 val searchResults = runCatchingUnlessCancelled {
-                    CloudStreamRepository.search(query, providerGroup.providerId)
+                    CloudStreamRepository.search(query, providerId)
                         .firstOrNull()
                         ?.getOrThrow()
                         .orEmpty()
@@ -240,20 +296,8 @@ internal suspend fun resolveCloudStreamProviderStreams(
     }
 
     return resolved.fold(
-        onSuccess = { streams ->
-            cloudStreamFetchLog.i { "Resolved ${streams.size} stream(s) provider=${providerGroup.addonName}" }
-            providerGroup.toCloudStreamGroup(
-                streams = streams,
-                error = if (streams.isEmpty()) "No links found" else null,
-            )
-        },
-        onFailure = { error ->
-            cloudStreamFetchLog.w(error) { "Provider produced no streams provider=${providerGroup.addonName}" }
-            providerGroup.toCloudStreamGroup(
-                streams = emptyList(),
-                error = error.message ?: "CloudStream link resolution failed",
-            )
-        },
+        onSuccess = { streams -> streams },
+        onFailure = { null },
     )
 }
 

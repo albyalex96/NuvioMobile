@@ -127,7 +127,13 @@ object StreamsRepository {
             searchTitle = searchTitle,
         )
         val cloudStreamProviderGroups = if (AppFeaturePolicy.pluginsEnabled) {
-            cloudStreamProviderGroupsForRequest(type, cloudStreamSearchRequest)
+            cloudStreamProviderGroupsForRequest(
+                type = type,
+                request = cloudStreamSearchRequest,
+                groupByRepository = pluginUiState.groupStreamsByRepository,
+                repoNameByUrl = CloudStreamRepository.uiState.value.repositories
+                    .associate { it.manifest.sourceUrl to it.manifest.name },
+            )
         } else {
             emptyList()
         }

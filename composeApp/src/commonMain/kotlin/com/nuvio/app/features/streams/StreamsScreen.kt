@@ -1083,14 +1083,11 @@ private fun LazyListScope.streamSection(
         stream.sourceName?.takeIf { it.isNotBlank() } ?: stream.addonName
     }
     val sortedSources = streamsBySource.keys.sortedBy { it.lowercase() }
-    val showSourceHeaders = sortedSources.size > 1
 
     sortedSources.forEachIndexed { sourceIndex, sourceName ->
         val sourceStreams = streamsBySource[sourceName].orEmpty()
-        if (showSourceHeaders) {
-            item(key = "source_${sectionKey}_$sourceIndex") {
-                StreamSourceHeader(sourceName = sourceName)
-            }
+        item(key = "source_${sectionKey}_$sourceIndex") {
+            StreamSourceHeader(sourceName = sourceName)
         }
 
         itemsIndexed(
@@ -1209,12 +1206,12 @@ private fun StreamSourceHeader(
     Text(
         text = sourceName,
         modifier = modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        style = MaterialTheme.typography.labelLarge.copy(
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.2.sp,
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.sp,
         ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = MaterialTheme.colorScheme.onSurface,
     )
 }
 
