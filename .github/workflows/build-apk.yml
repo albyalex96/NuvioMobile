@@ -58,7 +58,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Decode Keystore
         run: |
@@ -109,22 +109,28 @@ jobs:
         run: |
           ./gradlew :composeApp:assembleFullRelease
 
-      - name: Rename APK
+      - name: Rename APKs per architecture
         run: |
           APK_DIR="composeApp/build/outputs/apk"
           find "$APK_DIR" -name "*.apk" | while read apk; do
             DIR=$(dirname "$apk")
-            mv "$apk" "$DIR/NuvioEnhanced-${{ steps.version.outputs.name }}.apk"
+            BASENAME=$(basename "$apk")
+            if echo "$BASENAME" | grep -qE 'arm64-v8a|armeabi-v7a|x86_64|x86'; then
+              ABI=$(echo "$BASENAME" | grep -oE 'arm64-v8a|armeabi-v7a|x86_64|x86')
+              mv "$apk" "$DIR/NuvioEnhanced-${{ steps.version.outputs.name }}-${ABI}.apk"
+            else
+              mv "$apk" "$DIR/NuvioEnhanced-${{ steps.version.outputs.name }}-universal.apk"
+            fi
           done
 
-      - name: Create GitHub Release and Upload APK
+      - name: Create GitHub Release and Upload APKs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_TAG="v${{ steps.version.outputs.name }}"
 
           if gh release view "$RELEASE_TAG" --json id &>/dev/null; then
-            echo "Release tag $RELEASE_TAG already exists, uploading APK..."
+            echo "Release tag $RELEASE_TAG already exists, uploading APKs..."
             find composeApp/build/outputs/apk -name "*.apk" -exec gh release upload "$RELEASE_TAG" {} --clobber \;
           else
             echo "Creating release $RELEASE_TAG..."
@@ -190,7 +196,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Write local.properties
         shell: pwsh
