@@ -525,13 +525,29 @@ object DownloadsRepository {
             onFailure = { message ->
                 activeHandles.remove(item.id)
                 mutateItem(item.id) { current ->
-                    if (current.status != DownloadStatus.Downloading) {
+                    if (current.status != DownloadStatus.Downloading && current.status != DownloadStatus.Processing) {
                         current
                     } else {
                         current.copy(
                             status = DownloadStatus.Failed,
                             errorMessage = message.ifBlank { runBlocking { getString(Res.string.download_failed) } },
                             updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                        )
+                    }
+                }
+            },
+            onPhase = { phase ->
+                val now = DownloadsClock.nowEpochMs()
+                val prevStatus = _uiState.value.items.firstOrNull { it.id == item.id }?.status
+                InAppLogger.info("DownloadsRepository", "onPhase('$phase') item=${item.id} prevStatus=$prevStatus")
+                mutateItem(item.id) { current ->
+                    if (current.status != DownloadStatus.Downloading) {
+                        InAppLogger.warn("DownloadsRepository", "onPhase: status NOT Downloading, was ${current.status}")
+                        current
+                    } else {
+                        current.copy(
+                            status = DownloadStatus.Processing,
+                            updatedAtEpochMs = now,
                         )
                     }
                 }

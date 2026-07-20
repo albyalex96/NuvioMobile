@@ -107,6 +107,7 @@ internal actual object DownloadsPlatformDownloader {
         onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
         onWarning: ((message: String) -> Unit)?,
+        onPhase: ((phase: String) -> Unit)?,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.Default)
@@ -881,8 +882,20 @@ private fun remuxToMp4Ios(
         }
 
         dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER)
-        exportSuccess
+        if (!exportSuccess) {
+            removePathIfExists(outputPath)
+            return false
+        }
+
+        val fileAttrs = NSFileManager.defaultManager.attributesOfItemAtPath(outputPath, error = null)
+        val fileSize = fileAttrs?.fileSize()?.longValue ?: 0L
+        if (fileSize < 100L) {
+            removePathIfExists(outputPath)
+            return false
+        }
+        true
     } catch (_: Exception) {
+        removePathIfExists(outputPath)
         false
     }
 }

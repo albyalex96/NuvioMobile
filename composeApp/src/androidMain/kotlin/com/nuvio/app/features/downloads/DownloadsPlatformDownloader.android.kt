@@ -5,8 +5,11 @@ import android.content.Intent
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
-import android.media.MediaMuxer
 import android.net.Uri
+import androidx.media3.common.Format
+import androidx.media3.common.MimeTypes
+import androidx.media3.muxer.BufferInfo
+import androidx.media3.muxer.Mp4Muxer
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.CancellationException
@@ -73,6 +76,7 @@ internal actual object DownloadsPlatformDownloader {
         onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
         onWarning: ((message: String) -> Unit)?,
+        onPhase: ((phase: String) -> Unit)?,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
@@ -91,6 +95,7 @@ internal actual object DownloadsPlatformDownloader {
                     onSuccess = onSuccess,
                     onFailure = onFailure,
                     onWarning = onWarning,
+                    onPhase = onPhase,
                 )
             }
             return AndroidDownloadsTaskHandle(job)
@@ -463,6 +468,7 @@ private suspend fun performHlsDownloadAndroid(
     onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
     onFailure: (message: String) -> Unit,
     onWarning: ((message: String) -> Unit)?,
+    onPhase: ((phase: String) -> Unit)? = null,
 ) {
     DownloadsSettingsRepository.ensureLoaded()
     val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
@@ -561,6 +567,9 @@ private suspend fun performHlsDownloadAndroid(
 
         AndroidLog.i("Remux", "hlsAudioUrl='${request.hlsAudioUrl}' audioUri=$audioUri subtitleUri=$subtitleUri isFmp4=${videoOutcome.isFmp4}")
         InAppLogger.info("Remux", "hlsAudioUrl='${request.hlsAudioUrl}' audioUri=$audioUri subtitleUri=$subtitleUri isFmp4=${videoOutcome.isFmp4}")
+        InAppLogger.info("Remux", "onPhase?.invoke('remux') about to be called")
+        onPhase?.invoke("remux")
+        InAppLogger.info("Remux", "onPhase?.invoke('remux') completed")
         val canRemux = videoUri.startsWith("file:")
         val remuxedUri = if (canRemux) {
             AndroidLog.i("Remux", "remux attempt videoUri=$videoUri audioUri=$audioUri")
@@ -580,12 +589,17 @@ private suspend fun performHlsDownloadAndroid(
                 }
                 InAppLogger.info("Remux", "destMp4Name=$destMp4Name")
                 val remuxTmpPath = destFile.absolutePath + ".remux_tmp"
-                val remuxOk = remuxToMp4(context, videoPath, audioPath, remuxTmpPath)
-                AndroidLog.i("Remux", "remuxToMp4 returned $remuxOk")
-                InAppLogger.info("Remux", "remuxToMp4 returned $remuxOk")
-                if (remuxOk) {
+                val remuxResult = remuxToMp4(context, videoPath, audioPath, remuxTmpPath)
+                AndroidLog.i("Remux", "remuxToMp4 returned $remuxResult")
+                InAppLogger.info("Remux", "remuxToMp4 returned $remuxResult")
+                if (remuxResult != RemuxResult.FAILED) {
                     val videoDeleted = File(videoPath).delete()
-                    val audioDeleted = audioPath?.let { File(it).delete() } ?: false
+                    val audioDeleted = if (remuxResult == RemuxResult.FULL) {
+                        audioPath?.let { File(it).delete() } ?: false
+                    } else {
+                        AndroidLog.i("Remux", "keeping companion audio (video-only remux)")
+                        false
+                    }
                     AndroidLog.i("Remux", "videoDeleted=$videoDeleted audioDeleted=$audioDeleted")
                     InAppLogger.info("Remux", "videoDeleted=$videoDeleted audioDeleted=$audioDeleted")
                     if (destFile.exists()) destFile.delete()
@@ -755,24 +769,57 @@ private fun aes128CbcDecryptAndroid(data: ByteArray, key: ByteArray, iv: ByteArr
     return cipher.doFinal(data)
 }
 
+private enum class RemuxResult { FULL, VIDEO_ONLY, FAILED }
+
 private fun remuxToMp4(
     context: Context,
     videoPath: String,
     audioPath: String?,
     outputPath: String,
+): RemuxResult {
+    if (Mp4ParserRemux.remux(videoPath, audioPath, outputPath)) {
+        AndroidLog.i("Remux", "mp4parser remux succeeded (full audio+video)")
+        InAppLogger.info("Remux", "mp4parser remux succeeded (full audio+video)")
+        return RemuxResult.FULL
+    }
+    File(outputPath).delete()
+    if (remuxToMp4Impl(videoPath, audioPath, outputPath)) {
+        AndroidLog.i("Remux", "MediaMuxer remux succeeded (full audio+video)")
+        InAppLogger.info("Remux", "MediaMuxer remux succeeded (full audio+video)")
+        return RemuxResult.FULL
+    }
+    if (audioPath != null) {
+        File(outputPath).delete()
+        InAppLogger.warn("Remux", "full remux failed, retrying video-only")
+        if (remuxToMp4Impl(videoPath, null, outputPath)) {
+            InAppLogger.warn("Remux", "video-only remux succeeded (audio companion kept separately)")
+            return RemuxResult.VIDEO_ONLY
+        }
+    }
+    return RemuxResult.FAILED
+}
+
+private fun remuxToMp4Impl(
+    videoPath: String,
+    audioPath: String?,
+    outputPath: String,
 ): Boolean {
+    var videoExtractor: MediaExtractor? = null
+    var audioExtractor: MediaExtractor? = null
+    var muxer: Mp4Muxer? = null
+    var outputStream: FileOutputStream? = null
     return try {
         AndroidLog.i("Remux", "remuxToMp4 videoPath=$videoPath audioPath=$audioPath outputPath=$outputPath")
         InAppLogger.debug("Remux", "remuxToMp4 start")
-        val videoExtractor = MediaExtractor()
+        videoExtractor = MediaExtractor()
         videoExtractor.setDataSource(videoPath)
         InAppLogger.debug("Remux", "videoExtractor trackCount=${videoExtractor.trackCount}")
 
-        val audioExtractor: MediaExtractor? = if (audioPath != null) {
-            MediaExtractor().apply { setDataSource(audioPath) }.also {
+        if (audioPath != null) {
+            audioExtractor = MediaExtractor().apply { setDataSource(audioPath) }.also {
                 InAppLogger.debug("Remux", "audioExtractor trackCount=${it.trackCount}")
             }
-        } else null
+        }
 
         val videoTrackId = findMediaTrack(videoExtractor, "video/")
         val videoAudioTrackId = findMediaTrack(videoExtractor, "audio/")
@@ -782,74 +829,132 @@ private fun remuxToMp4(
         InAppLogger.debug("Remux", "videoTrackId=$videoTrackId videoAudioTrackId=$videoAudioTrackId audioTrackId=$audioTrackId effectiveAudioTrackId=$effectiveAudioTrackId")
         if (videoTrackId < 0) {
             InAppLogger.warn("Remux", "no video track found, aborting")
-            videoExtractor.release()
-            audioExtractor?.release()
             return false
         }
 
         videoExtractor.selectTrack(videoTrackId)
-        val videoFormat = videoExtractor.getTrackFormat(videoTrackId)
-        val videoMime = videoFormat.getString(MediaFormat.KEY_MIME)
-        val videoCsd0 = videoFormat.getByteBuffer("csd-0")
-        val videoCsd1 = videoFormat.getByteBuffer("csd-1")
-        AndroidLog.i("Remux", "videoMime=$videoMime hasCsd0=${videoCsd0 != null} csd0Size=${videoCsd0?.remaining()} hasCsd1=${videoCsd1 != null}")
-        InAppLogger.debug("Remux", "videoMime=$videoMime hasCsd0=${videoCsd0 != null} csd0Size=${videoCsd0?.remaining()} hasCsd1=${videoCsd1 != null}")
+        val androidVideoFormat = videoExtractor.getTrackFormat(videoTrackId)
+        val videoMime = androidVideoFormat.getString(MediaFormat.KEY_MIME) ?: "video/avc"
 
-        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        val videoFormat = Format.Builder()
+            .setSampleMimeType(videoMime)
+            .setWidth(androidVideoFormat.getInteger(MediaFormat.KEY_WIDTH, 0))
+            .setHeight(androidVideoFormat.getInteger(MediaFormat.KEY_HEIGHT, 0))
+            .apply {
+                val csdList = mutableListOf<ByteArray>()
+                androidVideoFormat.getByteBuffer("csd-0")?.let { buf ->
+                    val bytes = ByteArray(buf.remaining())
+                    buf.duplicate().get(bytes)
+                    csdList.add(bytes)
+                }
+                androidVideoFormat.getByteBuffer("csd-1")?.let { buf ->
+                    val bytes = ByteArray(buf.remaining())
+                    buf.duplicate().get(bytes)
+                    csdList.add(bytes)
+                }
+                if (csdList.isNotEmpty()) {
+                    setInitializationData(csdList)
+                }
+            }.build()
+
+        AndroidLog.i("Remux", "videoMime=$videoMime width=${androidVideoFormat.getInteger(MediaFormat.KEY_WIDTH, 0)} height=${androidVideoFormat.getInteger(MediaFormat.KEY_HEIGHT, 0)}")
+
+        outputStream = FileOutputStream(outputPath)
+        muxer = Mp4Muxer.Builder(outputStream)
+            .setSampleBatchingEnabled(true)
+            .setSampleCopyingEnabled(true)
+            .build()
+
         val videoMuxerTrack = muxer.addTrack(videoFormat)
         InAppLogger.debug("Remux", "added video track index=$videoMuxerTrack")
         var audioMuxerTrack = -1
         if (effectiveAudioTrackId >= 0) {
             val audioSource = if (audioTrackId >= 0) audioExtractor!! else videoExtractor
             audioSource.selectTrack(effectiveAudioTrackId)
-            val audioFormat = audioSource.getTrackFormat(effectiveAudioTrackId)
-            val audioMime = audioFormat.getString(MediaFormat.KEY_MIME)
-            InAppLogger.debug("Remux", "audioMime=$audioMime")
+            val androidAudioFormat = audioSource.getTrackFormat(effectiveAudioTrackId)
+            val audioMime = androidAudioFormat.getString(MediaFormat.KEY_MIME) ?: "audio/mp4a-latm"
+            val sampleRate = androidAudioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE, 44100)
+            val channelCount = androidAudioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT, 2)
+            AndroidLog.i("Remux", "audioMime=$audioMime sampleRate=$sampleRate channels=$channelCount")
+
+            val audioFormat = Format.Builder()
+                .setSampleMimeType(MimeTypes.AUDIO_AAC)
+                .setSampleRate(sampleRate)
+                .setChannelCount(channelCount)
+                .apply {
+                    androidAudioFormat.getByteBuffer("csd-0")?.let { buf ->
+                        val csdBytes = ByteArray(buf.remaining())
+                        buf.duplicate().get(csdBytes)
+                        AndroidLog.i("Remux", "audio csd-0 bytes=${csdBytes.joinToString(" ") { "%02x".format(it) }}")
+                        setInitializationData(listOf(csdBytes))
+                    }
+                }.build()
+
             audioMuxerTrack = muxer.addTrack(audioFormat)
             InAppLogger.debug("Remux", "added audio track index=$audioMuxerTrack")
         }
 
-        muxer.start()
-
         val buffer = ByteBuffer.allocateDirect(1024 * 1024)
-        val info = MediaCodec.BufferInfo()
 
-        AndroidLog.i("Remux", "copying video samples...")
-        InAppLogger.debug("Remux", "copying video samples...")
+        val videoSamples: Int
+        val audioSamples: Int
+        if (audioTrackId >= 0) {
+            InAppLogger.debug("Remux", "copying video samples (separate extractor)...")
+            videoSamples = copyTrack(videoExtractor, muxer, videoMuxerTrack, buffer, trackIndex = videoTrackId, tag = "video")
+            InAppLogger.debug("Remux", "video samples done: $videoSamples")
+            InAppLogger.debug("Remux", "copying audio samples (separate extractor)...")
+            audioSamples = copyTrack(audioExtractor!!, muxer, audioMuxerTrack, buffer, trackIndex = effectiveAudioTrackId, tag = "audio")
+            InAppLogger.debug("Remux", "audio samples done: $audioSamples")
+        } else if (effectiveAudioTrackId >= 0) {
+            InAppLogger.debug("Remux", "copying all tracks (same extractor)...")
+            val counts = copyAllTracks(videoExtractor, muxer, videoMuxerTrack, audioMuxerTrack, videoTrackId, effectiveAudioTrackId, buffer)
+            videoSamples = counts.first
+            audioSamples = counts.second
+            InAppLogger.debug("Remux", "all tracks done: videoSamples=$videoSamples audioSamples=$audioSamples")
+        } else {
+            InAppLogger.debug("Remux", "copying video samples (no audio)...")
+            videoSamples = copyTrack(videoExtractor, muxer, videoMuxerTrack, buffer, trackIndex = videoTrackId, tag = "video")
+            audioSamples = 0
+            InAppLogger.debug("Remux", "video samples done: $videoSamples")
+        }
+
+        if (videoSamples == 0 && audioSamples == 0) {
+            InAppLogger.error("Remux", "no samples written to any track, aborting")
+            return false
+        }
+
         try {
-            copyTrack(videoExtractor, muxer, videoMuxerTrack, buffer, info, tag = "video")
+            muxer.close()
         } catch (e: Exception) {
-            AndroidLog.e("Remux", "copyTrack[video] failed: ${e.message}")
+            AndroidLog.e("Remux", "muxer.close() FAILED: ${e::class.simpleName} msg='${e.message}'")
+            InAppLogger.error("Remux", "muxer.close() FAILED: ${e::class.simpleName} ${e.message}")
             throw e
         }
-        InAppLogger.debug("Remux", "video samples done")
-        if (effectiveAudioTrackId >= 0) {
-            val audioSource = if (audioTrackId >= 0) audioExtractor!! else videoExtractor
-            InAppLogger.debug("Remux", "copying audio samples...")
-            try {
-                copyTrack(audioSource, muxer, audioMuxerTrack, buffer, info, tag = "audio")
-            } catch (e: Exception) {
-                AndroidLog.e("Remux", "copyTrack[audio] failed: ${e.message}")
-                throw e
-            }
-            InAppLogger.debug("Remux", "audio samples done")
+        muxer = null
+        outputStream?.closeSafe()
+        outputStream = null
+        videoExtractor.release()
+        videoExtractor = null
+        audioExtractor?.release()
+        audioExtractor = null
+
+        if (!isValidMp4File(outputPath)) {
+            InAppLogger.error("Remux", "output file is not a valid MP4 (missing moov)")
+            File(outputPath).delete()
+            return false
         }
 
-        try {
-            muxer.stop()
-        } catch (e: Exception) {
-            AndroidLog.e("Remux", "muxer.stop() failed: ${e.message}")
-            InAppLogger.warn("Remux", "muxer.stop() failed: ${e.message}")
-        }
-        muxer.release()
-        videoExtractor.release()
-        audioExtractor?.release()
-        AndroidLog.i("Remux", "remuxToMp4 SUCCEEDED")
+        AndroidLog.i("Remux", "remuxToMp4 SUCCEEDED (videoSamples=$videoSamples audioSamples=$audioSamples)")
         InAppLogger.debug("Remux", "remuxToMp4 SUCCEEDED")
         true
     } catch (e: Exception) {
         AndroidLog.e("Remux", "remuxToMp4 exception: ${e::class.simpleName} msg='${e.message}' ${e.stackTraceToString().take(500)}")
         InAppLogger.error("Remux", "remuxToMp4 exception: ${e::class.simpleName} ${e.message}")
+        try { muxer?.close() } catch (_: Exception) {}
+        try { outputStream?.closeSafe() } catch (_: Exception) {}
+        try { videoExtractor?.release() } catch (_: Exception) {}
+        try { audioExtractor?.release() } catch (_: Exception) {}
+        try { File(outputPath).delete() } catch (_: Exception) {}
         false
     }
 }
@@ -864,18 +969,23 @@ private fun findMediaTrack(extractor: MediaExtractor, mimePrefix: String): Int {
 
 private fun copyTrack(
     extractor: MediaExtractor,
-    muxer: MediaMuxer,
+    muxer: Mp4Muxer,
     muxerTrack: Int,
     buffer: ByteBuffer,
-    info: MediaCodec.BufferInfo,
+    trackIndex: Int = -1,
     tag: String = "",
-) {
+): Int {
     var sampleCount = 0
     var prevTimeUs = -1L
     while (true) {
         buffer.clear()
         val size = extractor.readSampleData(buffer, 0)
         if (size < 0) break
+        val sampleTrack = extractor.sampleTrackIndex
+        if (trackIndex >= 0 && sampleTrack != trackIndex) {
+            extractor.advance()
+            continue
+        }
         val flags = extractor.sampleFlags
         val timeUs = extractor.sampleTime
         if (flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
@@ -889,14 +999,92 @@ private fun copyTrack(
         buffer.limit(size)
         buffer.position(0)
         val writeFlags = flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM.inv()
-        info.set(0, size, timeUs, writeFlags)
-        muxer.writeSampleData(muxerTrack, buffer, info)
+        muxer.writeSampleData(muxerTrack, buffer, BufferInfo(timeUs, size, writeFlags))
         extractor.advance()
         sampleCount++
     }
     AndroidLog.i("Remux", "copyTrack[$tag] done, totalSamples=$sampleCount")
+    return sampleCount
+}
+
+private fun copyAllTracks(
+    extractor: MediaExtractor,
+    muxer: Mp4Muxer,
+    videoMuxerTrack: Int,
+    audioMuxerTrack: Int,
+    videoExtractorTrack: Int,
+    audioExtractorTrack: Int,
+    buffer: ByteBuffer,
+): Pair<Int, Int> {
+    var videoSamples = 0
+    var audioSamples = 0
+    while (true) {
+        buffer.clear()
+        val size = extractor.readSampleData(buffer, 0)
+        if (size < 0) break
+        val trackIndex = extractor.sampleTrackIndex
+        val flags = extractor.sampleFlags
+        val timeUs = extractor.sampleTime
+        if (flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+            extractor.advance()
+            continue
+        }
+        val muxerTrack = when (trackIndex) {
+            videoExtractorTrack -> videoMuxerTrack
+            audioExtractorTrack -> audioMuxerTrack
+            else -> {
+                extractor.advance()
+                continue
+            }
+        }
+        buffer.limit(size)
+        buffer.position(0)
+        val writeFlags = flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM.inv()
+        muxer.writeSampleData(muxerTrack, buffer, BufferInfo(timeUs, size, writeFlags))
+        extractor.advance()
+        if (trackIndex == videoExtractorTrack) videoSamples++ else audioSamples++
+    }
+    AndroidLog.i("Remux", "copyAllTracks done: videoSamples=$videoSamples audioSamples=$audioSamples")
+    return videoSamples to audioSamples
+}
+
+private fun isValidMp4File(path: String): Boolean {
+    return try {
+        val file = File(path)
+        AndroidLog.i("Remux", "isValidMp4File fileSize=${file.length()} path=$path")
+        InAppLogger.debug("Remux", "isValidMp4File fileSize=${file.length()}")
+        if (!file.exists() || file.length() < 100) return false
+        java.io.RandomAccessFile(file, "r").use { raf ->
+            val hdr = ByteArray(8)
+            if (raf.read(hdr) < 8) return@use false
+            val ftyp = (hdr[4].toInt() shl 24) or (hdr[5].toInt() shl 16) or (hdr[6].toInt() shl 8) or hdr[7].toInt()
+            if (ftyp != 0x66747970) return@use false
+            val searchLen = minOf(raf.length(), 1048576L)
+            raf.seek(raf.length() - searchLen)
+            val tail = ByteArray(searchLen.toInt())
+            raf.readFully(tail)
+            val hasMoov = tail.decodeToString().contains("moov")
+            if (!hasMoov) {
+                AndroidLog.w("Remux", "moov not found in last $searchLen bytes, scanning full file...")
+                InAppLogger.warn("Remux", "moov not found in last $searchLen bytes, scanning full file...")
+                raf.seek(0)
+                val full = ByteArray(raf.length().toInt().coerceAtMost(5_242_880))
+                raf.read(full)
+                val fullHasMoov = full.decodeToString().contains("moov")
+                AndroidLog.i("Remux", "full scan hasMoov=$fullHasMoov")
+                InAppLogger.debug("Remux", "full scan hasMoov=$fullHasMoov")
+                fullHasMoov
+            } else {
+                true
+            }
+        }
+    } catch (_: Exception) {
+        false
+    }
 }
 
 private fun OutputStream.closeSafe() {
     try { close() } catch (_: Exception) { }
 }
+
+

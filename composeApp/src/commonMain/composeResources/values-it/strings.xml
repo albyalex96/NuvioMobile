@@ -305,6 +305,7 @@
   <string name="downloads_status_downloading">Download in corso • %1$s</string>
   <string name="downloads_status_failed">Fallito</string>
   <string name="downloads_status_paused">In pausa • %1$s</string>
+  <string name="downloads_status_processing">Conversione in corso • %1$s</string>
   <string name="episodes_cd_watched">Visto</string>
   <string name="episodes_season">Stagione %1$d</string>
   <string name="episodes_specials">Speciali</string>
@@ -2027,6 +2028,7 @@
     <string name="still_watching_cancel">Annulla</string>
     <string name="still_watching_timeout">Chiusura riproduzione tra %1$d…</string>
     <string name="downloads_share">Condividi</string>
+    <string name="downloads_save">Salva su dispositivo</string>
     <string name="detail_more_like_this_powered_by_tmdb">Offerto da TMDB</string>
     <string name="detail_more_like_this_powered_by_trakt">Offerto da Trakt</string>
     <string name="player_action_volume_boost">Boost Volume</string>

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -59,6 +60,8 @@ fun DownloadsScreen(
     onNavigateToShow: ((showId: String, title: String) -> Unit)? = null,
     onBackFromShow: (() -> Unit)? = null,
 ) {
+    val saveDownload = rememberDownloadFileSaver()
+
     val uiState by remember {
         DownloadsRepository.ensureLoaded()
         DownloadsRepository.uiState
@@ -134,12 +137,14 @@ fun DownloadsScreen(
                 onOpenShow = { showId, title ->
                     onNavigateToShow?.invoke(showId, title) ?: run { selectedShowId = showId }
                 },
+                onSave = saveDownload,
             )
         } else {
             downloadsShowContent(
                 showId = selectedShowId.orEmpty(),
                 episodes = completedEpisodes,
                 onOpenDownload = onOpenDownload,
+                onSave = saveDownload,
             )
         }
     }
@@ -149,6 +154,7 @@ private fun LazyListScope.downloadsRootContent(
     uiState: DownloadsUiState,
     onOpenDownload: (DownloadItem) -> Unit,
     onOpenShow: (showId: String, title: String) -> Unit,
+    onSave: (DownloadItem) -> Unit = {},
 ) {
     val activeItems = uiState.activeItems
     val completedMovies = uiState.completedItems.filterNot(DownloadItem::isEpisode)
@@ -175,6 +181,7 @@ private fun LazyListScope.downloadsRootContent(
                 onOpen = { onOpenDownload(item) },
                 onPause = { DownloadsRepository.pauseDownload(item.id) },
                 onResume = { DownloadsRepository.resumeDownload(item.id) },
+                onSave = { onSave(item) },
                 onRetry = { DownloadsRepository.retryDownload(item.id) },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
                 onShare = shareItem(item),
@@ -195,6 +202,7 @@ private fun LazyListScope.downloadsRootContent(
                 onOpen = { onOpenDownload(item) },
                 onPause = { DownloadsRepository.pauseDownload(item.id) },
                 onResume = { DownloadsRepository.resumeDownload(item.id) },
+                onSave = { onSave(item) },
                 onRetry = { DownloadsRepository.retryDownload(item.id) },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
                 onShare = shareItem(item),
@@ -274,6 +282,7 @@ private fun LazyListScope.downloadsShowContent(
     showId: String,
     episodes: List<DownloadItem>,
     onOpenDownload: (DownloadItem) -> Unit,
+    onSave: (DownloadItem) -> Unit = {},
 ) {
     val showEpisodes = episodes
         .filter { it.parentMetaId == showId }
@@ -328,6 +337,7 @@ private fun LazyListScope.downloadsShowContent(
                 onOpen = { onOpenDownload(item) },
                 onPause = { DownloadsRepository.pauseDownload(item.id) },
                 onResume = { DownloadsRepository.resumeDownload(item.id) },
+                onSave = { onSave(item) },
                 onRetry = { DownloadsRepository.retryDownload(item.id) },
                 onDelete = { DownloadsRepository.cancelDownload(item.id) },
                 onShare = shareItem(item),
@@ -345,6 +355,7 @@ private fun DownloadRow(
     onRetry: () -> Unit,
     onDelete: () -> Unit,
     onShare: () -> Unit,
+    onSave: () -> Unit = {},
 ) {
     val displayTitle = item.displayTitle()
     val displaySubtitle = downloadDisplaySubtitle(
@@ -425,6 +436,7 @@ private fun DownloadRow(
                                 )
                             }
                         }
+                        DownloadStatus.Processing -> {}
                         DownloadStatus.Failed -> {
                             IconButton(onClick = onRetry) {
                                 Icon(
@@ -446,6 +458,12 @@ private fun DownloadRow(
                                     contentDescription = stringResource(Res.string.downloads_share),
                                 )
                             }
+                            IconButton(onClick = onSave) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Download,
+                                    contentDescription = stringResource(Res.string.downloads_save),
+                                )
+                            }
                         }
                     }
                     IconButton(onClick = onDelete) {
@@ -457,7 +475,7 @@ private fun DownloadRow(
                 }
             }
 
-            if (item.status == DownloadStatus.Downloading) {
+            if (item.status == DownloadStatus.Downloading || item.status == DownloadStatus.Processing) {
                 if (item.totalBytes != null && item.totalBytes > 0L) {
                     LinearProgressIndicator(
                         progress = item.progressFraction,
@@ -541,6 +559,7 @@ private fun statusText(item: DownloadItem): String {
     return when (item.status) {
         DownloadStatus.Downloading -> stringResource(Res.string.downloads_status_downloading, size)
         DownloadStatus.Paused -> stringResource(Res.string.downloads_status_paused, size)
+        DownloadStatus.Processing -> stringResource(Res.string.downloads_status_processing, size)
         DownloadStatus.Completed -> stringResource(
             Res.string.downloads_status_completed,
             formatBytes(item.totalBytes ?: item.downloadedBytes),

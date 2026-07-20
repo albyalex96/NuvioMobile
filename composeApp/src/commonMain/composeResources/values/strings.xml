@@ -593,6 +593,7 @@
     <string name="downloads_status_downloading">Downloading â€¢ %1$s</string>
     <string name="downloads_status_failed">Failed</string>
     <string name="downloads_status_paused">Paused â€¢ %1$s</string>
+    <string name="downloads_status_processing">Processing â€¢ %1$s</string>
     <string name="episodes_cd_watched">Watched</string>
     <string name="episodes_season">Season %1$d</string>
     <string name="episodes_specials">Specials</string>
@@ -2212,6 +2213,7 @@
 
     <!-- Downloads share -->
     <string name="downloads_share">Share</string>
+    <string name="downloads_save">Save to device</string>
 
     <!-- SponsorBlock -->
     <string name="settings_playback_sponsorblock">SponsorBlock</string>

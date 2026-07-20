@@ -32,6 +32,7 @@ internal expect object DownloadsPlatformDownloader {
         onSuccess: (localFileUri: String, totalBytes: Long?, companion: HlsCompanionOutcome?) -> Unit,
         onFailure: (message: String) -> Unit,
         onWarning: ((message: String) -> Unit)? = null,
+        onPhase: ((phase: String) -> Unit)? = null,
     ): DownloadsTaskHandle
 
     fun removeFile(localFileUri: String?): Boolean

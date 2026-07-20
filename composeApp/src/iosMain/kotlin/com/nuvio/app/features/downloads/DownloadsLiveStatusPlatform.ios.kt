@@ -20,6 +20,7 @@ internal actual object DownloadsLiveStatusPlatform {
         val primary = items
             .filter { item ->
                 item.status == DownloadStatus.Downloading ||
+                    item.status == DownloadStatus.Processing ||
                     item.status == DownloadStatus.Paused ||
                     item.status == DownloadStatus.Failed
             }
@@ -64,6 +65,7 @@ internal actual object DownloadsLiveStatusPlatform {
 
     private fun statusPriority(status: DownloadStatus): Int = when (status) {
         DownloadStatus.Downloading -> 0
+        DownloadStatus.Processing -> 0
         DownloadStatus.Paused -> 1
         DownloadStatus.Failed -> 2
         DownloadStatus.Completed -> 3

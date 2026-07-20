@@ -15,6 +15,7 @@ enum class DownloadStatus {
     Paused,
     Completed,
     Failed,
+    Processing,
 }
 
 @Serializable
