@@ -80,9 +80,15 @@ internal actual object DownloadsPlatformDownloader {
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
+        val keepAliveContext = appContext
+        var foregroundRetained = false
+        if (keepAliveContext != null) {
+            DownloadsForegroundService.retain(keepAliveContext, request.downloadId, request.displayTitle)
+            foregroundRetained = true
+        }
 
         if (request.isHlsStream) {
-            scope.launch {
+            val hlsJob = scope.launch {
                 val context = appContext
                 if (context == null) {
                     onFailure(runBlocking { getString(Res.string.downloads_error_not_initialized) })
@@ -98,12 +104,17 @@ internal actual object DownloadsPlatformDownloader {
                     onPhase = onPhase,
                 )
             }
+            hlsJob.invokeOnCompletion {
+                if (foregroundRetained && keepAliveContext != null) {
+                    DownloadsForegroundService.release(keepAliveContext, request.downloadId)
+                }
+            }
             return AndroidDownloadsTaskHandle(job)
         }
 
         var call: Call? = null
 
-        scope.launch {
+        val downloadJob = scope.launch {
             val context = appContext
             if (context == null) {
                 onFailure(runBlocking { getString(Res.string.downloads_error_not_initialized) })
@@ -224,8 +235,11 @@ internal actual object DownloadsPlatformDownloader {
             }
         }
 
-        job.invokeOnCompletion {
+        downloadJob.invokeOnCompletion {
             call?.cancel()
+            if (foregroundRetained && keepAliveContext != null) {
+                DownloadsForegroundService.release(keepAliveContext, request.downloadId)
+            }
         }
 
         return AndroidDownloadsTaskHandle(job)

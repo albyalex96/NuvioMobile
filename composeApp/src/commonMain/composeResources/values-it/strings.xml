@@ -999,6 +999,8 @@
   <string name="download_failed">Download fallito</string>
   <string name="downloads_channel_description">Mostra i progressi e i controlli dei download in corso.</string>
   <string name="downloads_channel_name">Download</string>
+  <string name="downloads_foreground_title">Download in corso</string>
+  <string name="downloads_foreground_subtitle">Download in esecuzione in background</string>
   <string name="downloads_live_completed">Download completato</string>
   <string name="downloads_live_downloading">Download di %1$s • %2$s in corso</string>
   <string name="downloads_live_downloading_with_total">Download di %1$s • %2$s / %3$s in corso</string>
