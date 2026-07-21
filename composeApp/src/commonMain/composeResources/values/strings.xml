@@ -594,6 +594,9 @@
     <string name="downloads_status_failed">Failed</string>
     <string name="downloads_status_paused">Paused • %1$s</string>
     <string name="downloads_status_processing">Processing • %1$s</string>
+    <string name="downloads_track_video">Video</string>
+    <string name="downloads_track_audio">Audio</string>
+    <string name="downloads_track_subtitles">Subtitles</string>
     <string name="episodes_cd_watched">Watched</string>
     <string name="episodes_season">Season %1$d</string>
     <string name="episodes_specials">Specials</string>

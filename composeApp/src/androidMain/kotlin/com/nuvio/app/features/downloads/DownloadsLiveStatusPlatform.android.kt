@@ -47,14 +47,21 @@ internal actual object DownloadsLiveStatusPlatform {
                 item.status == DownloadStatus.Failed
         }
 
+        val trackProgressMap = DownloadsRepository.trackProgress.value
+
         val trackedNow = mutableSetOf<String>()
         activeItems.forEach { item ->
+            val itemTracks = trackProgressMap[item.id].orEmpty()
             val renderState = RenderState(
                 status = item.status,
                 progressPercent = progressPercent(item),
                 downloadedBucket = item.downloadedBytes / (512L * 1024L),
                 totalBytes = item.totalBytes,
                 errorMessage = item.errorMessage,
+                trackProgressSummary = itemTracks
+                    .entries
+                    .sortedBy { it.key }
+                    .joinToString(",") { "${it.key}:${it.value.downloadedBytes}:${it.value.totalBytes}" },
             )
 
             val existingState = lastRenderStateById[item.id]
@@ -82,6 +89,9 @@ internal actual object DownloadsLiveStatusPlatform {
 
     private fun buildNotification(context: Context, item: DownloadItem): android.app.Notification {
         val subtitle = buildSubtitle(item)
+        val trackLines = buildTrackProgressText(context, item.id)
+        val bigText = if (trackLines != null) "$subtitle\n$trackLines" else subtitle
+
         val launchIntent = Intent(context, com.nuvio.app.MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = android.net.Uri.parse(buildDownloadsDeepLinkUrl())
@@ -100,7 +110,7 @@ internal actual object DownloadsLiveStatusPlatform {
             .setSmallIcon(com.nuvio.app.R.drawable.ic_notification_small)
             .setContentTitle(item.title)
             .setContentText(subtitle)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(subtitle))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setOnlyAlertOnce(true)
             .setContentIntent(launchPendingIntent)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
@@ -110,7 +120,7 @@ internal actual object DownloadsLiveStatusPlatform {
             DownloadStatus.Processing,
             -> {
                 notificationBuilder
-                    .setOngoing(true)
+                    .setOngoing(false)
                     .setPriority(NotificationCompat.PRIORITY_LOW)
 
                 val progress = progressPercent(item)
@@ -119,6 +129,16 @@ internal actual object DownloadsLiveStatusPlatform {
                 } else {
                     notificationBuilder.setProgress(100, 0, true)
                 }
+
+                notificationBuilder.addAction(
+                    0,
+                    runBlocking { getString(Res.string.action_cancel) },
+                    buildActionPendingIntent(
+                        context = context,
+                        action = DownloadsNotificationActionReceiver.actionCancel,
+                        downloadId = item.id,
+                    ),
+                )
             }
 
             DownloadStatus.Paused,
@@ -196,6 +216,34 @@ internal actual object DownloadsLiveStatusPlatform {
         }
     }
 
+    private fun buildTrackProgressText(context: Context, downloadId: String): String? {
+        val trackProgress = DownloadsRepository.trackProgress.value[downloadId] ?: return null
+        if (trackProgress.isEmpty()) return null
+
+        var videoBytes = 0L
+        var audioBytes = 0L
+        var subsBytes = 0L
+
+        for ((trackName, state) in trackProgress) {
+            when {
+                trackName == "video" -> videoBytes += state.downloadedBytes
+                trackName.startsWith("audio_") -> audioBytes += state.downloadedBytes
+                trackName.startsWith("subs_") -> subsBytes += state.downloadedBytes
+            }
+        }
+
+        val labelVideo = runBlocking { getString(Res.string.downloads_track_video) }
+        val labelAudio = runBlocking { getString(Res.string.downloads_track_audio) }
+        val labelSubs = runBlocking { getString(Res.string.downloads_track_subtitles) }
+
+        val lines = mutableListOf<String>()
+        if (videoBytes > 0L) lines.add("$labelVideo: ${formatBytes(videoBytes)}")
+        if (audioBytes > 0L) lines.add("$labelAudio: ${formatBytes(audioBytes)}")
+        if (subsBytes > 0L) lines.add("$labelSubs: ${formatBytes(subsBytes)}")
+
+        return if (lines.isEmpty()) null else lines.joinToString("\n")
+    }
+
     private fun progressPercent(item: DownloadItem): Int {
         val total = item.totalBytes?.takeIf { it > 0L } ?: return -1
         return ((item.downloadedBytes.toDouble() / total.toDouble()) * 100.0)
@@ -263,5 +311,6 @@ internal actual object DownloadsLiveStatusPlatform {
         val downloadedBucket: Long,
         val totalBytes: Long?,
         val errorMessage: String?,
+        val trackProgressSummary: String?,
     )
 }

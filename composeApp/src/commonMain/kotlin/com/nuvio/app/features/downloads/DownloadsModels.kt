@@ -2,6 +2,7 @@ package com.nuvio.app.features.downloads
 
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Transient
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.downloads_enqueue_missing_url
 import nuvio.composeapp.generated.resources.downloads_enqueue_replaced
@@ -17,6 +18,11 @@ enum class DownloadStatus {
     Failed,
     Processing,
 }
+
+data class TrackProgressState(
+    val downloadedBytes: Long = 0L,
+    val totalBytes: Long? = null,
+)
 
 @Serializable
 data class DownloadItem(
@@ -56,6 +62,8 @@ data class DownloadItem(
     val hlsAudioLocalFileUri: String? = null,
     val hlsSubtitleLocalFileUri: String? = null,
     val hlsWarningMessage: String? = null,
+    @Transient
+    val trackProgress: Map<String, TrackProgressState> = emptyMap(),
 ) {
     val isEpisode: Boolean
         get() = seasonNumber != null && episodeNumber != null

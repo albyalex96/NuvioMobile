@@ -2,6 +2,12 @@ package com.nuvio.app.features.downloads
 
 import com.nuvio.app.core.logging.InAppLogger
 import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +23,15 @@ import org.jetbrains.compose.resources.getString
 object DownloadsRepository {
     private val _uiState = MutableStateFlow(DownloadsUiState())
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
+
+    private val _processingItemIds = MutableStateFlow<Set<String>>(emptySet())
+    val processingItemIds: StateFlow<Set<String>> = _processingItemIds.asStateFlow()
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val processingRemovalJobs = mutableMapOf<String, Job>()
+
+    private val _trackProgress = MutableStateFlow<Map<String, Map<String, TrackProgressState>>>(emptyMap())
+    val trackProgress: StateFlow<Map<String, Map<String, TrackProgressState>>> = _trackProgress.asStateFlow()
 
     private val activeHandles = mutableMapOf<String, DownloadsTaskHandle>()
     private var hasLoaded = false
@@ -36,6 +51,9 @@ object DownloadsRepository {
     fun clearLocalState() {
         activeHandles.values.forEach(DownloadsTaskHandle::cancel)
         activeHandles.clear()
+        processingRemovalJobs.values.forEach { it.cancel() }
+        processingRemovalJobs.clear()
+        _trackProgress.value = emptyMap()
         hasLoaded = false
         _uiState.value = DownloadsUiState()
         notifyLiveStatusPlatform()
@@ -201,6 +219,8 @@ object DownloadsRepository {
         if (existing != null) {
             replacedExisting = true
             activeHandles.remove(existing.id)?.cancel()
+            processingRemovalJobs.remove(existing.id)?.cancel()
+            _trackProgress.update { it - existing.id }
             DownloadsPlatformDownloader.removeFile(playableLocalFileUri(existing) ?: existing.localFileUri)
             DownloadsPlatformDownloader.removePartialFile(existing.fileName)
             currentItems.removeAll { it.id == existing.id }
@@ -303,6 +323,8 @@ object DownloadsRepository {
         if (existing != null) {
             replacedExisting = true
             activeHandles.remove(existing.id)?.cancel()
+            processingRemovalJobs.remove(existing.id)?.cancel()
+            _trackProgress.update { it - existing.id }
             DownloadsPlatformDownloader.removeFile(playableLocalFileUri(existing) ?: existing.localFileUri)
             DownloadsPlatformDownloader.removePartialFile(existing.fileName)
             currentItems.removeAll { it.id == existing.id }
@@ -412,6 +434,8 @@ object DownloadsRepository {
         val item = _uiState.value.items.firstOrNull { it.id == downloadId } ?: return
 
         activeHandles.remove(downloadId)?.cancel()
+        processingRemovalJobs.remove(downloadId)?.cancel()
+        _trackProgress.update { it - downloadId }
         DownloadsPlatformDownloader.removeFile(playableLocalFileUri(item) ?: item.localFileUri)
         DownloadsPlatformDownloader.removePartialFile(item.fileName)
 
@@ -472,6 +496,18 @@ object DownloadsRepository {
             },
         )
 
+        if (item.isHls) {
+            val tracks = mutableMapOf<String, TrackProgressState>()
+            tracks["video"] = TrackProgressState()
+            request.hlsAudioUrls.withIndex().forEach { (i, _) ->
+                tracks["audio_$i"] = TrackProgressState()
+            }
+            request.hlsSubtitleUrls.withIndex().forEach { (i, _) ->
+                tracks["subs_$i"] = TrackProgressState()
+            }
+            _trackProgress.update { it + (item.id to tracks) }
+        }
+
         val handle = DownloadsPlatformDownloader.start(
             request = request,
             onProgress = { downloadedBytes, totalBytes ->
@@ -487,6 +523,34 @@ object DownloadsRepository {
                         )
                     }
                 }
+                val currentItem = _uiState.value.items.firstOrNull { it.id == item.id }
+                if (currentItem?.status == DownloadStatus.Downloading) {
+                    _trackProgress.update { current ->
+                        val itemProgress = current[item.id]?.toMutableMap() ?: return@update current
+                        val existing = itemProgress["video"] ?: TrackProgressState()
+                        itemProgress["video"] = existing.copy(
+                            downloadedBytes = downloadedBytes.coerceAtLeast(0L),
+                            totalBytes = totalBytes?.takeIf { it > 0L },
+                        )
+                        current + (item.id to itemProgress)
+                    }
+                }
+                notifyLiveStatusPlatform()
+            },
+            onTrackProgress = { trackName, downloadedBytes, totalBytes ->
+                val currentItem = _uiState.value.items.firstOrNull { it.id == item.id }
+                if (currentItem?.status == DownloadStatus.Downloading) {
+                    _trackProgress.update { current ->
+                        val itemProgress = current[item.id]?.toMutableMap() ?: return@update current
+                        val existing = itemProgress[trackName] ?: TrackProgressState()
+                        itemProgress[trackName] = existing.copy(
+                            downloadedBytes = downloadedBytes.coerceAtLeast(0L),
+                            totalBytes = totalBytes?.takeIf { it > 0L },
+                        )
+                        current + (item.id to itemProgress)
+                    }
+                }
+                notifyLiveStatusPlatform()
             },
             onWarning = { message ->
                 mutateItem(item.id) { current ->
@@ -498,6 +562,7 @@ object DownloadsRepository {
             },
             onSuccess = { localFileUri, totalBytes, companion ->
                 activeHandles.remove(item.id)
+                _trackProgress.update { it - item.id }
                 mutateItem(item.id) { current ->
                     current.copy(
                         status = DownloadStatus.Completed,
@@ -521,9 +586,17 @@ object DownloadsRepository {
                         updatedAtEpochMs = DownloadsClock.nowEpochMs(),
                     )
                 }
+                processingRemovalJobs[item.id] = scope.launch {
+                    delay(1500L)
+                    _processingItemIds.update { it - item.id }
+                    processingRemovalJobs.remove(item.id)
+                }
             },
             onFailure = { message ->
                 activeHandles.remove(item.id)
+                _trackProgress.update { it - item.id }
+                processingRemovalJobs.remove(item.id)?.cancel()
+                _processingItemIds.update { it - item.id }
                 mutateItem(item.id) { current ->
                     if (current.status != DownloadStatus.Downloading && current.status != DownloadStatus.Processing) {
                         current
@@ -537,9 +610,11 @@ object DownloadsRepository {
                 }
             },
             onPhase = { phase ->
+                processingRemovalJobs.remove(item.id)?.cancel()
                 val now = DownloadsClock.nowEpochMs()
                 val prevStatus = _uiState.value.items.firstOrNull { it.id == item.id }?.status
                 InAppLogger.info("DownloadsRepository", "onPhase('$phase') item=${item.id} prevStatus=$prevStatus")
+                _processingItemIds.update { it + item.id }
                 mutateItem(item.id) { current ->
                     if (current.status != DownloadStatus.Downloading) {
                         InAppLogger.warn("DownloadsRepository", "onPhase: status NOT Downloading, was ${current.status}")
@@ -558,27 +633,25 @@ object DownloadsRepository {
     }
 
     private fun mutateItem(downloadId: String, transform: (DownloadItem) -> DownloadItem) {
-        var changed = false
-        val updated = _uiState.value.items.map { item ->
-            if (item.id == downloadId) {
-                changed = true
-                transform(item)
-            } else {
-                item
+        _uiState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.id == downloadId) transform(item) else item
             }
+            state.copy(items = updated)
         }
-
-        if (changed) {
-            publish(updated)
-            persist()
-        }
+        notifyLiveStatusPlatform()
+        persist()
     }
 
     private fun replaceItem(item: DownloadItem) {
-        val updated = _uiState.value.items.map { existing ->
-            if (existing.id == item.id) item else existing
+        _uiState.update { state ->
+            val updated = state.items.map { existing ->
+                if (existing.id == item.id) item else existing
+            }
+            state.copy(items = updated)
         }
-        publish(updated)
+        notifyLiveStatusPlatform()
+        persist()
     }
 
     private fun publish(items: List<DownloadItem>) {

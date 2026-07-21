@@ -33,6 +33,7 @@ internal expect object DownloadsPlatformDownloader {
         onFailure: (message: String) -> Unit,
         onWarning: ((message: String) -> Unit)? = null,
         onPhase: ((phase: String) -> Unit)? = null,
+        onTrackProgress: ((trackName: String, downloadedBytes: Long, totalBytes: Long?) -> Unit)? = null,
     ): DownloadsTaskHandle
 
     fun removeFile(localFileUri: String?): Boolean

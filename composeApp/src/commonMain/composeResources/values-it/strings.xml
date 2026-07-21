@@ -306,6 +306,9 @@
   <string name="downloads_status_failed">Fallito</string>
   <string name="downloads_status_paused">In pausa • %1$s</string>
   <string name="downloads_status_processing">Conversione in corso • %1$s</string>
+  <string name="downloads_track_video">Video</string>
+  <string name="downloads_track_audio">Audio</string>
+  <string name="downloads_track_subtitles">Sottotitoli</string>
   <string name="episodes_cd_watched">Visto</string>
   <string name="episodes_season">Stagione %1$d</string>
   <string name="episodes_specials">Speciali</string>

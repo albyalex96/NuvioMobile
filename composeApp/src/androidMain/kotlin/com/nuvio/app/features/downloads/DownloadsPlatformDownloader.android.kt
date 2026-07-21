@@ -17,6 +17,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -38,6 +40,7 @@ import javax.crypto.spec.SecretKeySpec
 import android.util.Log as AndroidLog
 import com.nuvio.app.core.logging.InAppLogger
 import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.withContext
 
 private val downloadHttpClient = OkHttpClient.Builder()
     .dns(com.nuvio.app.core.network.AndroidDnsProvider)
@@ -77,6 +80,7 @@ internal actual object DownloadsPlatformDownloader {
         onFailure: (message: String) -> Unit,
         onWarning: ((message: String) -> Unit)?,
         onPhase: ((phase: String) -> Unit)?,
+        onTrackProgress: ((trackName: String, downloadedBytes: Long, totalBytes: Long?) -> Unit)?,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.IO)
@@ -102,6 +106,7 @@ internal actual object DownloadsPlatformDownloader {
                     onFailure = onFailure,
                     onWarning = onWarning,
                     onPhase = onPhase,
+                    onTrackProgress = onTrackProgress,
                 )
             }
             hlsJob.invokeOnCompletion {
@@ -483,6 +488,7 @@ private suspend fun performHlsDownloadAndroid(
     onFailure: (message: String) -> Unit,
     onWarning: ((message: String) -> Unit)?,
     onPhase: ((phase: String) -> Unit)? = null,
+    onTrackProgress: ((trackName: String, downloadedBytes: Long, totalBytes: Long?) -> Unit)? = null,
 ) {
     DownloadsSettingsRepository.ensureLoaded()
     val customLocationUriString = DownloadsSettingsRepository.downloadLocationUri.value
@@ -496,84 +502,133 @@ private suspend fun performHlsDownloadAndroid(
 
     val ctx = coroutineContext
     try {
-        val videoOutcome = downloadHlsToFile(
-            sourceUrl = request.sourceUrl,
-            httpGet = { url, range -> androidHttpGet(url, request.sourceHeaders, range) },
-            appendBytes = { bytes ->
-                videoTempOut.write(bytes)
-                if (videoChannel != null) {
-                    videoChannel.force(false)
-                } else {
+        // Download video + audio + subtitle in parallel
+        val videoOutcome: HlsDownloadOutcome
+        val videoUri: String
+        val audioUris: List<String>
+        val subtitleUris: List<String>
+
+        coroutineScope {
+            val videoDeferred = async {
+                try {
+                    val outcome = downloadHlsToFile(
+                        sourceUrl = request.sourceUrl,
+                        httpGet = { url, range -> androidHttpGet(url, request.sourceHeaders, range) },
+                        appendBytes = { bytes ->
+                            videoTempOut.write(bytes)
+                            if (videoChannel != null) {
+                                videoChannel.force(false)
+                            } else {
+                                videoTempOut.flush()
+                            }
+                        },
+                        decryptAes128Cbc = ::aes128CbcDecryptAndroid,
+                        onProgress = { downloaded, total ->
+                            onProgress(downloaded, total)
+                            onTrackProgress?.invoke("video", downloaded, total)
+                        },
+                        ensureActive = { ctx.ensureActive() },
+                    )
+
                     videoTempOut.flush()
+                    videoTempOut.close()
+
+                    val finalVideoName = hlsOutputFileName(request.destinationFileName, outcome.isFmp4)
+                    val videoFinal = resolveHlsTarget(context, customLocationUri, finalVideoName)
+                    if (videoFinal.exists()) videoFinal.delete()
+                    if (!videoTemp.renameTo(videoFinal)) {
+                        videoTemp.copyTo(videoFinal)
+                        videoTemp.delete()
+                    }
+
+                    outcome to videoFinal.toUriString()
+                } catch (_: CancellationException) {
+                    videoTempOut.closeSafe()
+                    videoTemp.delete()
+                    throw CancellationException()
+                } catch (e: Exception) {
+                    videoTempOut.closeSafe()
+                    videoTemp.delete()
+                    throw e
                 }
-            },
-            decryptAes128Cbc = ::aes128CbcDecryptAndroid,
-            onProgress = onProgress,
-            ensureActive = { ctx.ensureActive() },
-        )
-
-        videoTempOut.flush()
-        videoTempOut.close()
-
-        val finalVideoName = hlsOutputFileName(request.destinationFileName, videoOutcome.isFmp4)
-        val videoFinal = resolveHlsTarget(context, customLocationUri, finalVideoName)
-        if (videoFinal.exists()) videoFinal.delete()
-        if (!videoTemp.renameTo(videoFinal)) {
-            videoTemp.copyTo(videoFinal)
-            videoTemp.delete()
-        }
-
-        val videoUri = videoFinal.toUriString()
-        val audioUris = mutableListOf<String>()
-        val subtitleUris = mutableListOf<String>()
-
-        AndroidLog.i("Remux", "audio track count: ${request.hlsAudioUrls.size}, subtitle track count: ${request.hlsSubtitleUrls.size}")
-        for ((audioIndex, audioUrl) in request.hlsAudioUrls.withIndex()) {
-            if (audioUrl.isBlank()) continue
-            try {
-                val audioFinalName = hlsCompanionFileName(finalVideoName, "audio_$audioIndex", "mp4")
-                val audioTempName = hlsCompanionFileName(request.destinationFileName, "audio_$audioIndex", "part")
-                val uri = downloadSingleHlsTrackAndroid(
-                    context = context,
-                    customLocationUri = customLocationUri,
-                    url = audioUrl,
-                    headers = request.sourceHeaders,
-                    finalName = audioFinalName,
-                    tempName = audioTempName,
-                    onProgress = onProgress,
-                    ctx = ctx,
-                )
-                audioUris.add(uri)
-            } catch (_: CancellationException) {
-                throw CancellationException()
-            } catch (e: Throwable) {
-                val audioErrMsg = "audio[$audioIndex] download failed: ${e::class.simpleName} ${e.message}"
-                AndroidLog.e("Remux", audioErrMsg)
-                InAppLogger.error("Remux", audioErrMsg)
             }
-        }
 
-        for ((subIndex, subUrl) in request.hlsSubtitleUrls.withIndex()) {
-            if (subUrl.isBlank()) continue
-            try {
-                val subFinalName = hlsCompanionFileName(finalVideoName, "subs_$subIndex", "vtt")
-                val subTempName = hlsCompanionFileName(request.destinationFileName, "subs_$subIndex", "part")
-                val uri = downloadSingleHlsTrackAndroid(
-                    context = context,
-                    customLocationUri = customLocationUri,
-                    url = subUrl,
-                    headers = request.sourceHeaders,
-                    finalName = subFinalName,
-                    tempName = subTempName,
-                    onProgress = onProgress,
-                    ctx = ctx,
-                )
-                subtitleUris.add(uri)
-            } catch (_: CancellationException) {
-                throw CancellationException()
-            } catch (_: Throwable) {
-                // skip silently
+            val audioDeferreds = request.hlsAudioUrls.withIndex().map { (audioIndex, audioUrl) ->
+                async {
+                    if (audioUrl.isBlank()) return@async null
+                    try {
+                        val audioFinalName = hlsCompanionFileName(
+                            request.destinationFileName,
+                            "audio_$audioIndex",
+                            "mp4"
+                        )
+                        val audioTempName = hlsCompanionFileName(
+                            request.destinationFileName,
+                            "audio_$audioIndex",
+                            "part"
+                        )
+                        downloadSingleHlsTrackAndroid(
+                            context = context,
+                            customLocationUri = customLocationUri,
+                            url = audioUrl,
+                            headers = request.sourceHeaders,
+                            finalName = audioFinalName,
+                            tempName = audioTempName,
+                            onProgress = onProgress,
+                            ctx = ctx,
+                            trackName = "audio_$audioIndex",
+                            onTrackProgress = onTrackProgress,
+                        )
+                    } catch (_: CancellationException) {
+                        throw CancellationException()
+                    } catch (e: Throwable) {
+                        val audioErrMsg = "audio[$audioIndex] download failed: ${e::class.simpleName} ${e.message}"
+                        AndroidLog.e("Remux", audioErrMsg)
+                        InAppLogger.error("Remux", audioErrMsg)
+                        null
+                    }
+                }
             }
+
+            val subtitleDeferreds = request.hlsSubtitleUrls.withIndex().map { (subIndex, subUrl) ->
+                async {
+                    if (subUrl.isBlank()) return@async null
+                    try {
+                        val subFinalName = hlsCompanionFileName(
+                            request.destinationFileName,
+                            "subs_$subIndex",
+                            "vtt"
+                        )
+                        val subTempName = hlsCompanionFileName(
+                            request.destinationFileName,
+                            "subs_$subIndex",
+                            "part"
+                        )
+                        downloadSingleHlsTrackAndroid(
+                            context = context,
+                            customLocationUri = customLocationUri,
+                            url = subUrl,
+                            headers = request.sourceHeaders,
+                            finalName = subFinalName,
+                            tempName = subTempName,
+                            onProgress = onProgress,
+                            ctx = ctx,
+                            trackName = "subs_$subIndex",
+                            onTrackProgress = onTrackProgress,
+                        )
+                    } catch (_: CancellationException) {
+                        throw CancellationException()
+                    } catch (_: Throwable) {
+                        null
+                    }
+                }
+            }
+
+            val (outcome, uri) = videoDeferred.await()
+            videoOutcome = outcome
+            videoUri = uri
+            audioUris = audioDeferreds.mapNotNull { it.await() }
+            subtitleUris = subtitleDeferreds.mapNotNull { it.await() }
         }
 
         val audioUri = audioUris.firstOrNull()
@@ -584,6 +639,7 @@ private suspend fun performHlsDownloadAndroid(
         InAppLogger.info("Remux", "onPhase?.invoke('remux') about to be called")
         onPhase?.invoke("remux")
         InAppLogger.info("Remux", "onPhase?.invoke('remux') completed")
+        withContext(Dispatchers.Main) { /* force UI to process Processing status before remux */ }
         val canRemux = videoUri.startsWith("file:")
         val remuxedUri = if (canRemux) {
             AndroidLog.i("Remux", "remux attempt videoUri=$videoUri audioUri=$audioUri")
@@ -671,6 +727,8 @@ private suspend fun downloadSingleHlsTrackAndroid(
     tempName: String,
     onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
     ctx: kotlin.coroutines.CoroutineContext,
+    trackName: String? = null,
+    onTrackProgress: ((trackName: String, downloadedBytes: Long, totalBytes: Long?) -> Unit)? = null,
 ): String {
     val (finalTarget, tempTarget) = createHlsTargets(context, customLocationUri, tempName)
     if (tempTarget.exists()) tempTarget.delete()
@@ -691,7 +749,9 @@ private suspend fun downloadSingleHlsTrackAndroid(
                 }
             },
             decryptAes128Cbc = ::aes128CbcDecryptAndroid,
-            onProgress = { _, _ -> },
+            onProgress = { downloaded, total ->
+                onTrackProgress?.let { trackName?.let { name -> it(name, downloaded, total) } }
+            },
             ensureActive = { ctx.ensureActive() },
         )
 
@@ -868,6 +928,12 @@ private fun remuxToMp4Impl(
                 }
                 if (csdList.isNotEmpty()) {
                     setInitializationData(csdList)
+                } else if (!videoPath.endsWith(".mp4", ignoreCase = true)) {
+                    val (extractedSps, extractedPps) = extractSpsPpsFromBitstream(videoExtractor, videoTrackId)
+                    val extractedCds = listOfNotNull(extractedSps, extractedPps)
+                    if (extractedCds.isNotEmpty()) {
+                        setInitializationData(extractedCds)
+                    }
                 }
             }.build()
 
@@ -1099,6 +1165,73 @@ private fun isValidMp4File(path: String): Boolean {
 
 private fun OutputStream.closeSafe() {
     try { close() } catch (_: Exception) { }
+}
+
+private fun extractSpsPpsFromBitstream(
+    extractor: MediaExtractor,
+    trackId: Int,
+    maxSamples: Int = 30,
+): Pair<ByteArray?, ByteArray?> {
+    var sps: ByteArray? = null
+    var pps: ByteArray? = null
+    extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+    extractor.selectTrack(trackId)
+    val buffer = ByteBuffer.allocate(512 * 1024)
+    var samplesRead = 0
+    while (samplesRead < maxSamples && (sps == null || pps == null)) {
+        buffer.clear()
+        val size = extractor.readSampleData(buffer, 0)
+        if (size < 0) break
+        val flags = extractor.sampleFlags
+        if (flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+            extractor.advance()
+            continue
+        }
+        buffer.limit(size)
+        buffer.position(0)
+        val data = ByteArray(size)
+        buffer.get(data)
+        var i = 0
+        while (i < data.size - 3 && (sps == null || pps == null)) {
+            if (data[i] == 0x00.toByte() && data[i + 1] == 0x00.toByte()) {
+                val startCodeLen = when {
+                    i + 3 < data.size && data[i + 2] == 0x00.toByte() && data[i + 3] == 0x01.toByte() -> 4
+                    data[i + 2] == 0x01.toByte() -> 3
+                    else -> -1
+                }
+                if (startCodeLen > 0) {
+                    val nalStart = i + startCodeLen
+                    if (nalStart < data.size) {
+                        val nalType = data[nalStart].toInt() and 0x1F
+                        var nalEnd = data.size
+                        for (j in nalStart + 1 until data.size - 2) {
+                            if (data[j] == 0x00.toByte() && data[j + 1] == 0x00.toByte()) {
+                                val nextStart = if (j + 2 < data.size && data[j + 2] == 0x01.toByte()) 3
+                                else if (j + 3 < data.size && data[j + 2] == 0x00.toByte() && data[j + 3] == 0x01.toByte()) 4
+                                else -1
+                                if (nextStart > 0) {
+                                    nalEnd = j
+                                    break
+                                }
+                            }
+                        }
+                        val nalData = data.copyOfRange(nalStart, nalEnd)
+                        when (nalType) {
+                            7 -> if (sps == null) sps = nalData
+                            8 -> if (pps == null) pps = nalData
+                        }
+                        i = nalEnd
+                        continue
+                    }
+                }
+            }
+            i++
+        }
+        extractor.advance()
+        samplesRead++
+    }
+    extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+    return sps to pps
 }
 
 

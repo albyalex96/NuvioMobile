@@ -108,6 +108,7 @@ internal actual object DownloadsPlatformDownloader {
         onFailure: (message: String) -> Unit,
         onWarning: ((message: String) -> Unit)?,
         onPhase: ((phase: String) -> Unit)?,
+        onTrackProgress: ((trackName: String, downloadedBytes: Long, totalBytes: Long?) -> Unit)?,
     ): DownloadsTaskHandle {
         val job = SupervisorJob()
         val scope = CoroutineScope(job + Dispatchers.Default)
