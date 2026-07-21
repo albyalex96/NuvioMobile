@@ -81,6 +81,9 @@ jobs:
           printf 'DONATIONS_DONATE_URL=%s\n' "https://ko-fi.com/tapframe" >> local.properties
           printf 'CONTRIBUTIONS_URL=%s\n' "${{ secrets.CONTRIBUTION_URL }}" >> local.properties
           printf 'DIRECT_DEBRID_API_BASE_URL=%s\n' "https://api.torbox.app/v1/api" >> local.properties
+          printf 'ANILIST_CLIENT_ID=%s\n' "${{secrets.ANILIST_CLIENT_ID}}" >> local.properties
+          printf 'ANILIST_CLIENT_SECRET=%s\n' "${{secrets.ANILIST_CLIENT_SECRET}}" >> local.properties
+          
 
       - name: Generate Changelog
         id: changelog
@@ -212,6 +215,8 @@ jobs:
           DONATIONS_BASE_URL=https://donations.nuvioapp.space/
           DONATIONS_DONATE_URL=https://ko-fi.com/tapframe
           CONTRIBUTIONS_URL=${{ secrets.CONTRIBUTION_URL }}
+          ANILIST_CLIENT_ID=${{ secrets.ANILIST_CLIENT_ID }}
+          ANILIST_CLIENT_SECRET=${{ secrets.ANILIST_CLIENT_SECRET }}
           DIRECT_DEBRID_API_BASE_URL=https://api.torbox.app/v1/api
           "@ | Out-File -FilePath local.properties -Encoding utf8
 
