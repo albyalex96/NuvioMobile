@@ -48,6 +48,7 @@ import com.nuvio.app.features.settings.ThemeSettingsStorage
 import com.nuvio.app.features.settings.NuvioAppIconSwitcher
 import com.nuvio.app.features.mal.MalAuthStorage
 import com.nuvio.app.features.mal.MalLibraryStorage
+import com.nuvio.app.features.anilist.AniListStorage
 import com.nuvio.app.features.trakt.TraktAuthStorage
 import com.nuvio.app.features.trakt.TraktCommentsStorage
 import com.nuvio.app.features.trakt.TraktLibraryStorage
@@ -145,6 +146,7 @@ class MainActivity : AppCompatActivity() {
         OpenSubtitlesSettingsStorage.initialize(applicationContext)
         MalAuthStorage.initialize(applicationContext)
         MalLibraryStorage.initialize(applicationContext)
+        AniListStorage.initialize(applicationContext)
         TraktAuthStorage.initialize(applicationContext)
         TraktCommentsStorage.initialize(applicationContext)
         TraktLibraryStorage.initialize(applicationContext)
