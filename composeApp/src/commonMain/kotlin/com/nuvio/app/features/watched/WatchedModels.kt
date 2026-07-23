@@ -16,6 +16,9 @@ data class WatchedItem(
     val season: Int? = null,
     val episode: Int? = null,
     val markedAtEpochMs: Long,
+    val trackingProviderId: String? = null,
+    val trackingProviderItemId: String? = null,
+    val trackingSourceUrl: String? = null,
 )
 
 data class WatchedUiState(

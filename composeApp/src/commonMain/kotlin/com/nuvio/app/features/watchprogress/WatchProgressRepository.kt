@@ -14,7 +14,9 @@ import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktProgressRepository
 import com.nuvio.app.features.trakt.TraktSettingsRepository
-import com.nuvio.app.features.trakt.WatchProgressSource
+import com.nuvio.app.features.simkl.SimklAuthRepository
+import com.nuvio.app.features.simkl.SimklProgressRepository
+import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.trakt.effectiveWatchProgressSource
 import com.nuvio.app.features.trakt.isTraktCompatibleId
 import com.nuvio.app.features.trakt.resolveEffectiveContentId
@@ -244,6 +246,16 @@ object WatchProgressRepository {
         }
 
         syncScope.launch {
+            SimklAuthRepository.isAuthenticated.collectLatest {
+                SimklProgressRepository.refresh(com.nuvio.app.features.tracking.TrackingRefreshIntent.AUTOMATIC)
+                publish()
+            }
+        }
+        syncScope.launch {
+            SimklProgressRepository.uiState.collectLatest { publish() }
+        }
+
+        syncScope.launch {
             AddonRepository.uiState.collectLatest { state ->
                 retryMetadataResolutionWhenAddonMetaProvidersReady(state)
             }
@@ -255,10 +267,12 @@ object WatchProgressRepository {
         TraktAuthRepository.ensureLoaded()
         TraktSettingsRepository.ensureLoaded()
         TraktProgressRepository.ensureLoaded()
+        SimklAuthRepository.ensureLoaded()
         if (!hasLoaded) {
             updateActiveSource(
                 effectiveWatchProgressSource(
                     isTraktAuthenticated = TraktAuthRepository.isAuthenticated.value,
+                    isSimklAuthenticated = SimklAuthRepository.isAuthenticated.value,
                     requestedSource = TraktSettingsRepository.uiState.value.watchProgressSource,
                 ),
             )
@@ -272,6 +286,7 @@ object WatchProgressRepository {
         updateActiveSource(
             effectiveWatchProgressSource(
                 isTraktAuthenticated = TraktAuthRepository.isAuthenticated.value,
+                isSimklAuthenticated = SimklAuthRepository.isAuthenticated.value,
                 requestedSource = TraktSettingsRepository.uiState.value.watchProgressSource,
             ),
         )
@@ -420,6 +435,11 @@ object WatchProgressRepository {
                 force = force,
             )
 
+            WatchProgressSource.SIMKL -> refreshSimklSource(
+                profileId = profileId,
+                operationGeneration = operationGeneration,
+            )
+
             WatchProgressSource.NUVIO_SYNC -> refreshNuvioSource(
                 profileId = profileId,
                 operationGeneration = operationGeneration,
@@ -454,6 +474,28 @@ object WatchProgressRepository {
             throw error
         } catch (error: Throwable) {
             log.e(error) { "Failed to refresh Trakt watch progress" }
+            false
+        }
+    }
+
+    private suspend fun refreshSimklSource(
+        profileId: Int,
+        operationGeneration: Long,
+    ): Boolean {
+        if (!SimklAuthRepository.isAuthenticated.value) {
+            log.d { "Skipping SIMKL progress refresh because SIMKL is not authenticated" }
+            return false
+        }
+        return try {
+            SimklProgressRepository.refresh(com.nuvio.app.features.tracking.TrackingRefreshIntent.AUTOMATIC)
+            if (isActiveOperation(profileId, operationGeneration) && activeSource == WatchProgressSource.SIMKL) {
+                publish()
+            }
+            SimklProgressRepository.uiState.value.entries.isNotEmpty()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.e(error) { "Failed to refresh SIMKL watch progress" }
             false
         }
     }
@@ -1502,28 +1544,30 @@ object WatchProgressRepository {
         }
 
     private fun currentEntries(): List<WatchProgressEntry> {
-        return if (shouldUseTraktProgress()) {
-            // Merge Trakt remote progress with local-only entries that use
-            // non-Trakt-compatible IDs (kitsu:, mal:, anilist:, etc.).
-            // Trakt will never return these IDs, so they must come from local storage.
-            val traktItems = TraktProgressRepository.uiState.value.entries
-            val localNonTraktItems = localEntriesSnapshot().filter {
-                !isTraktCompatibleId(it.parentMetaId)
-            }
-            if (localNonTraktItems.isEmpty()) {
-                traktItems
-            } else {
-                val traktKeys = traktItems.mapTo(mutableSetOf()) { entry -> entry.resolvedProgressKey() }
-                val merged = traktItems.toMutableList()
-                localNonTraktItems.forEach { localItem ->
-                    if (localItem.resolvedProgressKey() !in traktKeys) {
-                        merged.add(localItem)
-                    }
+        return when {
+            shouldUseTraktProgress() -> {
+                // Merge Trakt remote progress with local-only entries that use
+                // non-Trakt-compatible IDs (kitsu:, mal:, anilist:, etc.).
+                // Trakt will never return these IDs, so they must come from local storage.
+                val traktItems = TraktProgressRepository.uiState.value.entries
+                val localNonTraktItems = localEntriesSnapshot().filter {
+                    !isTraktCompatibleId(it.parentMetaId)
                 }
-                merged
+                if (localNonTraktItems.isEmpty()) {
+                    traktItems
+                } else {
+                    val traktKeys = traktItems.mapTo(mutableSetOf()) { entry -> entry.resolvedProgressKey() }
+                    val merged = traktItems.toMutableList()
+                    localNonTraktItems.forEach { localItem ->
+                        if (localItem.resolvedProgressKey() !in traktKeys) {
+                            merged.add(localItem)
+                        }
+                    }
+                    merged
+                }
             }
-        } else {
-            localEntriesSnapshot()
+            activeSource == WatchProgressSource.SIMKL -> SimklProgressRepository.uiState.value.entries
+            else -> localEntriesSnapshot()
         }
     }
 

@@ -347,14 +347,16 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
 
         if (previousIsPlaying && !playbackSnapshot.isPlaying && !playbackSnapshot.isLoading) {
             pendingScrobbleStartAfterSeek = false
-            flushWatchProgress()
+            flushWatchProgress(paused = true)
         }
 
         if (playbackSnapshot.isPlaying && pendingScrobbleStartAfterSeek) {
             pendingScrobbleStartAfterSeek = false
             emitTraktScrobbleStart()
+            emitSimklScrobbleStart()
         } else if (!previousIsPlaying && playbackSnapshot.isPlaying) {
             emitTraktScrobbleStart()
+            emitSimklScrobbleStart()
         }
 
         if (!playbackSnapshot.isLoading) {

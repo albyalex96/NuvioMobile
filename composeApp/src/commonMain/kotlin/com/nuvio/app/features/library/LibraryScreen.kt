@@ -622,6 +622,7 @@ private fun librarySourceLabel(source: LibrarySourceMode): String =
         LibrarySourceMode.TRAKT -> stringResource(Res.string.trakt_library_source_trakt)
         LibrarySourceMode.MAL -> stringResource(Res.string.trakt_library_source_mal)
         LibrarySourceMode.ANILIST -> stringResource(Res.string.trakt_library_source_anilist)
+        LibrarySourceMode.SIMKL -> "SIMKL"
         LibrarySourceMode.LOCAL -> stringResource(Res.string.trakt_library_source_nuvio)
     }
 

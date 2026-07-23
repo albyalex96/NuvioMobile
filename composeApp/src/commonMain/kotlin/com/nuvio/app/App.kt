@@ -231,6 +231,11 @@ import com.nuvio.app.features.streams.StreamsRepository
 import com.nuvio.app.features.streams.StreamsScreen
 import com.nuvio.app.features.tmdb.TmdbService
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.simkl.SimklAuthRepository
+import com.nuvio.app.features.tracking.TrackingScrobbleAction
+import com.nuvio.app.features.tracking.TrackingScrobbleCoordinator
+import com.nuvio.app.features.tracking.TrackingScrobbleEvent
+import com.nuvio.app.features.tracking.buildTrackingMediaReference
 import com.nuvio.app.features.opensubtitles.OpenSubtitlesRepository
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktListTab
@@ -1319,6 +1324,27 @@ private fun MainAppContent(
                                 progressPercent = progressPercent,
                             )
                         }
+                    }
+                }
+                if (progressPercent != null && playerLaunch != null) {
+                    runCatching {
+                        val media = buildTrackingMediaReference(
+                            contentType = playerLaunch.parentMetaType,
+                            parentMetaId = playerLaunch.parentMetaId,
+                            videoId = playerLaunch.videoId,
+                            title = playerLaunch.title,
+                            seasonNumber = playerLaunch.seasonNumber,
+                            episodeNumber = playerLaunch.episodeNumber,
+                            episodeTitle = playerLaunch.episodeTitle,
+                        )
+                        TrackingScrobbleCoordinator.scrobble(
+                            profileId = playerLaunch.profileId,
+                            action = TrackingScrobbleAction.STOP,
+                            event = TrackingScrobbleEvent(
+                                media = media,
+                                progressPercent = progressPercent.toDouble(),
+                            ),
+                        )
                     }
                 }
                 playerLaunch?.let { playerLaunch ->

@@ -14,6 +14,7 @@ internal const val WatchProgressSourceLocal = "local"
 internal const val WatchProgressSourceTraktPlayback = "trakt_playback"
 internal const val WatchProgressSourceTraktHistory = "trakt_history"
 internal const val WatchProgressSourceTraktShowProgress = "trakt_show_progress"
+internal const val WatchProgressSourceSimklPlayback = "simkl_playback"
 
 @Serializable
 enum class ContinueWatchingSectionStyle {
@@ -56,6 +57,9 @@ data class WatchProgressEntry(
     val source: String = WatchProgressSourceLocal,
     /** Stable server/storage identity. [videoId] remains the playback identity. */
     val progressKey: String? = null,
+    val trackingProviderId: String? = null,
+    val trackingProviderItemId: String? = null,
+    val trackingSourceUrl: String? = null,
 ) {
     val normalizedProgressPercent: Float?
         get() = progressPercent?.coerceIn(0f, 100f)

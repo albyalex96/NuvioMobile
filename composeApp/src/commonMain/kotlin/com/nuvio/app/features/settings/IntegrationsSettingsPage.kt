@@ -1,15 +1,29 @@
 package com.nuvio.app.features.settings
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.ai.AiAssistantSettings
+import androidx.compose.runtime.Composable
 import com.nuvio.app.features.ai.AiAssistantSettingsRepository
+import com.nuvio.app.features.tracking.WatchProgressSource
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_ai_assistant
 import nuvio.composeapp.generated.resources.compose_settings_page_anilist
@@ -37,14 +51,20 @@ import nuvio.composeapp.generated.resources.settings_integrations_section_extra
 import nuvio.composeapp.generated.resources.settings_integrations_section_lists
 import nuvio.composeapp.generated.resources.settings_integrations_section_metadata
 import nuvio.composeapp.generated.resources.settings_integrations_section_subtitles
+import nuvio.composeapp.generated.resources.settings_integrations_section_watchprogress
 import nuvio.composeapp.generated.resources.settings_integrations_simkl_description
 import nuvio.composeapp.generated.resources.settings_integrations_subdl_description
 import nuvio.composeapp.generated.resources.settings_integrations_telegram_description
 import nuvio.composeapp.generated.resources.settings_integrations_tmdb_description
+import nuvio.composeapp.generated.resources.trakt_watch_progress_source_nuvio
+import nuvio.composeapp.generated.resources.trakt_watch_progress_source_trakt
+import nuvio.composeapp.generated.resources.trakt_watch_progress_title
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.integrationsContent(
     isTablet: Boolean,
+    watchProgressCurrentSource: WatchProgressSource?,
+    onWatchProgressClick: () -> Unit,
     onAiAssistantClick: () -> Unit,
     onTraktClick: () -> Unit,
     onMalClick: () -> Unit,
@@ -59,6 +79,38 @@ internal fun LazyListScope.integrationsContent(
     onDebridClick: () -> Unit,
     onTelegramClick: () -> Unit,
 ) {
+    item {
+        SettingsSection(
+            title = stringResource(Res.string.settings_integrations_section_watchprogress),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onWatchProgressClick)
+                        .padding(
+                            horizontal = if (isTablet) 20.dp else 16.dp,
+                            vertical = if (isTablet) 16.dp else 14.dp,
+                        ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.trakt_watch_progress_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = watchProgressLabel(watchProgressCurrentSource),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+        }
+    }
     item {
         SettingsSection(
             title = stringResource(Res.string.settings_integrations_section_metadata),
@@ -157,6 +209,7 @@ internal fun LazyListScope.integrationsContent(
     }
     item {
         val aiAssistantSettings by AiAssistantSettingsRepository.uiState.collectAsState()
+
         SettingsSection(
             title = stringResource(Res.string.settings_integrations_section_extra),
             isTablet = isTablet,
@@ -197,3 +250,12 @@ internal fun LazyListScope.integrationsContent(
         }
     }
 }
+
+@Composable
+private fun watchProgressLabel(source: WatchProgressSource?): String =
+    when (source) {
+        WatchProgressSource.TRAKT -> stringResource(Res.string.trakt_watch_progress_source_trakt)
+        WatchProgressSource.SIMKL -> "SIMKL"
+        WatchProgressSource.NUVIO_SYNC -> stringResource(Res.string.trakt_watch_progress_source_nuvio)
+        null -> ""
+    }

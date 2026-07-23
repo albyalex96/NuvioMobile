@@ -3,9 +3,14 @@ package com.nuvio.app.features.settings
 import com.nuvio.app.core.build.AppFeaturePolicy
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,11 +21,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +43,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -78,18 +88,28 @@ import com.nuvio.app.features.player.AndroidPlaybackEngine
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.trakt.TraktAuthUiState
 import com.nuvio.app.features.trakt.TraktAuthRepository
+import com.nuvio.app.features.trakt.TraktConnectionMode
 import com.nuvio.app.features.trakt.TraktCommentsSettings
 import com.nuvio.app.features.trakt.TraktSettingsRepository
 import com.nuvio.app.features.trakt.TraktSettingsUiState
 import com.nuvio.app.features.mal.MalAuthRepository
 import com.nuvio.app.features.mal.MalAuthUiState
+import com.nuvio.app.features.simkl.SimklAuthRepository
+import com.nuvio.app.features.simkl.SimklAuthUiState
+import com.nuvio.app.features.simkl.SimklConnectionMode
 import com.nuvio.app.features.tmdb.TmdbSettings
+import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesUiState
 import com.nuvio.app.navigation.LocalUseNativeNavigation
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_root
+import nuvio.composeapp.generated.resources.settings_playback_dialog_close
+import nuvio.composeapp.generated.resources.trakt_watch_progress_dialog_subtitle
+import nuvio.composeapp.generated.resources.trakt_watch_progress_dialog_title
+import nuvio.composeapp.generated.resources.trakt_watch_progress_source_nuvio
+import nuvio.composeapp.generated.resources.trakt_watch_progress_source_trakt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -194,6 +214,10 @@ fun SettingsScreen(
         val malAuthUiState by remember {
             MalAuthRepository.ensureLoaded()
             MalAuthRepository.uiState
+        }.collectAsStateWithLifecycle()
+        val simklAuthUiState by remember {
+            SimklAuthRepository.ensureLoaded()
+            SimklAuthRepository.uiState
         }.collectAsStateWithLifecycle()
         val traktCommentsEnabled by remember {
             TraktCommentsSettings.ensureLoaded()
@@ -439,6 +463,7 @@ fun SettingsScreen(
                 liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
                 malAuthUiState = malAuthUiState,
+                simklAuthUiState = simklAuthUiState,
                 traktCommentsEnabled = traktCommentsEnabled,
                 traktSettingsUiState = traktSettingsUiState,
                 homescreenHeroEnabled = homescreenSettingsUiState.heroEnabled,
@@ -520,6 +545,7 @@ fun SettingsScreen(
                 liveTvUiState = liveTvUiState,
                 traktAuthUiState = traktAuthUiState,
                 malAuthUiState = malAuthUiState,
+                simklAuthUiState = simklAuthUiState,
                 traktCommentsEnabled = traktCommentsEnabled,
                 traktSettingsUiState = traktSettingsUiState,
                 homescreenHeroEnabled = homescreenSettingsUiState.heroEnabled,
@@ -606,6 +632,7 @@ private fun MobileSettingsScreen(
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
     malAuthUiState: MalAuthUiState,
+    simklAuthUiState: SimklAuthUiState,
     traktCommentsEnabled: Boolean,
     traktSettingsUiState: TraktSettingsUiState,
     homescreenHeroEnabled: Boolean,
@@ -640,6 +667,7 @@ private fun MobileSettingsScreen(
         val listState = rememberLazyListState()
         val hapticFeedback = LocalHapticFeedback.current
         val hapticScope = rememberCoroutineScope()
+        var showWatchProgressDialog by rememberSaveable { mutableStateOf(false) }
         val rootSearchRevealConnection = rememberSettingsRootSearchRevealConnection(
             page = page,
             listState = listState,
@@ -874,6 +902,8 @@ private fun MobileSettingsScreen(
                 )
                 SettingsPage.Integrations -> integrationsContent(
                     isTablet = false,
+                    watchProgressCurrentSource = traktSettingsUiState.watchProgressSource,
+                    onWatchProgressClick = { showWatchProgressDialog = true },
                     onAiAssistantClick = { onPageChange(SettingsPage.AiAssistant) },
                     onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                     onMalClick = { onPageChange(SettingsPage.Mal) },
@@ -902,13 +932,15 @@ private fun MobileSettingsScreen(
                 SettingsPage.Anilist -> anilistSettingsContent(
                     isTablet = false,
                 )
-                SettingsPage.Simkl -> simklSettingsContent(
-                    isTablet = false,
-                )
-                SettingsPage.OpenSubtitles -> openSubtitlesSettingsContent(
-                    isTablet = false,
-                    settings = openSubtitlesSettings,
-                )
+            SettingsPage.Simkl -> simklSettingsContent(
+                isTablet = false,
+                uiState = simklAuthUiState,
+                settingsUiState = traktSettingsUiState,
+            )
+            SettingsPage.OpenSubtitles -> openSubtitlesSettingsContent(
+                isTablet = false,
+                settings = openSubtitlesSettings,
+            )
                 SettingsPage.Subdl -> subdlSettingsContent(
                     isTablet = false,
                 )
@@ -942,6 +974,19 @@ private fun MobileSettingsScreen(
                 isTablet = false,
             )
             }
+        }
+
+        if (showWatchProgressDialog) {
+            WatchProgressSourceDialog(
+                selectedSource = traktSettingsUiState.watchProgressSource,
+                traktAuthUiState = traktAuthUiState,
+                simklAuthUiState = simklAuthUiState,
+                onSourceSelected = { source ->
+                    TraktSettingsRepository.setWatchProgressSource(source)
+                    showWatchProgressDialog = false
+                },
+                onDismiss = { showWatchProgressDialog = false },
+            )
         }
     }
 }
@@ -983,6 +1028,109 @@ private fun rememberSettingsRootSearchRevealConnection(
                 }
 
                 return Offset.Zero
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun WatchProgressSourceDialog(
+    selectedSource: WatchProgressSource,
+    traktAuthUiState: TraktAuthUiState,
+    simklAuthUiState: SimklAuthUiState,
+    onSourceSelected: (WatchProgressSource) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sources = buildList {
+        if (traktAuthUiState.mode == TraktConnectionMode.CONNECTED) {
+            add(WatchProgressSource.TRAKT)
+        }
+        if (simklAuthUiState.mode == SimklConnectionMode.CONNECTED) {
+            add(WatchProgressSource.SIMKL)
+        }
+        add(WatchProgressSource.NUVIO_SYNC)
+    }
+
+    BasicAlertDialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.trakt_watch_progress_dialog_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(Res.string.trakt_watch_progress_dialog_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    sources.forEach { source ->
+                        val label = when (source) {
+                            WatchProgressSource.TRAKT -> stringResource(Res.string.trakt_watch_progress_source_trakt)
+                            WatchProgressSource.SIMKL -> "SIMKL"
+                            WatchProgressSource.NUVIO_SYNC -> stringResource(Res.string.trakt_watch_progress_source_nuvio)
+                        }
+                        val containerColor = if (source == selectedSource) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClick = { onSourceSelected(source) }),
+                            shape = RoundedCornerShape(12.dp),
+                            color = containerColor,
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Box(
+                                    modifier = Modifier.size(24.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (source == selectedSource) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(Res.string.settings_playback_dialog_close),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -1044,6 +1192,7 @@ private fun TabletSettingsScreen(
     liveTvUiState: com.nuvio.app.features.livetv.LiveTvUiState,
     traktAuthUiState: TraktAuthUiState,
     malAuthUiState: MalAuthUiState,
+    simklAuthUiState: SimklAuthUiState,
     traktCommentsEnabled: Boolean,
     traktSettingsUiState: TraktSettingsUiState,
     homescreenHeroEnabled: Boolean,
@@ -1135,6 +1284,7 @@ private fun TabletSettingsScreen(
             var rootSearchRevealAnimating by rememberSaveable { mutableStateOf(false) }
             val hapticFeedback = LocalHapticFeedback.current
             val hapticScope = rememberCoroutineScope()
+            var showWatchProgressDialog by rememberSaveable { mutableStateOf(false) }
             val searchEntries = settingsSearchEntries(
                 pluginsEnabled = AppFeaturePolicy.pluginsEnabled,
                 supportersContributorsPageEnabled = AppFeaturePolicy.supportersContributorsPageEnabled,
@@ -1374,6 +1524,8 @@ private fun TabletSettingsScreen(
                     )
                     SettingsPage.Integrations -> integrationsContent(
                         isTablet = true,
+                        watchProgressCurrentSource = traktSettingsUiState.watchProgressSource,
+                        onWatchProgressClick = { showWatchProgressDialog = true },
                         onAiAssistantClick = { onPageChange(SettingsPage.AiAssistant) },
                         onTraktClick = { onPageChange(SettingsPage.TraktAuthentication) },
                         onMalClick = { onPageChange(SettingsPage.Mal) },
@@ -1404,6 +1556,8 @@ private fun TabletSettingsScreen(
                     )
                     SettingsPage.Simkl -> simklSettingsContent(
                         isTablet = true,
+                        uiState = simklAuthUiState,
+                        settingsUiState = traktSettingsUiState,
                     )
                     SettingsPage.OpenSubtitles -> openSubtitlesSettingsContent(
                         isTablet = true,
@@ -1442,6 +1596,19 @@ private fun TabletSettingsScreen(
                         isTablet = true,
                     )
                 }
+            }
+
+            if (showWatchProgressDialog) {
+                WatchProgressSourceDialog(
+                    selectedSource = traktSettingsUiState.watchProgressSource,
+                    traktAuthUiState = traktAuthUiState,
+                    simklAuthUiState = simklAuthUiState,
+                    onSourceSelected = { source ->
+                        TraktSettingsRepository.setWatchProgressSource(source)
+                        showWatchProgressDialog = false
+                    },
+                    onDismiss = { showWatchProgressDialog = false },
+                )
             }
         }
     }

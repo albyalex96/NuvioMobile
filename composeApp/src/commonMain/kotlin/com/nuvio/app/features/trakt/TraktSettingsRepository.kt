@@ -5,6 +5,10 @@ import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.features.anilist.AniListAuthRepository
 import com.nuvio.app.features.library.LibrarySourceMode
 import com.nuvio.app.features.profiles.ProfileRepository
+import com.nuvio.app.features.tracking.DEFAULT_LIBRARY_SOURCE_MODE
+import com.nuvio.app.features.tracking.DEFAULT_WATCH_PROGRESS_SOURCE
+import com.nuvio.app.features.tracking.WatchProgressSource
+import com.nuvio.app.features.tracking.librarySourceModeFromStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,23 +31,6 @@ val TraktContinueWatchingDaysOptions: List<Int> = listOf(
     TRAKT_MAX_CONTINUE_WATCHING_DAYS_CAP,
     TRAKT_CONTINUE_WATCHING_DAYS_CAP_ALL,
 )
-
-@Serializable
-enum class WatchProgressSource {
-    TRAKT,
-    NUVIO_SYNC;
-
-    companion object {
-        fun fromStorage(value: String?): WatchProgressSource =
-            entries.firstOrNull { it.name == value } ?: DEFAULT_WATCH_PROGRESS_SOURCE
-    }
-}
-
-val DEFAULT_WATCH_PROGRESS_SOURCE: WatchProgressSource = WatchProgressSource.TRAKT
-val DEFAULT_LIBRARY_SOURCE_MODE: LibrarySourceMode = LibrarySourceMode.TRAKT
-
-fun librarySourceModeFromStorage(value: String?): LibrarySourceMode =
-    LibrarySourceMode.entries.firstOrNull { it.name == value } ?: DEFAULT_LIBRARY_SOURCE_MODE
 
 @Serializable
 enum class MoreLikeThisSourcePreference {
@@ -192,17 +179,13 @@ fun shouldUseTraktProgress(
 
 fun effectiveWatchProgressSource(
     isTraktAuthenticated: Boolean,
+    isSimklAuthenticated: Boolean = false,
     requestedSource: WatchProgressSource,
-): WatchProgressSource =
-    if (shouldUseTraktProgress(
-            isAuthenticated = isTraktAuthenticated,
-            source = requestedSource,
-        )
-    ) {
-        WatchProgressSource.TRAKT
-    } else {
-        WatchProgressSource.NUVIO_SYNC
-    }
+): WatchProgressSource = when (requestedSource) {
+    WatchProgressSource.TRAKT -> WatchProgressSource.TRAKT.takeIf { isTraktAuthenticated }
+    WatchProgressSource.SIMKL -> WatchProgressSource.SIMKL.takeIf { isSimklAuthenticated }
+    WatchProgressSource.NUVIO_SYNC -> WatchProgressSource.NUVIO_SYNC
+} ?: WatchProgressSource.NUVIO_SYNC
 
 fun effectiveLibrarySourceMode(
     isAuthenticated: Boolean,

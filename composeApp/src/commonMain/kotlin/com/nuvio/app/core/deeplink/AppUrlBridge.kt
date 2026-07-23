@@ -1,6 +1,7 @@
 package com.nuvio.app.core.deeplink
 
 import com.nuvio.app.features.trakt.handleTraktAuthCallbackUrl
+import com.nuvio.app.features.simkl.SimklAuthRepository
 import com.nuvio.app.features.mal.handleMalAuthCallbackUrl
 import com.nuvio.app.features.anilist.handleAniListAuthCallbackUrl
 import io.ktor.http.Url
@@ -44,6 +45,7 @@ fun handleAppUrl(url: String) {
     if (normalizedUrl.isBlank()) return
 
     handleTraktAuthCallbackUrl(normalizedUrl)
+    SimklAuthRepository.handleAuthCallback(normalizedUrl)
     handleMalAuthCallbackUrl(normalizedUrl)
     handleAniListAuthCallbackUrl(normalizedUrl)
     AppDeepLinkRepository.handleUrl(normalizedUrl)

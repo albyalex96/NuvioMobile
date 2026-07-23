@@ -25,6 +25,9 @@ data class LibraryItem(
     val tmdbId: Int? = null,
     val traktId: Int? = null,
     val savedAtEpochMs: Long,
+    val trackingProviderId: String? = null,
+    val trackingProviderItemId: String? = null,
+    val trackingSourceUrl: String? = null,
 )
 
 data class LibrarySection(
@@ -36,6 +39,7 @@ data class LibrarySection(
 enum class LibrarySourceMode {
     LOCAL,
     TRAKT,
+    SIMKL,
     MAL,
     ANILIST,
 }

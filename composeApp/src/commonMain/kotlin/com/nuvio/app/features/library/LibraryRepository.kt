@@ -22,6 +22,8 @@ import com.nuvio.app.features.mal.MalLibraryItem
 import com.nuvio.app.features.anilist.AniListAuthRepository
 import com.nuvio.app.features.anilist.AniListLibraryRepository
 import com.nuvio.app.features.anilist.AniListLibraryItem
+import com.nuvio.app.features.simkl.SimklAuthRepository
+import com.nuvio.app.features.simkl.SimklLibraryRepository
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.atomicfu.locks.SynchronizedObject
@@ -124,6 +126,9 @@ object LibraryRepository {
                         TraktLibraryRepository.preloadListTabsAsync()
                         publish()
                         refreshTraktLibraryAsync()
+                    } else if (source == LibrarySourceMode.SIMKL && SimklAuthRepository.isAuthenticated.value) {
+                        publish()
+                        refreshSimklLibraryAsync()
                     } else if (source == LibrarySourceMode.MAL) {
                         publish()
                         refreshMalLibraryAsync()
@@ -171,6 +176,22 @@ object LibraryRepository {
                 }
             }
         }
+        syncScope.launch {
+            SimklAuthRepository.isAuthenticated.collectLatest { authenticated ->
+                if (authenticated && isSimklLibrarySourceActive()) {
+                    runCatching { SimklLibraryRepository.refresh(com.nuvio.app.features.tracking.TrackingRefreshIntent.AUTOMATIC) }
+                        .onFailure { log.e(it) { "Failed to refresh SIMKL library after auth change" } }
+                }
+                publish()
+            }
+        }
+        syncScope.launch {
+            SimklLibraryRepository.uiState.collectLatest {
+                if (SimklAuthRepository.isAuthenticated.value) {
+                    publish()
+                }
+            }
+        }
     }
 
     fun ensureLoaded() {
@@ -181,6 +202,7 @@ object LibraryRepository {
         MalLibraryRepository.ensureLoaded()
         AniListAuthRepository.ensureLoaded()
         AniListLibraryRepository.ensureLoaded()
+        SimklAuthRepository.ensureLoaded()
         while (true) {
             val activeProfileId = ProfileRepository.activeProfileId
             val snapshot = localState.snapshot()
@@ -198,6 +220,9 @@ object LibraryRepository {
         }
         if (isAniListLibrarySourceActive()) {
             refreshAniListLibraryAsync()
+        }
+        if (isSimklLibrarySourceActive()) {
+            refreshSimklLibraryAsync()
         }
     }
 
@@ -225,6 +250,9 @@ object LibraryRepository {
         if (isAniListLibrarySourceActive()) {
             refreshAniListLibraryAsync()
         }
+        if (isSimklLibrarySourceActive()) {
+            refreshSimklLibraryAsync()
+        }
     }
 
     fun clearLocalState() {
@@ -236,6 +264,7 @@ object LibraryRepository {
         MalLibraryRepository.clearLocalState()
         AniListAuthRepository.clearLocalState()
         AniListLibraryRepository.clearLocalState()
+        SimklAuthRepository.clearLocalState()
         _uiState.value = LibraryUiState()
     }
 
@@ -317,6 +346,13 @@ object LibraryRepository {
         if (isAniListLibrarySourceActive()) {
             runCatching { AniListLibraryRepository.refreshNow() }
                 .onFailure { e -> log.e(e) { "Failed to pull AniList library" } }
+            publish()
+            return
+        }
+
+        if (isSimklLibrarySourceActive()) {
+            runCatching { SimklLibraryRepository.refresh(com.nuvio.app.features.tracking.TrackingRefreshIntent.AUTOMATIC) }
+                .onFailure { e -> log.e(e) { "Failed to pull SIMKL library" } }
             publish()
             return
         }
@@ -458,6 +494,10 @@ object LibraryRepository {
             return allAniListItems().any { "anilist:${it.id}" == id }
         }
 
+        if (isSimklLibrarySourceActive()) {
+            return SimklLibraryRepository.uiState.value.items.any { it.id == id }
+        }
+
         return if (type != null) {
             localState.contains(id, type)
         } else {
@@ -480,6 +520,10 @@ object LibraryRepository {
         if (isAniListLibrarySourceActive()) {
             val aniListItem = allAniListItems().firstOrNull { "anilist:${it.id}" == id }
             return aniListItem?.toLibraryItem()
+        }
+
+        if (isSimklLibrarySourceActive()) {
+            return SimklLibraryRepository.uiState.value.items.firstOrNull { it.id == id }
         }
 
         return localState.findById(id)
@@ -725,6 +769,22 @@ object LibraryRepository {
             return
         }
 
+        if (isSimklLibrarySourceActive()) {
+            val simklState = SimklLibraryRepository.uiState.value
+            val sections = simklState.items.groupBy { it.type }.map { (type, items) ->
+                LibrarySection(type, type.toLibraryDisplayTitle(), items)
+            }
+            _uiState.value = LibraryUiState(
+                sourceMode = LibrarySourceMode.SIMKL,
+                items = simklState.items,
+                sections = sections,
+                isLoaded = simklState.hasLoaded,
+                isLoading = simklState.isLoading,
+                errorMessage = simklState.errorMessage,
+            )
+            return
+        }
+
         val items = localSnapshot.items
             .sortedByDescending { it.savedAtEpochMs }
         val sections = items
@@ -855,6 +915,12 @@ object LibraryRepository {
                 return LibrarySourceMode.ANILIST
             }
         }
+        if (source == LibrarySourceMode.SIMKL) {
+            SimklAuthRepository.ensureLoaded()
+            if (SimklAuthRepository.isAuthenticated.value) {
+                return LibrarySourceMode.SIMKL
+            }
+        }
         return LibrarySourceMode.LOCAL
     }
 
@@ -866,6 +932,9 @@ object LibraryRepository {
 
     private fun isAniListLibrarySourceActive(): Boolean =
         effectiveLibrarySourceMode() == LibrarySourceMode.ANILIST
+
+    private fun isSimklLibrarySourceActive(): Boolean =
+        effectiveLibrarySourceMode() == LibrarySourceMode.SIMKL
 
     private fun refreshMalLibraryAsync() {
         syncScope.launch {
@@ -879,6 +948,14 @@ object LibraryRepository {
         syncScope.launch {
             runCatching { AniListLibraryRepository.refreshNow() }
                 .onFailure { e -> log.e(e) { "Failed to refresh AniList library" } }
+            publish()
+        }
+    }
+
+    private fun refreshSimklLibraryAsync() {
+        syncScope.launch {
+            runCatching { SimklLibraryRepository.refresh(com.nuvio.app.features.tracking.TrackingRefreshIntent.AUTOMATIC) }
+                .onFailure { e -> log.e(e) { "Failed to refresh SIMKL library" } }
             publish()
         }
     }

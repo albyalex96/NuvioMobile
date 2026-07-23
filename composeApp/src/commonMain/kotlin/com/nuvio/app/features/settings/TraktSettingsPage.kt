@@ -27,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalUriHandler
@@ -39,21 +38,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.library.LibrarySourceMode
-import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktBrandAsset
+import com.nuvio.app.features.trakt.TraktContinueWatchingDaysOptions
 import com.nuvio.app.features.trakt.TraktAuthUiState
 import com.nuvio.app.features.trakt.TraktConnectionMode
-import com.nuvio.app.features.trakt.TraktContinueWatchingDaysOptions
 import com.nuvio.app.features.trakt.MoreLikeThisSourcePreference
 import com.nuvio.app.features.trakt.TraktSettingsRepository
 import com.nuvio.app.features.trakt.TraktSettingsUiState
-import com.nuvio.app.features.trakt.WatchProgressSource
 import com.nuvio.app.features.trakt.TRAKT_CONTINUE_WATCHING_DAYS_CAP_ALL
 import com.nuvio.app.features.trakt.normalizeTraktContinueWatchingDaysCap
 import com.nuvio.app.features.trakt.traktBrandPainter
-import com.nuvio.app.features.watchprogress.WatchProgressSourceCoordinator
-import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_cancel
 import nuvio.composeapp.generated.resources.settings_playback_dialog_close
@@ -96,14 +91,6 @@ import nuvio.composeapp.generated.resources.trakt_more_like_this_source_subtitle
 import nuvio.composeapp.generated.resources.trakt_more_like_this_source_title
 import nuvio.composeapp.generated.resources.trakt_more_like_this_source_tmdb
 import nuvio.composeapp.generated.resources.trakt_more_like_this_source_trakt
-import nuvio.composeapp.generated.resources.trakt_watch_progress_dialog_subtitle
-import nuvio.composeapp.generated.resources.trakt_watch_progress_dialog_title
-import nuvio.composeapp.generated.resources.trakt_watch_progress_nuvio_selected
-import nuvio.composeapp.generated.resources.trakt_watch_progress_source_nuvio
-import nuvio.composeapp.generated.resources.trakt_watch_progress_source_trakt
-import nuvio.composeapp.generated.resources.trakt_watch_progress_subtitle
-import nuvio.composeapp.generated.resources.trakt_watch_progress_title
-import nuvio.composeapp.generated.resources.trakt_watch_progress_trakt_selected
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.traktSettingsContent(
@@ -160,18 +147,13 @@ private fun TraktFeatureRows(
     onCommentsEnabledChange: (Boolean) -> Unit,
 ) {
     var showLibrarySourceDialog by rememberSaveable { mutableStateOf(false) }
-    var showWatchProgressDialog by rememberSaveable { mutableStateOf(false) }
     var showContinueWatchingWindowDialog by rememberSaveable { mutableStateOf(false) }
     var showMoreLikeThisSourceDialog by rememberSaveable { mutableStateOf(false) }
     var statusMessage by rememberSaveable { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
 
     val librarySourceValue = librarySourceModeLabel(settingsUiState.librarySourceMode)
-    val watchProgressValue = watchProgressSourceLabel(settingsUiState.watchProgressSource)
     val continueWatchingWindowValue = continueWatchingDaysCapLabel(settingsUiState.continueWatchingDaysCap)
     val moreLikeThisSourceValue = moreLikeThisSourceLabel(settingsUiState.moreLikeThisSource)
-    val traktProgressSelectedMessage = stringResource(Res.string.trakt_watch_progress_trakt_selected)
-    val nuvioProgressSelectedMessage = stringResource(Res.string.trakt_watch_progress_nuvio_selected)
     val traktLibrarySelectedMessage = stringResource(Res.string.trakt_library_source_trakt_selected)
     val nuvioLibrarySelectedMessage = stringResource(Res.string.trakt_library_source_nuvio_selected)
     val aniListLibrarySelectedMessage = stringResource(Res.string.trakt_library_source_anilist_selected)
@@ -182,14 +164,6 @@ private fun TraktFeatureRows(
         value = librarySourceValue,
         isTablet = isTablet,
         onClick = { showLibrarySourceDialog = true },
-    )
-    SettingsGroupDivider(isTablet = isTablet)
-    TraktSettingsActionRow(
-        title = stringResource(Res.string.trakt_watch_progress_title),
-        description = stringResource(Res.string.trakt_watch_progress_subtitle),
-        value = watchProgressValue,
-        isTablet = isTablet,
-        onClick = { showWatchProgressDialog = true },
     )
     SettingsGroupDivider(isTablet = isTablet)
     TraktSettingsActionRow(
@@ -236,31 +210,6 @@ private fun TraktFeatureRows(
                 showLibrarySourceDialog = false
             },
             onDismiss = { showLibrarySourceDialog = false },
-        )
-    }
-
-    if (showWatchProgressDialog) {
-        WatchProgressSourceDialog(
-            selectedSource = settingsUiState.watchProgressSource,
-            onSourceSelected = { source ->
-                scope.launch {
-                    val result = WatchProgressSourceCoordinator.selectSource(
-                        profileId = ProfileRepository.activeProfileId,
-                        source = source,
-                    )
-                    statusMessage = if (result.succeeded) {
-                        if (result.requestedSource == WatchProgressSource.TRAKT) {
-                            traktProgressSelectedMessage
-                        } else {
-                            nuvioProgressSelectedMessage
-                        }
-                    } else {
-                        null
-                    }
-                }
-                showWatchProgressDialog = false
-            },
-            onDismiss = { showWatchProgressDialog = false },
         )
     }
 
@@ -358,16 +307,10 @@ private fun TraktInfoRow(
 private fun librarySourceModeLabel(source: LibrarySourceMode): String =
     when (source) {
         LibrarySourceMode.TRAKT -> stringResource(Res.string.trakt_library_source_trakt)
+        LibrarySourceMode.SIMKL -> "SIMKL"
         LibrarySourceMode.MAL -> stringResource(Res.string.trakt_library_source_mal)
         LibrarySourceMode.ANILIST -> stringResource(Res.string.trakt_library_source_anilist)
         LibrarySourceMode.LOCAL -> stringResource(Res.string.trakt_library_source_nuvio)
-    }
-
-@Composable
-private fun watchProgressSourceLabel(source: WatchProgressSource): String =
-    when (source) {
-        WatchProgressSource.TRAKT -> stringResource(Res.string.trakt_watch_progress_source_trakt)
-        WatchProgressSource.NUVIO_SYNC -> stringResource(Res.string.trakt_watch_progress_source_nuvio)
     }
 
 @Composable
@@ -420,62 +363,9 @@ private fun LibrarySourceModeDialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    listOf(LibrarySourceMode.TRAKT, LibrarySourceMode.MAL, LibrarySourceMode.ANILIST, LibrarySourceMode.LOCAL).forEach { source ->
+                    listOf(LibrarySourceMode.TRAKT, LibrarySourceMode.SIMKL, LibrarySourceMode.MAL, LibrarySourceMode.ANILIST, LibrarySourceMode.LOCAL).forEach { source ->
                         TraktDialogOption(
                             label = librarySourceModeLabel(source),
-                            selected = source == selectedSource,
-                            onClick = { onSourceSelected(source) },
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = stringResource(Res.string.settings_playback_dialog_close),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun WatchProgressSourceDialog(
-    selectedSource: WatchProgressSource,
-    onSourceSelected: (WatchProgressSource) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(Res.string.trakt_watch_progress_dialog_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(Res.string.trakt_watch_progress_dialog_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    listOf(WatchProgressSource.TRAKT, WatchProgressSource.NUVIO_SYNC).forEach { source ->
-                        TraktDialogOption(
-                            label = watchProgressSourceLabel(source),
                             selected = source == selectedSource,
                             onClick = { onSourceSelected(source) },
                         )

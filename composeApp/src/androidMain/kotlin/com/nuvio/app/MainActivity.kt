@@ -50,6 +50,7 @@ import com.nuvio.app.features.mal.MalAuthStorage
 import com.nuvio.app.features.mal.MalLibraryStorage
 import com.nuvio.app.features.anilist.AniListStorage
 import com.nuvio.app.features.trakt.TraktAuthStorage
+import com.nuvio.app.features.simkl.SimklAuthStorage
 import com.nuvio.app.features.trakt.TraktCommentsStorage
 import com.nuvio.app.features.trakt.TraktLibraryStorage
 import com.nuvio.app.features.trakt.TraktSettingsStorage
@@ -148,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         MalLibraryStorage.initialize(applicationContext)
         AniListStorage.initialize(applicationContext)
         TraktAuthStorage.initialize(applicationContext)
+        SimklAuthStorage.initialize(applicationContext)
         TraktCommentsStorage.initialize(applicationContext)
         TraktLibraryStorage.initialize(applicationContext)
         TraktSettingsStorage.initialize(applicationContext)

@@ -250,6 +250,21 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
+        outDir.resolve("com/nuvio/app/features/simkl").apply {
+            mkdirs()
+            resolve("SimklConfig.kt").writeText(
+                """
+                |package com.nuvio.app.features.simkl
+                |
+                |object SimklConfig {
+                |    const val CLIENT_ID = "${props.getProperty("SIMKL_CLIENT_ID", "")}"
+                |    const val REDIRECT_URI = "${props.getProperty("SIMKL_REDIRECT_URI", "nuvio://auth/simkl")}"
+                |    const val APP_NAME = "Nuvio"
+                |}
+                """.trimMargin()
+            )
+        }
+
         xcconfigFile.asFile.orNull?.let { xcFile ->
             xcFile.writeText(
                 "CURRENT_PROJECT_VERSION=${appVersionCode.get()}\n" +
@@ -1375,7 +1390,12 @@ android {
         }
     }
     buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            resValue("string", "app_name", "Nuvio Debug")
+        }
         getByName("release") {
+            resValue("string", "app_name", "Nuvio Enhanced")
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(
