@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.drinkless.tdlib.Client
 import org.drinkless.tdlib.TdApi
 import java.io.File
+import java.util.concurrent.CountDownLatch
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -28,6 +30,7 @@ object TelegramClient {
 
     private var client: Client? = null
     private var appContext: Context? = null
+    private var clientReady = CountDownLatch(1)
 
     val isAvailable: Boolean by lazy {
         try {
@@ -39,6 +42,12 @@ object TelegramClient {
         }
     }
 
+    fun isClientReady(): Boolean = client != null
+
+    suspend fun awaitClient() {
+        withContext(Dispatchers.IO) { clientReady.await() }
+    }
+
     fun initialize(context: Context) {
         appContext = context.applicationContext
         if (client != null) return
@@ -46,6 +55,7 @@ object TelegramClient {
             if (client != null) return@launch
             if (!isAvailable) {
                 _authState.value = TelegramAuthState.Error("TDLib native library unavailable")
+                clientReady.countDown()
                 return@launch
             }
             _authState.value = TelegramAuthState.Initializing
@@ -55,10 +65,12 @@ object TelegramClient {
                     { e -> log.e(e) { "TDLib update exception" } },
                     { e -> log.e(e) { "TDLib default exception" } }
                 )
+                clientReady.countDown()
                 sendTdlibParameters()
             } catch (e: Throwable) {
                 log.e(e) { "TDLib Client.create failed" }
                 _authState.value = TelegramAuthState.Error("TDLib initialization failed: ${e.message}")
+                clientReady.countDown()
             }
         }
     }
@@ -176,5 +188,6 @@ object TelegramClient {
         client?.send(TdApi.Close(), null)
         client = null
         _authState.value = TelegramAuthState.Idle
+        clientReady = CountDownLatch(1)
     }
 }

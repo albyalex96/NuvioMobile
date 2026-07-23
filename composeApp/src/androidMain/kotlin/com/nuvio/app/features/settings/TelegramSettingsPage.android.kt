@@ -20,10 +20,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,8 +34,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import com.nuvio.app.features.telegram.TelegramAuthState
 import com.nuvio.app.features.telegram.TelegramRepository
+import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.settings_telegram_2fa_card_title
 import nuvio.composeapp.generated.resources.settings_telegram_2fa_instruction
@@ -66,12 +70,14 @@ internal actual fun LazyListScope.telegramSettingsContent(
 ) {
     item {
         val authState by TelegramRepository.authState.collectAsState()
-        var phoneInput by remember { mutableStateOf("") }
+        var phoneInput by remember { mutableStateOf("+") }
         var codeInput by remember { mutableStateOf("") }
         var passwordInput by remember { mutableStateOf("") }
         var cacheSize by remember { mutableStateOf(TelegramRepository.getCacheSize()) }
+        var waitingForClient by remember { mutableStateOf(false) }
+        val coroutineScope = rememberCoroutineScope()
 
-        androidx.compose.runtime.LaunchedEffect(Unit) {
+        LaunchedEffect(Unit) {
             TelegramRepository.startAuth()
         }
 
@@ -116,7 +122,10 @@ internal actual fun LazyListScope.telegramSettingsContent(
                             Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = phoneInput,
-                                onValueChange = { phoneInput = it },
+                                onValueChange = {
+                                    val cleaned = it.filter { c -> c.isDigit() || c == '+' }
+                                    phoneInput = if (cleaned.isEmpty() || cleaned.first() != '+') "+$cleaned" else cleaned
+                                },
                                 label = { Text(stringResource(Res.string.settings_telegram_phone_label)) },
                                 placeholder = { Text(stringResource(Res.string.settings_telegram_phone_placeholder)) },
                                 singleLine = true,
@@ -132,14 +141,27 @@ internal actual fun LazyListScope.telegramSettingsContent(
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = {
-                                    if (phoneInput.isNotBlank()) {
-                                        TelegramRepository.startAuth()
-                                        TelegramRepository.submitPhone(phoneInput)
+                                    if (phoneInput.isNotBlank() && !waitingForClient) {
+                                        if (TelegramRepository.isClientReady()) {
+                                            TelegramRepository.submitPhone(phoneInput)
+                                        } else {
+                                            waitingForClient = true
+                                            TelegramRepository.startAuth()
+                                            coroutineScope.launch {
+                                                TelegramRepository.awaitClient()
+                                                TelegramRepository.submitPhone(phoneInput)
+                                                waitingForClient = false
+                                            }
+                                        }
                                     }
                                 },
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text(stringResource(Res.string.settings_telegram_send_code))
+                                if (waitingForClient) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Text(stringResource(Res.string.settings_telegram_send_code))
+                                }
                             }
                         }
                     }

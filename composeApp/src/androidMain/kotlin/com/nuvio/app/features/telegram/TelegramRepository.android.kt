@@ -39,6 +39,12 @@ object TelegramRepository {
 
     fun isAuthenticated(): Boolean = TelegramClient.authState.value is TelegramAuthState.Ready
 
+    fun isClientReady(): Boolean = TelegramClient.isClientReady()
+
+    suspend fun awaitClient() {
+        TelegramClient.awaitClient()
+    }
+
     fun startAuth() {
         appContext?.let { TelegramClient.initialize(it) }
     }
