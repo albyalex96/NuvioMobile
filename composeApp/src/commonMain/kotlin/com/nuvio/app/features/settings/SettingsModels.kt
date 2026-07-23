@@ -40,6 +40,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_anilist
 import nuvio.composeapp.generated.resources.compose_settings_page_simkl
 import nuvio.composeapp.generated.resources.compose_settings_page_opensubtitles
 import nuvio.composeapp.generated.resources.compose_settings_page_subdl
+import nuvio.composeapp.generated.resources.compose_settings_page_telegram
 import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
 import nuvio.composeapp.generated.resources.settings_account
 import nuvio.composeapp.generated.resources.compose_settings_page_network
@@ -212,6 +213,11 @@ internal enum class SettingsPage(
     ),
     Subdl(
         titleRes = Res.string.compose_settings_page_subdl,
+        category = SettingsCategory.General,
+        parentPage = Integrations,
+    ),
+    Telegram(
+        titleRes = Res.string.compose_settings_page_telegram,
         category = SettingsCategory.General,
         parentPage = Integrations,
     ),

@@ -14,6 +14,7 @@ internal enum class IntegrationLogo {
     Simkl,
     OpenSubtitles,
     Subdl,
+    Telegram,
 }
 
 @Composable

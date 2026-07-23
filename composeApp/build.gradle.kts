@@ -60,6 +60,12 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     @get:Input
     abstract val desktopAppVersionCode: Property<Int>
 
+    @get:Input
+    abstract val telegramApiId: Property<String>
+
+    @get:Input
+    abstract val telegramApiHash: Property<String>
+
     @get:Optional
     @get:OutputFile
     abstract val xcconfigFile: RegularFileProperty
@@ -225,6 +231,20 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |    const val CONTRIBUTIONS_URL = "${props.getProperty("CONTRIBUTIONS_URL", "")}" 
                 |    const val DONATIONS_BASE_URL = "${props.getProperty("DONATIONS_BASE_URL", "")}" 
                 |    const val DONATIONS_DONATE_URL = "${props.getProperty("DONATIONS_DONATE_URL", "")}" 
+                |}
+                """.trimMargin()
+            )
+        }
+
+        outDir.resolve("com/nuvio/app/features/telegram").apply {
+            mkdirs()
+            resolve("TelegramConfig.kt").writeText(
+                """
+                |package com.nuvio.app.features.telegram
+                |
+                |object TelegramConfig {
+                |    const val API_ID = ${telegramApiId.get()}
+                |    const val API_HASH = "${telegramApiHash.get()}"
                 |}
                 """.trimMargin()
             )
@@ -942,6 +962,8 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     syncBackendManifestUrl.set(runtimeConfigValue("SYNC_BACKEND_MANIFEST_URL"))
     desktopAppVersionName.set(desktopReleaseVersionName)
     desktopAppVersionCode.set(desktopReleaseVersionCode)
+    telegramApiId.set(runtimeConfigValue("TELEGRAM_API_ID", "0"))
+    telegramApiHash.set(runtimeConfigValue("TELEGRAM_API_HASH", ""))
     xcconfigFile.set(rootProject.layout.projectDirectory.file("iosApp/Configuration/Version.xcconfig"))
 }
 
@@ -1038,6 +1060,7 @@ kotlin {
                 implementation(libs.mpv.android.lib)
                 implementation(libs.mp4parser.isoparser)
                 implementation(libs.mp4parser.muxer)
+                implementation(files("libs/tdlib.jar"))
             }
         }
         val desktopMain by getting {
@@ -1061,6 +1084,8 @@ kotlin {
                 exclude(group = "org.jetbrains.skiko", module = "skiko")
             }
             implementation("dev.chrisbanes.haze:haze:1.7.2")
+            implementation(libs.ktor.server.core)
+            implementation(libs.ktor.server.cio)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

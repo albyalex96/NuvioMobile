@@ -457,6 +457,7 @@
     <string name="compose_settings_page_simkl">SIMKL</string>
     <string name="compose_settings_page_opensubtitles">OpenSubtitles</string>
     <string name="compose_settings_page_subdl">SubDL</string>
+    <string name="compose_settings_page_telegram">Telegram</string>
     <string name="compose_settings_root_about_section">ABOUT</string>
     <string name="compose_settings_root_account_description">Account and sync status</string>
     <string name="compose_settings_root_account_section">ACCOUNT</string>
@@ -767,6 +768,7 @@
     <string name="settings_integrations_tmdb_description">Metadata enrichment controls</string>
     <string name="settings_integrations_mdblist_description">External ratings providers</string>
     <string name="settings_integrations_debrid_description">Connect accounts for links and library access</string>
+    <string name="settings_integrations_telegram_description">Search and stream videos from Telegram chats</string>
     <string name="settings_integrations_live_tv_description">Add an M3U playlist for live channels.</string>
     <string name="settings_integrations_mal_description">Sync your anime watchlist with MyAnimeList</string>
     <string name="settings_integrations_kitsu_description">Track your anime progress with Kitsu</string>

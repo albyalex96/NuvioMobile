@@ -1426,6 +1426,7 @@
   <string name="settings_continue_watching_use_episode_thumbnails_description">Prediligi le miniature dell'episodio quando disponibili.</string>
   <string name="settings_continue_watching_use_episode_thumbnails_title">Prediligi miniature episodio in Inizia a guardare</string>
   <string name="settings_integrations_debrid_description">Connetti gli account per i link e l'accesso alla libreria</string>
+  <string name="settings_integrations_telegram_description">Cerca e riproduci video dalle chat Telegram</string>
   <string name="settings_debrid_section_title">Servizi connessi</string>
   <string name="settings_debrid_experimental_notice">Queste integrazioni sono sperimentali e potrebbero essere mantenute, modificate o rimosse in seguito.</string>
   <string name="settings_debrid_cloud_library">Libreria cloud</string>
@@ -2114,6 +2115,7 @@
     <string name="compose_settings_page_simkl">SIMKL</string>
     <string name="compose_settings_page_opensubtitles">OpenSubtitles</string>
     <string name="compose_settings_page_subdl">SubDL</string>
+    <string name="compose_settings_page_telegram">Telegram</string>
     <string name="settings_integrations_mal_description">Sincronizza la tua watchlist anime con MyAnimeList</string>
     <string name="settings_integrations_kitsu_description">Traccia i tuoi progressi anime con Kitsu</string>
     <string name="settings_integrations_anilist_description">Connetti il tuo account AniList per sincronizzare le liste</string>

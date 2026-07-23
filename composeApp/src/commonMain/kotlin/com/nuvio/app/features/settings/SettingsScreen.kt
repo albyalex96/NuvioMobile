@@ -886,6 +886,7 @@ private fun MobileSettingsScreen(
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                     onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                    onTelegramClick = { onPageChange(SettingsPage.Telegram) },
                 )
                 SettingsPage.AiAssistant -> aiAssistantSettingsContent(
                     isTablet = false,
@@ -933,6 +934,9 @@ private fun MobileSettingsScreen(
                 SettingsPage.LiveTv -> liveTvSettingsContent(
                     isTablet = false,
                     uiState = liveTvUiState,
+                )
+                SettingsPage.Telegram -> telegramSettingsContent(
+                    isTablet = false,
                 )
             SettingsPage.Network -> networkSettingsContent(
                 isTablet = false,
@@ -1382,6 +1386,7 @@ private fun TabletSettingsScreen(
                         onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                         onLiveTvClick = { onPageChange(SettingsPage.LiveTv) },
                         onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                        onTelegramClick = { onPageChange(SettingsPage.Telegram) },
                     )
                     SettingsPage.AiAssistant -> aiAssistantSettingsContent(
                         isTablet = true,
@@ -1425,6 +1430,9 @@ private fun TabletSettingsScreen(
                     SettingsPage.LiveTv -> liveTvSettingsContent(
                         isTablet = true,
                         uiState = liveTvUiState,
+                    )
+                    SettingsPage.Telegram -> telegramSettingsContent(
+                        isTablet = true,
                     )
                     SettingsPage.Debrid -> debridSettingsContent(
                         isTablet = true,

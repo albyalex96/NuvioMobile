@@ -9,6 +9,7 @@ import com.nuvio.app.features.addons.httpGetText
 import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.cloudstream.parseCloudStreamRouteId
 import com.nuvio.app.features.cloudstream.toStreamItem
+import com.nuvio.app.features.telegram.TelegramSourceResolver
 import com.nuvio.app.features.debrid.DirectDebridStreamPreparer
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DebridStreamPresentation
@@ -295,7 +296,8 @@ object StreamsRepository {
             groupByRepository = pluginUiState.groupStreamsByRepository,
         )
 
-        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && cloudStreamProviderGroups.isEmpty()) {
+        val telegramEnabled = TelegramSourceResolver.isEnabled()
+        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && cloudStreamProviderGroups.isEmpty() && !telegramEnabled) {
             _uiState.value = StreamsUiState(
                 requestToken = requestToken,
                 isAnyLoading = false,
@@ -327,7 +329,7 @@ object StreamsRepository {
                 "for stream type=$type id=$videoId"
         }
 
-        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && cloudStreamProviderGroups.isEmpty()) {
+        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && cloudStreamProviderGroups.isEmpty() && !telegramEnabled) {
             _uiState.value = StreamsUiState(
                 requestToken = requestToken,
                 isAnyLoading = false,
@@ -338,6 +340,18 @@ object StreamsRepository {
 
         // Initialise loading placeholders
         val installedAddonOrder = streamAddons.map { it.addonName }
+        val telegramGroup = if (telegramEnabled) {
+            listOf(
+                AddonStreamGroup(
+                    addonName = "Telegram",
+                    addonId = "telegram_native",
+                    streams = emptyList(),
+                    isLoading = true,
+                )
+            )
+        } else {
+            emptyList()
+        }
         val initialGroups = StreamAutoPlaySelector.orderAddonStreams(streamAddons.map { addon ->
             AddonStreamGroup(
                 addonName = addon.addonName,
@@ -359,7 +373,7 @@ object StreamsRepository {
                 streams = emptyList(),
                 isLoading = true,
             )
-        }, installedAddonOrder)
+        } + telegramGroup, installedAddonOrder)
         val isInitiallyLoading = initialGroups.any { it.isLoading }
         _uiState.value = StreamsUiState(
             requestToken = requestToken,
@@ -631,6 +645,26 @@ object StreamsRepository {
                                 error = err.message,
                             )
                         },
+                    )
+                    publishCompletion(StreamLoadCompletion.Addon(group))
+                }
+            }
+
+            if (telegramEnabled) {
+                launch {
+                    log.d { "Resolving Telegram streams for type=$type id=$videoId" }
+                    val telegramStreams = TelegramSourceResolver.resolve(
+                        title = searchTitle ?: videoId,
+                        year = null,
+                        season = season,
+                        episode = episode,
+                        isMovie = type != "series",
+                    )
+                    val group = AddonStreamGroup(
+                        addonName = "Telegram",
+                        addonId = "telegram_native",
+                        streams = telegramStreams,
+                        isLoading = false,
                     )
                     publishCompletion(StreamLoadCompletion.Addon(group))
                 }

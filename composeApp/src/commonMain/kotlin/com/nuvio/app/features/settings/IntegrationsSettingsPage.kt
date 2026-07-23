@@ -20,6 +20,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_mdblist_rating
 import nuvio.composeapp.generated.resources.compose_settings_page_opensubtitles
 import nuvio.composeapp.generated.resources.compose_settings_page_simkl
 import nuvio.composeapp.generated.resources.compose_settings_page_subdl
+import nuvio.composeapp.generated.resources.compose_settings_page_telegram
 import nuvio.composeapp.generated.resources.compose_settings_page_tmdb_enrichment
 import nuvio.composeapp.generated.resources.compose_settings_page_trakt
 import nuvio.composeapp.generated.resources.compose_settings_root_trakt_description
@@ -37,6 +38,7 @@ import nuvio.composeapp.generated.resources.settings_integrations_section_metada
 import nuvio.composeapp.generated.resources.settings_integrations_section_subtitles
 import nuvio.composeapp.generated.resources.settings_integrations_simkl_description
 import nuvio.composeapp.generated.resources.settings_integrations_subdl_description
+import nuvio.composeapp.generated.resources.settings_integrations_telegram_description
 import nuvio.composeapp.generated.resources.settings_integrations_tmdb_description
 import org.jetbrains.compose.resources.stringResource
 
@@ -54,6 +56,7 @@ internal fun LazyListScope.integrationsContent(
     onMdbListClick: () -> Unit,
     onLiveTvClick: () -> Unit,
     onDebridClick: () -> Unit,
+    onTelegramClick: () -> Unit,
 ) {
     item {
         SettingsSection(
@@ -180,6 +183,14 @@ internal fun LazyListScope.integrationsContent(
                     icon = Icons.Rounded.Cloud,
                     isTablet = isTablet,
                     onClick = onDebridClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_telegram),
+                    description = stringResource(Res.string.settings_integrations_telegram_description),
+                    iconPainter = integrationLogoPainter(IntegrationLogo.Telegram),
+                    isTablet = isTablet,
+                    onClick = onTelegramClick,
                 )
             }
         }

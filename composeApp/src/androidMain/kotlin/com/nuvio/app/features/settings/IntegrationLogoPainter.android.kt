@@ -7,6 +7,7 @@ import com.nuvio.app.R
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.introdb_favicon
 import nuvio.composeapp.generated.resources.rating_tmdb
+import nuvio.composeapp.generated.resources.telegram_logo
 import org.jetbrains.compose.resources.painterResource as composePainterResource
 
 @Composable
@@ -22,4 +23,5 @@ internal actual fun integrationLogoPainter(logo: IntegrationLogo): Painter =
         IntegrationLogo.Simkl -> painterResource(id = R.drawable.simkl_logo)
         IntegrationLogo.OpenSubtitles -> painterResource(id = R.drawable.opensubtitles_favicon)
         IntegrationLogo.Subdl -> painterResource(id = R.drawable.subdl_favicon)
+        IntegrationLogo.Telegram -> composePainterResource(Res.drawable.telegram_logo)
     }
