@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -35,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.logging.InAppLogLevel
 import com.nuvio.app.core.logging.InAppLogger
+import com.nuvio.app.core.ui.NuvioDropdownChip
+import com.nuvio.app.core.ui.NuvioDropdownOption
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import nuvio.composeapp.generated.resources.Res
@@ -185,28 +188,22 @@ private fun FilterSection(
             .padding(horizontal = padding),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = stringResource(Res.string.settings_advanced_debugging_filter_category),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        NuvioDropdownChip(
+            title = stringResource(Res.string.settings_advanced_debugging_filter_category),
+            label = if (selectedCategory == ALL_FILTER_VALUE) {
+                stringResource(Res.string.settings_advanced_debugging_filter_all)
+            } else {
+                selectedCategory
+            },
+            selectedKey = selectedCategory,
+            options = listOf(
+                NuvioDropdownOption(
+                    key = ALL_FILTER_VALUE,
+                    label = stringResource(Res.string.settings_advanced_debugging_filter_all),
+                ),
+            ) + categories.map { NuvioDropdownOption(key = it, label = it) },
+            onSelected = { onCategorySelected(it.key) },
         )
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            DebugLogFilterChip(
-                label = stringResource(Res.string.settings_advanced_debugging_filter_all),
-                selected = selectedCategory == ALL_FILTER_VALUE,
-                onClick = { onCategorySelected(ALL_FILTER_VALUE) },
-            )
-            categories.forEach { category ->
-                DebugLogFilterChip(
-                    label = category,
-                    selected = selectedCategory == category,
-                    onClick = { onCategorySelected(category) },
-                )
-            }
-        }
 
         Text(
             text = stringResource(Res.string.settings_advanced_debugging_filter_level),
@@ -227,6 +224,7 @@ private fun FilterSection(
                     },
                     selected = selectedLevel == level,
                     onClick = { onLevelSelected(level) },
+                    level = InAppLogLevel.entries.find { it.label == level },
                 )
             }
         }
@@ -238,7 +236,27 @@ private fun DebugLogFilterChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    level: InAppLogLevel? = null,
 ) {
+    val chipColors = if (level != null) {
+        val tintColor = when (level) {
+            InAppLogLevel.Debug -> Color(0xFF1976D2)
+            InAppLogLevel.Info -> Color(0xFF388E3C)
+            InAppLogLevel.Warn -> Color(0xFFFFA000)
+            InAppLogLevel.Error -> Color(0xFFD32F2F)
+        }
+        FilterChipDefaults.filterChipColors(
+            containerColor = tintColor.copy(alpha = 0.10f),
+            selectedContainerColor = tintColor.copy(alpha = 0.25f),
+            labelColor = if (selected) tintColor else MaterialTheme.colorScheme.onSurface,
+        )
+    } else {
+        FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+        )
+    }
+
     FilterChip(
         selected = selected,
         onClick = onClick,
@@ -250,10 +268,7 @@ private fun DebugLogFilterChip(
                 overflow = TextOverflow.Ellipsis,
             )
         },
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-        ),
+        colors = chipColors,
     )
 }
 
