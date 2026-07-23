@@ -238,17 +238,22 @@ private fun DebugLogFilterChip(
     onClick: () -> Unit,
     level: InAppLogLevel? = null,
 ) {
-    val chipColors = if (level != null) {
-        val tintColor = when (level) {
+    val chipBackground = if (level != null) {
+        when (level) {
             InAppLogLevel.Debug -> Color(0xFF1976D2)
             InAppLogLevel.Info -> Color(0xFF388E3C)
             InAppLogLevel.Warn -> Color(0xFFFFA000)
             InAppLogLevel.Error -> Color(0xFFD32F2F)
         }
+    } else {
+        null
+    }
+    val chipColors = if (chipBackground != null) {
         FilterChipDefaults.filterChipColors(
-            containerColor = tintColor.copy(alpha = 0.10f),
-            selectedContainerColor = tintColor.copy(alpha = 0.25f),
-            labelColor = if (selected) tintColor else MaterialTheme.colorScheme.onSurface,
+            containerColor = chipBackground.copy(alpha = 0.30f),
+            selectedContainerColor = chipBackground,
+            labelColor = if (selected) Color.White else chipBackground,
+            selectedLabelColor = Color.White,
         )
     } else {
         FilterChipDefaults.filterChipColors(
