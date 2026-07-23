@@ -8,13 +8,17 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.settings_telegram_heading
+import nuvio.composeapp.generated.resources.settings_telegram_unavailable
+import org.jetbrains.compose.resources.stringResource
 
 internal actual fun LazyListScope.telegramSettingsContent(
     isTablet: Boolean,
 ) {
     item {
         Text(
-            text = "Telegram Integration",
+            text = stringResource(Res.string.settings_telegram_heading),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -23,7 +27,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
     }
     item {
         Text(
-            text = "Telegram integration is only available on Android.",
+            text = stringResource(Res.string.settings_telegram_unavailable),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),

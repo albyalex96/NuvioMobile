@@ -34,6 +34,32 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.telegram.TelegramAuthState
 import com.nuvio.app.features.telegram.TelegramRepository
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.settings_telegram_2fa_card_title
+import nuvio.composeapp.generated.resources.settings_telegram_2fa_instruction
+import nuvio.composeapp.generated.resources.settings_telegram_2fa_label
+import nuvio.composeapp.generated.resources.settings_telegram_clear_cache
+import nuvio.composeapp.generated.resources.settings_telegram_code_card_title
+import nuvio.composeapp.generated.resources.settings_telegram_code_instruction
+import nuvio.composeapp.generated.resources.settings_telegram_code_label
+import nuvio.composeapp.generated.resources.settings_telegram_connected_title
+import nuvio.composeapp.generated.resources.settings_telegram_description
+import nuvio.composeapp.generated.resources.settings_telegram_disconnect
+import nuvio.composeapp.generated.resources.settings_telegram_error_title
+import nuvio.composeapp.generated.resources.settings_telegram_heading
+import nuvio.composeapp.generated.resources.settings_telegram_initializing
+import nuvio.composeapp.generated.resources.settings_telegram_logged_in_as
+import nuvio.composeapp.generated.resources.settings_telegram_media_cache
+import nuvio.composeapp.generated.resources.settings_telegram_phone_card_title
+import nuvio.composeapp.generated.resources.settings_telegram_phone_instruction
+import nuvio.composeapp.generated.resources.settings_telegram_phone_label
+import nuvio.composeapp.generated.resources.settings_telegram_phone_placeholder
+import nuvio.composeapp.generated.resources.settings_telegram_qr_scan
+import nuvio.composeapp.generated.resources.settings_telegram_retry
+import nuvio.composeapp.generated.resources.settings_telegram_send_code
+import nuvio.composeapp.generated.resources.settings_telegram_submit_password
+import nuvio.composeapp.generated.resources.settings_telegram_verify_code
+import org.jetbrains.compose.resources.stringResource
 
 internal actual fun LazyListScope.telegramSettingsContent(
     isTablet: Boolean,
@@ -56,14 +82,14 @@ internal actual fun LazyListScope.telegramSettingsContent(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Telegram Integration",
+                text = stringResource(Res.string.settings_telegram_heading),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
-                text = "Connect your Telegram account to scan chats and stream movies & shows directly.",
+                text = stringResource(Res.string.settings_telegram_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -78,21 +104,21 @@ internal actual fun LazyListScope.telegramSettingsContent(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Log In with Phone Number",
+                                text = stringResource(Res.string.settings_telegram_phone_card_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Enter your phone number including country code (e.g. +1234567890):",
+                                text = stringResource(Res.string.settings_telegram_phone_instruction),
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = phoneInput,
                                 onValueChange = { phoneInput = it },
-                                label = { Text("Phone Number") },
-                                placeholder = { Text("+1234567890") },
+                                label = { Text(stringResource(Res.string.settings_telegram_phone_label)) },
+                                placeholder = { Text(stringResource(Res.string.settings_telegram_phone_placeholder)) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Phone,
@@ -113,7 +139,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                                 },
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text("Send Verification Code")
+                                Text(stringResource(Res.string.settings_telegram_send_code))
                             }
                         }
                     }
@@ -126,7 +152,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(modifier = Modifier.padding(end = 16.dp))
-                            Text("Initializing Telegram Client...")
+                            Text(stringResource(Res.string.settings_telegram_initializing))
                         }
                     }
                 }
@@ -138,20 +164,20 @@ internal actual fun LazyListScope.telegramSettingsContent(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Enter Verification Code",
+                                text = stringResource(Res.string.settings_telegram_code_card_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Enter the ${state.codeLength}-digit OTP code sent to your Telegram app:",
+                                text = stringResource(Res.string.settings_telegram_code_instruction, state.codeLength),
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = codeInput,
                                 onValueChange = { codeInput = it },
-                                label = { Text("OTP Code") },
+                                label = { Text(stringResource(Res.string.settings_telegram_code_label)) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Number,
@@ -169,7 +195,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                                 },
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text("Verify Code")
+                                Text(stringResource(Res.string.settings_telegram_verify_code))
                             }
                         }
                     }
@@ -182,20 +208,20 @@ internal actual fun LazyListScope.telegramSettingsContent(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Two-Step Verification (2FA)",
+                                text = stringResource(Res.string.settings_telegram_2fa_card_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Enter your Telegram cloud 2FA password:",
+                                text = stringResource(Res.string.settings_telegram_2fa_instruction),
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = passwordInput,
                                 onValueChange = { passwordInput = it },
-                                label = { Text("2FA Password") },
+                                label = { Text(stringResource(Res.string.settings_telegram_2fa_label)) },
                                 singleLine = true,
                                 visualTransformation = PasswordVisualTransformation(),
                                 keyboardOptions = KeyboardOptions(
@@ -214,7 +240,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                                 },
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text("Submit Password")
+                                Text(stringResource(Res.string.settings_telegram_submit_password))
                             }
                         }
                     }
@@ -227,14 +253,14 @@ internal actual fun LazyListScope.telegramSettingsContent(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Connected Account",
+                                text = stringResource(Res.string.settings_telegram_connected_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Logged in as ${state.firstName} (User ID: ${state.userId})",
+                                text = stringResource(Res.string.settings_telegram_logged_in_as, state.firstName, state.userId),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -246,7 +272,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    text = "Media Cache: ${formatBytes(cacheSize)}",
+                                    text = stringResource(Res.string.settings_telegram_media_cache, formatBytes(cacheSize)),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -256,7 +282,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                                         cacheSize = TelegramRepository.getCacheSize()
                                     }
                                 ) {
-                                    Text("Clear Cache")
+                                    Text(stringResource(Res.string.settings_telegram_clear_cache))
                                 }
                             }
 
@@ -269,14 +295,14 @@ internal actual fun LazyListScope.telegramSettingsContent(
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
-                                Text("Disconnect Account")
+                                Text(stringResource(Res.string.settings_telegram_disconnect))
                             }
                         }
                     }
                 }
 
                 is TelegramAuthState.WaitQr -> {
-                    Text("Scan QR Code to Log In: ${state.link}")
+                    Text(stringResource(Res.string.settings_telegram_qr_scan, state.link))
                 }
 
                 is TelegramAuthState.Error -> {
@@ -286,7 +312,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Authentication Error",
+                                text = stringResource(Res.string.settings_telegram_error_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.error,
                                 fontWeight = FontWeight.Bold
@@ -302,7 +328,7 @@ internal actual fun LazyListScope.telegramSettingsContent(
                                 onClick = { TelegramRepository.startAuth() },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
-                                Text("Retry")
+                                Text(stringResource(Res.string.settings_telegram_retry))
                             }
                         }
                     }
