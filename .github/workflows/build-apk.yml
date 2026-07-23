@@ -86,7 +86,7 @@ jobs:
           printf 'TELEGRAM_API_ID=%s\n' "${{secrets.TELEGRAM_API_ID}}" >> local.properties
           printf 'TELEGRAM_API_HASH=%s\n' "${{secrets.TELEGRAM_API_HASH}}" >> local.properties
           printf 'SIMKL_CLIENT_ID=%s\n' "${{secrets.SIMKL_CLIENT_ID}}" >> local.properties
-          printf 'SIMKL_CLIENT_SECRET=%s\n' "${{secrets.SIMKL_CLIENT_SECRET}}" >> local.properties
+          
       - name: Generate Changelog
         id: changelog
         env:
