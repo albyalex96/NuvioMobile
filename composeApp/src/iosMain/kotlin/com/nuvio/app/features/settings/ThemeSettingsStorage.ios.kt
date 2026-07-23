@@ -23,13 +23,6 @@ actual object ThemeSettingsStorage {
     private const val glassNavBarEnabledKey = "glass_nav_bar_enabled"
     private const val selectedAppLanguageKey = "selected_app_language"
     private const val dateFormatOptionKey = "date_format_option"
-    private val profileScopedSyncKeys = listOf(
-        selectedThemeKey,
-        amoledEnabledKey,
-        amoledSurfacesEnabledKey,
-        liquidGlassNativeTabBarEnabledKey,
-        glassNavBarEnabledKey,
-    )
 
     actual fun loadSelectedTheme(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(selectedThemeKey))
@@ -184,10 +177,6 @@ actual object ThemeSettingsStorage {
     }
 
     actual fun replaceFromSyncPayload(payload: JsonObject) {
-        profileScopedSyncKeys.forEach { key ->
-            NSUserDefaults.standardUserDefaults.removeObjectForKey(ProfileScopedKey.of(key))
-        }
-
         payload.decodeSyncString(selectedThemeKey)?.let(::saveSelectedTheme)
         payload.decodeSyncString(customAccentHexKey)?.let(::saveCustomAccentHex)
         payload.decodeSyncString(customThemeFirstColorKey)?.let(::saveCustomThemeFirstColor)
