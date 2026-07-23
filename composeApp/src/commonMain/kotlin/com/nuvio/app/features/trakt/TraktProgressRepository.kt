@@ -109,10 +109,18 @@ object TraktProgressRepository {
     private var showIdToTraktPathId: Map<String, String> = emptyMap()
     private var showIdSiblingsMap: Map<String, Set<String>> = emptyMap()
 
+    @Volatile
+    var isPollingPaused: Boolean = false
+
     init {
         scope.launch {
             while (true) {
+                if (isPollingPaused) {
+                    delay(5_000L)
+                    continue
+                }
                 delay(refreshIntervalMs)
+                if (isPollingPaused) continue
                 TraktAuthRepository.ensureLoaded()
                 TraktSettingsRepository.ensureLoaded()
                 if (!shouldUseTraktProgress(

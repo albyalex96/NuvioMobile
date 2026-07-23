@@ -68,14 +68,34 @@ class ReleaseAlertState(
     val isNewSeasonRelease: Boolean,
 )
 
+private val releaseAlertCache = mutableMapOf<String, ReleaseAlertState>()
+private var releaseAlertCacheGeneration = -1L
+
 fun calculateReleaseAlertState(
     seedLastUpdatedEpochMs: Long,
     seedSeasonNumber: Int?,
     nextSeasonNumber: Int?,
     releasedIso: String?,
 ): ReleaseAlertState {
-    val releaseEpoch = parseReleaseDateToEpochMs(releasedIso)
     val nowMs = WatchProgressClock.nowEpochMs()
+    val gen = nowMs / 60_000L
+    if (gen != releaseAlertCacheGeneration) {
+        releaseAlertCache.clear()
+        releaseAlertCacheGeneration = gen
+    }
+
+    val cacheKey = buildString {
+        append(seedLastUpdatedEpochMs)
+        append('|')
+        append(seedSeasonNumber)
+        append('|')
+        append(nextSeasonNumber)
+        append('|')
+        append(releasedIso)
+    }
+    releaseAlertCache[cacheKey]?.let { return it }
+
+    val releaseEpoch = parseReleaseDateToEpochMs(releasedIso)
 
     val log = Logger.withTag("ReleaseAlert")
     log.d {
@@ -86,7 +106,9 @@ fun calculateReleaseAlertState(
 
     if (releaseEpoch == null) {
         log.d { "calculateReleaseAlertState failed: releaseEpoch is null" }
-        return ReleaseAlertState(false, false)
+        val result = ReleaseAlertState(false, false)
+        releaseAlertCache[cacheKey] = result
+        return result
     }
 
     val hasAired = nowMs >= releaseEpoch
@@ -106,8 +128,10 @@ fun calculateReleaseAlertState(
         "isNewSeasonRelease=$isNewSeasonRelease"
     }
 
-    return ReleaseAlertState(
+    val result = ReleaseAlertState(
         isReleaseAlert = isReleaseAlert,
         isNewSeasonRelease = isNewSeasonRelease
     )
+    releaseAlertCache[cacheKey] = result
+    return result
 }
