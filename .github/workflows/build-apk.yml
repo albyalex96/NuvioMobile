@@ -83,8 +83,10 @@ jobs:
           printf 'DIRECT_DEBRID_API_BASE_URL=%s\n' "https://api.torbox.app/v1/api" >> local.properties
           printf 'ANILIST_CLIENT_ID=%s\n' "${{secrets.ANILIST_CLIENT_ID}}" >> local.properties
           printf 'ANILIST_CLIENT_SECRET=%s\n' "${{secrets.ANILIST_CLIENT_SECRET}}" >> local.properties
-          
-
+          printf 'TELEGRAM_APP_ID=%s\n' "${{secrets.TELEGRAM_APP_ID}}" >> local.properties
+          printf 'TELEGRAM_APP_SECRET=%s\n' "${{secrets.TELEGRAM_APP_SECRET}}" >> local.properties
+          printf 'SIMKL_CLIENT_ID=%s\n' "${{secrets.SIMKL_CLIENT_ID}}" >> local.properties
+          printf 'SIMKL_CLIENT_SECRET=%s\n' "${{secrets.SIMKL_CLIENT_SECRET}}" >> local.properties
       - name: Generate Changelog
         id: changelog
         env:
