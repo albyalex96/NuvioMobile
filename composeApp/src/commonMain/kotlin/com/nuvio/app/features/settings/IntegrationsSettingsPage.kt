@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.LiveTv
+import androidx.compose.material.icons.rounded.Send
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.nuvio.app.features.ai.AiAssistantSettings
@@ -188,7 +189,7 @@ internal fun LazyListScope.integrationsContent(
                 SettingsNavigationRow(
                     title = stringResource(Res.string.compose_settings_page_telegram),
                     description = stringResource(Res.string.settings_integrations_telegram_description),
-                    iconPainter = integrationLogoPainter(IntegrationLogo.Telegram),
+                    icon = Icons.Rounded.Send,
                     isTablet = isTablet,
                     onClick = onTelegramClick,
                 )
