@@ -46,6 +46,7 @@ import com.nuvio.app.features.details.SeasonViewModeStorage
 import com.nuvio.app.features.search.SearchHistoryStorage
 import com.nuvio.app.features.settings.ThemeSettingsStorage
 import com.nuvio.app.features.settings.NuvioAppIconSwitcher
+import com.nuvio.app.features.telegram.TelegramRepository
 import com.nuvio.app.features.mal.MalAuthStorage
 import com.nuvio.app.features.mal.MalLibraryStorage
 import com.nuvio.app.features.anilist.AniListStorage
@@ -172,6 +173,7 @@ class MainActivity : AppCompatActivity() {
         PlatformLocalAccountDataCleaner.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.initialize(applicationContext)
         StreamsAppearanceStorage.initialize(applicationContext)
+        TelegramRepository.initialize(applicationContext)
         SyncClientIdentityStorage.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.bindActivity(this)
         handleIncomingAppIntent(intent)
