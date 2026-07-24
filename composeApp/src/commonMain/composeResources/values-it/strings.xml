@@ -1383,6 +1383,15 @@
   <string name="settings_anilist_attribution_body">Nuvio può connettersi ad AniList per la sincronizzazione delle liste di anime e manga. AniList è un servizio di AniList.co. Nuvio non è affiliato né approvato da AniList.</string>
   <string name="settings_simkl_attribution_title">SIMKL</string>
   <string name="settings_simkl_attribution_body">Nuvio può connettersi a SIMKL per la sincronizzazione dello stato di visione tra dispositivi. SIMKL è un marchio di SIMKL. Nuvio non è affiliato né approvato da SIMKL.</string>
+  <string name="settings_simkl_connect">Connetti a SIMKL</string>
+  <string name="settings_simkl_continue_sign_in">Continua l\'accesso</string>
+  <string name="settings_simkl_disconnect">Disconnetti</string>
+  <string name="settings_simkl_intro">Connetti il tuo account SIMKL per sincronizzare lo stato di visione, la libreria e le valutazioni tra dispositivi.</string>
+  <string name="settings_simkl_sync_info_title">Stato sincronizzazione SIMKL</string>
+  <string name="settings_simkl_sync_info_description">Stato di sincronizzazione della libreria e della cronologia di visione SIMKL</string>
+  <string name="settings_simkl_sync_info_activity">Attività</string>
+  <string name="settings_simkl_sync_info_manual">Sincronizzazione manuale</string>
+  <string name="settings_simkl_sync_info_docs">Documentazione</string>
   <string name="settings_opensubtitles_attribution_title">OpenSubtitles</string>
   <string name="settings_opensubtitles_attribution_body">Nuvio può utilizzare OpenSubtitles per la ricerca e il download automatico dei sottotitoli. OpenSubtitles è un servizio di OpenSubtitles.org. Nuvio non è affiliato né approvato da OpenSubtitles.</string>
   <string name="settings_opensubtitles_enable">OpenSubtitles</string>
