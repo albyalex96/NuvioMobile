@@ -27,6 +27,8 @@ internal actual object MdbListSettingsStorage {
     actual fun saveUseLetterboxd(enabled: Boolean) { store.putBoolean("mdblist_use_letterboxd", enabled) }
     actual fun loadUseAudience(): Boolean? = store.getBoolean("mdblist_use_audience")
     actual fun saveUseAudience(enabled: Boolean) { store.putBoolean("mdblist_use_audience", enabled) }
+    actual fun loadUseMal(): Boolean? = store.getBoolean("mdblist_use_mal")
+    actual fun saveUseMal(enabled: Boolean) { store.putBoolean("mdblist_use_mal", enabled) }
 
     actual fun exportToSyncPayload(): JsonObject {
         val map = mutableMapOf<String, String>()
@@ -39,6 +41,7 @@ internal actual object MdbListSettingsStorage {
         putOpt("mdblist_use_trakt", loadUseTrakt())
         putOpt("mdblist_use_letterboxd", loadUseLetterboxd())
         putOpt("mdblist_use_audience", loadUseAudience())
+        putOpt("mdblist_use_mal", loadUseMal())
         return json.decodeFromString(json.encodeToString(map))
     }
 
@@ -52,5 +55,6 @@ internal actual object MdbListSettingsStorage {
         bool("mdblist_use_trakt")?.let { saveUseTrakt(it) }
         bool("mdblist_use_letterboxd")?.let { saveUseLetterboxd(it) }
         bool("mdblist_use_audience")?.let { saveUseAudience(it) }
+        bool("mdblist_use_mal")?.let { saveUseMal(it) }
     }
 }
